@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 from utils.sampler import generate_samples, generate_samples_q
 import sde 
 import viz.plots as plots
-from utils.logger import create_file
+from utils.logger import Logger
 import kl 
 ##TODO: merge this file with run.py and add overdamped/underdamped as parsable argument. 
 
-create_file()
+logfile = Logger(r'kldescent/results/run1/loss.csv')
 
 ###
 #TODO: add these as command line options (argparse)
@@ -54,8 +54,11 @@ for epoch in range(epochs):
     xinit = generate_samples_q(batch_samples,mode="initial")
 
     #evolve the sde 
-    xout = sde.simulation_free_overdamped(xinit,net1,net_fixed,t_vec,batch_samples,epsilon,epoch)
+    xout = sde.simulation_free_overdamped(xinit,net1,
+                    net_fixed,t_vec,batch_samples,
+                    epsilon,epoch,logfile)
     
+
     ##GRADIENT DESCENT STEP GOES HERE!!!
 
     if epoch in saved_epochs:
@@ -64,3 +67,4 @@ for epoch in range(epochs):
 
         #save checkpoint
         torch.save(net1.state_dict(),f"kldescent/tests/net_checkpoint_{epoch}.pt")
+

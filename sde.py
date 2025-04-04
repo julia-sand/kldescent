@@ -2,12 +2,11 @@
 import numpy as np 
 import numpy.random as npr
 #import model
-import utils.logger as logger
 from kl import kl_div
 import torch
 #import viz.plots as plots
 
-def sde_overdamped(xinit,net,t_vec,batch_samples,epsilon,epoch):
+def sde_overdamped(xinit,net,t_vec,batch_samples,epsilon,epoch,logfile):
     """
     Input: 
     -net    neural network current state 
@@ -39,7 +38,7 @@ def sde_overdamped(xinit,net,t_vec,batch_samples,epsilon,epoch):
     #compute kl between target assigned distribution 
     
     #log the loss function metrics
-    logger.log([epoch,losscurr.item(),kl.kl_div(xout)])
+    logfile.log([epoch,losscurr.item(),kl.kl_div(xout)])
     
     return xinit#,loss_curr
 

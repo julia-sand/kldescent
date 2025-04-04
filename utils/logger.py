@@ -7,15 +7,19 @@ import os
 
 #add headings to loss logger.
 
-def create_file(filename=r'kldescent/results/run1/loss.csv'):
-    with open(filename, 'w') as f:
-        fields=['epoch','kl_loss','kl_div_final']
-        writer = csv.writer(f)
-        writer.writerow(fields)
-    print("Log file created successfully.")    
+class Logger():
 
-def log(data,filename=r'kldescent/results/run1/loss.csv'):
+    def __init__(self,filename):
+        self.filename = filename
 
-    with open(filename, 'a') as f:
-        writer = csv.writer(f)
-        writer.writerow(data)
+        with open(self.filename, 'w') as f:
+                fields=['epoch','kl_loss','kl_div_final']
+                writer = csv.writer(f)
+                writer.writerow(fields)
+        print("Log file created successfully.")    
+
+    def log(self,data):
+
+        with open(self.filename, 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow(data)
