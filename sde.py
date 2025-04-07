@@ -5,6 +5,8 @@ import numpy.random as npr
 from kl import kl_div
 import torch
 #import viz.plots as plots
+import utils.logger
+import utils.boundary as boundary
 
 def sde_overdamped(xinit,net,t_vec,batch_samples,epsilon,epoch,logfile):
     """
@@ -75,12 +77,22 @@ def sde_underdamped(xinit,net,t_vec,batch_samples,epsilon):
     
     return xinit,loss_curr
 
-def g(x):
+def g(q): 
     #this is the penalty for the final time
 
-    return x
+    #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
 
-def simulation_free_overdamped(xinit,net,net_fixed,t_vec,batch_samples,epsilon):
+    return -torch.log(boundary.q_marginal_final(q)) + 
+
+
+def f(q): 
+    #this is the penalty for the final time
+
+    #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
+
+    return 0
+
+def simulation_free_overdamped(xinit,net,net_fixed,t_vec,batch_samples,epsilon,logger):
     """
     2410.05163
     """
@@ -90,31 +102,44 @@ def simulation_free_overdamped(xinit,net,net_fixed,t_vec,batch_samples,epsilon):
     
     loss_curr = 0 
     t_steps = len(t_vec)
-    #with torch.no_grad(): #this disables gradient computation
-    for i in range(0,t_steps-1):
-        du = net1(torch.column_stack((t_vec[i]*torch.ones(batch_samples,dtype=torch.float32)
-                                            ,xinit)))
 
-        with torch.no_grad():
-            du_bar = net_fixed(torch.column_stack((t_vec[i]*torch.ones(batch_samples,dtype=torch.float32)
-                                            ,xinit)))
+    #set up a,abar,c 
+    a = torch.zeros((batch_samples,1))
+    abar = torch.zeros((batch_samples,1))
+    c = torch.zeros((batch_samples,1))
+
+    
+
+    for i in range(0,t_steps-1):
 
         dt = (t_vec[i+1]-t_vec[i])
         dw = np.sqrt(dt)*torch.randn((batch_samples,1))
 
-        #go forward one step 
-        xinit = xinit + du_bar*dt + np.sqrt(2)*dw
-
+        du = net(torch.column_stack((t_vec[i]*torch.ones(batch_samples,dtype=torch.float32)
+                                            ,xinit)))
         a = a + (1/2)*(torch.square(du))*dt
-        abar = abar + (1/2)*(torch.square(du_bar))*dt
         c = c + np.sqrt(2)*du*dw
+
+        with torch.no_grad(): #no gradient 
+            du_bar = net_fixed(torch.column_stack((t_vec[i]*torch.ones(batch_samples,dtype=torch.float32)
+                                            ,xinit)))
+
+            abar = abar + (1/2)*(torch.square(du_bar))*dt
+            bbar = bbar + f(xinit)*dt
+
+            #go forward one step 
+            xinit = xinit + du_bar*dt + np.sqrt(2)*dw
 
         #add to loss integral
         #loss_curr += torch.sum(du**2)*(t_vec[i+1]-t_vec[i])
 
     #compute value of Lhat
-    Lhat = torch.mean(a +(abar+g(xinit))*c)
-    logger.log()
+    #see equation (10) and (11) in ref. 2410.05163
+    Lhat = a +(abar+g(xinit))*c
+    Lhat.mean().backward()
+
+    print(Lhat)
+
     return xinit#,loss_curr
 
 

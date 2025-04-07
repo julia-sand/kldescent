@@ -10,7 +10,7 @@ import os
 class Logger():
 
     def __init__(self,filename):
-        self.filename = filename
+        self.filename = r'kldescent/results/run1/loss.csv' if filename==None else filename
 
         with open(self.filename, 'w') as f:
                 fields=['epoch','kl_loss','kl_div_final']
