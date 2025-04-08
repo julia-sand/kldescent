@@ -13,7 +13,7 @@ plotter = plots.PlotFuns()
 ###===Parameters===###
 # #TODO: add these as command line options (argparse)
 epsilon = 0.2 
-epochs = 200 #number of times to generate data and update the params. 
+epochs = 20 #number of times to generate data and update the params. 
 logstep = 10 #how often to log the loss and make plots and checkpoints.
 batch_samples = 200 # number of samples in each step 
 checkpoint_path = "kldescent/results/run1/checkpoints/net_checkpoint_190.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
@@ -25,8 +25,7 @@ device = "cpu"
 #TODO: add gpu option, decide architectures
 net = model.NeuralNetwork().to(device)
 
-#pretraining - train to approximate the perturbative 
-#uncomment to initialise the neural network by training it on dummy data
+#pretraining - train to approximate a numeric drift given by a csv file
 if pre_train:
     import pretrain
     pretrain.pretraining_perturb(net)
@@ -46,7 +45,7 @@ net_fixed.eval() #put into evaluation mode
 t_vec = np.linspace(0,0.2,11)
 
 #TODO: how often should we log the results? 
-saved_epochs = list(range(0,epochs+logstep,logstep))
+saved_epochs = list(range(0,epochs,logstep))
 
 #set up optimizer
 optimizer = torch.optim.Adam(net.parameters(), lr=0.1)
@@ -66,17 +65,26 @@ for epoch in range(epochs):
 
     #copy updated params into fixed network 
     net_fixed.load_state_dict(net.state_dict())
-    #TODO: can this network be replaced simply with "no grad" all the way through?
+    #TODO: can this network be replaced simply with "no grad" for the theta bars?
 
-    if epoch in saved_epochs:
+    if (epoch in saved_epochs) or (epoch == epochs -1):
         #make plots
         plotter.marginal_distribution(xout.detach().cpu().numpy(),epoch)
-        
+        for t in t_vec:
+                duplot = net(torch.column_stack((t*torch.ones(batch_samples,dtype=torch.float32)
+                                                    ,torch.linspace(-4,4,batch_samples)))).detach().cpu().numpy()
+                duplot_fixed = net_fixed(torch.column_stack((t*torch.ones(batch_samples,dtype=torch.float32)
+                                                    ,torch.linspace(-4,4,batch_samples)))).detach().cpu().numpy()
+            
+                
+                plotter.plot_drift(np.linspace(-4,4,batch_samples),[duplot,duplot_fixed],time = t)
+            #plotter.plot_drift(net_fixed(xtest).detach().cpu().numpy())
         #get kl divergence from assigned final
         #
         kl_val = kl.kl_div(xout.detach().cpu().numpy(),sampler.generate_samples_q(batch_samples,mode="final"))
 
         logger.log(epoch,Lhat.mean().item(),kl_val) #log the loss 
+
 
         #save checkpoint
         torch.save(net.state_dict(),f"kldescent/results/run1/checkpoints/net_checkpoint_{epoch}.pt")

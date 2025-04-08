@@ -5,10 +5,6 @@ import matplotlib.lines as mlines
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
-#import scipy.stats as stats
-#import matplotlib.ticker as ticker
-#import string
-
 '''
 #visualisations ideas
 
@@ -78,26 +74,22 @@ class PlotFuns():
 
   #plot the drift at time t=0  
   #TODO: update to show multiple panels with different times/formatting
-  def plot_drift(self,net,t=0):
-
-    net.eval()  #ensure test mode of the network
+  def plot_drift(self,x,du,time=0):
 
     ##fetch the perturbative underdamped approximation data
     arr = np.loadtxt("kldescent/results.csv",
                     delimiter=",", skiprows=1)
 
     #select all zeros
-    arr = arr[np.where(arr[:,0]==0)]
+    arr = arr[np.where(arr[:,0]==time)]
     arr = arr[arr[:,1].argsort()] #sort by x
 
-    batch_samples = 100
-    xtest = torch.column_stack((torch.ones(batch_samples,dtype=torch.float32)
-                                              ,torch.linspace(-5,5,batch_samples)))
-    plt.plot(np.linspace(-4,4,batch_samples),net(xtest).detach().cpu().numpy())
-    
+    for duplot in du:
+      plt.plot(x,duplot,label=f"{duplot}")
+      
     plt.plot(arr[:,1],arr[:,2])
-    plt.title("t=0")
-    plt.savefig("kldescent/tests/pert_pretraining1.png")
+    plt.title(f"t={time}")
+    plt.savefig(f"kldescent/results/run1/nn_output_t{time}.png")
 
   ##scatter plot of final distribution 
   def marginal_distribution(self,samples,epoch=1):
