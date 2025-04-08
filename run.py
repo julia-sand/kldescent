@@ -44,6 +44,10 @@ epochs = 2 #number of times to generate data and update the params.
 #TODO: how often should we log the results? 
 saved_epochs = [1,2,3]
 
+##set up optimiser 
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+
 for epoch in range(epochs):
     net1.train() #set to train mode
 
@@ -51,8 +55,12 @@ for epoch in range(epochs):
     xinit = generate_samples(batch_samples,mode="initial")
 
     #evolve the sde 
-    xout = sde.sde_underdamped(xinit,net1,net_fixed,t_vec,batch_samples,epsilon)
+    Lhat = sde.sde_underdamped(xinit,net1,net_fixed,t_vec,batch_samples,epsilon)
     
+    # backward pass for computing the gradients of the loss w.r.t to learnable parameters
+    loss.backward()
+    # updateing the parameters after each iteration
+    optimizer.step()
     #log the loss function metrics
     logger.log([epoch,losscurr.item(),kl.kl_div(xout)])
     
@@ -64,3 +72,6 @@ for epoch in range(epochs):
 
         #save checkpoint
         torch.save(net1.state_dict(),f"kldescent/tests/net_checkpoint_{epoch}.pt")
+    
+    # zeroing gradients after each iteration
+    optimizer.zero_grad()

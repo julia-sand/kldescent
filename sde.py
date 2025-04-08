@@ -82,7 +82,7 @@ def g(q):
 
     #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
 
-    return -torch.log(boundary.q_marginal_final(q)) + 
+    return -torch.log(boundary.q_marginal_final(q)) - (q**2)/2
 
 
 def f(q): 
@@ -92,7 +92,7 @@ def f(q):
 
     return 0
 
-def simulation_free_overdamped(xinit,net,net_fixed,t_vec,batch_samples,epsilon,logger):
+def simulation_free_overdamped(xinit,net,net_fixed,t_vec,batch_samples,epsilon):
     """
     2410.05163
     """
@@ -125,7 +125,7 @@ def simulation_free_overdamped(xinit,net,net_fixed,t_vec,batch_samples,epsilon,l
                                             ,xinit)))
 
             abar = abar + (1/2)*(torch.square(du_bar))*dt
-            bbar = bbar + f(xinit)*dt
+            #bbar = bbar + f(xinit)*dt
 
             #go forward one step 
             xinit = xinit + du_bar*dt + np.sqrt(2)*dw
@@ -136,11 +136,11 @@ def simulation_free_overdamped(xinit,net,net_fixed,t_vec,batch_samples,epsilon,l
     #compute value of Lhat
     #see equation (10) and (11) in ref. 2410.05163
     Lhat = a +(abar+g(xinit))*c
-    Lhat.mean().backward()
+    #Lhat.mean().backward()
 
-    print(Lhat)
+    #print(Lhat)
 
-    return xinit#,loss_curr
+    return Lhat, xinit#,loss_curr
 
 
 

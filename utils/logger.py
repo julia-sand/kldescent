@@ -13,12 +13,13 @@ class Logger():
         self.filename = r'kldescent/results/run1/loss.csv' if filename==None else filename
 
         with open(self.filename, 'w') as f:
-                fields=['epoch','kl_loss','kl_div_final']
+                fields=['epoch','Lhat']#,'kl_div_final']
                 writer = csv.writer(f)
                 writer.writerow(fields)
         print("Log file created successfully.")    
 
-    def log(self,data):
+    def log(self,epoch,Lhat):
+        data = [epoch, Lhat]
 
         with open(self.filename, 'a') as f:
             writer = csv.writer(f)

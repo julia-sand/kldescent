@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.lines as mlines
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+from sklearn.neighbors import KernelDensity
+
 #import scipy.stats as stats
 #import matplotlib.ticker as ticker
 #import string
@@ -115,8 +118,15 @@ class PlotFuns():
     ax.set_ylim((-0.01,0.5))
 
     #plot scatter graphs
-    ax.hist(samples)
+    #ax.hist(samples)
     
+    #fit kde 
+    # tophat KDE
+    kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.75).fit(samples.reshape(-1,1))
+    log_dens = kde.score_samples(np.linspace(-4,4).reshape(-1,1))
+    ax.fill(np.linspace(-4,4), np.exp(log_dens), fc="#AAAAFF")
+
+
     import utils.boundary as boundary
     #Q,P = np.meshgrid(np.linspace(-5,5),np.linspace(-5,5))
     ax.plot(np.linspace(-4,4),
