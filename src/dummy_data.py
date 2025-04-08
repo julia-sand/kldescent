@@ -6,7 +6,6 @@ import numpy as np
 
 Tf = 0.2
 
-
 ts = np.linspace(0,0.2,11)
 xs = np.linspace(-3,3,10)
 

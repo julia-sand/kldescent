@@ -1,16 +1,16 @@
 import numpy as np
 import torch
 import model
-import pretraining 
-from utils.sampler import generate_samples, generate_samples_q
+from utils import *
+#from utils.sampler import generate_samples, generate_samples_q
 import sde 
 import viz.plots as plots
-from utils.logger import Logger
-import kl 
+#from utils.logger import Logger
+#import kl 
 ##TODO: merge this file with run.py and add overdamped/underdamped as parsable argument. 
 
 #create a log file
-logger = Logger(r'kldescent/results/run1/loss.csv')
+logger = logger.Logger(r'kldescent/results/run1/loss.csv')
 
 #initialise plots
 plotter = plots.PlotFuns()
@@ -26,14 +26,16 @@ pre_train = False #whether or not to pretrain the network (#TODO this is impleme
 device = "cpu"
 
 #initialise the model
-#TODO: add gpu option, decide architecture
+#TODO: add gpu option, decide architectures
 net = model.NeuralNetwork().to(device)
 net_fixed = model.NeuralNetwork().to(device)
+net_fixed.parameters(requires_grad=False) #remove any gradients. 
 
 #pretraining - train to approximate the perturbative 
 #uncomment to initialise the neural network by training it on dummy data
 if pre_train:
-    pretraining.pretraining_perturb(net)
+    import pretrain
+    pretrain.pretraining_perturb(net)
 
 ##option: load saved model 
 if checkpoint_path is not None:
@@ -64,7 +66,11 @@ for epoch in range(epochs):
     Lhat,xout = sde.simulation_free_overdamped(xinit,net,net_fixed,t_vec,batch_samples,epsilon)
     Lhat.mean().backward()
     optimizer.step()
-    print(net[0].weight.grad) 
+    #print(net[0].weight.grad) 
+
+    #copy params into fixed network 
+    net_fixed.load_state_dict(net.state_dict())
+
 
     if epoch in saved_epochs:
         #make plots
@@ -72,7 +78,7 @@ for epoch in range(epochs):
         
         #get kl divergence from assigned final
         #
-        kl_val = kl_div(xout.detach().cpu().numpy(),generate_samples_q(batch_samples,mode="final"))
+        kl_val = kl.kl_div(xout.detach().cpu().numpy(),sampler.generate_samples_q(batch_samples,mode="final"))
 
         logger.log(epoch,Lhat.mean().item(),kl_val) #log the loss 
 

@@ -1,12 +1,14 @@
-import numpy as np 
-import numpy.random as npr
-from scipy.spatial import KDTree
-#from utils.sampler import generate_samples,generate_samples_q
-from utils.boundary import *
-
+"""Computes the KL divergence between two sets of sampled points 
+via the k-nearest-neighbours method of 
+Wang, Qing and Kulkarni, Sanjeev R. and Verdu, Sergio. 
+In: IEEE Transactions on Information Theory (2009)
+"""
 
 def kl_div(d1,d2,k=1):
-    
+        
+    import numpy as np 
+    from scipy.spatial import KDTree
+
     batch_samples = d1.shape[0]
 
     """
@@ -19,12 +21,6 @@ def kl_div(d1,d2,k=1):
     Output: 
     -estimate of the KL divergence between the two empirical distributions
     """
-
-    #if mode=="underdamped":
-        #get samples from output distribution
-    #    d2 = generate_samples(batch_samples, mode="final")
-    #else:
-    #    d2 = generate_samples_q(batch_samples, mode="final")
 
     #GET NEAREST NEIGHBOURS
     #this indexes the values to their nearest neighbours

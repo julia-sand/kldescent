@@ -1,12 +1,7 @@
 #this file computes the dynamics 
 import numpy as np 
 import numpy.random as npr
-#import model
-from kl import kl_div
 import torch
-#import viz.plots as plots
-import utils.logger
-import utils.boundary as boundary
 
 def sde_overdamped(xinit,net,t_vec,batch_samples,epsilon,epoch,logfile):
     """
@@ -92,9 +87,26 @@ def f(q):
 
     return 0
 
-def simulation_free_overdamped(xinit,net,net_fixed,t_vec,batch_samples,epsilon):
+def simulation_free_overdamped(xinit,
+                                net,
+                                net_fixed,
+                                t_vec,
+                                batch_samples,
+                                epsilon):
     """
-    2410.05163
+    Following 2410.05163 (see proposition 3). 
+
+    ====
+    Parameters
+    - xinit,
+    - net,
+    - net_fixed: neural network with fixed parameters
+    - t_vec: vector of time coordinates
+    - batch_samples: number of samples in the batch
+    - epsilon
+    ====
+
+
     """
 
     #set fixed network into evaluation mode
@@ -140,7 +152,7 @@ def simulation_free_overdamped(xinit,net,net_fixed,t_vec,batch_samples,epsilon):
 
     #print(Lhat)
 
-    return Lhat, xinit#,loss_curr
+    return Lhat, xinit #,loss_curr
 
 
 
