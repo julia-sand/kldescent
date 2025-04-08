@@ -12,13 +12,13 @@ import kl
 #create a log file
 logger = Logger(r'kldescent/results/run1/loss.csv')
 
-#initialise plot functions
+#initialise plots
 plotter = plots.PlotFuns()
 
 ###
 #TODO: add these as command line options (argparse)
 batch_samples = 200 # number of samples in each step 
-checkpoint_path = None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
+checkpoint_path = "kldescent/results/run1/checkpoints/net_checkpoint_190.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
 pre_train = False #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
 
 
@@ -44,17 +44,16 @@ net_fixed.load_state_dict(net.state_dict())
 
 t_vec = np.linspace(0,0.2,11)
 epsilon = 0.2
-epochs = 200 #number of times to generate data and update the params. 
+epochs = 1#number of times to generate data and update the params. 
 
 #TODO: how often should we log the results? 
-saved_epochs = list(range(0,epochs,10))
+saved_epochs = list(range(0,epochs+10,10))
 
 #set up optimizer
 optimizer = torch.optim.Adam(net.parameters(), lr=0.01)
 net.train() #set to train mode
 
 for epoch in range(epochs):
-
 
     #generate initial training data
     #in this testing example, we use a point mass at x=0. See Section 2.5
@@ -65,13 +64,18 @@ for epoch in range(epochs):
     Lhat,xout = sde.simulation_free_overdamped(xinit,net,net_fixed,t_vec,batch_samples,epsilon)
     Lhat.mean().backward()
     optimizer.step()
-
-    logger.log(epoch,Lhat.mean().item())
+    print(net[0].weight.grad) 
 
     if epoch in saved_epochs:
         #make plots
         plotter.marginal_distribution(xout.detach().cpu().numpy(),epoch)
+        
+        #get kl divergence from assigned final
+        #
+        kl_val = kl_div(xout.detach().cpu().numpy(),generate_samples_q(batch_samples,mode="final"))
+
+        logger.log(epoch,Lhat.mean().item(),kl_val) #log the loss 
 
         #save checkpoint
-        torch.save(net.state_dict(),f"kldescent/tests/net_checkpoint_{epoch}.pt")
+        torch.save(net.state_dict(),f"kldescent/results/run1/checkpoints/net_checkpoint_{epoch}.pt")
 

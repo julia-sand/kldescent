@@ -114,11 +114,11 @@ def simulation_free_overdamped(xinit,net,net_fixed,t_vec,batch_samples,epsilon):
 
         dt = (t_vec[i+1]-t_vec[i])
         dw = np.sqrt(dt)*torch.randn((batch_samples,1))
-
+        
         du = net(torch.column_stack((t_vec[i]*torch.ones(batch_samples,dtype=torch.float32)
                                             ,xinit)))
         a = a + (1/2)*(torch.square(du))*dt
-        c = c + np.sqrt(2)*du*dw
+        c = c + du*dw #np.sqrt(2)*du*dw
 
         with torch.no_grad(): #no gradient 
             du_bar = net_fixed(torch.column_stack((t_vec[i]*torch.ones(batch_samples,dtype=torch.float32)
@@ -128,7 +128,7 @@ def simulation_free_overdamped(xinit,net,net_fixed,t_vec,batch_samples,epsilon):
             #bbar = bbar + f(xinit)*dt
 
             #go forward one step 
-            xinit = xinit + du_bar*dt + np.sqrt(2)*dw
+            xinit = xinit + du_bar*dt + dw #np.sqrt(2)*dw
 
         #add to loss integral
         #loss_curr += torch.sum(du**2)*(t_vec[i+1]-t_vec[i])

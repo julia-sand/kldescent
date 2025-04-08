@@ -1,28 +1,30 @@
 import numpy as np 
 import numpy.random as npr
 from scipy.spatial import KDTree
-from utils.sampler import generate_samples,generate_samples_q
+#from utils.sampler import generate_samples,generate_samples_q
 from utils.boundary import *
 
 
-def kl_div(d1,mode="overdamped",k=1):
+def kl_div(d1,d2,k=1):
     
     batch_samples = d1.shape[0]
 
     """
     Input: 
-    -d1: samples from the current estimated distribution
+    -d1: samples from distribution 1. This is the current estimated distribution
+    -d2: samples from the assigned distribution.
     -k: number of nearest neighbours. 
     in general: larger k reduces variance, small k reduces bias. 
 
     Output: 
     -estimate of the KL divergence between the two empirical distributions
     """
-    if mode=="underdamped":
+
+    #if mode=="underdamped":
         #get samples from output distribution
-        d2 = generate_samples(batch_samples, mode="final")
-    else:
-        d2 = generate_samples_q(batch_samples, mode="final")
+    #    d2 = generate_samples(batch_samples, mode="final")
+    #else:
+    #    d2 = generate_samples_q(batch_samples, mode="final")
 
     #GET NEAREST NEIGHBOURS
     #this indexes the values to their nearest neighbours
