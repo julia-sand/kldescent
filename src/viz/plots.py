@@ -17,7 +17,11 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
 class PlotFuns():
-  def __init__(self):  
+  def __init__(self,folder):
+
+    #set output location 
+    self.folder = folder
+
     #fontsizes
     self.fontsize = 22
     self.fontsizeticks = 18
@@ -70,11 +74,11 @@ class PlotFuns():
     #make label and add text
     ax.set_ylabel(r"$q$",fontsize = self.fontsizetitles,labelpad=-10)
 
-    plt.savefig(f"kldescent/results/run1/test_plot_{epoch}.png")
+    plt.savefig(self.folder+f"/test_plot_{epoch}.png")
 
   #plot the drift at time t=0  
   #TODO: update to show multiple panels with different times/formatting
-  def plot_drift(self,x,du,time=0):
+  def plot_drift(self,x,du,time=0,epoch=0):
 
     ##fetch the perturbative underdamped approximation data
     arr = np.loadtxt("kldescent/results.csv",
@@ -84,12 +88,15 @@ class PlotFuns():
     arr = arr[np.where(arr[:,0]==time)]
     arr = arr[arr[:,1].argsort()] #sort by x
 
+    fig = plt.figure()
     for duplot in du:
-      plt.plot(x,duplot,label=f"{duplot}")
+      plt.plot(x,duplot,label="N.N.")
       
-    plt.plot(arr[:,1],arr[:,2])
+    plt.plot(arr[:,1],arr[:,2],label="Reference")
+    plt.legend()
     plt.title(f"t={time}")
-    plt.savefig(f"kldescent/results/run1/nn_output_t{time}.png")
+    plt.savefig(self.folder+f"/nn_epoch{epoch}_t{time}.png")
+    plt.close()
 
   ##scatter plot of final distribution 
   def marginal_distribution(self,samples,epoch=1):
@@ -133,7 +140,8 @@ class PlotFuns():
     #make label and add text
     ax.set_ylabel(r"$\rho_T(q)$",fontsize = self.fontsizetitles,labelpad=-10)
 
-    plt.savefig(f"kldescent/results/run1/overdamped_marginal_{epoch}.png")
+    plt.savefig(self.folder+f"/overdamped_marginal_{epoch}.png")
+    plt.close()
 
 if __name__=="__main__":
   

@@ -4,22 +4,35 @@ import model
 from utils import *
 import viz.plots as plots
 
-#create a log file
-logger = logger.Logger(r'kldescent/results/run1/loss.csv')
-
-#initialise plots
-plotter = plots.PlotFuns()
-
 ###===Parameters===###
 # #TODO: add these as command line options (argparse)
 epsilon = 0.2 
-epochs = 20 #number of times to generate data and update the params. 
+Tf = 0.08 #final time
+tstep = 0.01 #size of time step in mesh
+epochs = 10 #number of times to generate data and update the params. 
 logstep = 10 #how often to log the loss and make plots and checkpoints.
 batch_samples = 200 # number of samples in each step 
 checkpoint_path = "kldescent/results/run1/checkpoints/net_checkpoint_190.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
 pre_train = False #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
+run_id = 2 #TODO this should be a unique identifier for the experiment run  
+
+#initialise plot object
+##make a directory
+import os 
+newpath = f'kldescent/results/run{run_id}' 
+if not os.path.exists(newpath):
+    os.makedirs(newpath)
+plotter = plots.PlotFuns(newpath)
+
+#create a log file
+logger = logger.Logger(newpath +r'/loss.csv')
 
 device = "cpu"
+
+#time mesh
+#TODO: time encoding ?
+t_vec = np.linspace(0,Tf,tstep)
+
 
 #initialise the model
 #TODO: add gpu option, decide architectures
@@ -41,8 +54,6 @@ net_fixed = model.NeuralNetwork().to(device)
 net_fixed.load_state_dict(net.state_dict())
 #net_fixed.parameters(requires_grad=False) #remove any gradients. 
 net_fixed.eval() #put into evaluation mode
-
-t_vec = np.linspace(0,0.2,11)
 
 #TODO: how often should we log the results? 
 saved_epochs = list(range(0,epochs,logstep))
@@ -68,6 +79,7 @@ for epoch in range(epochs):
     #TODO: can this network be replaced simply with "no grad" for the theta bars?
 
     if (epoch in saved_epochs) or (epoch == epochs -1):
+        
         #make plots
         plotter.marginal_distribution(xout.detach().cpu().numpy(),epoch)
         for t in t_vec:
