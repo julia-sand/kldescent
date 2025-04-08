@@ -49,7 +49,7 @@ t_vec = np.linspace(0,0.2,11)
 saved_epochs = list(range(0,epochs+logstep,logstep))
 
 #set up optimizer
-optimizer = torch.optim.Adam(net.parameters(), lr=0.01)
+optimizer = torch.optim.Adam(net.parameters(), lr=0.1)
 net.train() #set to train mode
 
 for epoch in range(epochs):
