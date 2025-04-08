@@ -2,6 +2,7 @@
 import numpy as np 
 import numpy.random as npr
 import torch
+import utils.boundary as boundary
 
 def sde_overdamped(xinit,net,t_vec,batch_samples,epsilon,epoch,logfile):
     """
@@ -99,11 +100,11 @@ def simulation_free_overdamped(xinit,
     ====
     Parameters
     - xinit,
-    - net,
-    - net_fixed: neural network with fixed parameters
+    - net: neural 
+    - net_fixed: neural network with fixed parameters (copy)
     - t_vec: vector of time coordinates
     - batch_samples: number of samples in the batch
-    - epsilon
+    - epsilon: dimensionless parameter
     ====
 
 

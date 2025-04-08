@@ -2,12 +2,7 @@ import numpy as np
 import torch
 import model
 from utils import *
-#from utils.sampler import generate_samples, generate_samples_q
-import sde 
 import viz.plots as plots
-#from utils.logger import Logger
-#import kl 
-##TODO: merge this file with run.py and add overdamped/underdamped as parsable argument. 
 
 #create a log file
 logger = logger.Logger(r'kldescent/results/run1/loss.csv')
@@ -15,41 +10,43 @@ logger = logger.Logger(r'kldescent/results/run1/loss.csv')
 #initialise plots
 plotter = plots.PlotFuns()
 
-###
-#TODO: add these as command line options (argparse)
+###===Parameters===###
+# #TODO: add these as command line options (argparse)
+epsilon = 0.2 
+epochs = 200 #number of times to generate data and update the params. 
+logstep = 10 #how often to log the loss and make plots and checkpoints.
 batch_samples = 200 # number of samples in each step 
 checkpoint_path = "kldescent/results/run1/checkpoints/net_checkpoint_190.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
 pre_train = False #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
-
-
 
 device = "cpu"
 
 #initialise the model
 #TODO: add gpu option, decide architectures
 net = model.NeuralNetwork().to(device)
-net_fixed = model.NeuralNetwork().to(device)
-net_fixed.parameters(requires_grad=False) #remove any gradients. 
 
 #pretraining - train to approximate the perturbative 
 #uncomment to initialise the neural network by training it on dummy data
 if pre_train:
     import pretrain
     pretrain.pretraining_perturb(net)
+    print("Pretraining completed successfully.")
 
 ##option: load saved model 
 if checkpoint_path is not None:
     net.load_state_dict(torch.load(checkpoint_path, weights_only=True))
+    print("Checkpoint loaded successfully.")
 
 #copy params into fixed network 
+net_fixed = model.NeuralNetwork().to(device)
 net_fixed.load_state_dict(net.state_dict())
+#net_fixed.parameters(requires_grad=False) #remove any gradients. 
+net_fixed.eval() #put into evaluation mode
 
 t_vec = np.linspace(0,0.2,11)
-epsilon = 0.2
-epochs = 1#number of times to generate data and update the params. 
 
 #TODO: how often should we log the results? 
-saved_epochs = list(range(0,epochs+10,10))
+saved_epochs = list(range(0,epochs+logstep,logstep))
 
 #set up optimizer
 optimizer = torch.optim.Adam(net.parameters(), lr=0.01)
@@ -60,7 +57,6 @@ for epoch in range(epochs):
     #generate initial training data
     #in this testing example, we use a point mass at x=0. See Section 2.5
     xinit = torch.zeros((batch_samples,1))
-    #generate_samples_q(batch_samples,mode="initial")
 
     #evolve the sde 
     Lhat,xout = sde.simulation_free_overdamped(xinit,net,net_fixed,t_vec,batch_samples,epsilon)
@@ -68,9 +64,9 @@ for epoch in range(epochs):
     optimizer.step()
     #print(net[0].weight.grad) 
 
-    #copy params into fixed network 
+    #copy updated params into fixed network 
     net_fixed.load_state_dict(net.state_dict())
-
+    #TODO: can this network be replaced simply with "no grad" all the way through?
 
     if epoch in saved_epochs:
         #make plots

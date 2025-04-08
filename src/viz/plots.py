@@ -4,7 +4,6 @@ import matplotlib.gridspec as gridspec
 import matplotlib.lines as mlines
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-from sklearn.neighbors import KernelDensity
 
 #import scipy.stats as stats
 #import matplotlib.ticker as ticker
@@ -115,14 +114,15 @@ class PlotFuns():
     ax = fig.add_subplot(111)
 
     ax.set_xlim((-4,4))
-    ax.set_ylim((-0.01,0.5))
+    ax.set_ylim(bottom = -0.01)
 
     #plot scatter graphs
     #ax.hist(samples)
     
     #fit kde 
     # tophat KDE
-    kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.75).fit(samples.reshape(-1,1))
+    from sklearn.neighbors import KernelDensity
+    kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(samples.reshape(-1,1))
     log_dens = kde.score_samples(np.linspace(-4,4).reshape(-1,1))
     ax.fill(np.linspace(-4,4), np.exp(log_dens), fc="#AAAAFF")
 
