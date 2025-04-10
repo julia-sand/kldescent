@@ -7,21 +7,21 @@ import time
 
 ###===Parameters===###
 # #TODO: add these as command line options (argparse)
-epsilon = 0.2 
+epsilon = 1
 Tf = 0.2 #final time
 tstep = 0.005 #size of time step in mesh
 epochs = 10 #number of times to generate data and update the params. 
 logstep = 10 #how often to log the loss and make plots and checkpoints.
 batch_samples = 200 # number of samples in each step 
-checkpoint_path = "results/run1/checkpoints/net_checkpoint_190.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
+checkpoint_path = None#"results/run1/checkpoints/net_checkpoint_190.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
 pre_train = False #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
 run_id = time.strftime("%Y%m%d-%H%M%S")#TODO this should be a unique identifier for the experiment run (eg date/time stamp)
 
 ##make a directory
 import os 
-#dirname = os.path.dirname(__file__) #fetches current location 
+dirname = os.path.dirname(__file__) #fetches current location 
 
-newpath = f'results/run{run_id}' 
+newpath = os.path.join(dirname,f'results/run{run_id}')
 os.makedirs(newpath)
 os.makedirs(newpath+"/checkpoints") #add checkpoints folder
 
@@ -82,17 +82,22 @@ for epoch in range(epochs):
     #TODO: can this network be replaced simply with "no grad" for the theta bars?
 
     if (epoch in saved_epochs) or (epoch == epochs -1):
-        
+        #make new folder for this epoch 
+        os.makedirs(newpath+f"/epoch{epoch}") #add checkpoints folder
+
         #make plots
         plotter.marginal_distribution(xout.detach().cpu().numpy(),epoch)
-        for t in t_vec:
+        
+        plot_times = [0,0.1,0.2] #these will be plotted
+        dus = []
+        for t in plot_times:
                 duplot = net(torch.column_stack((t*torch.ones(batch_samples,dtype=torch.float32)
                                                     ,torch.linspace(-3,3,batch_samples)))).detach().cpu().numpy()
                 duplot_fixed = net_fixed(torch.column_stack((t*torch.ones(batch_samples,dtype=torch.float32)
                                                     ,torch.linspace(-3,3,batch_samples)))).detach().cpu().numpy()
-            
+                dus.append([duplot,duplot_fixed])
                 
-                plotter.plot_drift(np.linspace(-3,3,batch_samples),[duplot,duplot_fixed],time = t)
+        plotter.plot_drift(np.linspace(-3,3,batch_samples),dus,times = plot_times)
             #plotter.plot_drift(net_fixed(xtest).detach().cpu().numpy())
         
         #get kl divergence from assigned final

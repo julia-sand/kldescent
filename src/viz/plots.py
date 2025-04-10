@@ -78,28 +78,30 @@ class PlotFuns():
     #make label and add text
     ax.set_ylabel(r"$q$",fontsize = self.fontsizetitles,labelpad=-10)
 
-    plt.savefig(self.folder+f"/test_plot_{epoch}.png")
+    plt.savefig(self.folder+f"/epoch{epoch}/test_plot.png")
 
   #plot the drift at time t=0  
   #TODO: update to show multiple panels with different times/formatting
-  def plot_drift(self,x,du,time=0,epoch=0):
- 
+  def plot_drift(self,x,dus,times,epoch=0):
+    
     ##fetch the perturbative underdamped approximation data
     arr = np.loadtxt(os.path.join(self.dirname, "../refsolution/value.csv"),
                     delimiter=",")
 
-    #select all zeros
-    arr = arr[np.where(arr[:,0]==time)]
-    arr = arr[arr[:,1].argsort()] #sort by x
+    fig,ax = plt.subplots(1,len(times))
+    for t in range(len(times)):      
+        
+      #select all zeros
+      arr = arr[np.where(arr[:,0]==np.round(times[t],5))]
+      arr = arr[arr[:,1].argsort()] #sort by x
+      for du in dus[t]:
 
-    fig = plt.figure()
-    for duplot in du:
-      plt.plot(x,duplot,label="N.N.")
-      
+        ax[t].plot(x,du,label="N.N.")
+
     plt.plot(arr[:,1],arr[:,-1],label="Reference")
     plt.legend()
-    plt.title(f"t={time}")
-    plt.savefig(self.folder+f"/nn_epoch{epoch}_t{time}.png")
+    plt.title(f"t={times[t]}")
+    plt.savefig(self.folder+f"/epoch{epoch}/_t{times[t]}.png")
     plt.close()
 
   ##scatter plot of final distribution 
