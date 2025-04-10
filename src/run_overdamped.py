@@ -3,25 +3,29 @@ import torch
 import model
 from utils import *
 import viz.plots as plots
+import time
 
 ###===Parameters===###
 # #TODO: add these as command line options (argparse)
 epsilon = 0.2 
-Tf = 0.08 #final time
-tstep = 0.01 #size of time step in mesh
+Tf = 0.2 #final time
+tstep = 0.005 #size of time step in mesh
 epochs = 10 #number of times to generate data and update the params. 
 logstep = 10 #how often to log the loss and make plots and checkpoints.
 batch_samples = 200 # number of samples in each step 
-checkpoint_path = "kldescent/results/run1/checkpoints/net_checkpoint_190.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
+checkpoint_path = "results/run1/checkpoints/net_checkpoint_190.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
 pre_train = False #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
-run_id = 2 #TODO this should be a unique identifier for the experiment run  
+run_id = time.strftime("%Y%m%d-%H%M%S")#TODO this should be a unique identifier for the experiment run (eg date/time stamp)
 
-#initialise plot object
 ##make a directory
 import os 
-newpath = f'kldescent/results/run{run_id}' 
-if not os.path.exists(newpath):
-    os.makedirs(newpath)
+#dirname = os.path.dirname(__file__) #fetches current location 
+
+newpath = f'results/run{run_id}' 
+os.makedirs(newpath)
+os.makedirs(newpath+"/checkpoints") #add checkpoints folder
+
+#initialise plot object
 plotter = plots.PlotFuns(newpath)
 
 #create a log file
@@ -31,8 +35,7 @@ device = "cpu"
 
 #time mesh
 #TODO: time encoding ?
-t_vec = np.linspace(0,Tf,tstep)
-
+t_vec = np.linspace(0,Tf,int(np.floor(Tf/tstep)+1))
 
 #initialise the model
 #TODO: add gpu option, decide architectures
@@ -84,13 +87,14 @@ for epoch in range(epochs):
         plotter.marginal_distribution(xout.detach().cpu().numpy(),epoch)
         for t in t_vec:
                 duplot = net(torch.column_stack((t*torch.ones(batch_samples,dtype=torch.float32)
-                                                    ,torch.linspace(-4,4,batch_samples)))).detach().cpu().numpy()
+                                                    ,torch.linspace(-3,3,batch_samples)))).detach().cpu().numpy()
                 duplot_fixed = net_fixed(torch.column_stack((t*torch.ones(batch_samples,dtype=torch.float32)
-                                                    ,torch.linspace(-4,4,batch_samples)))).detach().cpu().numpy()
+                                                    ,torch.linspace(-3,3,batch_samples)))).detach().cpu().numpy()
             
                 
-                plotter.plot_drift(np.linspace(-4,4,batch_samples),[duplot,duplot_fixed],time = t)
+                plotter.plot_drift(np.linspace(-3,3,batch_samples),[duplot,duplot_fixed],time = t)
             #plotter.plot_drift(net_fixed(xtest).detach().cpu().numpy())
+        
         #get kl divergence from assigned final
         #
         kl_val = kl.kl_div(xout.detach().cpu().numpy(),sampler.generate_samples_q(batch_samples,mode="final"))
@@ -99,5 +103,5 @@ for epoch in range(epochs):
 
 
         #save checkpoint
-        torch.save(net.state_dict(),f"kldescent/results/run1/checkpoints/net_checkpoint_{epoch}.pt")
+        torch.save(net.state_dict(),newpath+f"/checkpoints/net_checkpoint_{epoch}.pt")
 

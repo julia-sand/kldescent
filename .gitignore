@@ -3,3 +3,4 @@ results
 tests
 *.csv
 *.pt
+CH_OVERDAMPED_KL.ipynb

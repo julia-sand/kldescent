@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.lines as mlines
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-
+import os 
 
 '''
 #visualisations ideas
@@ -21,6 +21,10 @@ class PlotFuns():
 
     #set output location 
     self.folder = folder
+
+    #get reference solution location 
+    self.dirname = os.path.dirname(__file__)
+
 
     #fontsizes
     self.fontsize = 22
@@ -79,10 +83,10 @@ class PlotFuns():
   #plot the drift at time t=0  
   #TODO: update to show multiple panels with different times/formatting
   def plot_drift(self,x,du,time=0,epoch=0):
-
+ 
     ##fetch the perturbative underdamped approximation data
-    arr = np.loadtxt("kldescent/results.csv",
-                    delimiter=",", skiprows=1)
+    arr = np.loadtxt(os.path.join(self.dirname, "../refsolution/value.csv"),
+                    delimiter=",")
 
     #select all zeros
     arr = arr[np.where(arr[:,0]==time)]
@@ -92,7 +96,7 @@ class PlotFuns():
     for duplot in du:
       plt.plot(x,duplot,label="N.N.")
       
-    plt.plot(arr[:,1],arr[:,2],label="Reference")
+    plt.plot(arr[:,1],arr[:,-1],label="Reference")
     plt.legend()
     plt.title(f"t={time}")
     plt.savefig(self.folder+f"/nn_epoch{epoch}_t{time}.png")
