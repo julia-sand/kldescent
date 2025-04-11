@@ -10,7 +10,7 @@ import torch.optim as optim
 #define defaults
 #  
 #TODO: train the neural network with the real perturbative data (works only for dummy data atm.)
-def pretraining_perturb(net,n_epochs=2000):   
+def pretraining_perturb(net,n_epochs=1):   
     
     #n_epochs = 200
     loss_fn = nn.MSELoss()  

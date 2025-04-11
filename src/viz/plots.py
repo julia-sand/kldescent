@@ -22,10 +22,10 @@ class PlotFuns():
 
     #set output location 
     self.folder = folder
-
+    #self.subdir = self.folder #add default value to put plots into main folder if subdir has not been set
+    
     #get reference solution location 
     self.dirname = os.path.dirname(__file__)
-
 
     #fontsizes
     self.fontsize = 22
@@ -41,8 +41,11 @@ class PlotFuns():
     self.c3 = "#33a02c" #dark green
     self.c4 = "#b2df8a" #light green
 
+  def setsubdir(self, subdir):
+    self.subdir = self.folder+subdir #os.path.join(self.folder,subdir)
+
   ##scatter plot of final distribution 
-  def joint_distribution_scatter(self,samples,epoch=1):
+  def joint_distribution_scatter(self,samples):
 
     """
     Function that plots the scatter plot of the monte carlo approximation of the joint distribution
@@ -79,11 +82,11 @@ class PlotFuns():
     #make label and add text
     ax.set_ylabel(r"$q$",fontsize = self.fontsizetitles,labelpad=-10)
 
-    plt.savefig(self.folder+f"/epoch{epoch}/test_plot.png")
+    plt.savefig(self.subdir+f"/test_plot.png")
 
   #plot the drift at time t=0  
   #TODO: update to show multiple panels with different times/formatting
-  def plot_drift(self,x,dus,times,epoch=0):
+  def plot_drift(self,x,dus,times):
     
 
     fig,ax = plt.subplots(1,len(times))
@@ -109,11 +112,11 @@ class PlotFuns():
     ax[0].set_ylabel("$\mathbb{U}$")
     plt.legend()
     plt.tight_layout()
-    plt.savefig(self.folder+f"/epoch{epoch}/drift.png")
+    plt.savefig(self.subdir+f"/drift.png")
     plt.close()
 
   ##scatter plot of final distribution 
-  def marginal_distribution(self,samples,epoch=1):
+  def marginal_distribution(self,samples):
 
     """
     Function that plots the scatter plot of the monte carlo approximation of the joint distribution
@@ -154,7 +157,7 @@ class PlotFuns():
     #make label and add text
     ax.set_ylabel(r"$\rho_T(q)$",fontsize = self.fontsizetitles,labelpad=-10)
 
-    plt.savefig(self.folder+f"/epoch{epoch}/final_density.png")
+    plt.savefig(self.subdir+f"/final_density.png")
     plt.close()
 
 if __name__=="__main__":

@@ -10,11 +10,11 @@ import time
 epsilon = 1
 Tf = 0.2 #final time
 tstep = 0.005 #size of time step in mesh
-epochs = 200 #number of times to generate data and update the params. 
+epochs = 1 #number of times to generate data and update the params. 
 logstep = 10 #how often to log the loss and make plots and checkpoints.
 batch_samples = 200 # number of samples in each step 
 checkpoint_path = "src/results/run20250410-184905/checkpoints/net_checkpoint_199.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
-pre_train = True #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
+pre_train = False #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
 
 ##make a directory for the results
 import os 
@@ -25,11 +25,10 @@ newpath = os.path.join(dirname,f'results/run{run_id}')
 os.makedirs(newpath)
 os.makedirs(newpath+"/checkpoints") #add checkpoints folder
 
-#initialise plot object
-plotter = plots.PlotFuns(newpath)
-
 #create a log file
 logger = logger.Logger(newpath +r'/loss.csv')
+#intialise plots
+plotter = plots.PlotFuns(newpath)
 
 device = "cpu"
 
@@ -52,6 +51,13 @@ if pre_train:
     import pretrain
     pretrain.pretraining_perturb(net)
     print("Pretraining completed successfully.")
+
+    #initialise plot object
+    os.makedirs(newpath+"/pretrain")
+    plotter.setsubdir("/pretrain")
+    #what to plot? 
+    #net.eval()
+
 
 #copy params into fixed network 
 net_fixed = model.NeuralNetwork().to(device)
@@ -88,9 +94,10 @@ for epoch in range(epochs):
     if (epoch in saved_epochs) or (epoch == epochs -1):
         #make new folder for this epoch 
         os.makedirs(newpath+f"/epoch{epoch}") #add epoch plots folder
-
+        plotter.setsubdir(f"/epoch{epoch}")
+        print(plotter.subdir)
         #make plots
-        plotter.marginal_distribution(xout.detach().cpu().numpy(),epoch)
+        plotter.marginal_distribution(xout.detach().cpu().numpy())
         
         plot_times = [0,0.1,0.2] #these will be plotted
         dus = []
@@ -101,7 +108,7 @@ for epoch in range(epochs):
                                                     ,torch.linspace(-3,3,batch_samples)))).detach().cpu().numpy()
                 dus.append([duplot,duplot_fixed])
                 
-        plotter.plot_drift(np.linspace(-3,3,batch_samples),dus,times = plot_times,epoch=epoch)
+        plotter.plot_drift(np.linspace(-3,3,batch_samples),dus,times = plot_times)
         
         #get kl divergence from assigned final
         kl_val = kl.kl_div(xout.detach().cpu().numpy(),sampler.generate_samples_q(batch_samples,mode="final"))
