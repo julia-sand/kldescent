@@ -4,6 +4,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.lines as mlines
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import os 
+from scipy.ndimage import generic_filter,median
 
 '''
 #visualisations ideas
@@ -84,24 +85,31 @@ class PlotFuns():
   #TODO: update to show multiple panels with different times/formatting
   def plot_drift(self,x,dus,times,epoch=0):
     
-    ##fetch the perturbative underdamped approximation data
-    arr = np.loadtxt(os.path.join(self.dirname, "../refsolution/value.csv"),
-                    delimiter=",")
 
     fig,ax = plt.subplots(1,len(times))
     for t in range(len(times)):      
-        
+      
+      ##fetch the perturbative underdamped approximation data
+      arr = np.loadtxt(os.path.join(self.dirname, "../refsolution/value.csv"),
+                      delimiter=",")  ##TODO find a better way to do this without reloading the file eachtime. 
       #select all zeros
       arr = arr[np.where(arr[:,0]==np.round(times[t],5))]
       arr = arr[arr[:,1].argsort()] #sort by x
+
+      #plot reference
+      ax[t].plot(arr[:,1],generic_filter(arr[:,-1],median,50,mode="nearest"),label="Reference")
+
       for du in dus[t]:
 
         ax[t].plot(x,du,label="N.N.")
 
-    plt.plot(arr[:,1],arr[:,-1],label="Reference")
+      ax[t].set_title(f"t={times[t]}")
+      ax[t].set_xlabel("q")
+    
+    ax[0].set_ylabel("$\mathbb{U}$")
     plt.legend()
-    plt.title(f"t={times[t]}")
-    plt.savefig(self.folder+f"/epoch{epoch}/_t{times[t]}.png")
+    plt.tight_layout()
+    plt.savefig(self.folder+f"/epoch{epoch}/drift.png")
     plt.close()
 
   ##scatter plot of final distribution 
@@ -146,7 +154,7 @@ class PlotFuns():
     #make label and add text
     ax.set_ylabel(r"$\rho_T(q)$",fontsize = self.fontsizetitles,labelpad=-10)
 
-    plt.savefig(self.folder+f"/overdamped_marginal_{epoch}.png")
+    plt.savefig(self.folder+f"/epoch{epoch}/final_density.png")
     plt.close()
 
 if __name__=="__main__":

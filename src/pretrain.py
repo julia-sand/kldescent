@@ -10,15 +10,15 @@ import torch.optim as optim
 #define defaults
 #  
 #TODO: train the neural network with the real perturbative data (works only for dummy data atm.)
-def pretraining_perturb(net,n_epochs=200):   
+def pretraining_perturb(net,n_epochs=2000):   
     
     #n_epochs = 200
     loss_fn = nn.MSELoss()  
-    optimizer = optim.Adam(net.parameters(), lr=1)
+    optimizer = optim.Adam(net.parameters(), lr=0.01)
     #is it worth scheduling the learning rate? https://jamesmccaffrey.wordpress.com/2020/12/08/pytorch-learning-rate-scheduler-example/
 
     ##fetch the perturbative underdamped approximation data
-    arr = np.loadtxt("kldescent/results.csv",
+    arr = np.loadtxt("results.csv",
                     delimiter=",", skiprows=1)
     
     arr = arr[np.where(np.abs(arr[:,1])<4)] #use data for -3<x<3
@@ -34,7 +34,7 @@ def pretraining_perturb(net,n_epochs=200):
         print(f'Finished epoch {epoch}, latest loss {loss}')
 
     #make trained checkpoint 
-    torch.save(net.state_dict(),"kldescent/tests/net_pretrained.pt")
+    torch.save(net.state_dict(),"net_pretrained.pt")
 
 if __name__ == "__main__":
   import model

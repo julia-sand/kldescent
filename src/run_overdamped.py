@@ -10,16 +10,16 @@ import time
 epsilon = 1
 Tf = 0.2 #final time
 tstep = 0.005 #size of time step in mesh
-epochs = 10 #number of times to generate data and update the params. 
+epochs = 200 #number of times to generate data and update the params. 
 logstep = 10 #how often to log the loss and make plots and checkpoints.
 batch_samples = 200 # number of samples in each step 
-checkpoint_path = None#"results/run1/checkpoints/net_checkpoint_190.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
-pre_train = False #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
-run_id = time.strftime("%Y%m%d-%H%M%S")#TODO this should be a unique identifier for the experiment run (eg date/time stamp)
+checkpoint_path = "src/results/run20250410-184905/checkpoints/net_checkpoint_199.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
+pre_train = True #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
 
-##make a directory
+##make a directory for the results
 import os 
 dirname = os.path.dirname(__file__) #fetches current location 
+run_id = time.strftime("%Y%m%d-%H%M%S")
 
 newpath = os.path.join(dirname,f'results/run{run_id}')
 os.makedirs(newpath)
@@ -41,16 +41,17 @@ t_vec = np.linspace(0,Tf,int(np.floor(Tf/tstep)+1))
 #TODO: add gpu option, decide architectures
 net = model.NeuralNetwork().to(device)
 
+##option: load saved model 
+if checkpoint_path is not None:
+    net.load_state_dict(torch.load(checkpoint_path, weights_only=True))
+    print("Checkpoint loaded successfully.")
+
+
 #pretraining - train to approximate a numeric drift given by a csv file
 if pre_train:
     import pretrain
     pretrain.pretraining_perturb(net)
     print("Pretraining completed successfully.")
-
-##option: load saved model 
-if checkpoint_path is not None:
-    net.load_state_dict(torch.load(checkpoint_path, weights_only=True))
-    print("Checkpoint loaded successfully.")
 
 #copy params into fixed network 
 net_fixed = model.NeuralNetwork().to(device)
@@ -66,6 +67,9 @@ optimizer = torch.optim.Adam(net.parameters(), lr=0.1)
 net.train() #set to train mode
 
 for epoch in range(epochs):
+    
+    #reset gradients 
+    optimizer.zero_grad()
 
     #generate initial training data
     #in this testing example, we use a point mass at x=0. See Section 2.5
@@ -83,7 +87,7 @@ for epoch in range(epochs):
 
     if (epoch in saved_epochs) or (epoch == epochs -1):
         #make new folder for this epoch 
-        os.makedirs(newpath+f"/epoch{epoch}") #add checkpoints folder
+        os.makedirs(newpath+f"/epoch{epoch}") #add epoch plots folder
 
         #make plots
         plotter.marginal_distribution(xout.detach().cpu().numpy(),epoch)
@@ -97,11 +101,9 @@ for epoch in range(epochs):
                                                     ,torch.linspace(-3,3,batch_samples)))).detach().cpu().numpy()
                 dus.append([duplot,duplot_fixed])
                 
-        plotter.plot_drift(np.linspace(-3,3,batch_samples),dus,times = plot_times)
-            #plotter.plot_drift(net_fixed(xtest).detach().cpu().numpy())
+        plotter.plot_drift(np.linspace(-3,3,batch_samples),dus,times = plot_times,epoch=epoch)
         
         #get kl divergence from assigned final
-        #
         kl_val = kl.kl_div(xout.detach().cpu().numpy(),sampler.generate_samples_q(batch_samples,mode="final"))
 
         logger.log(epoch,Lhat.mean().item(),kl_val) #log the loss 

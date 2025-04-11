@@ -57,11 +57,11 @@ for i in range(0,num_tsteps-1):
     vout = np.mean(vfinal(traj[:,i-1,:]),axis=0)
     
     #smooth it 
-    #vout = generic_filter(vout,median,50,mode="nearest")
-
+    vout = generic_filter(vout,median,50,mode="nearest")
+    duout = generic_filter(np.gradient(vout, qaxis),median,50,mode="nearest")
     #array out 
     
-    arr = np.vstack((arr,np.column_stack((np.ones(num_qsamples)*t_vec[i],qaxis,vout,np.gradient(vout, qaxis)))))
+    arr = np.vstack((arr,np.column_stack((np.ones(num_qsamples)*t_vec[i],qaxis,vout,duout))))
 
 np.savetxt(os.path.join(dirname, "value.csv"),arr ,fmt="%10.6f",header = "t,q,v,du",delimiter=',')
 

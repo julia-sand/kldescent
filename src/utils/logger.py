@@ -1,10 +1,6 @@
 import csv
 import os
 
-
-#TODO: implement some automatic creation of folder names to organise output better
-#filename = r'kldescent/results/run1/loss.csv'
-
 class Logger():
 
     #add headings to loss logger.
