@@ -10,7 +10,7 @@ import torch.optim as optim
 #define defaults
 #  
 #TODO: train the neural network with the real perturbative data (works only for dummy data atm.)
-def pretraining_perturb(net,n_epochs=1):   
+def pretraining_perturb(net,path,n_epochs=1):   
     
     #n_epochs = 200
     loss_fn = nn.MSELoss()  
@@ -18,11 +18,11 @@ def pretraining_perturb(net,n_epochs=1):
     #is it worth scheduling the learning rate? https://jamesmccaffrey.wordpress.com/2020/12/08/pytorch-learning-rate-scheduler-example/
 
     ##fetch the perturbative underdamped approximation data
-    arr = np.loadtxt("results.csv",
+    arr = np.loadtxt(path,
                     delimiter=",", skiprows=1)
     
-    arr = arr[np.where(np.abs(arr[:,1])<4)] #use data for -3<x<3
-    X = torch.tensor(arr[:,:-1], dtype=torch.float32)
+    arr = arr[np.where(np.abs(arr[:,1])<3.7)] #drop the edges
+    X = torch.tensor(arr[:,0:2], dtype=torch.float32)
     y = torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
 
     for epoch in range(n_epochs):
@@ -34,7 +34,7 @@ def pretraining_perturb(net,n_epochs=1):
         print(f'Finished epoch {epoch}, latest loss {loss}')
 
     #make trained checkpoint 
-    torch.save(net.state_dict(),"net_pretrained.pt")
+    #torch.save(net.state_dict(),"net_pretrained.pt")
 
 if __name__ == "__main__":
   import model

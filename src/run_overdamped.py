@@ -13,15 +13,16 @@ tstep = 0.005 #size of time step in mesh
 epochs = 1 #number of times to generate data and update the params. 
 logstep = 10 #how often to log the loss and make plots and checkpoints.
 batch_samples = 200 # number of samples in each step 
-checkpoint_path = "src/results/run20250410-184905/checkpoints/net_checkpoint_199.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
-pre_train = False #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
+checkpoint_path = "src/results/run20250411-153550/checkpoints/net_checkpoint_0.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
+pre_train = True #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
+path_to_pretrain = "src/refsolution/value.csv" #csv of the data to use for pretraining
 
 ##make a directory for the results
 import os 
 dirname = os.path.dirname(__file__) #fetches current location 
 run_id = time.strftime("%Y%m%d-%H%M%S")
 
-newpath = os.path.join(dirname,f'results/run{run_id}')
+newpath = os.path.join(dirname,f'../results/run{run_id}')
 os.makedirs(newpath)
 os.makedirs(newpath+"/checkpoints") #add checkpoints folder
 
@@ -48,15 +49,17 @@ if checkpoint_path is not None:
 
 #pretraining - train to approximate a numeric drift given by a csv file
 if pre_train:
+
+    print("Starting pre-training")
     import pretrain
-    pretrain.pretraining_perturb(net)
+    pretrain.pretraining_perturb(net,path = path_to_pretrain, n_epochs = 1000)
     print("Pretraining completed successfully.")
 
     #initialise plot object
     os.makedirs(newpath+"/pretrain")
     plotter.setsubdir("/pretrain")
-    #what to plot? 
-    #net.eval()
+    #TODO : call plotters here. 
+    #save checkpoint_
 
 
 #copy params into fixed network 
@@ -73,7 +76,7 @@ optimizer = torch.optim.Adam(net.parameters(), lr=0.1)
 net.train() #set to train mode
 
 for epoch in range(epochs):
-    
+
     #reset gradients 
     optimizer.zero_grad()
 
@@ -83,14 +86,6 @@ for epoch in range(epochs):
 
     #evolve the sde 
     Lhat,xout = sde.simulation_free_overdamped(xinit,net,net_fixed,t_vec,batch_samples,epsilon)
-    Lhat.mean().backward()
-    optimizer.step()
-    #print(net[0].weight.grad) 
-
-    #copy updated params into fixed network 
-    net_fixed.load_state_dict(net.state_dict())
-    #TODO: can this network be replaced simply with "no grad" for the theta bars?
-
     if (epoch in saved_epochs) or (epoch == epochs -1):
         #make new folder for this epoch 
         os.makedirs(newpath+f"/epoch{epoch}") #add epoch plots folder
@@ -117,5 +112,14 @@ for epoch in range(epochs):
 
 
         #save checkpoint
-        torch.save(net.state_dict(),newpath+f"/checkpoints/net_checkpoint_{epoch}.pt")
+        torch.save(net.state_dict(),newpath+f"/checkpoints/net_checkpoint_{epoch}.pt") 
+    
+    Lhat.mean().backward()
+    optimizer.step()
+    #print(net[0].weight.grad) 
 
+    #copy updated params into fixed network 
+    net_fixed.load_state_dict(net.state_dict())
+    #TODO: can this network be replaced simply with "no grad" for the theta bars?
+
+    

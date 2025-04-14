@@ -108,12 +108,43 @@ class PlotFuns():
 
       ax[t].set_title(f"t={times[t]}")
       ax[t].set_xlabel("q")
+      #ax[t].set_ylim((-10,10))
     
-    ax[0].set_ylabel("$\mathbb{U}$")
+    ax[0].set_ylabel(r"$\mathbb{U}$")
     plt.legend()
     plt.tight_layout()
     plt.savefig(self.subdir+f"/drift.png")
     plt.close()
+
+  #plot the drift used in pretraining
+  def plot_pretrainsol(self,times):
+    
+    fig,ax = plt.subplots(1,len(times))
+    for t in range(len(times)):      
+      arr = np.loadtxt("../../results.csv",
+                    delimiter=",", skiprows=1)
+    
+      arr = arr[np.where(np.abs(arr[:,1])<4)]
+      ##fetch the perturbative underdamped approximation data
+    
+      arr = arr[np.where(arr[:,0]==np.round(times[t],5))]
+      arr = arr[arr[:,1].argsort()] #sort by x
+
+      #plot reference
+      ax[t].plot(arr[:,1],arr[:,-1],label="Reference")
+      #label="Reference")
+
+      ax[t].set_title(f"t={times[t]}")
+      ax[t].set_xlabel("q")
+      #ax[t].set_ylim((-10,10))
+    
+    ax[0].set_ylabel(r"$\mathbb{U}$")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(self.subdir+f"/drift.png")
+    plt.close()
+
+
 
   ##scatter plot of final distribution 
   def marginal_distribution(self,samples):
@@ -161,9 +192,15 @@ class PlotFuns():
     plt.close()
 
 if __name__=="__main__":
+  #os.makedirs("../../tests"+"/pretrain") #add epoch plots folder
   
+  plotter = PlotFuns("../../tests")
+  plotter.setsubdir("pretrain")
+  
+  plotter.plot_pretrainsol(times=[0,0.1,0.2])
+
   #from boundary import *
   #from sampler import generate_samples
   #xout = generate_samples(100,mode="initial")
   #PlotFuns().joint_distribution_scatter(xout.detach().cpu().numpy(),99)
-  pass
+  #pass
