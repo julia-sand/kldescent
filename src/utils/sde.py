@@ -27,7 +27,7 @@ def sde_overdamped(xinit,net,t_vec,batch_samples,epsilon,epoch,logfile):
                                                 ,xinit)))
                 
             #go forward one step 
-            xinit = xinit + -(du)*(t_vec[i+1]-t_vec[i]) + np.sqrt(2*(t_vec[i+1]-t_vec[i]))*torch.randn((batch_samples,1))
+            xinit = xinit + (du)*(t_vec[i+1]-t_vec[i]) + np.sqrt(2*(t_vec[i+1]-t_vec[i]))*torch.randn((batch_samples,1))
 
 
         #add to loss integral
@@ -78,7 +78,8 @@ def g(q):
 
     #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
 
-    return -torch.log(boundary.q_marginal_final(q)) - (q**2)/2
+    return ((q**2-1)**2)/4 - (q**2)/2
+    #-torch.log(boundary.q_marginal_final(q)) - (q**2)/2
 
 
 def f(q): 

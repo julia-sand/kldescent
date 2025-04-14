@@ -17,7 +17,7 @@ from scipy.ndimage import generic_filter,median
 
 #final value function 
 def vfinal(q):
-    return (((q**2 - 1)**2) / 4) - ((q**2)/2)
+    return (((q**2 - 1)**2) / 4)# - ((q**2)/2)
 
 #final value function 
 def dv(q):
