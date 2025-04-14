@@ -141,7 +141,7 @@ def simulation_free_overdamped(xinit,
             #bbar = bbar + f(xinit)*dt
 
             #go forward one step 
-            xinit = xinit - (2*du_bar)*dt + dw #np.sqrt(2)*dw
+            xinit = xinit + (du_bar)*dt + np.sqrt(2)*dw
 
     #compute value of Lhat
     #see equation (10) and (11) in ref. 2410.05163

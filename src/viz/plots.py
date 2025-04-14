@@ -75,23 +75,16 @@ class PlotFuns():
 
     ax.tick_params(axis='both', labelsize=self.fontsizeticks)
 
-    #if x_ind !=0:
     ax.set_xlabel(r"$p$",fontsize = self.fontsizetitles,labelpad=-20)
-
-    #if y_ind == 2:
-    #make label and add text
     ax.set_ylabel(r"$q$",fontsize = self.fontsizetitles,labelpad=-10)
 
     plt.savefig(self.subdir+f"/test_plot.png")
 
-  #plot the drift at time t=0  
-  #TODO: update to show multiple panels with different times/formatting
-  def plot_drift(self,x,dus,times):
+  def plot_drift(self,x,times,dus=None):
 
     ##fetch the perturbative underdamped approximation data
     arr = np.loadtxt(os.path.join(self.dirname, "../refsolution/value.csv"),
-                    delimiter=",")  ##TODO find a better way to do this without reloading the file eachtime. 
-    
+                    delimiter=",")  
 
     fig,ax = plt.subplots(1,len(times))
     for t in range(len(times)):      
@@ -103,13 +96,13 @@ class PlotFuns():
       #plot reference
       ax[t].plot(arrtemp[:,1],arrtemp[:,-1],label="Reference")
 
-      for du in dus[t]:
+      #for du in dus[t]:
 
-        ax[t].plot(x,du,label="N.N.")
+      #  ax[t].plot(x,du,label="N.N.")
 
       ax[t].set_title(f"t={times[t]}")
       ax[t].set_xlabel("q")
-      #ax[t].set_ylim((-10,10))
+      ax[t].set_ylim((-10,10))
     
     ax[0].set_ylabel(r"$\mathbb{U}$")
     plt.legend()
