@@ -13,8 +13,8 @@ tstep = 0.005 #size of time step in mesh
 epochs = 1 #number of times to generate data and update the params. 
 logstep = 10 #how often to log the loss and make plots and checkpoints.
 batch_samples = 2000 # number of samples in each step 
-checkpoint_path = "results/run20250414-102610/checkpoints/net_checkpoint_0.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
-pre_train = True #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
+checkpoint_path = "results/run20250414-120703/checkpoints/net_checkpoint_0.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
+pre_train = False #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
 path_to_pretrain = "src/refsolution/value.csv" #csv of the data to use for pretraining
 
 ##make a directory for the results
@@ -115,10 +115,10 @@ for epoch in range(epochs):
         #save checkpoint
         torch.save(net.state_dict(),newpath+f"/checkpoints/net_checkpoint_{epoch}.pt") 
     
-    Lhat.mean().backward()
-    optimizer.step()
-    #print(net[0].weight.grad) 
-
+    ##training##
+    #Lhat.mean().backward()
+    #optimizer.step()
+    
     #copy updated params into fixed network 
     net_fixed.load_state_dict(net.state_dict())
     #TODO: can this network be replaced simply with "no grad" for the theta bars?

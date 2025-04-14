@@ -45,12 +45,9 @@ qaxis_samples = np.concatenate([qaxis_samples[np.newaxis,:,:]]*(mc_samples))
 #generate backwards trajectories
 traj = qaxis_samples - np.cumsum(np.sqrt(tstep)*npr.randn(mc_samples, num_tsteps-1,num_qsamples),axis=1)
 traj = np.flip(traj,axis = 1) #flip along columns
-print(t_vec)
 
 #find for t = T
 arr = np.column_stack((np.ones(num_qsamples)*Tf,qaxis,vfinal(qaxis),dv(qaxis)))
-
-
 
 for i in range(0,num_tsteps-1): 
     print(t_vec[i])

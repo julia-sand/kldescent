@@ -21,7 +21,7 @@ def pretraining_perturb(net,path,n_epochs=1):
     arr = np.loadtxt(path,
                     delimiter=",", skiprows=1)
     
-    arr = arr[np.where(np.abs(arr[:,1])<3.7)] #drop the edges
+    #arr = arr[np.where(np.abs(arr[:,1])<3.7)] #drop the edges
     X = torch.tensor(arr[:,0:2], dtype=torch.float32)
     y = torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
 

@@ -87,20 +87,21 @@ class PlotFuns():
   #plot the drift at time t=0  
   #TODO: update to show multiple panels with different times/formatting
   def plot_drift(self,x,dus,times):
+
+    ##fetch the perturbative underdamped approximation data
+    arr = np.loadtxt(os.path.join(self.dirname, "../refsolution/value.csv"),
+                    delimiter=",")  ##TODO find a better way to do this without reloading the file eachtime. 
     
 
     fig,ax = plt.subplots(1,len(times))
     for t in range(len(times)):      
-      
       ##fetch the perturbative underdamped approximation data
-      arr = np.loadtxt(os.path.join(self.dirname, "../refsolution/value.csv"),
-                      delimiter=",")  ##TODO find a better way to do this without reloading the file eachtime. 
-      #select all zeros
-      arr = arr[np.where(arr[:,0]==np.round(times[t],5))]
-      arr = arr[arr[:,1].argsort()] #sort by x
+          #select all zeros
+      arrtemp = arr[np.where(arr[:,0]==np.round(times[t],5))]
+      arrtemp = arrtemp[arrtemp[:,1].argsort()] #sort by x
 
       #plot reference
-      ax[t].plot(arr[:,1],generic_filter(arr[:,-1],median,50,mode="nearest"),label="Reference")
+      ax[t].plot(arrtemp[:,1],arrtemp[:,-1],label="Reference")
 
       for du in dus[t]:
 
