@@ -21,7 +21,7 @@ def vfinal(q):
 
 #final value function 
 def dv(q):
-    return q**3 - 2*q
+    return q**3 - q
 
 mc_samples = 10000
 

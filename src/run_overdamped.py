@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-import model
+import model.model as model
 from utils import *
 import viz.plots as plots
 import time
@@ -14,7 +14,7 @@ epochs = 1 #number of times to generate data and update the params.
 logstep = 10 #how often to log the loss and make plots and checkpoints.
 batch_samples = 2000 # number of samples in each step 
 checkpoint_path = "results/run20250414-102610/checkpoints/net_checkpoint_0.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
-pre_train = False #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
+pre_train = True #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
 path_to_pretrain = "src/refsolution/value.csv" #csv of the data to use for pretraining
 
 ##make a directory for the results

@@ -78,8 +78,7 @@ def g(q):
 
     #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
 
-    return ((q**2-1)**2)/4 - (q**2)/2
-    #-torch.log(boundary.q_marginal_final(q)) - (q**2)/2
+    return -torch.log(boundary.q_marginal_final(q)) - (q**2)/2
 
 
 def f(q): 
