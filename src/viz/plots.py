@@ -87,18 +87,21 @@ class PlotFuns():
                     delimiter=",")  
 
     fig,ax = plt.subplots(1,len(times))
+    
     for t in range(len(times)):      
       ##fetch the perturbative underdamped approximation data
-          #select all zeros
       arrtemp = arr[np.where(arr[:,0]==np.round(times[t],5))]
       arrtemp = arrtemp[arrtemp[:,1].argsort()] #sort by x
 
       #plot reference
-      ax[t].plot(arrtemp[:,1],arrtemp[:,-1],label="Reference")
+      ax[t].plot(arrtemp[:,1],
+              arrtemp[:,-1],
+              #generic_filter(arrtemp[:,-1],median,100,mode="nearest"),
+              label="Reference")
 
-      #for du in dus[t]:
+      for du in dus[t]:
 
-      #  ax[t].plot(x,du,label="N.N.")
+        ax[t].plot(x,du,label="N.N.")
 
       ax[t].set_title(f"t={times[t]}")
       ax[t].set_xlabel("q")
