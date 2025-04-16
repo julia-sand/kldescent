@@ -5,11 +5,6 @@ In: IEEE Transactions on Information Theory (2009)
 """
 
 def kl_div(d1,d2,k=1):
-        
-    import numpy as np 
-    from scipy.spatial import KDTree
-
-    batch_samples = d1.shape[0]
 
     """
     Input: 
@@ -21,6 +16,12 @@ def kl_div(d1,d2,k=1):
     Output: 
     -estimate of the KL divergence between the two empirical distributions
     """
+            
+    import numpy as np 
+    from scipy.spatial import KDTree
+
+    batch_samples = d1.shape[0]
+
 
     #GET NEAREST NEIGHBOURS
     #this indexes the values to their nearest neighbours

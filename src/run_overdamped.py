@@ -12,9 +12,9 @@ Tf = 0.2 #final time
 tstep = 0.005 #size of time step in mesh
 epochs = 1 #number of times to generate data and update the params. 
 logstep = 10 #how often to log the loss and make plots and checkpoints.
-batch_samples = 2000 # number of samples in each step 
-checkpoint_path = "results/run20250415-124112/checkpoints/net_checkpoint_0.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
-pre_train = True #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
+batch_samples = 4000 # number of samples in each step 
+checkpoint_path = "results/run20250415-143841/checkpoints/net_checkpoint_0.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
+pre_train = False #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
 path_to_pretrain = "src/refsolution/value.csv" #csv of the data to use for pretraining
 
 ##make a directory for the results
@@ -57,10 +57,10 @@ if pre_train:
 
     print("Starting pre-training")
     import pretrain
-    pretrain.pretraining_perturb(net,path = path_to_pretrain, n_epochs = 30000)
+    pretrain.pretraining_perturb(net,path = path_to_pretrain, n_epochs = 5000)
     print("Pretraining completed successfully.")
 
-    os.makedirs(newpath+"/pretrain")
+    #os.makedirs(newpath+"/pretrain")
     #TODO : call plotters here. 
     #plotter.setsubdir("/pretrain")
     
@@ -104,16 +104,16 @@ for epoch in range(epochs):
         dus = []
         for t in plot_times:
                 duplot = net(torch.column_stack((t*torch.ones(batch_samples,dtype=torch.float32)
-                                                    ,torch.linspace(-3,3,batch_samples)))).detach().cpu().numpy()
+                                                    ,torch.linspace(-4,4,batch_samples)))).detach().cpu().numpy()
                 duplot_fixed = net_fixed(torch.column_stack((t*torch.ones(batch_samples,dtype=torch.float32)
-                                                    ,torch.linspace(-3,3,batch_samples)))).detach().cpu().numpy()
+                                                    ,torch.linspace(-4,4,batch_samples)))).detach().cpu().numpy()
                 dus.append([duplot,duplot_fixed])
                 
-        plotter.plot_drift(np.linspace(-3,3,batch_samples),times = plot_times,dus=dus)
+        plotter.plot_drift(np.linspace(-4,4,batch_samples),times = plot_times,dus=dus)
         
         #get kl divergence from assigned final
-        kl_val = kl.kl_div(xout.detach().cpu().numpy(),sampler.generate_samples_q(batch_samples,mode="final"))
-
+        #kl_val = kl.kl_div(xout.detach().cpu().numpy(),sampler.generate_samples_q(batch_samples,mode="final"))
+        kl_val = 0 
         logger.log(epoch,Lhat.mean().item(),kl_val) #log the loss 
 
 
