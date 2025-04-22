@@ -78,7 +78,7 @@ def g(q):
 
     #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
 
-    return -torch.log(boundary.q_marginal_final(q)) - (q**2)/2
+    return -(-torch.log(boundary.q_marginal_final(q)) - (q**2)/2)
 
 
 def f(q): 
@@ -88,11 +88,9 @@ def f(q):
 
     return 0
 
-def simulation_free_overdamped(xinit,
-                                net,
+def simulation_free_overdamped(net,
                                 net_fixed,
                                 t_vec,
-                                batch_samples,
                                 epsilon):
     """
     Following 2410.05163 (see proposition 3). 
@@ -109,46 +107,60 @@ def simulation_free_overdamped(xinit,
 
 
     """
+    batch_samples = 8000 # number of samples in each step 
 
     #set fixed network into evaluation mode
     net_fixed.eval()
     
     loss_curr = 0 
     t_steps = len(t_vec)
+    
+    arrayshape = (batch_samples,1)
+    xinit = torch.zeros(arrayshape)
 
     #set up a,abar,c 
-    a = torch.zeros((batch_samples,1))
-    abar = torch.zeros((batch_samples,1))
-    c = torch.zeros((batch_samples,1))
+    a = torch.zeros(arrayshape)
+    abar = torch.zeros(arrayshape)
+    c = torch.zeros(arrayshape)
 
+    #get ref data
+    #import os 
+    #dirname = os.path.dirname(__file__) #fetches current location 
+    #refsolfile=dirname+"/../refsolution/value.csv"
     
-
+    ##fetch the perturbative underdamped approximation data
+    #arr = np.loadtxt(refsolfile,delimiter=",")  
+    
     for i in range(0,t_steps-1):
-
+        #print(t_vec[i])
         dt = (t_vec[i+1]-t_vec[i])
-        dw = np.sqrt(dt)*torch.randn((batch_samples,1))
+        dw = np.sqrt(dt)*torch.randn(arrayshape)
         
-        du = net(torch.column_stack((t_vec[i]*torch.ones(batch_samples,dtype=torch.float32)
+        du = 2*net(torch.column_stack((t_vec[i]*torch.ones(arrayshape[0],dtype=torch.float32)
                                             ,xinit)))
         a = a + (1/2)*(torch.square(du))*dt
-        c = c + du*dw #np.sqrt(2)*du*dw
+        c = c - du*dw #np.sqrt(2)*du*dw
 
         with torch.no_grad(): #no gradient 
-            du_bar = net_fixed(torch.column_stack((t_vec[i]*torch.ones(batch_samples,dtype=torch.float32)
+            du_bar = 2*net_fixed(torch.column_stack((t_vec[i]*torch.ones(arrayshape[0],dtype=torch.float32)
                                             ,xinit)))
+            
+            #get dv
+            #arrtemp = arr[np.where(arr[:,0]==np.round(t_vec[i],6)),:]
+            #arrtemp = np.squeeze(arrtemp)
+            
+            #du_bar = np.interp(xinit.numpy(),arrtemp[:,1],arrtemp[:,-1],left=arrtemp[0,-1],right=arrtemp[-1,-1])
+            #du_bar = torch.from_numpy(du_bar).reshape(xinit.shape)
 
             abar = abar + (1/2)*(torch.square(du_bar))*dt
-            #bbar = bbar + f(xinit)*dt
 
             #go forward one step 
-            xinit = xinit - 2*(du_bar)*dt + np.sqrt(2)*dw
+            xinit = xinit - du_bar*dt + np.sqrt(2)*dw
 
     #compute value of Lhat
     #see equation (10) and (11) in ref. 2410.05163
     Lhat = a +(abar+g(xinit))*c
     #Lhat.mean().backward()
-
-    #print(Lhat)
 
     return Lhat, xinit #,loss_curr
 

@@ -16,7 +16,6 @@ from scipy.ndimage import generic_filter,median
 5. loss vs epoch
 '''
 
-
 class PlotFuns():
   def __init__(self,folder):
 
@@ -54,12 +53,12 @@ class PlotFuns():
     - samples: the output of the evolutions
     """
 
-    fig =plt.figure()
+    fig = plt.figure()
     #get plot location
     ax = fig.add_subplot(111)
 
-    ax.set_xlim((-5,5))
-    ax.set_ylim((-5,5))
+    ax.set_xlim((-4,4))
+    ax.set_ylim((-4,4))
 
     #get the samples into numpy for plotting
     #since this was output of the neural net, we need detach. GPU will be (maybe) implemented in the future.
@@ -87,25 +86,30 @@ class PlotFuns():
                     delimiter=",")  
 
     fig,ax = plt.subplots(1,len(times))
-    
-    for t in range(len(times)):      
-      ##fetch the perturbative underdamped approximation data
-      arrtemp = arr[np.where(arr[:,0]==np.round(times[t],5))]
-      arrtemp = arrtemp[arrtemp[:,1].argsort()] #sort by x
-
+  
+    def plot_and_format_drift_ax(ax1):
+      ax1.set_xlim((-4,4))
+      ax1.set_title(f"t={times[t]}")
+      ax1.set_xlabel("q")
+      #ax1.set_ylim((-10,10))
+        
       #plot reference
-      ax[t].plot(arrtemp[:,1],
+      ax1.plot(arrtemp[:,1],
               arrtemp[:,-1],
               #generic_filter(arrtemp[:,-1],median,100,mode="nearest"),
               label="Reference")
 
+    for t in range(len(times)):      
+      ##fetch the perturbative underdamped approximation data
+      arrtemp = arr[np.where(arr[:,0]==np.round(times[t],5))]
+      arrtemp = arrtemp[arrtemp[:,1].argsort()] #sort by x
+      
       for du in dus[t]:
 
         ax[t].plot(x,du,label="N.N.")
 
-      ax[t].set_title(f"t={times[t]}")
-      ax[t].set_xlabel("q")
-      ax[t].set_ylim((-10,10))
+      plot_and_format_drift_ax(ax[t])
+      
     
     ax[0].set_ylabel(r"$\mathbb{U}$")
     plt.legend()
@@ -161,7 +165,7 @@ class PlotFuns():
     ax.set_ylim(bottom = -0.01)
 
     #plot scatter graphs
-    #ax.hist(samples)
+    #ax.hist(samples,density =True)
     
     #fit kde 
     # tophat KDE
