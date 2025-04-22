@@ -31,7 +31,7 @@ def kl_div(d1,d2,k=1):
     rho = tree1.query(d1, k=[k+1])[0] #2nd closesst point to x in data1 (since closest is alwayss itself)
     nu = tree2.query(d1, k=[k])[0] #closest point in data2
 
-    return (2/batch_samples)*np.log(nu/rho).sum() + np.log(batch_samples/(batch_samples-1))
+    return (2/batch_samples)*np.log(nu/(rho+1e-10)).sum() + np.log(batch_samples/(batch_samples-1))
 
 
 if __name__=="__main__":

@@ -22,7 +22,7 @@ def vfinal(q):
     return (((q**2 - 1)**2) / 4) - ((q**2)/2)
 
 def phifinal(q):
-    return np.exp(-beta * vfinal(q)/2)
+    return np.exp(-vfinal(q))
 
 #final value function 
 def dvfinal(q):
@@ -34,10 +34,10 @@ def dphifinal(q):
     return dvfinal(q)*phifinal(q)
 
 
-mc_samples = 50000
+mc_samples = 20000
 
-Tf = 0.2
-tstep = 0.005
+Tf = 1#0.2
+tstep = 0.05#0.005
 
 ##get a timegrid 
 num_tsteps = int(np.floor(Tf/tstep)+1) #number of timesteps
@@ -63,7 +63,7 @@ arr = np.column_stack((Tf*np.ones(num_qsamples),qaxis,vfinal(qaxis),dvfinal(qaxi
 
 for i in range(0,num_tsteps-1): 
 
-    vout = -(2/beta)*np.log(np.mean(phifinal(traj[:,i,:]),axis=0)).reshape(num_qsamples)
+    vout = -np.log(np.mean(phifinal(traj[:,i,:]),axis=0)).reshape(num_qsamples)
     
     #smooth
     #phi = generic_filter(phiout,median,50,mode="nearest")
@@ -73,7 +73,7 @@ for i in range(0,num_tsteps-1):
     
     arr = np.vstack((arr,np.column_stack((np.ones(num_qsamples)*t_vec[i],qaxis,vout,dvout))))
 
-np.savetxt(os.path.join(dirname, "value.csv"),arr ,fmt="%10.6f",header = "t,q,v,du",delimiter=',')
+np.savetxt(os.path.join(dirname, "value_orig.csv"),arr ,fmt="%10.6f",header = "t,q,v,du",delimiter=',')
 print("done.")
 
 
