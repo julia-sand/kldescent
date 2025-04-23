@@ -74,18 +74,21 @@ def sde_underdamped(xinit,net,t_vec,batch_samples,epsilon):
     return xinit,loss_curr
 
 
-def f(q): 
-    #this is the penalty for the final time
-
-    #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
-
-    return 0
-
 class SDEOverdamped():
-    def __init__(self,epsilon,batch_samples,t_vec):
-        self.epsilon = epsilon 
+    def __init__(self,batch_samples,epsilon,Tf,t_steps):
         self.batch_samples = batch_samples # number of samples in each step 
-        self.t_vec = t_vec #time discretisation
+        self.epsilon = epsilon 
+        self.Tf = Tf #final time
+        self.t_steps = t_steps #number of timesteps in discretisation
+
+    def generate_time_grid(self):
+
+        #samples the interval [0,Tf] and returns sorted set of values to be used in integration
+
+        return np.concatenate([[0],
+                                np.sort(np.random.uniform(0, self.Tf, self.t_steps-1)),
+                                [self.Tf]])
+
 
     def g(self,q): 
         #this is the penalty for the final time
@@ -96,11 +99,10 @@ class SDEOverdamped():
 
     def em_step(self,xn,du,dt,dw):
         #takes one step forward in the euler maruyama discretisation
-        return xn - du*dt + np.sqrt(2)*dw
+        return xn + du*dt + np.sqrt(2)*dw
 
-    def simulation_free(self,net,
-                                    net_fixed,
-                                    t_vec):
+    def simulation_free(self,net,net_fixed):
+
         """
         Following 2410.05163 (see proposition 3). 
 
@@ -109,44 +111,39 @@ class SDEOverdamped():
         - xinit,
         - net: neural 
         - net_fixed: neural network with fixed parameters (copy)
-        - t_vec: vector of time coordinates
-        - epsilon: dimensionless parameter
         ====
-
 
         """
 
         #set fixed network into evaluation mode
+        #TODO add temporary network here???
         net_fixed.eval()
         
-        loss_curr = 0 
-        t_steps = len(t_vec)
         
-        arrayshape = (self.batch_samples,1)
-        xinit = torch.zeros(arrayshape)
+        #initialise x values at \delta_0 (i.e. x=0)
+        xinit = torch.zeros((self.batch_samples,1))
 
         #set up a,abar,c 
-        a = torch.zeros(arrayshape)
-        abar = torch.zeros(arrayshape)
-        c = torch.zeros(arrayshape)
+        a = torch.zeros((self.batch_samples,1))
+        abar = torch.zeros((self.batch_samples,1))
+        c = torch.zeros((self.batch_samples,1))
 
-        for i in range(0,t_steps-1):
-            dt = (self.t_vec[i+1]-self.t_vec[i])
-            dw = np.sqrt(dt)*torch.randn(arrayshape)
+        t_vec = self.generate_time_grid()
+        for i in range(0,self.t_steps-1):
+            dt = (t_vec[i+1]-t_vec[i])
+            dw = np.sqrt(dt)*torch.randn((self.batch_samples,1))
             
-            du = net(torch.column_stack((t_vec[i]*torch.ones(arrayshape[0],dtype=torch.float32)
+            du = net(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
                                                 ,xinit)))
             a = a + (1/2)*(torch.square(du))*dt
-            c = c - du*dw #np.sqrt(2)*du*dw
+            c = c + du*dw #np.sqrt(2)*du*dw
 
             with torch.no_grad(): #no gradient 
-                du_bar = net_fixed(torch.column_stack((t_vec[i]*torch.ones(arrayshape[0],dtype=torch.float32)
-                                                ,xinit)))
-                
-                abar = abar + 2*(torch.square(du_bar))*dt
-
+                #du_bar = net_fixed(torch.column_stack((self.t_vec[i]*torch.ones(arrayshape[0],dtype=torch.float32)
+                #                                ,xinit)))
+                abar = abar + (1/2)*(torch.square(du))*dt
                 #go forward one step 
-                xinit = self.em_step(xinit,du_bar,dt,dw)
+                xinit = self.em_step(xinit,du,dt,dw)
                 #xinit - du_bar*dt + np.sqrt(2)*dw
 
         #compute value of Lhat
