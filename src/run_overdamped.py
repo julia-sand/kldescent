@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from model import *
+from sde import *
 from utils import *
 import viz.plots as plots
 import time
@@ -8,23 +9,13 @@ import pdb
 
 ###===Parameters===###
 # #TODO: add these as command line options (argparse)
-epsilon = 1 #parameter; use epsilon to reduce number of inputs
-Tf = 1 #final time
-t_steps = 20 #number of time steps in discretisation (K)
-epochs = 70 #number of times to generate data and update the params. 
-logstep = 10 #how often to log the loss and make plots and checkpoints.
-checkpoint_path = None#"results/run20250423-112254/checkpoints/net_checkpoint_1.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
-pre_train = True #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
-path_to_pretrain = "src/refsolution/value.csv" #csv of the data to use for pretraining
-plot_times = [0,0.5,1.0] #times to plot on the output epochs
-batch_samples = 2000 #number of samples in training batch
 
 ##make a directory for the results
 import os 
 dirname = os.path.dirname(__file__) #fetches current location 
 run_id = time.strftime("%Y%m%d-%H%M%S")
 
-newpath = os.path.join(dirname,f'../results/run{run_id}')
+newpath = os.path.join(dirname,f'../results/{run_id}')
 os.makedirs(newpath)
 os.makedirs(newpath+"/checkpoints") #add checkpoints folder
 
@@ -33,43 +24,50 @@ os.makedirs(newpath+"/checkpoints") #add checkpoints folder
 logger = logger.Logger(newpath +r'/loss.csv')
 #intialise plots
 plotter = plots.PlotFuns(newpath)
+#parse arguments
+parsedargs = parser.overdamped_argparser()
 
-device = "cpu"
 
 #initialise the model
 #TODO: add gpu option, decide architectures
-net = nn.NeuralNetwork().to(device)
+net = nn.NeuralNetwork().to(parsedargs["device"])
 
 ##option: load saved model 
-if checkpoint_path is not None:
+if parsedargs["checkpointpath"] is not None:
     net.load_state_dict(torch.load(checkpoint_path, weights_only=True))
     print("Checkpoint loaded successfully.")
 
 #pretraining - train to approximate a numeric drift given by a csv file
-if pre_train:
+if parsedargs["pre_train"]:
 
     #save checkpoint so we have a record of the intialised params (or resaved checkpoint)
     torch.save(net.state_dict(),newpath+"/checkpoints/initialisation.pt") 
 
     print("Starting pre-training")
-    train.Pretrain(path_to_pretrain).pretraining_perturb(net)
-    print("Pretraining completed successfully.")
+    
+    try:
+        train.Pretrain(parsedargs["path_to_pretrain"]).pretraining_perturb(net)
+        print("Pretraining completed successfully.")
+
+    # save if job is manually interrupted
+    except KeyboardInterrupt:
+        torch.save(net.state_dict(),newpath+"/checkpoints/current_params.pt") 
+        print("Pretraining interrupted. Current parameters saved.")
+
 
 #copy params into fixed network 
-net_fixed = nn.NeuralNetwork().to(device)
+net_fixed = nn.NeuralNetwork().to(parsedargs["device"])
 net_fixed.load_state_dict(net.state_dict())
 #net_fixed.parameters(requires_grad=False) #remove any gradients. 
 net_fixed.eval() #put into evaluation mode
 
-#TODO: how often should we log the results? 
-saved_epochs = list(range(0,epochs,logstep))
 
 #set up optimizer
 optimizer = torch.optim.Adam(net.parameters(), lr=0.0001)
 net.train() #set to train mode
 
 #intialise sde integration and utility functions
-integrator = sde.SDEOverdamped(batch_samples,epsilon,Tf,t_steps)
+integrator = sde.SDEOverdamped(parsedargs["batch_samples"],parsedargs["epsilon"],parsedargs["Tf"],parsedargs["t_steps"])
 for epoch in range(epochs):
 
     #reset gradients 
@@ -78,7 +76,7 @@ for epoch in range(epochs):
     #evolve the sde 
     Lhat,xout = integrator.simulation_free(net,net_fixed)
     
-    if (epoch in saved_epochs) or (epoch == epochs -1):
+    if (epoch % logstep == 0) or (epoch == epochs -1):
         
         #make new folder for this epoch 
         os.makedirs(newpath+f"/epoch{epoch}") #add epoch plots folder

@@ -33,7 +33,7 @@ class Pretrain():
 
         X,y = self.get_pretraining_data()
 
-        for epoch in range(self.n_epochs):
+        for epoch in range(1,self.n_epochs):
             optimizer.zero_grad()
             y_pred = net(X)
             loss = loss_fn(y_pred, y)
