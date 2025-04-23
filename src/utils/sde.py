@@ -73,13 +73,6 @@ def sde_underdamped(xinit,net,t_vec,batch_samples,epsilon):
     
     return xinit,loss_curr
 
-def g(q): 
-    #this is the penalty for the final time
-
-    #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
-
-    return -(-torch.log(boundary.q_marginal_final(q)) - (q**2)/2)
-
 
 def f(q): 
     #this is the penalty for the final time
@@ -88,82 +81,94 @@ def f(q):
 
     return 0
 
-def simulation_free_overdamped(net,
-                                net_fixed,
-                                t_vec,
-                                epsilon):
-    """
-    Following 2410.05163 (see proposition 3). 
+class SDEOverdamped():
+    def __init__(self,epsilon,batch_samples,t_vec):
+        self.epsilon = epsilon 
+        self.batch_samples = batch_samples # number of samples in each step 
+        self.t_vec = t_vec #time discretisation
 
-    ====
-    Parameters
-    - xinit,
-    - net: neural 
-    - net_fixed: neural network with fixed parameters (copy)
-    - t_vec: vector of time coordinates
-    - batch_samples: number of samples in the batch
-    - epsilon: dimensionless parameter
-    ====
+    def g(self,q): 
+        #this is the penalty for the final time
+
+        #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
+
+        return -(-torch.log(boundary.q_marginal_final(q)) - (q**2)/2)
+
+    def em_step(self,xn,du,dt,dw):
+        #takes one step forward in the euler maruyama discretisation
+        return xn - du*dt + np.sqrt(2)*dw
+
+    def simulation_free(self,net,
+                                    net_fixed,
+                                    t_vec):
+        """
+        Following 2410.05163 (see proposition 3). 
+
+        ====
+        Parameters
+        - xinit,
+        - net: neural 
+        - net_fixed: neural network with fixed parameters (copy)
+        - t_vec: vector of time coordinates
+        - epsilon: dimensionless parameter
+        ====
 
 
-    """
-    batch_samples = 8000 # number of samples in each step 
+        """
 
-    #set fixed network into evaluation mode
-    net_fixed.eval()
-    
-    loss_curr = 0 
-    t_steps = len(t_vec)
-    
-    arrayshape = (batch_samples,1)
-    xinit = torch.zeros(arrayshape)
-
-    #set up a,abar,c 
-    a = torch.zeros(arrayshape)
-    abar = torch.zeros(arrayshape)
-    c = torch.zeros(arrayshape)
-
-    #get ref data
-    #import os 
-    #dirname = os.path.dirname(__file__) #fetches current location 
-    #refsolfile=dirname+"/../refsolution/value.csv"
-    
-    ##fetch the perturbative underdamped approximation data
-    #arr = np.loadtxt(refsolfile,delimiter=",")  
-    
-    for i in range(0,t_steps-1):
-        #print(t_vec[i])
-        dt = (t_vec[i+1]-t_vec[i])
-        dw = np.sqrt(dt)*torch.randn(arrayshape)
+        #set fixed network into evaluation mode
+        net_fixed.eval()
         
-        du = 2*net(torch.column_stack((t_vec[i]*torch.ones(arrayshape[0],dtype=torch.float32)
-                                            ,xinit)))
-        a = a + (1/2)*(torch.square(du))*dt
-        c = c - du*dw #np.sqrt(2)*du*dw
+        loss_curr = 0 
+        t_steps = len(t_vec)
+        
+        arrayshape = (self.batch_samples,1)
+        xinit = torch.zeros(arrayshape)
 
-        with torch.no_grad(): #no gradient 
-            du_bar = 2*net_fixed(torch.column_stack((t_vec[i]*torch.ones(arrayshape[0],dtype=torch.float32)
-                                            ,xinit)))
+        #set up a,abar,c 
+        a = torch.zeros(arrayshape)
+        abar = torch.zeros(arrayshape)
+        c = torch.zeros(arrayshape)
+
+        for i in range(0,t_steps-1):
+            dt = (self.t_vec[i+1]-self.t_vec[i])
+            dw = np.sqrt(dt)*torch.randn(arrayshape)
             
-            #get dv
-            #arrtemp = arr[np.where(arr[:,0]==np.round(t_vec[i],6)),:]
-            #arrtemp = np.squeeze(arrtemp)
-            
-            #du_bar = np.interp(xinit.numpy(),arrtemp[:,1],arrtemp[:,-1],left=arrtemp[0,-1],right=arrtemp[-1,-1])
-            #du_bar = torch.from_numpy(du_bar).reshape(xinit.shape)
+            du = net(torch.column_stack((t_vec[i]*torch.ones(arrayshape[0],dtype=torch.float32)
+                                                ,xinit)))
+            a = a + (1/2)*(torch.square(du))*dt
+            c = c - du*dw #np.sqrt(2)*du*dw
 
-            abar = abar + (1/2)*(torch.square(du_bar))*dt
+            with torch.no_grad(): #no gradient 
+                du_bar = net_fixed(torch.column_stack((t_vec[i]*torch.ones(arrayshape[0],dtype=torch.float32)
+                                                ,xinit)))
+                
+                abar = abar + 2*(torch.square(du_bar))*dt
 
-            #go forward one step 
-            xinit = xinit - du_bar*dt + np.sqrt(2)*dw
+                #go forward one step 
+                xinit = self.em_step(xinit,du_bar,dt,dw)
+                #xinit - du_bar*dt + np.sqrt(2)*dw
 
-    #compute value of Lhat
-    #see equation (10) and (11) in ref. 2410.05163
-    Lhat = a +(abar+g(xinit))*c
-    #Lhat.mean().backward()
+        #compute value of Lhat
+        #see equation (10) and (11) in ref. 2410.05163
+        Lhat = a +(abar+self.g(xinit))*c
+        #Lhat.mean().backward()
 
-    return Lhat, xinit #,loss_curr
+        return Lhat, xinit #,loss_curr
 
+
+    def get_net_output(self,net,net_fixed,plot_times):
+        #computes neural network output (forward pass)
+        # for selected times
+        
+        dus = []
+        for t in plot_times:
+            duplot = net(torch.column_stack((t*torch.ones(self.batch_samples,dtype=torch.float32)
+                                                ,torch.linspace(-4,4,self.batch_samples)))).detach().cpu().numpy()
+            duplot_fixed = net_fixed(torch.column_stack((t*torch.ones(self.batch_samples,dtype=torch.float32)
+                                                ,torch.linspace(-4,4,self.batch_samples)))).detach().cpu().numpy()
+            dus.append([duplot,duplot_fixed])  
+        return dus
 
 
 
