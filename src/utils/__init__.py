@@ -1,1 +1,6 @@
-__all__ = ["logger","sampler","boundary","kl","sde"]
+__all__ = ["boundary",
+            "checkpoints",
+            "kl",
+            "logger",
+            "sampler",
+            "sde"]

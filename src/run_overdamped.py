@@ -4,15 +4,16 @@ from model import *
 from utils import *
 import viz.plots as plots
 import time
+import pdb
 
 ###===Parameters===###
 # #TODO: add these as command line options (argparse)
-epsilon = 1
+epsilon = 1 #parameter; use epsilon to reduce number of inputs
 Tf = 1 #final time
-tstep = 0.05#0.005 #size of time step in mesh
-epochs = 1 #number of times to generate data and update the params. 
-logstep = 1 #how often to log the loss and make plots and checkpoints.
-checkpoint_path = "results/run20250417-143358/checkpoints/net_checkpoint_0.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
+t_steps = 20 #number of time steps in discretisation (K)
+epochs = 70 #number of times to generate data and update the params. 
+logstep = 10 #how often to log the loss and make plots and checkpoints.
+checkpoint_path = None#"results/run20250423-112254/checkpoints/net_checkpoint_1.pt" #None #"kldescent/tests/net_pretrained.pt" add path to torch checkpoint 
 pre_train = True #whether or not to pretrain the network (#TODO this is implemented only for dummy data- does not work for perturbative.)
 path_to_pretrain = "src/refsolution/value.csv" #csv of the data to use for pretraining
 plot_times = [0,0.5,1.0] #times to plot on the output epochs
@@ -35,10 +36,6 @@ plotter = plots.PlotFuns(newpath)
 
 device = "cpu"
 
-#time mesh
-#TODO: time encoding ?
-t_vec = np.linspace(0,Tf,int(np.floor(Tf/tstep)+1))
-
 #initialise the model
 #TODO: add gpu option, decide architectures
 net = nn.NeuralNetwork().to(device)
@@ -47,7 +44,6 @@ net = nn.NeuralNetwork().to(device)
 if checkpoint_path is not None:
     net.load_state_dict(torch.load(checkpoint_path, weights_only=True))
     print("Checkpoint loaded successfully.")
-
 
 #pretraining - train to approximate a numeric drift given by a csv file
 if pre_train:
@@ -69,19 +65,18 @@ net_fixed.eval() #put into evaluation mode
 saved_epochs = list(range(0,epochs,logstep))
 
 #set up optimizer
-optimizer = torch.optim.Adam(net.parameters(), lr=0.1)
+optimizer = torch.optim.Adam(net.parameters(), lr=0.0001)
 net.train() #set to train mode
 
 #intialise sde integration and utility functions
-integrator = sde.SDEOverdamped(epsilon,batch_samples,t_vec)
-
+integrator = sde.SDEOverdamped(batch_samples,epsilon,Tf,t_steps)
 for epoch in range(epochs):
 
     #reset gradients 
     optimizer.zero_grad()
 
     #evolve the sde 
-    Lhat,xout = integrator.simulation_free(net,net_fixed,t_vec)
+    Lhat,xout = integrator.simulation_free(net,net_fixed)
     
     if (epoch in saved_epochs) or (epoch == epochs -1):
         
