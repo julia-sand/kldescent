@@ -2,7 +2,7 @@
 import numpy as np 
 import numpy.random as npr
 import torch
-import sde.boundary as boundary
+from sde.boundary import AssignedBoundaryData
 
 
 class SDEOverdamped():
@@ -11,6 +11,9 @@ class SDEOverdamped():
         self.epsilon = epsilon 
         self.Tf = Tf #final time
         self.t_steps = t_steps #number of timesteps in discretisation
+
+        #intialise boundary data
+        self.boundary = AssignedBoundaryData()
 
     def generate_time_grid(self):
 
@@ -26,7 +29,7 @@ class SDEOverdamped():
 
         #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
 
-        return -(-torch.log(boundary.q_marginal_final(q)) - (q**2)/2)
+        return -(-torch.log(self.boundary.q_marginal_final(q)) - (q**2)/2)
 
     def em_step(self,xn,du,dt,dw):
         #takes one step forward in the euler maruyama discretisation
@@ -85,18 +88,6 @@ class SDEOverdamped():
         return Lhat, xinit #,loss_curr
 
 
-    def get_net_output(self,net,net_fixed,plot_times):
-        #computes neural network output (forward pass)
-        # for selected times
-        
-        dus = []
-        for t in plot_times:
-            duplot = net(torch.column_stack((t*torch.ones(self.batch_samples,dtype=torch.float32)
-                                                ,torch.linspace(-4,4,self.batch_samples)))).detach().cpu().numpy()
-            duplot_fixed = net_fixed(torch.column_stack((t*torch.ones(self.batch_samples,dtype=torch.float32)
-                                                ,torch.linspace(-4,4,self.batch_samples)))).detach().cpu().numpy()
-            dus.append([duplot,duplot_fixed])  
-        return dus
 
 
 

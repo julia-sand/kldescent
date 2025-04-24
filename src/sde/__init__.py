@@ -1,4 +1,5 @@
 __all__ = ["boundary",
             "kl",
-            "sampler",
-            "sde"]
+            "langevin",
+            "langevinkramers",
+            "sampler"]

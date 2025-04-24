@@ -1,3 +1,2 @@
-__all__ = ["checkpoints",
-            "logger",
+__all__ = ["logger",
             "parser"]
