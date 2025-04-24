@@ -34,3 +34,36 @@ class AssignedBoundaryData():
         
         return (self.q_marginal_final(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
 
+    #generate the initial data
+    def generate_samples_q(self,batch_samples,mode):
+        
+        ##sample points from the intial distribution for q 
+        #output as a tensor
+
+        #from where to sample the q marginals
+        if mode=="initial":
+            q_marginal = self.q_marginal_initial
+        elif mode=="final": 
+            q_marginal = self.q_marginal_final
+
+        probs = q_marginal(np.linspace(-8,8,10000))/np.sum(q_marginal(np.linspace(-8,8,10000)))
+        
+        
+        return npr.choice(np.linspace(-8,8,10000),
+                            batch_samples,
+                            p=probs)
+                            
+        #torch.tensor(,dtype=torch.float32).reshape((batch_samples,1))
+        
+    #generate the initial data
+    def generate_samples(self,batch_samples,mode):
+        
+        ##sample points from the intial distribution for q 
+        ##and from normal distribution for p and stack together 
+        #output as a tensor
+
+        #gives the initialisation of the underdamped
+             
+        return torch.column_stack((self.generate_samples_q(batch_samples,mode)
+                                ,torch.randn((batch_samples,1),dtype=torch.float32)))
+        
