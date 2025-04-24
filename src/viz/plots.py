@@ -17,12 +17,13 @@ from scipy.ndimage import generic_filter,median
 '''
 
 class PlotFuns():
-  def __init__(self,folder):
+  def __init__(self,folder,boundary_data):
 
     #set output location 
     self.folder = folder
     #self.subdir = self.folder #add default value to put plots into main folder if subdir has not been set
-    
+    self.boundary = boundary_data
+
     #get reference solution location 
     self.dirname = os.path.dirname(__file__)
 
@@ -67,10 +68,9 @@ class PlotFuns():
     #plot scatter graphs
     ax.scatter(samples[:,0],samples[:,1])
     
-    import utils.boundary as boundary
     Q,P = np.meshgrid(np.linspace(-5,5),np.linspace(-5,5))
     ax.contour(Q,P,
-              boundary.p_final(Q,P))
+              self.boundary.p_final(Q,P))
 
     ax.tick_params(axis='both', labelsize=self.fontsizeticks)
 
@@ -170,15 +170,18 @@ class PlotFuns():
     #fit kde 
     # tophat KDE
     from sklearn.neighbors import KernelDensity
-    kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(samples.reshape(-1,1))
-    log_dens = kde.score_samples(np.linspace(-4,4).reshape(-1,1))
-    ax.fill(np.linspace(-4,4), np.exp(log_dens), fc="#AAAAFF")
+    try:
 
+      kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(samples[~np.isnan(samples)].reshape(-1,1))
+      log_dens = kde.score_samples(np.linspace(-4,4).reshape(-1,1))
+      ax.fill(np.linspace(-4,4), np.exp(log_dens), fc="#AAAAFF")
+    except:
+      print("Current gradient returns only NAN values.")
+      pass
 
-    import utils.boundary as boundary
     #Q,P = np.meshgrid(np.linspace(-5,5),np.linspace(-5,5))
     ax.plot(np.linspace(-4,4),
-              boundary.q_marginal_final(np.linspace(-4,4)))
+              self.boundary.q_marginal_final(np.linspace(-4,4)))
 
     ax.tick_params(axis='both', labelsize=self.fontsizeticks)
 

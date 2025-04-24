@@ -16,7 +16,8 @@ def overdamped_argparser():
     parser.add_argument('-logstep','--logstep', type=float, default=10,
                         help='A required integer positional argument')
     
-    parser.add_argument('-checkpointpath','--checkpointpath', default=None,
+    parser.add_argument('-checkpointpath','--checkpointpath',
+                        default="/results/20250424-154611/checkpoints/net_checkpoint_0.pt",    # default=None,
                         help='A required integer positional argument')
 
     parser.add_argument('-pre_train','--pre_train', default=False,

@@ -3,6 +3,7 @@ import csv
 import os
 import torch
 import time
+import numpy as np 
 
 class LossLogger():
 
@@ -65,7 +66,11 @@ class LossLogger():
     def log_epoch_data(self,plotter,net,net_fixed,epoch,Lhat,xout):
 
         #get kl divergence from assigned final
-        kl_val = 0#kl.kl_div(xout.detach().cpu().numpy(),sampler.generate_samples_q(args.batch_samples,mode="final"))
+        try:
+            kl_val = kl.kl_div(xout.detach().cpu().numpy(),boundary.generate_samples_q(args.batch_samples,mode="final"))
+        except:
+            kl_val = 0
+        
         self.write_data_row(epoch,Lhat.mean().item(),kl_val) #log
 
         self.make_epoch_plots(plotter,epoch,xout,net,net_fixed)
