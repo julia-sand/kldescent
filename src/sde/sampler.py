@@ -1,7 +1,7 @@
-import numpy.random as npr
-from utils.boundary import *
-import torch
 import numpy as np
+import numpy.random as npr
+import sde.boundary as boundary
+import torch
 
 #samples from the initial / final joint density
 #we use the fact that the position/momentum is independent on the boundaries
