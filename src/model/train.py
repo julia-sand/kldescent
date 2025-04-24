@@ -11,7 +11,7 @@ class Pretrain():
         #set defaults of training process
         self.lr = 0.01 #initial learning rate
         self.gamma = 0.1 #decay rate of learning rate
-        self.step_size = 2000 #frequency of learning rate decay (in epochs)
+        self.step_size = 5000 #frequency of learning rate decay (in epochs)
         self.n_epochs = 20000 #total number of epochs
 
     def get_pretraining_data(self):
@@ -41,7 +41,6 @@ class Pretrain():
             optimizer.step()
             if epoch % self.step_size == 0:
                 scheduler.step()
-                print(f'Finished epoch {epoch}, learning rate {scheduler.get_last_lr()}')
                 print(f'Finished epoch {epoch}, loss {loss}')
 
 

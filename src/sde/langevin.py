@@ -6,14 +6,12 @@ from sde.boundary import AssignedBoundaryData
 
 
 class SDEOverdamped():
-    def __init__(self,batch_samples,epsilon,Tf,t_steps):
+    def __init__(self,batch_samples,epsilon,Tf,t_steps,boundary_data):
         self.batch_samples = batch_samples # number of samples in each step 
         self.epsilon = epsilon 
         self.Tf = Tf #final time
         self.t_steps = t_steps #number of timesteps in discretisation
-
-        #intialise boundary data
-        self.boundary = AssignedBoundaryData()
+        self.boundary = boundary_data
 
     def generate_time_grid(self):
 
@@ -73,8 +71,7 @@ class SDEOverdamped():
             c = c + du*dw #np.sqrt(2)*du*dw
 
             with torch.no_grad(): #no gradient 
-                #du_bar = net_fixed(torch.column_stack((self.t_vec[i]*torch.ones(arrayshape[0],dtype=torch.float32)
-                #                                ,xinit)))
+                
                 abar = abar + (1/2)*(torch.square(du))*dt
                 #go forward one step 
                 xinit = self.em_step(xinit,du,dt,dw)
@@ -82,7 +79,7 @@ class SDEOverdamped():
 
         #compute value of Lhat
         #see equation (10) and (11) in ref. 2410.05163
-        Lhat = a +(abar+self.g(xinit))*c
+        Lhat = a + (abar+self.g(xinit))*c
         #Lhat.mean().backward()
 
         return Lhat, xinit #,loss_curr
