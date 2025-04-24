@@ -1,36 +1,36 @@
 import numpy as np 
 
 #the boundary conditions    
-#TODO: check best place for these to reduce recomputation.
-
-
 
 def qinitial(q):
 
     return (np.exp(-(q**4)/4))
 
-pi_norm = np.trapz(qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
-
-def q_marginal_initial(q):
-
-    return qinitial(q)/(pi_norm)
-
 def qfinal(q):
 
-    return np.exp(-((q**2-1)**2)/4) #+ ((q**2)/2))
+    return np.exp(-((q**2-1)**2)/4) 
 
-pf_norm = np.trapz(qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
+class AssignedBoundaryData():
+    def __init__(self):
+        self.pf_norm = np.trapz(qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
+        self.pi_norm = np.trapz(qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
 
-def q_marginal_final(q): 
-    
-    return qfinal(q)/pf_norm
+    def q_marginal_initial(self,q):
 
-def p_initial(q,p):
-
-    return (q_marginal_initial(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
+        return qinitial(q)/(self.pi_norm)
 
 
-def p_final(q,p): 
-    
-    return (q_marginal_final(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
+
+    def q_marginal_final(self,q): 
+        
+        return qfinal(q)/self.pf_norm
+
+    def p_initial(self,q,p):
+
+        return (self.q_marginal_initial(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
+
+
+    def p_final(self,q,p): 
+        
+        return (self.q_marginal_final(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
 

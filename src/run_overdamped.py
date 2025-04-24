@@ -8,7 +8,6 @@ import time
 import pdb
 
 ###===Parameters===###
-# #TODO: add these as command line options (argparse)
 
 ##make a directory for the results
 import os 
@@ -55,6 +54,27 @@ if parsedargs["pre_train"]:
         print("Pretraining interrupted. Current parameters saved.")
 
 
+def log_epoch_data(epoch,Lhat,xout):
+
+    #make new folder for this epoch 
+    os.makedirs(newpath+f"/epoch{epoch}") #add epoch plots folder
+    plotter.setsubdir(f"/epoch{epoch}")
+
+
+    #get kl divergence from assigned final
+    kl_val = kl.kl_div(xout.detach().cpu().numpy(),sampler.generate_samples_q(batch_samples,mode="final"))
+    logger.log(epoch,Lhat.mean().item(),kl_val) #log
+
+    #make plots
+    plotter.marginal_distribution(xout.detach().cpu().numpy())
+    plotter.plot_drift(np.linspace(-4,4,batch_samples),
+                        times = plot_times,
+                        dus = integrator.get_net_output(net,net_fixed,plot_times))
+
+    #save checkpoint
+    torch.save(net.state_dict(),newpath+f"/checkpoints/net_checkpoint_{epoch}.pt") 
+
+
 #copy params into fixed network 
 net_fixed = nn.NeuralNetwork().to(parsedargs["device"])
 net_fixed.load_state_dict(net.state_dict())
@@ -77,23 +97,8 @@ for epoch in range(epochs):
     Lhat,xout = integrator.simulation_free(net,net_fixed)
     
     if (epoch % logstep == 0) or (epoch == epochs -1):
-        
-        #make new folder for this epoch 
-        os.makedirs(newpath+f"/epoch{epoch}") #add epoch plots folder
-        plotter.setsubdir(f"/epoch{epoch}")
+        log_epoch_data(epoch,Lhat,xout)
 
-        plotter.plot_drift(np.linspace(-4,4,batch_samples),times = plot_times,dus = integrator.get_net_output(net,net_fixed,plot_times))
-
-        #get kl divergence from assigned final
-        kl_val = kl.kl_div(xout.detach().cpu().numpy(),sampler.generate_samples_q(batch_samples,mode="final"))
-        logger.log(epoch,Lhat.mean().item(),kl_val) #log
-
-        #make plots
-        plotter.marginal_distribution(xout.detach().cpu().numpy())
-
-        #save checkpoint
-        torch.save(net.state_dict(),newpath+f"/checkpoints/net_checkpoint_{epoch}.pt") 
-    
     ##training##
     Lhat.mean().backward()
     optimizer.step()
@@ -101,5 +106,3 @@ for epoch in range(epochs):
     #copy updated params into fixed network 
     net_fixed.load_state_dict(net.state_dict())
     #TODO: can this network be replaced simply with "no grad" for the theta bars?
-
-    

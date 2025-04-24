@@ -2,7 +2,7 @@
 import numpy as np 
 import numpy.random as npr
 import torch
-import utils.boundary as boundary
+import sde.boundary as boundary
 
 
 class SDEOverdamped():
