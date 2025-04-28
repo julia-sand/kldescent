@@ -49,7 +49,7 @@ class AssignedBoundaryData():
         probs = q_marginal(np.linspace(-8,8,10000))/np.sum(q_marginal(np.linspace(-8,8,10000)))
         
         
-        return npr.choice(np.linspace(-8,8,10000),
+        return np.random.choice(np.linspace(-8,8,10000),
                             batch_samples,
                             p=probs)
                             

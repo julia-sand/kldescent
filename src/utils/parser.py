@@ -7,16 +7,16 @@ def overdamped_argparser():
     parser = argparse.ArgumentParser()
     subparser = parser.add_subparsers()
 
-    parser.add_argument('-epochs','--epochs', type=int, default=70,
+    parser.add_argument('-epochs','--epochs', type=int, default=1,
                         help='A required integer positional argument')
     
     parser.add_argument('-device','--device', default="cpu",
                         help='A required integer positional argument')
     
-    parser.add_argument('-logstep','--logstep', type=float, default=10,
+    parser.add_argument('-logstep','--logstep', type=int, default=10,
                         help='A required integer positional argument')
     
-    parser.add_argument('-checkpointpath','--checkpointpath',
+    parser.add_argument('-checkpointpath','--checkpointpath', type=str,
                         default="/results/20250424-154611/checkpoints/net_checkpoint_0.pt",    # default=None,
                         help='A required integer positional argument')
 
@@ -32,7 +32,7 @@ def overdamped_argparser():
     parser.add_argument('-Tf','--Tf', type=float, default=1,
                         help='A required integer positional argument')
 
-    parser.add_argument('-t_steps','--t_steps', type=float, default=20,
+    parser.add_argument('-t_steps','--t_steps', type=int, default=20,
                         help='A required integer positional argument')
 
     args = parser.parse_args()
