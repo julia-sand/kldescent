@@ -2,8 +2,7 @@
 import numpy as np 
 import numpy.random as npr
 import torch
-from sde.boundary import AssignedBoundaryData
-
+import sde.kl as kl
 
 class SDEOverdamped():
     def __init__(self,batch_samples,epsilon,Tf,t_steps,boundary_data):
@@ -68,20 +67,21 @@ class SDEOverdamped():
             du = net(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
                                                 ,xinit)))
             a = a + (1/2)*(torch.square(du))*dt
-            c = c + du*dw #np.sqrt(2)*du*dw
+            c = c + np.sqrt(2)*du*dw #du*dw
 
             with torch.no_grad(): #no gradient 
-                
-                abar = abar + (1/2)*(torch.square(du))*dt
+                du_bar = net_fixed(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
+                                                ,xinit)))
+                abar = abar + (1/2)*(torch.square(du_bar))*dt
                 #go forward one step 
-                xinit = self.em_step(xinit,du,dt,dw)
+                xinit = self.em_step(xinit,du_bar,dt,dw)
                 #xinit - du_bar*dt + np.sqrt(2)*dw
 
         #compute value of Lhat
         #see equation (10) and (11) in ref. 2410.05163
         Lhat = a + (abar+self.g(xinit))*c
-        #Lhat.mean().backward()
-
+        
+        
         return Lhat, xinit #,loss_curr
 
 

@@ -4,7 +4,7 @@
 import pandas as pd 
 import numpy as np 
 
-Tf = 0.2
+Tf = 1
 
 ts = np.linspace(0,0.2,11)
 xs = np.linspace(-3,3,10)

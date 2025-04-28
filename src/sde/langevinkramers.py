@@ -1,4 +1,4 @@
-##UNDERDAMPED DYNAMICS GO HERE
+##TODO UNDERDAMPED DYNAMICS GO HERE
 
 
 def sde_underdamped(xinit,net,t_vec,batch_samples,epsilon):

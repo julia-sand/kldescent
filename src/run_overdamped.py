@@ -6,14 +6,15 @@ from utils import *
 import viz.plots as plots
 import pdb
 import os
+import torch.autograd as autograd
 
 #parse arguments
 args = parser.overdamped_argparser()
 #initalise boundary data
 boundary = boundary.AssignedBoundaryData()
-#create a log file
+#create a log file and results directory
 logger = logger.LossLogger()
-#intialise plots
+#intialise plotter
 plotter = plots.PlotFuns(logger.get_results_path(),boundary)
 
 #initialise the model
@@ -34,30 +35,37 @@ if args.pre_train:
 net_fixed = nn.NeuralNetwork().to(args.device)
 net_fixed.load_state_dict(net.state_dict())
 #net_fixed.parameters(requires_grad=False) #remove any gradients. 
-net_fixed.eval() #put into evaluation mode
-
+for param in net_fixed.parameters():
+    param.requires_grad = False  
 
 #set up optimizer
-optimizer = torch.optim.Adam(net.parameters(), lr=0.0001)
+optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
 net.train() #set to train mode
 
 #intialise sde integration 
 integrator = langevin.SDEOverdamped(args.batch_samples,args.epsilon,args.Tf,args.t_steps,boundary)
 for epoch in range(1,args.epochs+1):
 
-    #evolve the sde 
     Lhat,xout = integrator.simulation_free(net,net_fixed)
-    
+
     if (epoch % args.logstep == 0):
-        logger.log_epoch_data(plotter,net,net_fixed,epoch,Lhat,xout)
+        try: #since the training fails a lot of the time, keep this to continue debug mode and not error. 
+            kl_val = kl.kl_div(xout.detach().cpu().numpy(),boundary.generate_samples_q(args.batch_samples,mode="final"))
+        except:
+            kl_val = 0
+        #evolve the sde 
+        logger.log_epoch_data(plotter,net,net_fixed,epoch,Lhat,kl_val,xout)
 
     #reset gradients 
     optimizer.zero_grad()
 
     ##training##
-    Lhat.mean().backward()
+    lhat_out = Lhat.mean()
+    lhat_out.backward()
     optimizer.step()
-    
+
     #copy updated params into fixed network 
-    #net_fixed.load_state_dict(net.state_dict())
+    net_fixed.load_state_dict(net.state_dict())
+    for param in net_fixed.parameters():
+        param.requires_grad = False  
     #TODO: can this network be replaced simply with "no grad" for the theta bars?
