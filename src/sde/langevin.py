@@ -87,8 +87,6 @@ class SDEOverdamped():
         #compute value of Lhat
         #see equation (10) and (11) in ref. 2410.05163
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + self.g(xinit)) * c))
-        #a + (abar+self.g(xinit))*c
-                
         
         return Lhat, xinit #,loss_curr
 
