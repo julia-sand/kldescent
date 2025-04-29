@@ -55,7 +55,7 @@ qaxis_samples = np.concatenate([qaxis_samples[np.newaxis,:,:]]*(mc_samples))
 #pdb.set_trace()
 
 #generate trajectories
-traj = qaxis_samples + np.cumsum(np.sqrt(2*tstep)*npr.randn(mc_samples, num_tsteps-1,num_qsamples),axis=1)
+traj = qaxis_samples + np.cumsum(np.sqrt(tstep)*npr.randn(mc_samples, num_tsteps-1,num_qsamples),axis=1)
 traj = np.flip(traj,axis = 1) #flip along columns
 
 #find for t = T

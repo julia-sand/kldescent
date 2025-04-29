@@ -18,7 +18,7 @@ def run_pretrain(net, newpath):
 
     # save if job is manually interrupted
     except KeyboardInterrupt:
-        torch.save(net.state_dict(),newpath+"/checkpoints/current_params.pt") 
+        torch.save(net.state_dict(),newpath+"/checkpoints/interrupted.pt") 
         print("Pretraining interrupted. Current parameters saved.")
 
 if __name__=="__main__":

@@ -20,18 +20,11 @@ plotter = plots.PlotFuns(logger.get_results_path(),boundary)
 #initialise the model
 #TODO: add gpu option, decide architectures
 net = nn.NeuralNetwork(args.checkpointpath).to(args.device)
-net.initialize_weights()
 
 #pretraining - train to approximate a numeric drift given by a csv file
-if args.pre_train:
+if args.pretrain:
     import run_pretrain
     run_pretrain.run_pretrain(net,logger.get_results_path())
-
-#copy params into fixed network - remove?
-net_fixed = nn.NeuralNetwork().to(args.device)
-net_fixed.load_state_dict(net.state_dict())
-for param in net_fixed.parameters():
-    param.requires_grad = False  
 
 #set up optimizer
 optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
@@ -41,12 +34,12 @@ net.train() #set to train mode
 integrator = langevin.SDEOverdamped(args.batch_samples,args.epsilon,args.Tf,args.t_steps,boundary)
 #plot intiial values
 
-Lhat,xout = integrator.simulation_free(net,net_fixed)
-logger.log_epoch_data(plotter,net,net_fixed,0,Lhat,0,xout.detach().cpu().numpy())
+Lhat,xout = integrator.simulation_free(net)
+logger.log_epoch_data(plotter,net,0,Lhat,0,xout.detach().cpu().numpy())
 
 for epoch in range(1,args.epochs+1):
 
-    Lhat,xout = integrator.simulation_free(net,net_fixed)
+    Lhat,xout = integrator.simulation_free(net)
 
     if (epoch % args.logstep == 0):
         try: #since the training fails a lot of the time, keep this to continue debug mode and not error. 
@@ -54,7 +47,7 @@ for epoch in range(1,args.epochs+1):
         except:
             kl_val = 0
         #evolve the sde 
-        logger.log_epoch_data(plotter,net,net_fixed,epoch,Lhat,kl_val,xout.detach().cpu().numpy())
+        logger.log_epoch_data(plotter,net,epoch,Lhat,kl_val,xout.detach().cpu().numpy())
 
     #reset gradients 
     optimizer.zero_grad()
@@ -65,7 +58,4 @@ for epoch in range(1,args.epochs+1):
     optimizer.step()
 
     #copy updated params into fixed network 
-    net_fixed.load_state_dict(net.state_dict())
-    for param in net_fixed.parameters():
-        param.requires_grad = False  
     #TODO: can this network be replaced simply with "no grad" for the theta bars?
