@@ -3,7 +3,7 @@ This file is used to compute a reference solution and deposits the results in a 
 
 See Section 3. of my notes for how this is done. 
 
-for comparison with 2411.08518, use beta = 2 
+for comparison with 2411.08518, use set their beta = 2 
 
 """
 import os

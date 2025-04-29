@@ -182,6 +182,8 @@ class PlotFuns():
     #Q,P = np.meshgrid(np.linspace(-5,5),np.linspace(-5,5))
     ax.plot(np.linspace(-4,4),
               self.boundary.q_marginal_final(np.linspace(-4,4)))
+    ax.plot(np.linspace(-4,4),
+              (1/np.sqrt(2*np.pi))*np.exp(-(1/2)*np.linspace(-4,4)**2))
 
     ax.tick_params(axis='both', labelsize=self.fontsizeticks)
 
