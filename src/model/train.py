@@ -3,6 +3,7 @@ import torch
 from torch import nn as torchnn
 import torch.optim as optim
 from torch.optim.lr_scheduler import ExponentialLR
+
 class Pretrain():
 
     def __init__(self,path):
@@ -11,8 +12,12 @@ class Pretrain():
         #set defaults of training process
         self.lr = 0.01 #initial learning rate
         self.gamma = 0.1 #decay rate of learning rate
-        self.step_size = 50 #frequency of learning rate decay (in epochs)
-        self.n_epochs = 1000 #total number of epochs
+        self.step_size = 10000 #frequency of learning rate decay (in epochs)
+        self.n_epochs = 40000 #total number of epochs
+    
+    def save_epoch_trained_data(self,epoch):
+        
+        return
 
     def get_pretraining_data(self):
         #load csv and return data 
@@ -33,7 +38,7 @@ class Pretrain():
 
         X,y = self.get_pretraining_data()
 
-        for epoch in range(1,self.n_epochs):
+        for epoch in range(1,self.n_epochs+1):
             optimizer.zero_grad()
             y_pred = net(X)
             loss = loss_fn(y_pred, y)
@@ -42,8 +47,8 @@ class Pretrain():
             if epoch % self.step_size == 0:
                 scheduler.step()
                 print(f'Finished epoch {epoch}, loss {loss}')
-
-
+    
+    
 class Train():
 
     def __init__(self,path):

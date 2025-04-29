@@ -17,13 +17,15 @@ def overdamped_argparser():
                         help='A required integer positional argument')
     
     parser.add_argument('-checkpointpath','--checkpointpath', type=str,
-                        default=None,#"/results/20250429-144309/checkpoints/interrupted.pt",    # default=None,
+                        #default="zeros",
+                        default="/results/20250429-151155/checkpoints/net_checkpoint_0.pt",    # default=None,
                         help='A required integer positional argument')
 
     parser.add_argument('-pretrain','--pretrain', default=False,
                         help='A required integer positional argument')
                        
-    parser.add_argument('-batch_samples','--batch_samples', default=600,
+    parser.add_argument('-batch_samples','--batch_samples', type=int, 
+                        default=600,
                         help='A required integer positional argument')
 
     parser.add_argument('-epsilon','--epsilon', type=float, default=1,

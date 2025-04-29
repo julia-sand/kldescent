@@ -18,7 +18,7 @@ import pdb
 beta = 1
 
 #final value function 
-def vfinal(q):
+def vfinal(q): # this is '-r'
     return (((q**2 - 1)**2) / 4) - ((q**2)/2)
 
 def phifinal(q):
