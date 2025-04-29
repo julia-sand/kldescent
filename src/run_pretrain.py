@@ -6,9 +6,12 @@ def run_pretrain(net, newpath):
     #fetch pretraining path from command line (or use default)
     path_to_pretrain = newpath+"/../../src/refsolution/value.csv" #fetches current location 
 
+    #make a folder for pretraining results
+    os.makedirs(newpath+"/pretraining", exist_ok = True) #add checkpoints folder
+
 
     #save checkpoint so we have a record of the intialised params (or resaved checkpoint)
-    torch.save(net.state_dict(),newpath+"/checkpoints/initialisation.pt") 
+    torch.save(net.state_dict(),newpath+"/pretraining/initialisation.pt") 
 
     print("Starting pre-training")
     
@@ -18,7 +21,7 @@ def run_pretrain(net, newpath):
 
     # save if job is manually interrupted
     except KeyboardInterrupt:
-        torch.save(net.state_dict(),newpath+"/checkpoints/interrupted.pt") 
+        torch.save(net.state_dict(),newpath+"/pretraining/interrupted.pt") 
         print("Pretraining interrupted. Current parameters saved.")
 
 if __name__=="__main__":

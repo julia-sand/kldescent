@@ -32,8 +32,8 @@ net.train() #set to train mode
 
 #intialise sde integration 
 integrator = langevin.SDEOverdamped(args.batch_samples,args.epsilon,args.Tf,args.t_steps,boundary)
-#plot intiial values
 
+#plot intiial values
 Lhat,xout = integrator.simulation_free(net)
 logger.log_epoch_data(plotter,net,0,Lhat,0,xout.detach().cpu().numpy())
 
@@ -56,6 +56,3 @@ for epoch in range(1,args.epochs+1):
     lhat_out = Lhat.mean()
     lhat_out.backward()
     optimizer.step()
-
-    #copy updated params into fixed network 
-    #TODO: can this network be replaced simply with "no grad" for the theta bars?

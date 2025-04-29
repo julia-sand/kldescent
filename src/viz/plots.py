@@ -204,9 +204,3 @@ if __name__=="__main__":
   plotter.setsubdir("pretrain")
   
   plotter.plot_pretrainsol(times=[0,0.1,0.2])
-
-  #from boundary import *
-  #from sampler import generate_samples
-  #xout = generate_samples(100,mode="initial")
-  #PlotFuns().joint_distribution_scatter(xout.detach().cpu().numpy(),99)
-  #pass
