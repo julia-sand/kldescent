@@ -54,35 +54,34 @@ class LossLogger():
         os.makedirs(self.newpath+f"/epoch{epoch}", exist_ok = True)
         return f"/epoch{epoch}"
 
-    def evaluate_net_output(self,net,net_fixed,plot_times):
-        #computes neural network output (forward pass)
-        # for selected times
+    def evaluate_net_output(self,net,plot_times):
+        #computes neural network output (forward pass) to use in plotting
         
         dus = []
         for t in plot_times:
             duplot = net(torch.column_stack((t*torch.ones(1000,dtype=torch.float32)
                                                 ,torch.linspace(-4,4,1000)))).detach().cpu().numpy()
-            duplot_fixed = net_fixed(torch.column_stack((t*torch.ones(1000,dtype=torch.float32)
-                                                ,torch.linspace(-4,4,1000)))).detach().cpu().numpy()
-            dus.append([duplot,duplot_fixed])  
+            dus.append([duplot])  
         return dus
 
-    def make_epoch_plots(self,plotter,epoch,xout,net,net_fixed):
+    def make_epoch_plots(self,plotter,epoch,xout,net):
         #create epoch folder and set plotter subdirectory
         plotter.setsubdir(self.get_epoch_folder(epoch))
         #make plots
         plotter.marginal_distribution(xout)
         plotter.plot_drift(np.linspace(-4,4,1000),
                             times = [0,0.5,1],
-                            dus = self.evaluate_net_output(net,net_fixed,[0,0.5,1]))
+                            dus = self.evaluate_net_output(net,[0,0.5,1]))
 
 
-    def log_epoch_data(self,plotter,net,net_fixed,epoch,Lhat,kl_val,xout):
+    def log_epoch_data(self,plotter,net,epoch,Lhat,kl_val,xout):
 
         self.write_data_row(epoch,Lhat.mean().item(),kl_val) #log
 
-        self.make_epoch_plots(plotter,epoch,xout,net,net_fixed)
+        self.make_epoch_plots(plotter,epoch,xout,net)
+
         self.save_checkpoint(net,epoch)
+
 
     def get_results_path(self):
         return self.newpath

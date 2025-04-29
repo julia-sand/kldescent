@@ -37,22 +37,18 @@ class SDEOverdamped():
         return np.sqrt(dt)*torch.randn((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
 
 
-    def simulation_free(self,net,net_fixed):
+    def simulation_free(self,net):
 
         """
         Following 2410.05163 (see proposition 3). 
 
         ====
         Parameters
-        - net: neural 
-        - net_fixed: neural network with fixed parameters (copy)#TODO this could be replace with just detaching.
+        - net: neural network
         ====
 
         """
 
-        #set fixed network into evaluation mode
-        net_fixed.eval()
-        
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.zeros((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
 
@@ -89,9 +85,6 @@ class SDEOverdamped():
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + self.g(xinit)) * c))
         
         return Lhat, xinit #,loss_curr
-
-
-
 
 
 if __name__=="__main__":

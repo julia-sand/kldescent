@@ -11,8 +11,8 @@ class Pretrain():
         #set defaults of training process
         self.lr = 0.01 #initial learning rate
         self.gamma = 0.1 #decay rate of learning rate
-        self.step_size = 5000 #frequency of learning rate decay (in epochs)
-        self.n_epochs = 20000 #total number of epochs
+        self.step_size = 50 #frequency of learning rate decay (in epochs)
+        self.n_epochs = 1000 #total number of epochs
 
     def get_pretraining_data(self):
         #load csv and return data 
