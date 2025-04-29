@@ -6,7 +6,21 @@ import time
 import numpy as np 
 
 class LossLogger():
+    '''
 
+    Attributes
+    ----------
+    #list inputs here
+
+
+    Methods
+    -------
+    __init__()
+    #list methods here
+
+    '''
+
+    
     def __init__(self):
 
         ##make a directory for the results
@@ -57,7 +71,7 @@ class LossLogger():
         #create epoch folder and set plotter subdirectory
         plotter.setsubdir(self.get_epoch_folder(epoch))
         #make plots
-        plotter.marginal_distribution(xout.detach().cpu().numpy())
+        plotter.marginal_distribution(xout)
         plotter.plot_drift(np.linspace(-4,4,1000),
                             times = [0,0.5,1],
                             dus = self.evaluate_net_output(net,net_fixed,[0,0.5,1]))

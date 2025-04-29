@@ -1,6 +1,6 @@
 import argparse
 
-
+#TODO separate the parser into smaller so that we can parse straight into other files
 def overdamped_argparser():
 
     # Instantiate the parser
@@ -17,13 +17,15 @@ def overdamped_argparser():
                         help='A required integer positional argument')
     
     parser.add_argument('-checkpointpath','--checkpointpath', type=str,
-                        default="/results/20250424-154611/checkpoints/net_checkpoint_0.pt",    # default=None,
+                        #default=None,
+                        default=None,
+                        #"/results/20250424-154611/checkpoints/net_checkpoint_0.pt",    # default=None,
                         help='A required integer positional argument')
 
     parser.add_argument('-pre_train','--pre_train', default=False,
                         help='A required integer positional argument')
                        
-    parser.add_argument('-batch_samples','--batch_samples', default=2000,
+    parser.add_argument('-batch_samples','--batch_samples', default=600,
                         help='A required integer positional argument')
 
     parser.add_argument('-epsilon','--epsilon', type=float, default=1,

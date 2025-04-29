@@ -19,22 +19,17 @@ plotter = plots.PlotFuns(logger.get_results_path(),boundary)
 
 #initialise the model
 #TODO: add gpu option, decide architectures
-net = nn.NeuralNetwork().to(args.device)
-
-##option: load saved model 
-if args.checkpointpath is not None:
-    net.load_state_dict(torch.load(os.path.dirname(__file__)+"/.."+args.checkpointpath, weights_only=True))
-    print("Checkpoint loaded successfully.")
+net = nn.NeuralNetwork(args.checkpointpath).to(args.device)
+net.initialize_weights()
 
 #pretraining - train to approximate a numeric drift given by a csv file
 if args.pre_train:
     import run_pretrain
     run_pretrain.run_pretrain(net,logger.get_results_path())
 
-#copy params into fixed network 
+#copy params into fixed network - remove?
 net_fixed = nn.NeuralNetwork().to(args.device)
 net_fixed.load_state_dict(net.state_dict())
-#net_fixed.parameters(requires_grad=False) #remove any gradients. 
 for param in net_fixed.parameters():
     param.requires_grad = False  
 
@@ -44,6 +39,11 @@ net.train() #set to train mode
 
 #intialise sde integration 
 integrator = langevin.SDEOverdamped(args.batch_samples,args.epsilon,args.Tf,args.t_steps,boundary)
+#plot intiial values
+
+Lhat,xout = integrator.simulation_free(net,net_fixed)
+logger.log_epoch_data(plotter,net,net_fixed,0,Lhat,0,xout.detach().cpu().numpy())
+
 for epoch in range(1,args.epochs+1):
 
     Lhat,xout = integrator.simulation_free(net,net_fixed)
@@ -54,7 +54,7 @@ for epoch in range(1,args.epochs+1):
         except:
             kl_val = 0
         #evolve the sde 
-        logger.log_epoch_data(plotter,net,net_fixed,epoch,Lhat,kl_val,xout)
+        logger.log_epoch_data(plotter,net,net_fixed,epoch,Lhat,kl_val,xout.detach().cpu().numpy())
 
     #reset gradients 
     optimizer.zero_grad()
