@@ -21,7 +21,9 @@ class LossLogger():
     '''
 
     
-    def __init__(self):
+    def __init__(self,plotter):
+
+        self.plotter = plotter
 
         ##make a directory for the results
         dirname = os.path.dirname(__file__) #fetches current location 
@@ -64,17 +66,31 @@ class LossLogger():
             dus.append([duplot])  
         return dus
 
-    def make_epoch_plots(self,plotter,epoch,xout,net):
+    def save_data(self,Lhat,xout,net,epoch):
+        
+        #compute kl divergence (TODO)
+        #try:
+        #    kl_val = kl.kl_div(xout,
+        #        boundary.generate_samples_q(xout.shape,mode="final"))
+        #except:
+        kl_val = 0
+
+
+        self.log_epoch_data(self.plotter,net,epoch,Lhat,kl_val,xout)
+
+        return 
+
+    def make_epoch_plots(self,epoch,xout,net):
         #create epoch folder and set plotter subdirectory
-        plotter.setsubdir(self.get_epoch_folder(epoch))
+        self.plotter.setsubdir(self.get_epoch_folder(epoch))
         #make plots
-        plotter.marginal_distribution(xout)
-        plotter.plot_drift(np.linspace(-4,4,1000),
+        self.plotter.marginal_distribution(xout)
+        self.plotter.plot_drift(np.linspace(-4,4,1000),
                             times = [0,0.5,1],
                             dus = self.evaluate_net_output(net,[0,0.5,1]))
 
 
-    def log_epoch_data(self,plotter,net,epoch,Lhat,kl_val,xout):
+    def log_epoch_data(self,net,epoch,Lhat,kl_val,xout):
 
         self.write_data_row(epoch,Lhat.mean().item(),kl_val) #log
 

@@ -12,6 +12,7 @@ def qfinal(q):
 
 class HalfBridgeLandauer():
     def __init__(self):
+        self.sigma0 = 1
         self.pf_norm = np.trapz(qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
         #self.pi_norm = np.trapz(qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
 
@@ -23,7 +24,6 @@ class HalfBridgeLandauer():
     def q_marginal_initial(self,q):
 
         return #qinitial(q)/(self.pi_norm)
-
 
 
     def q_marginal_final(self,q): 
@@ -90,12 +90,30 @@ class HalfBridgeLandauer():
         #RETURNS X, DU
         return arrtemp[:,1],arrtemp[:,-1]
 
+    def g(self,q):
+        #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
+
+        return (-np.log(self.q_marginal_final(q)) - (q**2)/2)
+
+    def f(self,q,t):
+
+        return 0
+
+    def b(self,q,t):
+
+        return 0
 
 
 class LinearOU():
-    def __init__(self):
-        return
+    def __init__(self,Tf,d=1):
+        self.d = d #dimension #TODO!!! this needs to be added 
+        self.Tf = Tf
+        self.gamma = 0.2
+        self.A = 1
+        self.sigma0 = 1
+        self.Lambda = 1
 
+        
     def q_marginal_initial(self,q):
 
         return np.exp(-(q**2))/np.sqrt(np.pi)
@@ -113,28 +131,30 @@ class LinearOU():
 
         #from where to sample the q marginals
         if mode=="initial":
-            q_marginal = self.q_marginal_initial
+            out = np.zeros(shape)
         elif mode=="final": 
-            q_marginal = self.q_marginal_final
-
-        probs = q_marginal(np.linspace(-8,8,10000))/np.sum(q_marginal(np.linspace(-8,8,10000)))
+            out = np.random.Generator.normal(loc=0,scale=np.sqrt(0.5),size=shape)
+            #q_marginal = self.q_marginal_final
         
-        
-        return np.random.choice(np.linspace(-8,8,10000),
-                            shape,
-                            p=probs)
+        return out
                             
-        #torch.tensor(,dtype=torch.float32).reshape((batch_samples,1))
-
     def get_reference_data(self,time):
 
         #time is the time you want the data
-
-        ##fetch the reference data approximation data
-        arrtemp = arr[np.where(arr[:,0]==np.round(time,5))]
-        arrtemp = arrtemp[arrtemp[:,1].argsort()] #sort by x
+        
+        ut = -self.sigma0*np.exp(self.A*(self.Tf-time))*self.gamma
 
         #RETURNS X, DU
-        return arrtemp[:,1],arrtemp[:,-1]
+        return np.linspace(-4,4,num=50),ut*np.ones(50)
 
-        return         
+    def g(self,q):
+
+        return self.gamma*q
+
+    def f(self,q,t):
+
+        return 0
+
+    def b(self,q,t):
+
+        return self.A*q
