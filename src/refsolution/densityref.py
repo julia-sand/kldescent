@@ -56,7 +56,7 @@ for t in range(num_tsteps-1):
     currtime = t_vec[t]
 
     #sample brownian noise: W_{i-1} - W_i 
-    innovation = npr.randn(mc_samples,num_qsamples)
+    innovation = np.random.Generator.standard_normal((mc_samples,num_qsamples))
 
     currdrift = du(currtime,qaxis_samples)#np.zeros(qaxis_samples.shape)
 

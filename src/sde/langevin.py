@@ -24,13 +24,13 @@ class SDEOverdamped():
     def g(self,q): 
         #this is the penalty for the final time
 
-        #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
+        return self.boundary.g(q)#torch.tensor(self.boundary.g(q),requires_grad=False,dtype=torch.float32)
 
-        return (-torch.log(self.boundary.q_marginal_final(q)) - (q**2)/2)
-
-    def euler_maruyama_step(self,xn,du,dt,dw):
+    def euler_maruyama_step(self,xn,du,dt,dw,t):
         #takes one step forward in the euler maruyama discretisation
-        return xn + du*dt + dw
+        bt = self.boundary.b(xn,t)#torch.tensor(self.boundary.b(xn,t),requires_grad=False,dtype=torch.float32)
+        
+        return xn + (bt + self.boundary.sigma0*du)*dt + self.boundary.sigma0*dw
 
     def get_ref_solution(self):
         #fetch and open the reference solution
@@ -60,7 +60,7 @@ class SDEOverdamped():
         return np.sqrt(dt)*torch.randn((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
 
 
-    def simulation_free(self,net):
+    def simulation_free(self,net,logflag,logger):
 
         """
         Following 2410.05163 (see proposition 3). 
@@ -85,20 +85,18 @@ class SDEOverdamped():
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples_q((self.batch_samples,1),"initial"),requires_grad=False,dtype=torch.float32)
-        #torch.zeros((self.batch_samples,1)
 
         #set up a,abar,c,cbar
         a = torch.zeros((self.batch_samples,1),dtype=torch.float32)
         abar = torch.zeros((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
+        bbar = torch.zeros((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
         c = torch.zeros((self.batch_samples,1),dtype=torch.float32)
-        #cbar = torch.zeros((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
         
         #self.generate_time_grid()
         for i in range(0,self.t_steps-1):
             dt = (t_vec[i+1]-t_vec[i])
             
             dw = self.generate_innovation(dt)
-            #dw_bar = dw.detach()#.numpy()
 
             du = net.forward(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
                                                 ,xinit)))
@@ -113,17 +111,22 @@ class SDEOverdamped():
             with torch.no_grad(): #no gradient 
                 
                 abar = abar + dt*(torch.linalg.norm(du_bar, axis=1) ** 2) 
+                bbar = bbar + dt*(self.boundary.f(xinit,t_vec[i])) 
                 
             if testing_mode:
                 xinit = self.euler_maruyama_step_refsolution(arr,xinit,t_vec[i],dt,dw)
             else: 
-                xinit = self.euler_maruyama_step(xinit,du_bar,dt,dw)
+                xinit = self.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
             
         #compute value of Lhat
         #see equation (10) and (11) in ref. 2410.05163
-        Lhat = torch.mean(0.5 * a + ((0.5 * abar + self.g(xinit)) * c))
+        Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + self.g(xinit)) * c))
         
-        return Lhat, xinit #,loss_curr
+        if logflag:
+            logger.save_data(Lhat,xout.detach().cpu().numpy(),
+                                net,epoch)
+
+        return Lhat
 
 
 if __name__=="__main__":

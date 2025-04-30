@@ -11,11 +11,13 @@ import torch.autograd as autograd
 #parse arguments
 args = parser.overdamped_argparser()
 #initalise boundary data
-boundary = boundary.HalfBridgeLandauer()
+boundary = boundary.LinearOU(args.Tf)
+#boundary.HalfBridgeLandauer()
 #create a log file and results directory
-logger = logger.LossLogger()
+plotter = plots.PlotFuns(boundary)
+logger = logger.LossLogger(plotter)
+plotter.setresultsdir(logger.get_results_path())
 #intialise plotter
-plotter = plots.PlotFuns(logger.get_results_path(),boundary)
 
 #initialise the model
 #TODO: add gpu option, decide architectures
@@ -34,18 +36,12 @@ net.train() #set to train mode
 integrator = langevin.SDEOverdamped(args.batch_samples,args.epsilon,args.Tf,args.t_steps,boundary)
 
 #plot intiial values
-Lhat,xout = integrator.simulation_free(net)
-kl_val = 0#kl.kl_div(xout.detach().cpu().numpy(),boundary.generate_samples_q(xout.detach().cpu().numpy().shape,mode="final"))
-logger.log_epoch_data(plotter,net,0,Lhat,kl_val,xout.detach().cpu().numpy())
+integrator.simulation_free(net,True,logger)
 
 for epoch in range(1,args.epochs+1):
 
-    Lhat,xout = integrator.simulation_free(net)
-    
-    if (epoch % args.logstep == 0):
-        #kl_val = kl.kl_div(xout.detach().cpu().numpy(),
-        #            boundary.generate_samples_q(xout.detach().cpu().numpy().shape,mode="final"))
-        logger.log_epoch_data(plotter,net,epoch,Lhat,0,xout.detach().cpu().numpy())
+    logflag=True if (epoch % args.logstep == 0) else False
+    Lhat = integrator.simulation_free(net,epoch,logflag,logger)
 
     #reset gradients 
     optimizer.zero_grad()

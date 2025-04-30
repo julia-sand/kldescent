@@ -17,10 +17,8 @@ from scipy.ndimage import generic_filter,median
 '''
 
 class PlotFuns():
-  def __init__(self,folder,boundary_data):
+  def __init__(self,boundary_data):
 
-    #set output location 
-    self.folder = folder
     #self.subdir = self.folder #add default value to put plots into main folder if subdir has not been set
     self.boundary = boundary_data
 
@@ -40,6 +38,10 @@ class PlotFuns():
     self.c2 = "#a6cee3" #lightblue
     self.c3 = "#33a02c" #dark green
     self.c4 = "#b2df8a" #light green
+
+  def setresultsdir(self,folder):
+    #set output location 
+    self.folder = folder
 
   def setsubdir(self, subdir):
     self.subdir = self.folder+subdir #os.path.join(self.folder,subdir)
@@ -169,7 +171,7 @@ class PlotFuns():
 
       kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(samples[~np.isnan(samples)].reshape(-1,1))
       log_dens = kde.score_samples(np.linspace(-4,4).reshape(-1,1))
-      ax.fill(np.linspace(-4,4), np.exp(log_dens), fc="#AAAAFF")
+      ax.fill(np.linspace(-4,4), np.zeros(len(log_dens)), np.exp(log_dens), fc="#AAAAFF")
     except:
       print("Current gradient returns only NAN values.")
       pass
@@ -191,6 +193,7 @@ class PlotFuns():
     #make label and add text
     ax.set_ylabel(r"$\rho_T(q)$",fontsize = self.fontsizetitles,labelpad=-10)
 
+    plt.legend()
     plt.savefig(self.subdir+f"/final_density.png")
     plt.close()
 
