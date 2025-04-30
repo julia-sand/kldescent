@@ -79,37 +79,32 @@ class PlotFuns():
 
     plt.savefig(self.subdir+f"/test_plot.png")
 
-  def plot_drift(self,x,times,dus=None):
+  def format_drift_ax(self,ax1,time):
+    ax1.set_xlim((-4,4))
+    ax1.set_title(f"t={time}")
+    ax1.set_xlabel("q")
+    #ax1.set_ylim((-10,10))
+      
+  def plot_reference(self,ax1,x,du):
 
-    ##fetch the perturbative underdamped approximation data
-    arr = np.loadtxt(os.path.join(self.dirname, "../refsolution/value.csv"),
-                    delimiter=",")  
+    ax1.plot(x,du,
+            label="Reference")
+
+
+  def plot_drift(self,x,times,dus=None):
 
     fig,ax = plt.subplots(1,len(times))
   
-    def plot_and_format_drift_ax(ax1):
-      ax1.set_xlim((-4,4))
-      ax1.set_title(f"t={times[t]}")
-      ax1.set_xlabel("q")
-      #ax1.set_ylim((-10,10))
-        
-      #plot reference
-      ax1.plot(arrtemp[:,1],
-              arrtemp[:,-1],
-              #generic_filter(arrtemp[:,-1],median,100,mode="nearest"),
-              label="Reference")
+    for t in range(len(times)):  
+          
+      xref,duref = self.boundary.get_reference_data(times[t])
+      self.plot_reference(ax[t],xref,duref)
 
-    for t in range(len(times)):      
-      ##fetch the perturbative underdamped approximation data
-      arrtemp = arr[np.where(arr[:,0]==np.round(times[t],5))]
-      arrtemp = arrtemp[arrtemp[:,1].argsort()] #sort by x
-      
       for du in dus[t]:
 
         ax[t].plot(x,du,label="N.N.")
 
-      plot_and_format_drift_ax(ax[t])
-      
+      self.format_drift_ax(ax[t],times[t])
     
     ax[0].set_ylabel(r"$\mathbb{U}$")
     plt.legend()
@@ -181,9 +176,11 @@ class PlotFuns():
 
     #Q,P = np.meshgrid(np.linspace(-5,5),np.linspace(-5,5))
     ax.plot(np.linspace(-4,4),
-              self.boundary.q_marginal_final(np.linspace(-4,4)))
+              self.boundary.q_marginal_final(np.linspace(-4,4)),
+              label="Assigned Final Distribution")
     ax.plot(np.linspace(-4,4),
-              (1/np.sqrt(2*np.pi))*np.exp(-(1/2)*np.linspace(-4,4)**2))
+              (1/np.sqrt(2*np.pi))*np.exp(-(1/2)*np.linspace(-4,4)**2),
+              label="Normal(0,1)")
 
     ax.tick_params(axis='both', labelsize=self.fontsizeticks)
 

@@ -11,7 +11,7 @@ import torch.autograd as autograd
 #parse arguments
 args = parser.overdamped_argparser()
 #initalise boundary data
-boundary = boundary.AssignedBoundaryData()
+boundary = boundary.HalfBridgeLandauer()
 #create a log file and results directory
 logger = logger.LossLogger()
 #intialise plotter
@@ -24,10 +24,10 @@ net = nn.NeuralNetwork(args.checkpointpath).to(args.device)
 #pretraining - train to approximate a numeric drift given by a csv file
 if args.pretrain:
     import run_pretrain
-    run_pretrain.run_pretrain(net,logger.get_results_path())
+    run_pretrain.run_pretrain(net,logger.get_results_path(),boundary)
 
 #set up optimizer
-optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(net.parameters(), lr=0.0001)
 net.train() #set to train mode
 
 #intialise sde integration 
@@ -35,19 +35,17 @@ integrator = langevin.SDEOverdamped(args.batch_samples,args.epsilon,args.Tf,args
 
 #plot intiial values
 Lhat,xout = integrator.simulation_free(net)
-logger.log_epoch_data(plotter,net,0,Lhat,0,xout.detach().cpu().numpy())
+kl_val = 0#kl.kl_div(xout.detach().cpu().numpy(),boundary.generate_samples_q(xout.detach().cpu().numpy().shape,mode="final"))
+logger.log_epoch_data(plotter,net,0,Lhat,kl_val,xout.detach().cpu().numpy())
 
 for epoch in range(1,args.epochs+1):
 
     Lhat,xout = integrator.simulation_free(net)
-
+    
     if (epoch % args.logstep == 0):
-        try: #since the training fails a lot of the time, keep this to continue debug mode and not error. 
-            kl_val = kl.kl_div(xout.detach().cpu().numpy(),boundary.generate_samples_q(args.batch_samples,mode="final"))
-        except:
-            kl_val = 0
-        #evolve the sde 
-        logger.log_epoch_data(plotter,net,epoch,Lhat,kl_val,xout.detach().cpu().numpy())
+        #kl_val = kl.kl_div(xout.detach().cpu().numpy(),
+        #            boundary.generate_samples_q(xout.detach().cpu().numpy().shape,mode="final"))
+        logger.log_epoch_data(plotter,net,epoch,Lhat,0,xout.detach().cpu().numpy())
 
     #reset gradients 
     optimizer.zero_grad()

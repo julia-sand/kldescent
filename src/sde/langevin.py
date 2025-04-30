@@ -1,6 +1,5 @@
 #this file computes the dynamics 
 import numpy as np 
-import numpy.random as npr
 import torch
 import sde.kl as kl
 import pdb
@@ -44,8 +43,7 @@ class SDEOverdamped():
         return np.unique(arr[:,0])
 
     def euler_maruyama_step_refsolution(self,arr,xn,currtime,dt,dw):
-        #takes a step of the euler maruyaman
-
+        #takes a step of the euler maruyama using the reference solution 
 
         #open ref solution
         #TODO add relative path
@@ -75,7 +73,7 @@ class SDEOverdamped():
         """
         
         #add as command line option??
-        testing_mode = True
+        testing_mode = False
         
         #pdb.set_trace()
         t_vec = self.generate_time_grid()
@@ -86,7 +84,8 @@ class SDEOverdamped():
 
 
         #initialise x values at \delta_0 (i.e. x=0)
-        xinit = torch.zeros((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
+        xinit = torch.tensor(self.boundary.generate_samples_q((self.batch_samples,1),"initial"),requires_grad=False,dtype=torch.float32)
+        #torch.zeros((self.batch_samples,1)
 
         #set up a,abar,c,cbar
         a = torch.zeros((self.batch_samples,1),dtype=torch.float32)
@@ -103,11 +102,7 @@ class SDEOverdamped():
 
             du = net.forward(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
                                                 ,xinit)))
-            #get from ref solution 
-
-            
-            
-            
+                   
             du_bar = du.detach()#.numpy() #untracked copy
             a = a + dt*(torch.linalg.norm(du, axis=1) ** 2) 
                         #(torch.square(du))*dt
@@ -119,8 +114,10 @@ class SDEOverdamped():
                 
                 abar = abar + dt*(torch.linalg.norm(du_bar, axis=1) ** 2) 
                 
-            xinit = self.euler_maruyama_step_refsolution(arr,xinit,t_vec[i],dt,dw)
-            #self.euler_maruyama_step(xinit,du_bar,dt,dw)
+            if testing_mode:
+                xinit = self.euler_maruyama_step_refsolution(arr,xinit,t_vec[i],dt,dw)
+            else: 
+                xinit = self.euler_maruyama_step(xinit,du_bar,dt,dw)
             
         #compute value of Lhat
         #see equation (10) and (11) in ref. 2410.05163

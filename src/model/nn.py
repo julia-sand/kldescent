@@ -12,14 +12,22 @@ class Swish(nn.Module):
 #create a simple neural network to parametrise the drift. 
 class NeuralNetwork(nn.Module):
     def __init__(self,checkpointpath=None):
+        self.hidden_layer_neurons = 10
+
         super(NeuralNetwork, self).__init__()
         self.flatten = nn.Flatten()
         self.linear_stack = nn.Sequential(
-            nn.Linear(2, 10),  #two inputs
-            Swish(),
-            nn.Linear(10, 4),   #hidden layer
-            Swish(),
-            nn.Linear(4, 1)     #one output
+            nn.Linear(2, self.hidden_layer_neurons),  #two inputs
+            nn.ReLU(),
+            #nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
+            #nn.ReLU(),
+            #nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
+            #nn.ReLU(),
+            #nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
+            #nn.ReLU(),
+            nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
+            nn.ReLU(),
+            nn.Linear(self.hidden_layer_neurons, 1)     #one output
         )    
         #load checkpoint
         if checkpointpath is not None:
