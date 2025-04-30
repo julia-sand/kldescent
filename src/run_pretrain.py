@@ -2,13 +2,13 @@ import torch
 from model import train as train
 import os
 
-def run_pretrain(net, newpath):
+def run_pretrain(net, newpath, boundary):
     #fetch pretraining path from command line (or use default)
-    path_to_pretrain = newpath+"/../../src/refsolution/value.csv" #fetches current location 
+    #path_to_pretrain = newpath+"/../../src/refsolution/value.csv" #fetches current location 
+    path_to_pretrain = boundary.get_ref_path()
 
     #make a folder for pretraining results
     os.makedirs(newpath+"/pretraining", exist_ok = True) #add checkpoints folder
-
 
     #save checkpoint so we have a record of the intialised params (or resaved checkpoint)
     torch.save(net.state_dict(),newpath+"/pretraining/initialisation.pt") 

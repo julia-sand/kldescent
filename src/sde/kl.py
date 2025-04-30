@@ -20,9 +20,15 @@ def kl_div(d1,d2,k=1):
     import numpy as np 
     from scipy.spatial import KDTree
 
+    #check d1, d2 in the right shape
+
+
+
     batch_samples = d1.shape[0]
-
-
+    
+    #CLEANUP 
+    print(d2.shape)
+    
     #GET NEAREST NEIGHBOURS
     #this indexes the values to their nearest neighbours
     tree1 = KDTree(d1)
