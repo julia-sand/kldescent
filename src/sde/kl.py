@@ -26,9 +26,6 @@ def kl_div(d1,d2,k=1):
 
     batch_samples = d1.shape[0]
     
-    #CLEANUP 
-    print(d2.shape)
-    
     #GET NEAREST NEIGHBOURS
     #this indexes the values to their nearest neighbours
     tree1 = KDTree(d1)

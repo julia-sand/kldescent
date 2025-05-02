@@ -11,20 +11,20 @@ class Swish(nn.Module):
 # FROM TORCH TUTORIAL
 #create a simple neural network to parametrise the drift. 
 class NeuralNetwork(nn.Module):
-    def __init__(self,checkpointpath=None):
-        self.hidden_layer_neurons = 10
+    def __init__(self,hiddenlayerneurons,checkpointpath=None):
+        self.hidden_layer_neurons = hiddenlayerneurons 
 
         super(NeuralNetwork, self).__init__()
         self.flatten = nn.Flatten()
         self.linear_stack = nn.Sequential(
             nn.Linear(2, self.hidden_layer_neurons),  #two inputs
             nn.ReLU(),
-            #nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
-            #nn.ReLU(),
-            #nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
-            #nn.ReLU(),
-            #nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
-            #nn.ReLU(),
+            nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
+            nn.ReLU(),
+            nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
+            nn.ReLU(),
+            nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
+            nn.ReLU(),
             nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
             nn.ReLU(),
             nn.Linear(self.hidden_layer_neurons, 1)     #one output

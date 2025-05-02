@@ -25,9 +25,13 @@ def overdamped_argparser():
     parser.add_argument('-pretrain','--pretrain', default=False,
                         help='A required integer positional argument')
                        
-    parser.add_argument('-batch_samples','--batch_samples', type=int, 
+    parser.add_argument('-batchsamples','--batchsamples', type=int, 
                         default=600,
                         help='A required integer positional argument')
+
+    parser.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=10,
+                        help='Number of hidden dimensions in each layer of the Neural network model')
+
 
     parser.add_argument('-epsilon','--epsilon', type=float, default=1,
                         help='A required integer positional argument')
@@ -35,7 +39,7 @@ def overdamped_argparser():
     parser.add_argument('-Tf','--Tf', type=float, default=1,
                         help='A required integer positional argument')
 
-    parser.add_argument('-t_steps','--t_steps', type=int, default=20,
+    parser.add_argument('-tsteps','--tsteps', type=int, default=20,
                         help='A required integer positional argument')
 
     args = parser.parse_args()

@@ -10,13 +10,29 @@ class LossLogger():
 
     Attributes
     ----------
-    #list inputs here
-
+    plotter: 
 
     Methods
     -------
     __init__()
-    #list methods here
+        #creates a results folder 
+        #adds a subfolder for checkpoints
+        #initialises a csv to record loss values
+    
+    write_data_row()
+        #writes a row of data to the csv
+    
+    save_checkpoint() 
+        #saves parameters of the neural network into the checkpoints folder  
+    
+    get_epoch_folder()
+        #makes a folder for the epoch if it doesn't exist and returns the filepath
+    
+    evaluate_net_output()
+        #evaluates a forward pass of the neural network and returns values to be plotted
+    
+    make_epoch_plots()
+        #calls plotter to make correct plots at the epoch
 
     '''
 
@@ -58,13 +74,35 @@ class LossLogger():
 
     def evaluate_net_output(self,net,plot_times):
         #computes neural network output (forward pass) to use in plotting
-        
+        net.eval()
         dus = []
         for t in plot_times:
             duplot = net(torch.column_stack((t*torch.ones(1000,dtype=torch.float32)
                                                 ,torch.linspace(-4,4,1000)))).detach().cpu().numpy()
             dus.append([duplot])  
+
+        net.train()
         return dus
+
+
+    def make_epoch_plots(self,epoch,xout,net):
+        #create epoch folder and set plotter subdirectory
+        self.plotter.setsubdir(self.get_epoch_folder(epoch))
+        #make plots
+        #self.plotter.marginal_distribution(xout)
+        self.plotter.plot_drift(np.linspace(-4,4,1000),
+                            times = [0,0.5,1],
+                            dus = self.evaluate_net_output(net,[0,0.5,1]))
+
+
+    def log_epoch_data(self,net,epoch,Lhat,kl_val,xout):
+
+        self.write_data_row(epoch,Lhat.mean().item(),kl_val) #log
+
+        self.make_epoch_plots(epoch,xout,net)
+
+        self.save_checkpoint(net,epoch)
+
 
     def save_data(self,Lhat,xout,net,epoch):
         
@@ -76,28 +114,9 @@ class LossLogger():
         kl_val = 0
 
 
-        self.log_epoch_data(self.plotter,net,epoch,Lhat,kl_val,xout)
+        self.log_epoch_data(net,epoch,Lhat,kl_val,xout)
 
         return 
-
-    def make_epoch_plots(self,epoch,xout,net):
-        #create epoch folder and set plotter subdirectory
-        self.plotter.setsubdir(self.get_epoch_folder(epoch))
-        #make plots
-        self.plotter.marginal_distribution(xout)
-        self.plotter.plot_drift(np.linspace(-4,4,1000),
-                            times = [0,0.5,1],
-                            dus = self.evaluate_net_output(net,[0,0.5,1]))
-
-
-    def log_epoch_data(self,net,epoch,Lhat,kl_val,xout):
-
-        self.write_data_row(epoch,Lhat.mean().item(),kl_val) #log
-
-        self.make_epoch_plots(plotter,epoch,xout,net)
-
-        self.save_checkpoint(net,epoch)
-
 
     def get_results_path(self):
         return self.newpath
