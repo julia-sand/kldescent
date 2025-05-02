@@ -7,6 +7,8 @@ import viz.plots as plots
 import pdb
 import os
 import torch.autograd as autograd
+from torch.optim.lr_scheduler import CosineAnnealingLR
+
 
 #parse arguments
 args = parser.overdamped_argparser()
@@ -21,7 +23,7 @@ plotter.setresultsdir(logger.get_results_path())
 
 #initialise the model
 #TODO: add gpu option, decide architectures
-net = nn.NeuralNetwork(args.checkpointpath).to(args.device)
+net = nn.NeuralNetwork(args.hiddenlayerneurons,args.checkpointpath).to(args.device)
 
 #pretraining - train to approximate a numeric drift given by a csv file
 if args.pretrain:
@@ -29,24 +31,33 @@ if args.pretrain:
     run_pretrain.run_pretrain(net,logger.get_results_path(),boundary)
 
 #set up optimizer
-optimizer = torch.optim.Adam(net.parameters(), lr=0.0001)
+optimiser = torch.optim.Adam(net.parameters(), lr=0.003)
+#COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
+#scheduler = CosineAnnealingLR(optimiser, T_max=100, eta_min=0.000001)
 net.train() #set to train mode
 
 #intialise sde integration 
-integrator = langevin.SDEOverdamped(args.batch_samples,args.epsilon,args.Tf,args.t_steps,boundary)
+integrator = langevin.SDEOverdamped(args.batchsamples,
+                                    args.epsilon,
+                                    args.Tf,
+                                    args.tsteps,
+                                    boundary,
+                                    logger)
 
 #plot intiial values
-integrator.simulation_free(net,True,logger)
+integrator.simulation_free(net,True,0)
 
 for epoch in range(1,args.epochs+1):
 
-    logflag=True if (epoch % args.logstep == 0) else False
-    Lhat = integrator.simulation_free(net,epoch,logflag,logger)
+    logflag = True if (epoch % args.logstep == 0) else False
+    Lhat = integrator.simulation_free(net,logflag,epoch)
 
     #reset gradients 
-    optimizer.zero_grad()
+    optimiser.zero_grad()
 
     ##training##
     lhat_out = Lhat.mean()
     lhat_out.backward()
-    optimizer.step()
+    optimiser.step()
+    #scheduler.step()
+    #print(scheduler.get_last_lr())

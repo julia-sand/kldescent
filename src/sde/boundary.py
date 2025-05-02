@@ -84,11 +84,17 @@ class HalfBridgeLandauer():
                         delimiter=",")  
        
         ##fetch the reference data approximation data
-        arrtemp = arr[np.where(arr[:,0]==np.round(time,5))]
-        arrtemp = arrtemp[arrtemp[:,1].argsort()] #sort by x
+        arrtemp = arr[np.where(arr[:,0]==np.round(time,5))] 
+        arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
 
         #RETURNS X, DU
         return arrtemp[:,1],arrtemp[:,-1]
+
+    def du_ref(self,q,time):
+
+        #returns the drift of the reference solution 
+        qref,duref = get_reference_data(self,time)
+        return np.interp(q,qref.reshape(5000),duref.reshape(5000),left=duref[0],right=duref[-1])
 
     def g(self,q):
         #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
@@ -108,10 +114,13 @@ class LinearOU():
     def __init__(self,Tf,d=1):
         self.d = d #dimension #TODO!!! this needs to be added 
         self.Tf = Tf
-        self.gamma = 0.2
-        self.A = 1
+        self.gamma = 1
+        self.A = 0.2
         self.sigma0 = 1
         self.Lambda = 1
+
+        #set up npr generator 
+        self.Generator = np.random.default_rng(seed=None)
 
         
     def q_marginal_initial(self,q):
@@ -131,21 +140,33 @@ class LinearOU():
 
         #from where to sample the q marginals
         if mode=="initial":
-            out = np.zeros(shape)
+            out = self.Generator.normal(loc=0,scale=np.sqrt(0.5),size=shape)
         elif mode=="final": 
-            out = np.random.Generator.normal(loc=0,scale=np.sqrt(0.5),size=shape)
+            out = np.zeros(shape)
             #q_marginal = self.q_marginal_final
         
         return out
-                            
+
+    def analytic_sol(self,time):
+        return -self.sigma0*np.exp(self.A*(self.Tf-time))*self.gamma
+
+
     def get_reference_data(self,time):
 
         #time is the time you want the data
         
-        ut = -self.sigma0*np.exp(self.A*(self.Tf-time))*self.gamma
+        ut = self.analytic_sol(time)
 
         #RETURNS X, DU
         return np.linspace(-4,4,num=50),ut*np.ones(50)
+
+
+    def du_ref(self,q,time):
+
+        ut = self.analytic_sol(time)
+        
+        return np.ones(q.shape)*ut
+
 
     def g(self,q):
 
