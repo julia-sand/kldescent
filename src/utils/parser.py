@@ -5,9 +5,9 @@ def overdamped_argparser():
 
     # Instantiate the parser
     parser = argparse.ArgumentParser()
-    subparser = parser.add_subparsers()
+    #subparser = parser.add_subparsers()
 
-    parser.add_argument('-epochs','--epochs', type=int, default=1,
+    parser.add_argument('-epochs','--epochs', type=int, default=0,
                         help='A required integer positional argument')
     
     parser.add_argument('-device','--device', default="cpu",
@@ -20,28 +20,31 @@ def overdamped_argparser():
                         default=None,
                         #default="zeros",
                         #default="/results/20250429-195812/checkpoints/net_checkpoint_0.pt",    # default=None,
-                        help='A required integer positional argument')
+                        help='path to a checkpoint for warm-start training. Path should be provided from the current folder.')
 
     parser.add_argument('-pretrain','--pretrain', default=False,
-                        help='A required integer positional argument')
+                        help='whether or not to pretrain the network. Requires a csv containing a reference solution to be uploaded into the ref-solution module. See model/train for parameters of the training process.')
                        
     parser.add_argument('-batchsamples','--batchsamples', type=int, 
                         default=600,
-                        help='A required integer positional argument')
+                        help='Number of sample trajectories to take of the diffusion')
 
     parser.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=10,
                         help='Number of hidden dimensions in each layer of the Neural network model')
 
 
     parser.add_argument('-epsilon','--epsilon', type=float, default=1,
-                        help='A required integer positional argument')
+                        help='A numerical parameter of the diffusion')
 
     parser.add_argument('-Tf','--Tf', type=float, default=1,
-                        help='A required integer positional argument')
+                        help='final time')
 
     parser.add_argument('-tsteps','--tsteps', type=int, default=20,
-                        help='A required integer positional argument')
+                        help='Number of time steps in the numerical integration of the sde')
 
+    parser.add_argument('-boundary','--boundary', type=str, default="LinearOU",
+                        help='which set of boundary conditions to use. See Sde.Boundary for more details')
+    
     args = parser.parse_args()
 
     #add validations?

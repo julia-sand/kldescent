@@ -32,7 +32,7 @@ class SDEOverdamped():
         ducurr = self.boundary.du_ref(xn,currtime)
         #takes one step forward in the euler maruyama discretisation
         return xn + (self.boundary.b(xn,t) \
-                    + self.boundary.sigma0*ducurr_bar)*dt + self.boundary.sigma0*dw
+                    + self.boundary.sigma0*ducurr)*dt + self.boundary.sigma0*dw
 
     def euler_maruyama_step(self,xn,du_bar,dt,dw,t):
         #takes one step forward in the euler maruyama discretisation
@@ -40,20 +40,15 @@ class SDEOverdamped():
         return xn + (self.boundary.b(xn,t) \
                      + self.boundary.sigma0*du_bar)*dt + self.boundary.sigma0*dw
 
-    def get_ref_solution(self):
-        #fetch and open the reference solution
-        arr = np.loadtxt("./src/refsolution/value.csv",
-                        delimiter=",")  
-        return arr 
 
-    def testing_time_grid(self,arr):
+    def testing_time_grid(self):
         #get an equally spaced time grid which can be used with the reference solution
-        return np.unique(arr[:,0])
-
+        
+        ##TODO Update so this can also be used with reference solution of the Halfbridge
+        return np.linspace(0,self.Tf,self.t_steps)
 
     def generate_innovation(self,dt):
         return np.sqrt(dt)*torch.randn((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
-
 
     def simulation_free(self,net,logflag,epoch):
 
@@ -68,13 +63,10 @@ class SDEOverdamped():
         """
         
         #add as command line option??
-        testing_mode = True
+        testing_mode = False
         
-        #pdb.set_trace()
-        t_vec = self.generate_time_grid()
-
         if testing_mode:
-            t_vec = self.testing_time_grid(arr)
+            t_vec = self.testing_time_grid()
         else:
             t_vec = self.generate_time_grid()
 
@@ -88,30 +80,32 @@ class SDEOverdamped():
         c = torch.zeros((self.batch_samples,1),dtype=torch.float32)
         
         #self.generate_time_grid()
-        for i in range(0,self.t_steps-1):
+        for i in range(0,self.t_steps-2):
             dt = (t_vec[i+1]-t_vec[i])
             
             dw = self.generate_innovation(dt)
-
-            du = net.forward(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
-                                                ,xinit)))
-                   
+            
+            if testing_mode:
+                du = torch.tensor(self.boundary.du_ref(xinit,t_vec[i]).reshape((self.batch_samples,1)),
+                                    requires_grad=False,
+                                    dtype=torch.float32)
+            else:
+                du = net.forward(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
+                                                    ,xinit)))
+                    
             a = a + dt*(torch.linalg.norm(du, axis=1) ** 2) 
-                        #(torch.square(du))*dt
+            
             c = c + torch.matmul(torch.unsqueeze(du, 1),
-                                            torch.unsqueeze(dw, 2),
-                                                ).reshape(self.batch_samples,) #du*dw
+                                          torch.unsqueeze(dw, 2),
+                                                ).reshape((self.batch_samples,1)) #du*dw
+            du_bar = du.detach()#.numpy() #untracked copy
 
             with torch.no_grad(): #no gradient 
-                du_bar = du.detach()#.numpy() #untracked copy
 
                 abar = abar + dt*(torch.linalg.norm(du_bar, axis=1) ** 2) 
                 bbar = bbar + dt*(self.boundary.f(xinit,t_vec[i])) 
                 
-                if testing_mode:
-                    xinit = self.euler_maruyama_step_refsolution()
-                else:
-                    xinit = self.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
+            xinit = self.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
 
 
         #compute value of Lhat

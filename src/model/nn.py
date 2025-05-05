@@ -18,7 +18,7 @@ class NeuralNetwork(nn.Module):
         self.flatten = nn.Flatten()
         self.linear_stack = nn.Sequential(
             nn.Linear(2, self.hidden_layer_neurons),  #two inputs
-            nn.ReLU(),
+            nn.Sigmoid(),
             nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
             nn.ReLU(),
             nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
@@ -26,7 +26,7 @@ class NeuralNetwork(nn.Module):
             nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
             nn.ReLU(),
             nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
-            nn.ReLU(),
+            nn.Sigmoid(),
             nn.Linear(self.hidden_layer_neurons, 1)     #one output
         )    
         #load checkpoint

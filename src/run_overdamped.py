@@ -12,9 +12,13 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 
 #parse arguments
 args = parser.overdamped_argparser()
+
 #initalise boundary data
-boundary = boundary.LinearOU(args.Tf)
-#boundary.HalfBridgeLandauer()
+if args.boundary=="Landauer":
+    boundary = boundary.HalfBridgeLandauer()
+else:
+    boundary = boundary.LinearOU(args.Tf)
+
 #create a log file and results directory
 plotter = plots.PlotFuns(boundary)
 logger = logger.LossLogger(plotter)
@@ -33,7 +37,7 @@ if args.pretrain:
 #set up optimizer
 optimiser = torch.optim.Adam(net.parameters(), lr=0.003)
 #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
-#scheduler = CosineAnnealingLR(optimiser, T_max=100, eta_min=0.000001)
+scheduler = CosineAnnealingLR(optimiser, T_max=100, eta_min=0.000001)
 net.train() #set to train mode
 
 #intialise sde integration 
@@ -56,8 +60,8 @@ for epoch in range(1,args.epochs+1):
     optimiser.zero_grad()
 
     ##training##
-    lhat_out = Lhat.mean()
-    lhat_out.backward()
+    Lhat.backward()
     optimiser.step()
-    #scheduler.step()
-    #print(scheduler.get_last_lr())
+    
+
+    scheduler.step()
