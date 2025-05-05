@@ -114,7 +114,7 @@ class LinearOU():
     def __init__(self,Tf,d=1):
         self.d = d #dimension #TODO!!! this needs to be added 
         self.Tf = Tf
-        self.gamma = 1
+        self.gamma = -1
         self.A = 0.2
         self.sigma0 = 1
         self.Lambda = 1
