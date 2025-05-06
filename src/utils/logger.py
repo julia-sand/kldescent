@@ -42,10 +42,11 @@ class LossLogger():
         self.plotter = plotter
 
         ##make a directory for the results
-        dirname = os.path.dirname(__file__) #fetches current location 
+        dirname = os.getcwd()
+        #os.path.dirname(__file__) #fetches current location 
         run_id = time.strftime("%Y%m%d-%H%M%S")
 
-        self.newpath = os.path.join(dirname,f'../../results/{run_id}')
+        self.newpath = os.path.join(dirname,f'results/{run_id}')
         os.makedirs(self.newpath, exist_ok = True)
         os.makedirs(self.newpath+"/checkpoints", exist_ok = True) #add checkpoints folder
         print("Output Directory created successfully.")   
@@ -107,12 +108,9 @@ class LossLogger():
     def save_data(self,Lhat,xout,net,epoch):
         
         #compute kl divergence (TODO)
-        #try:
-        #    kl_val = kl.kl_div(xout,
-        #        boundary.generate_samples_q(xout.shape,mode="final"))
-        #except:
-        kl_val = 0
-
+        kl_val = kl.kl_div(xout,
+                    boundary.generate_samples_q(xout.shape,mode="final"))
+    
 
         self.log_epoch_data(net,epoch,Lhat,kl_val,xout)
 

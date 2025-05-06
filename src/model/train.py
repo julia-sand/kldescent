@@ -1,11 +1,12 @@
 import numpy as np 
 import torch
 from torch import nn as torchnn
-import torch.optim as optim
+from torch.optim import Adam
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.optim.lr_scheduler import ExponentialLR
 
 class Pretrain():
-
+    #define the training parameters and loop for any pretraining. 
     def __init__(self,path):
         self.path = path 
 
@@ -33,7 +34,7 @@ class Pretrain():
         
         #set up training parameters
         loss_fn = torchnn.MSELoss()  
-        optimizer = optim.Adam(net.parameters(), lr=self.lr)
+        optimizer = Adam(net.parameters(), lr=self.lr)
         scheduler = ExponentialLR(optimizer, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
 
         X,y = self.get_pretraining_data()
@@ -50,16 +51,35 @@ class Pretrain():
     
     
 class Train():
+    #define the training parameters and one training step
 
-    def __init__(self,path):
-        self.path = path 
+    def __init__(self, integrator, net, logstep):
+
+        self.logstep = logstep #how frequently to save results
 
         #set defaults of training process
-        self.lr = 0.01 #initial learning rate
-        self.gamma = 0.1 #decay rate of learning rate
-        self.step_size = 2000 #frequency of learning rate decay (in epochs)
-        self.n_epochs = 10000 #total number of epochs
+        self.lr = 0.003 #initial learning rate
+        self.integrator = integrator
+        self.net = net
 
-    def training_step(self,net):   
-        return 
+
+        self.optimiser = Adam(self.net.parameters(), lr=self.lr)
+        #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
+        self.scheduler = CosineAnnealingLR(self.optimiser, T_max=100, eta_min=0.000001)
         
+        self.net.train() #set neural net into train mode
+        
+    def train_step(self,epoch):  
+    
+        logflag = True if (epoch % self.logstep == 0) else False
+        Lhat = self.integrator.simulation_free(self.net,logflag,epoch)
+
+        #reset gradients 
+        self.optimiser.zero_grad()
+
+        ##training##
+        Lhat.backward()
+        self.optimiser.step()
+        
+        self.scheduler.step()
+
