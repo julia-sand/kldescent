@@ -17,10 +17,11 @@ from scipy.ndimage import generic_filter,median
 '''
 
 class PlotFuns():
-  def __init__(self,boundary_data):
+  def __init__(self,boundary_data=None):
 
     #self.subdir = self.folder #add default value to put plots into main folder if subdir has not been set
     self.boundary = boundary_data
+    self.folder = os.path.dirname(__file__)
 
     #get reference solution location 
     self.dirname = os.path.dirname(__file__)
@@ -114,36 +115,6 @@ class PlotFuns():
     plt.savefig(self.subdir+f"/drift.png")
     plt.close()
 
-  #plot the drift used in pretraining
-  def plot_pretrainsol(self,times):
-    
-    fig,ax = plt.subplots(1,len(times))
-    for t in range(len(times)):      
-      arr = np.loadtxt("../../results.csv",
-                    delimiter=",", skiprows=1)
-    
-      arr = arr[np.where(np.abs(arr[:,1])<4)]
-      ##fetch the perturbative underdamped approximation data
-    
-      arr = arr[np.where(arr[:,0]==np.round(times[t],5))]
-      arr = arr[arr[:,1].argsort()] #sort by x
-
-      #plot reference
-      ax[t].plot(arr[:,1],arr[:,-1],label="Reference")
-      #label="Reference")
-
-      ax[t].set_title(f"t={times[t]}")
-      ax[t].set_xlabel("q")
-      #ax[t].set_ylim((-10,10))
-    
-    ax[0].set_ylabel(r"$\mathbb{U}$")
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(self.subdir+f"/drift.png")
-    plt.close()
-
-
-
   ##scatter plot of final distribution 
   def marginal_distribution(self,samples):
 
@@ -197,10 +168,59 @@ class PlotFuns():
     plt.savefig(self.subdir+f"/final_density.png")
     plt.close()
 
+  def get_loss_output(self):
+
+    ##fetch the logged results for current run
+    arr = np.loadtxt(self.folder+"/loss.csv",
+                        delimiter=",",skiprows=1)  
+
+    return arr
+
+  def plot_lhat(self,ax,arr):
+
+
+    ax.plot(arr[:,0],arr[:,1],label=r"$\hat\mathcal{L}$")
+    #plt.plot(arr[:,0],arr[:,2],label=r"K.L. Divergence")
+
+    #set axis labels
+    ax.set_xlabel("epochs")
+    ax.set_ylabel(r"Effective Loss, $\hat\mathcal{L}$")
+
+    
+    
+    return     
+
+  def plot_kl(self,ax,arr):
+
+    #arr = self.get_loss_output()
+
+    ax.plot(arr[:,0],arr[:,2],label=r"K.L. Divergence")
+
+    #set axis labels
+    ax.set_xlabel("epochs")
+    ax.set_ylabel(r"K.L.")
+
+  def plot_loss_metrics(self):
+
+    plt.figure()
+
+    arr = self.get_loss_output()
+
+    ax1 = plt.subplot(121)
+    ax2 = plt.subplot(122)
+    self.plot_lhat(ax1,arr)
+    self.plot_kl(ax2,arr)
+
+    plt.tight_layout()
+    plt.savefig(self.folder+"/losses.png")
+    plt.close()
+    
+    return     
+  
+
+
 if __name__=="__main__":
-  #os.makedirs("../../tests"+"/pretrain") #add epoch plots folder
   
-  plotter = PlotFuns("../../tests")
-  plotter.setsubdir("pretrain")
+  plotter = PlotFuns()
+  plotter.plot_loss_metrics()
   
-  plotter.plot_pretrainsol(times=[0,0.1,0.2])
