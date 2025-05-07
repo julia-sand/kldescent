@@ -2,7 +2,7 @@ import argparse
 
 #TODO separate the parser into smaller so that we can parse straight into other files
 def overdamped_argparser():
-
+    #general configs for the training process
     # Instantiate the parser
     parser = argparse.ArgumentParser()
     #subparser = parser.add_subparsers()
@@ -32,23 +32,42 @@ def overdamped_argparser():
     parser.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=10,
                         help='Number of hidden dimensions in each layer of the Neural network model')
 
-
-    parser.add_argument('-epsilon','--epsilon', type=float, default=1,
-                        help='A numerical parameter of the diffusion')
-
     parser.add_argument('-Tf','--Tf', type=float, default=1,
                         help='final time')
-
-    parser.add_argument('-tsteps','--tsteps', type=int, default=20,
-                        help='Number of time steps in the numerical integration of the sde')
 
     parser.add_argument('-boundary','--boundary', type=str, default="LinearOU",
                         help='which set of boundary conditions to use. See Sde.Boundary for more details')
     
-    args = parser.parse_args()
+    args = parser.parse_known_args()
 
     #add validations?
     #if args.pos_arg > 10:
     #    parser.error("pos_arg cannot be larger than 10")
 
-    return args
+    return args[0]
+
+
+def integrator_params():
+
+    # Instantiate the parser
+    integrator_params = argparse.ArgumentParser()
+    #subparser = parser.add_subparsers()
+
+    integrator_params.add_argument('-batchsamples','--batchsamples', type=int, 
+                        default=600,
+                        help='Number of sample trajectories to take of the diffusion')
+
+    integrator_params.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=10,
+                        help='Number of hidden dimensions in each layer of the Neural network model')
+
+    integrator_params.add_argument('-Tf','--Tf', type=float, default=1,
+                        help='final time')
+
+    integrator_params.add_argument('-epsilon','--epsilon', type=float, default=1,
+                        help='constant')
+
+    integrator_params.add_argument('-tsteps','--tsteps', type=int, default=10,
+                        help='number of timesteps in the integration')
+    args1 = integrator_params.parse_known_args()
+
+    return args1[0]

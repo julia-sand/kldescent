@@ -5,11 +5,10 @@ See Section 3. of my notes for how this is done.
 for comparison with 2411.08518, use beta = 2 
 
 """
+
 #get filenames
 import os
 dirname = os.path.dirname(__file__)
-
-
 
 from sklearn.neighbors import KernelDensity
 import numpy as np 
@@ -22,8 +21,6 @@ data = np.loadtxt(os.path.join(dirname, "value.csv"),delimiter=",")
 def du(time,q):
     duvals = data[np.where(data[:,0]==np.round(time,5))]
     return np.interp(q,duvals[:,1],duvals[:,-1])
-
-
 
 #initial condition
 def p_initial(q):
