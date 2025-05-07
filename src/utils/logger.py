@@ -54,13 +54,13 @@ class LossLogger():
         #create a log file to store the data output
         self.filename = self.newpath +"/loss.csv" 
         with open(self.filename, 'w') as f:
-                fields=['epoch','Lhat','kl_div_final']
+                fields=['epoch','Lhat','dynamic_kl','static_kl']
                 writer = csv.writer(f)
                 writer.writerow(fields)
         print("Log file created successfully.")   
 
-    def write_data_row(self,epoch,Lhat,klval):
-        data = [epoch, Lhat, klval]
+    def write_data_row(self,epoch,Lhat,kl_dyn,klval):
+        data = [epoch, Lhat, kl_dyn, klval]
 
         with open(self.filename, 'a') as f:
             writer = csv.writer(f)
@@ -90,31 +90,26 @@ class LossLogger():
         #create epoch folder and set plotter subdirectory
         self.plotter.setsubdir(self.get_epoch_folder(epoch))
         #make plots
-        #self.plotter.marginal_distribution(xout)
+        self.plotter.marginal_distribution(xout)
         self.plotter.plot_drift(np.linspace(-4,4,1000),
                             times = [0,0.5,1],
                             dus = self.evaluate_net_output(net,[0,0.5,1]))
 
 
-    def log_epoch_data(self,net,epoch,Lhat,kl_val,xout):
+    def log_epoch_data(self,net,epoch,Lhat,kl_dyn,kl_val,xout):
 
-        self.write_data_row(epoch,Lhat.mean().item(),kl_val) #log
+        self.write_data_row(epoch,Lhat,kl_dyn,kl_val) #log
 
         self.make_epoch_plots(epoch,xout,net)
 
         self.save_checkpoint(net,epoch)
 
 
-    def save_data(self,Lhat,xout,net,epoch):
-        
-        #compute kl divergence (TODO)
-        kl_val = kl.kl_div(xout,
-                    boundary.generate_samples_q(xout.shape,mode="final"))
-    
-
-        self.log_epoch_data(net,epoch,Lhat,kl_val,xout)
-
-        return 
+    #def save_data(self,Lhat,xout,kldyn,net,epoch):
+    #   
+    #    self.log_epoch_data(net,epoch,Lhat,kl_val,kl_dyn,xout)#
+    #
+    #    return 
 
     def get_results_path(self):
         return self.newpath

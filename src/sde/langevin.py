@@ -3,21 +3,22 @@ import numpy as np
 import torch
 import sde.kl as kl
 import pdb
+from utils.parser import integrator_params
 
 class SDEOverdamped():
     def __init__(self,
                     batch_samples,
-                    epsilon,
-                    Tf,
-                    t_steps,
                     boundary_data,
                     logger):
         self.batch_samples = batch_samples # number of samples in each step 
-        self.epsilon = epsilon 
-        self.Tf = Tf #final time
-        self.t_steps = t_steps #number of timesteps in discretisation
         self.boundary = boundary_data
         self.logger = logger
+
+        #get params 
+        sde_params = integrator_params()
+        self.t_steps = sde_params.tsteps #number of timesteps in discretisation
+        self.epsilon = sde_params.epsilon 
+        self.Tf = sde_params.Tf
 
     def generate_time_grid(self):
 
@@ -26,7 +27,6 @@ class SDEOverdamped():
         return np.concatenate([[0],
                                 np.sort(np.random.uniform(0, self.Tf, self.t_steps-1)),
                                 [self.Tf]])
-
 
     def g(self,q): 
 
@@ -43,13 +43,15 @@ class SDEOverdamped():
         #get an equally spaced time grid which can be used with the reference solution
         
         ##TODO Update so this can also be used with reference solution of the Halfbridge
-        return np.linspace(0,self.Tf,self.t_steps)
+        return self.boundary.get_reference_timegrid()
+        #np.linspace(0,self.Tf,self.t_steps)
 
     def generate_innovation(self,dt):
+        #generate a step of brownian motion
         return np.sqrt(dt)*torch.randn((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
 
     
-    def simulation_free(self,net,logflag,epoch):
+    def simulation_free(self,net):
 
         """
         Following 2410.05163 (see proposition 3). 
@@ -61,14 +63,10 @@ class SDEOverdamped():
 
         """
         
-        
-    
         t_vec = self.generate_time_grid()
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples_q((self.batch_samples,1),"initial"),requires_grad=False,dtype=torch.float32)
-        if logflag:
-            xinit_ref = torch.copy(xinit)
 
         #set up a,abar,c,cbar
         a = torch.zeros((self.batch_samples,1),dtype=torch.float32)
@@ -76,20 +74,12 @@ class SDEOverdamped():
         bbar = torch.zeros((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
         c = torch.zeros((self.batch_samples,1),dtype=torch.float32)
 
-        if logflag:
-            kldyn = torch.zeros((self.batch_samples,1),dtype=torch.float32)
-
         #self.generate_time_grid()
         for i in range(0,self.t_steps-2):
             dt = (t_vec[i+1]-t_vec[i])
             
             dw = self.generate_innovation(dt)
-            
-            if logflag:
-                du_ref = torch.tensor(self.boundary.du_ref(xinit,t_vec[i]).reshape((self.batch_samples,1)),
-                                    requires_grad=False,
-                                    dtype=torch.float32)
-
+           
             du = net.forward(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
                                                     ,xinit)))
                     
@@ -106,21 +96,61 @@ class SDEOverdamped():
                 bbar = bbar + dt*(self.boundary.f(xinit,t_vec[i])) 
                 
             xinit = self.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
-            if logflag:
-                xinit_ref = self.euler_maruyama_step(xinit_ref,du_ref,dt,dw,t_vec[i])
-                kldyn = kldyn + dt*(torch.linalg.norm(du-du_ref, axis=1) ** 2) 
-
 
         #compute value of Lhat
         #see equation (10) and (11) in ref. 2410.05163
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + self.g(xinit)) * c))
 
-        with torch.no_grad():    
-            if logflag:
-                self.logger.save_data(Lhat,xinit.detach().cpu().numpy(),
-                                    net,epoch)
-
         return Lhat
+    
+    def compute_metrics(self,net,epoch,Lhat):
+
+        """
+        Following 2410.05163 (see proposition 3). 
+
+        ====
+        Parameters
+        - net: neural network
+        ====
+
+        """
+            
+        t_vec = self.testing_time_grid()
+
+        #initialise x values at \delta_0 (i.e. x=0)
+        xinit = torch.tensor(self.boundary.generate_samples_q((self.batch_samples,1),"initial"),requires_grad=False,dtype=torch.float32)
+        xinit_ref = torch.clone(xinit)
+
+        kldyn = torch.zeros((self.batch_samples,1),dtype=torch.float32)
+
+        #self.generate_time_grid()
+        for i in range(0,self.t_steps-2):
+            dt = (t_vec[i+1]-t_vec[i])
+            
+            dw = self.generate_innovation(dt)
+            
+            du_ref = torch.tensor(self.boundary.du_ref(xinit,t_vec[i]).reshape((self.batch_samples,1)),
+                                    requires_grad=False,
+                                    dtype=torch.float32)
+
+            du = net.forward(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
+                                                    ,xinit)))
+            du_bar = du.detach()#.numpy() #untracked copy
+
+            xinit = self.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
+            xinit_ref = self.euler_maruyama_step(xinit_ref,du_ref,dt,dw,t_vec[i])
+            kldyn = kldyn + dt*(torch.linalg.norm(du_bar-du_ref, axis=1) ** 2) 
+
+        kl_static = kl.kl_div(xinit,xinit_ref)
+
+        self.logger.log_epoch_data(net,
+                                    epoch,
+                                    Lhat,
+                                    torch.mean(kldyn.detach()).item(),
+                                    kl_static,
+                                    xinit.detach().numpy())
+
+        return 
 
 
 if __name__=="__main__":

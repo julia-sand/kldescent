@@ -138,22 +138,20 @@ class PlotFuns():
     #fit kde 
     # tophat KDE
     from sklearn.neighbors import KernelDensity
-    try:
 
-      kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(samples[~np.isnan(samples)].reshape(-1,1))
-      log_dens = kde.score_samples(np.linspace(-4,4).reshape(-1,1))
-      ax.fill(np.linspace(-4,4), np.zeros(len(log_dens)), np.exp(log_dens), fc="#AAAAFF")
-    except:
-      print("Current gradient returns only NAN values.")
-      pass
 
-    #Q,P = np.meshgrid(np.linspace(-5,5),np.linspace(-5,5))
+
+    kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(samples[np.isfinite(samples)].reshape(-1,1))
+    log_dens = kde.score_samples(np.linspace(-4,4).reshape(-1,1))
+    ax.fill_between(np.linspace(-4,4,num=len(log_dens)), np.zeros(len(log_dens)), np.exp(log_dens), fc="#AAAAFF")
+
+    #Q,P = np.meshgrid(,np.linspace(-5,5))
     ax.plot(np.linspace(-4,4),
               self.boundary.q_marginal_final(np.linspace(-4,4)),
               label="Assigned Final Distribution")
-    ax.plot(np.linspace(-4,4),
-              (1/np.sqrt(2*np.pi))*np.exp(-(1/2)*np.linspace(-4,4)**2),
-              label="Normal(0,1)")
+    #ax.plot(np.linspace(-4,4),
+    #          (1/np.sqrt(2*np.pi))*np.exp(-(1/2)*np.linspace(-4,4)**2),
+    #          label="Normal(0,1)")
 
     ax.tick_params(axis='both', labelsize=self.fontsizeticks)
 
@@ -198,7 +196,7 @@ class PlotFuns():
 
     #set axis labels
     ax.set_xlabel("epochs")
-    ax.set_ylabel(r"K.L.")
+    ax.set_ylabel(r"(dynamic) K.L.")
 
   def plot_loss_metrics(self):
 

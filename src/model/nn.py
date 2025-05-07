@@ -52,7 +52,6 @@ class MyActivation(nn.Module):
 #create a simple neural network to parametrise the drift. 
 class NeuralNetwork(nn.Module):
     def __init__(self,hiddenlayerneurons,
-                        tsteps,
                         boundary,
                         checkpointpath=None):
 

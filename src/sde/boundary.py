@@ -20,7 +20,7 @@ class HalfBridgeLandauer():
 
     def scorefinal(self,q):
 
-        return (q**2-1)*q
+        return -(q**2-1)*q
 
     def qinitial(self,q):
 
@@ -87,7 +87,12 @@ class HalfBridgeLandauer():
              
         return torch.column_stack((self.generate_samples_q(batch_samples,mode)
                                 ,torch.randn((batch_samples,1),dtype=torch.float32)))
-        
+    
+    def get_reference_timegrid(self):
+        arr = np.loadtxt(self.get_ref_path(),
+                        delimiter=",") 
+        return np.unique(arr[:,0])
+
     def get_reference_data(self,time):
 
         #time is the time you want the data
@@ -107,7 +112,7 @@ class HalfBridgeLandauer():
     def du_ref(self,q,time):
 
         #returns the drift of the reference solution 
-        qref,duref = get_reference_data(self,time)
+        qref,duref = self.get_reference_data(time)
         return np.interp(q,qref.reshape(5000),duref.reshape(5000),left=duref[0],right=duref[-1])
 
     def g(self,q):

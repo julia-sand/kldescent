@@ -7,7 +7,7 @@ import viz.plots as plots
 import pdb
 import os
 
-#parse arguments
+#parse arguments from command line
 args = parser.overdamped_argparser()
 
 #initialise the model
@@ -16,7 +16,6 @@ args = parser.overdamped_argparser()
 if args.boundary=="Landauer":
     boundary = boundary.HalfBridgeLandauer()
     net = nn.NeuralNetwork(args.hiddenlayerneurons,
-                            args.tsteps,
                             boundary,
                             args.checkpointpath).to(args.device)
 
@@ -28,7 +27,6 @@ else: #Linear OU
 plotter = plots.PlotFuns(boundary)
 logger = logger.LossLogger(plotter)
 plotter.setresultsdir(logger.get_results_path())
-#intialise plotter
 
 #pretraining - train to approximate a numeric drift given by a csv file
 if args.pretrain:
@@ -36,18 +34,18 @@ if args.pretrain:
     run_pretrain.run_pretrain(net,logger.get_results_path(),boundary)
 
 #intialise sde integration 
+#TODO add these arguments so they get read directly from the command line already in the sde file
 integrator = langevin.SDEOverdamped(args.batchsamples,
-                                    args.epsilon,
-                                    args.Tf,
-                                    args.tsteps,
                                     boundary,
                                     logger)
 
 #plot intiial values
-integrator.simulation_free(net,True,0)
+integrator.compute_metrics(net,0,0)
 
 #initialise trainer 
 trainer = train.Train(integrator, net, args.logstep) 
 
 for epoch in range(1,args.epochs+1):
     trainer.train_step(epoch)
+
+plotter.plot_loss_metrics()

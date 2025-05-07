@@ -71,12 +71,15 @@ class Train():
         
     def train_step(self,epoch):  
     
-        logflag = True if (epoch % self.logstep == 0) else False
-        Lhat = self.integrator.simulation_free(self.net,logflag,epoch)
+        Lhat = self.integrator.simulation_free(self.net)
+
+        if (epoch % self.logstep == 0): #compute metrics 
+            with torch.no_grad():
+                self.integrator.compute_metrics(self.net,epoch,Lhat.item())
 
         #reset gradients 
         self.optimiser.zero_grad()
-
+        
         ##training##
         Lhat.backward()
         self.optimiser.step()
