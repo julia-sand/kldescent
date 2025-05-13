@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 import os
-from einops import rearrange
+#from einops import rearrange
 
 #https://www.geeksforgeeks.org/swish-activation-function-in-pytorch/
 # Swish Function 

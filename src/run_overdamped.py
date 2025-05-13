@@ -1,9 +1,9 @@
 import numpy as np
 import torch
-from model import *
-from sde import *
-from utils import *
-import viz.plots as plots
+from src.model import *
+from src.sde import *
+from src.utils import *
+import src.viz.plots as plots
 import pdb
 import os
 
