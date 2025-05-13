@@ -24,11 +24,7 @@ def overdamped_argparser():
 
     parser.add_argument('-pretrain','--pretrain', default=False,
                         help='whether or not to pretrain the network. Requires a csv containing a reference solution to be uploaded into the ref-solution module. See model/train for parameters of the training process.')
-                       
-    parser.add_argument('-batchsamples','--batchsamples', type=int, 
-                        default=600,
-                        help='Number of sample trajectories to take of the diffusion')
-
+                      
     parser.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=10,
                         help='Number of hidden dimensions in each layer of the Neural network model')
 
@@ -82,3 +78,7 @@ def boundary_params():
     args2 = boundary_params.parse_known_args()
 
     return args2[0]
+
+if __name__=="__main__":
+    params_test = integrator_params()
+    print(params_test.batchsamples)

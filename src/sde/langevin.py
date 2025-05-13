@@ -7,15 +7,14 @@ from ..utils.parser import integrator_params
 
 class SDEOverdamped():
     def __init__(self,
-                    batch_samples,
                     boundary_data,
                     logger):
-        self.batch_samples = batch_samples # number of samples in each step 
         self.boundary = boundary_data
         self.logger = logger
 
         #get params 
         sde_params = integrator_params()
+        self.batch_samples = sde_params.batchsamples # number of samples in each step 
         self.t_steps = sde_params.tsteps #number of timesteps in discretisation
         self.epsilon = self.boundary.epsilon 
         self.Tf = self.boundary.Tf
@@ -28,10 +27,6 @@ class SDEOverdamped():
         return np.concatenate([[0],
                                 np.sort(np.random.uniform(0, self.Tf, self.t_steps-1)),
                                 [self.Tf]])
-
-    def g(self,q): 
-
-        return self.boundary.g(q)#torch.tensor(self.boundary.g(q),requires_grad=False,dtype=torch.float32)
 
 
     def testing_time_grid(self):
@@ -62,7 +57,7 @@ class SDEOverdamped():
         t_vec = self.generate_time_grid()
 
         #initialise x values 
-        xinit = torch.tensor(self.boundary.generate_samples((self.batch_samples,1),"initial"),requires_grad=False,dtype=torch.float32)
+        xinit = torch.tensor(self.boundary.generate_samples(self.batch_samples,"initial"),requires_grad=False,dtype=torch.float32)
 
         #set up a,abar,c,cbar
         a = torch.zeros((self.batch_samples,1),dtype=torch.float32)
@@ -77,7 +72,7 @@ class SDEOverdamped():
             dw = self.generate_innovation(dt)
            
             du = net.forward(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
-                                                    ,xinit[:,1:1])))
+                                                    ,xinit[:,0,None])))
                     
             a = a + dt*(torch.linalg.norm(du, axis=1) ** 2) 
             
@@ -95,7 +90,7 @@ class SDEOverdamped():
 
         #compute value of Lhat
         #see equation (10) and (11) in ref. 2410.05163
-        Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + self.g(xinit)) * c))
+        Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + self.boundary.gfun(xinit)) * c))
 
         return Lhat
     
@@ -125,20 +120,25 @@ class SDEOverdamped():
             dt = (t_vec[i+1]-t_vec[i])
             
             dw = self.generate_innovation(dt)
-            
-            du_ref = torch.tensor(self.boundary.du_ref(xinit_ref,t_vec[i]).reshape((self.batch_samples,1)),
+
+            du_ref = torch.tensor(self.boundary.du_ref(xinit_ref[:,0,None],t_vec[i]),
                                     requires_grad=False,
                                     dtype=torch.float32)
 
             du = net.forward(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
-                                                    ,xinit)))
+                                                    ,xinit[:,0,None])))
             du_bar = du.detach()#.numpy() #untracked copy
 
             xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
             xinit_ref = self.boundary.euler_maruyama_step(xinit_ref,du_ref,dt,dw,t_vec[i])
             kldyn = kldyn + dt*(torch.linalg.norm(du_bar-du_ref, axis=1) ** 2) 
 
-        kl_static = kl.kl_div(xinit,xinit_ref)
+        try:
+            kl_static = kl.kl_div(xinit,xinit_ref)
+        except ValueError:
+            kl_static = 0
+            print("Value Error exception ignored. This means that the current value of the \n \
+            neural network drift produces NaN values. ")
 
         self.logger.log_epoch_data(net,
                                     epoch,

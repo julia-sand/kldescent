@@ -105,11 +105,6 @@ class LossLogger():
         self.save_checkpoint(net,epoch)
 
 
-    #def save_data(self,Lhat,xout,kldyn,net,epoch):
-    #   
-    #    self.log_epoch_data(net,epoch,Lhat,kl_val,kl_dyn,xout)#
-    #
-    #    return 
 
     def get_results_path(self):
         return self.newpath
