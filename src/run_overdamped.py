@@ -39,8 +39,7 @@ if args.pretrain:
 
 #intialise sde integration 
 #TODO add these arguments so they get read directly from the command line already in the sde file
-integrator = langevin.SDEOverdamped(args.batchsamples,
-                                    boundary,
+integrator = langevin.SDEOverdamped(boundary,
                                     logger)
 
 #plot intiial values

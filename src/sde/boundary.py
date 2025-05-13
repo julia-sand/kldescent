@@ -64,7 +64,7 @@ class HalfBridgeLandauer():
         return (self.q_marginal_final(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
 
     #generate the initial data
-    def generate_samples_q(self,batch_samples,mode):
+    def generate_samples(self,batch_samples,mode):
         
         ##sample points from the intial distribution for q 
         #output as a tensor
@@ -79,24 +79,12 @@ class HalfBridgeLandauer():
 
             probs = q_marginal(np.linspace(-8,8,10000))/np.sum(q_marginal(np.linspace(-8,8,10000)))
             out = np.random.choice(np.linspace(-8,8,10000),
-                                shape,
+                                (batch_samples,1),
                                 p=probs)
         
         return out
                             
        
-    #generate the initial data
-    def generate_samples(self,batch_samples,mode):
-        
-        ##sample points from the intial distribution for q 
-        ##and from normal distribution for p and stack together 
-        #output as a tensor
-
-        #gives the initialisation of the underdamped
-             
-        return np.column_stack((self.generate_samples_q(batch_samples,mode)
-                                ,self.Generator.standard_normal(size=(batch_samples,1))))
-    
     def get_reference_timegrid(self):
         arr = np.loadtxt(self.get_ref_path(),
                         delimiter=",") 
@@ -124,7 +112,7 @@ class HalfBridgeLandauer():
         qref,duref = self.get_reference_data(time)
         return np.interp(q,qref.reshape(5000),duref.reshape(5000),left=duref[0],right=duref[-1])
 
-    def g(self,q):
+    def gfun(self,q):
         #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
 
         return (-np.log(self.q_marginal_final(q)) - (q**2)/2)
@@ -203,7 +191,7 @@ class LinearOU():
         return np.ones(q.shape)*ut
 
 
-    def g(self,q):
+    def gfun(self,q):
 
         return self.gamma*q
 
@@ -251,7 +239,7 @@ class QuadraticOU():
         #qfinal(q)/self.pf_norm
 
     #generate the initial data
-    def generate_samples_q(self,shape,mode):
+    def generate_samples_q(self,batch_samples,mode):
         
         ##sample points from the intial distribution for q 
         #output as a tensor
@@ -260,7 +248,7 @@ class QuadraticOU():
         if mode=="initial":
             out = self.Generator.normal(loc=0,scale=np.sqrt(0.5),size=shape)
         elif mode=="final": 
-            out = np.zeros(shape)
+            out = np.zeros((batch_samples,1))
             #q_marginal = self.q_marginal_final
         
         return out
@@ -286,7 +274,7 @@ class QuadraticOU():
         return np.ones(q.shape)*ut
 
 
-    def g(self,q):
+    def gfun(self,q):
 
         return self.gamma*q
 
@@ -359,7 +347,7 @@ class UnderdampedHalfBridge():
         return (self.q_marginal_final(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
 
     #generate the initial data
-    def generate_samples_q(self,shape,mode):
+    def generate_samples_q(self,batch_samples,mode):
         
         ##sample points from the intial distribution for q 
         #output as a tensor
@@ -372,7 +360,7 @@ class UnderdampedHalfBridge():
 
         probs = q_marginal(np.linspace(-8,8,10000))/np.sum(q_marginal(np.linspace(-8,8,10000)))
         out = np.random.choice(np.linspace(-8,8,10000),
-                                shape,
+                                (batch_samples,1),
                                 p=probs)
             
         return out
@@ -402,23 +390,22 @@ class UnderdampedHalfBridge():
         ##fetch the reference data for halfbridge
         
         ##fetch the reference data approximation data
-        arrtemp = arr[np.where(arr[:,0]==np.round(time,5))] 
-        arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
+        #arrtemp = arr[np.where(arr[:,0]==np.round(time,5))] 
+        #arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
 
         #RETURNS X, DU for plotting
-        return np.zeros((1000)),np.zeros((1000))
+        return np.zeros(1000),np.zeros(1000)
 
     def du_ref(self,q,time):
 
         #returns the drift of the reference solution 
-        print("Reference solution not available.")
-        return np.zeros_like(q[:,0:0])
-        #np.interp(q,qref.reshape(5000),duref.reshape(5000),left=duref[0],right=duref[-1])
+        #print("Reference solution not available.")
+        return np.zeros_like(q)
 
-    def g(self,x):
+    def gfun(self,x):
 
         #Terminal cost
-        return (xn[:,1:1]**2)/2 + self.Ufinal(xn[:,0:0])
+        return (x[:,1,None]**2)/2 + self.Ufinal(x[:,0,None])
         #(-np.log(self.q_marginal_final(q)) - (q**2)/2)
 
     def f(self,x,t):
@@ -433,8 +420,8 @@ class UnderdampedHalfBridge():
 
         #takes one step forward in the euler maruyama discretisation
         #go forward one step 
-        xn[:,0:0] = xn[:,0:0] + self.epsilon*(xn[:,1:1])*dt 
-        xn[:,1:1] = xn[:,1:1] - (xn[:,0:0] + self.epsilon*du_bar)*dt \
+        xn[:,0,None] = xn[:,0,None] + self.epsilon*(xn[:,1,None])*dt 
+        xn[:,1,None] = xn[:,1,None] - (xn[:,0,None] + self.epsilon*du_bar)*dt \
                                     + self.sigma0*dw
 
         return xn
@@ -448,9 +435,9 @@ class UnderdampedEntropyProduction():
     def underdamped_em_step(self,xn,du_bar,dt,dw,t):
         #takes one step forward in the euler maruyama discretisation
         #go forward one step 
-        xn[:,0:0] = xn[:,0:0] + self.epsilon*(xn[:,1:1]-self.g*self.epsilon*du_bar)*dt \
+        xn[:,0,None] = xn[:,0,None] + self.epsilon*(xn[:,1,None]-self.g*self.epsilon*du_bar)*dt \
                                     + self.boundary.sigma0*torch.sqrt(self.g)*dw
-        xn[:,1:1] = xn[:,1:1] + -(xn[:,0:0] + self.epsilon*du_bar)*dt \
+        xn[:,1,None] = xn[:,1,None] + -(xn[:,0,None] + self.epsilon*du_bar)*dt \
                                     + self.boundary.sigma0*dw
 
         return xn
@@ -459,5 +446,6 @@ class UnderdampedEntropyProduction():
 if __name__=="__main__":
 
     boundary = UnderdampedHalfBridge()
-    #temp = boundary.generate_samples(100,"final")
-    #print(temp.shape)
+    temp = boundary.generate_samples(100,"initial")
+    print(temp[:,0,None].shape)
+    

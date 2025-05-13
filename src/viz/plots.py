@@ -140,11 +140,12 @@ class PlotFuns():
     from sklearn.neighbors import KernelDensity
 
 
-
-    kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(samples[np.isfinite(samples)].reshape(-1,1))
-    log_dens = kde.score_samples(np.linspace(-4,4).reshape(-1,1))
-    ax.fill_between(np.linspace(-4,4,num=len(log_dens)), np.zeros(len(log_dens)), np.exp(log_dens), fc="#AAAAFF")
-
+    try:
+      kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(samples[np.isfinite(samples)].reshape(-1,1))
+      log_dens = kde.score_samples(np.linspace(-4,4).reshape(-1,1))
+      ax.fill_between(np.linspace(-4,4,num=len(log_dens)), np.zeros(len(log_dens)), np.exp(log_dens), fc="#AAAAFF")
+    except ValueError:
+      print("The final density could not be computed.")
     #Q,P = np.meshgrid(,np.linspace(-5,5))
     ax.plot(np.linspace(-4,4),
               self.boundary.q_marginal_final(np.linspace(-4,4)),
@@ -166,11 +167,14 @@ class PlotFuns():
     plt.savefig(self.subdir+f"/final_density.png")
     plt.close()
 
-  def get_loss_output(self):
-
-    ##fetch the logged results for current run
-    arr = np.loadtxt(self.folder+"/loss.csv",
-                        delimiter=",",skiprows=1)  
+  def get_loss_output(self,filename=None):
+    if filename is not None:
+      arr = np.loadtxt(filename,
+                          delimiter=",",skiprows=1)  
+    else:
+      ##fetch the logged results for current run
+      arr = np.loadtxt(self.folder+"/loss.csv",
+                          delimiter=",",skiprows=1)  
 
     return arr
 
@@ -208,7 +212,7 @@ class PlotFuns():
     ax.set_xlabel("epochs")
     ax.set_ylabel(r"(static) K.L.")
 
-  def plot_loss_metrics(self):
+  def plot_loss_metrics(self,filename=None):
 
     plt.figure(figsize=(15,8))
 
@@ -217,13 +221,18 @@ class PlotFuns():
     ax1 = plt.subplot(131)
     ax2 = plt.subplot(132)
     ax3 = plt.subplot(133)
-    self.plot_lhat(ax1,arr)
-    self.plot_dynamic_kl(ax2,arr)
-    self.plot_static_kl(ax3,arr)
+    try:
+      self.plot_lhat(ax1,arr)
+      self.plot_dynamic_kl(ax2,arr)
+      self.plot_static_kl(ax3,arr)
+      plt.tight_layout()
+      plt.savefig(self.folder+"/losses.png")
+      plt.close()
+    
+    except IndexError:
+      print("Not enough data to plot the loss metrics.\n \
+               Ensure that there has been at least one epoch in the current run and logging frequency is configured correctly.")
 
-    plt.tight_layout()
-    plt.savefig(self.folder+"/losses.png")
-    plt.close()
     
     return     
   
@@ -231,6 +240,7 @@ class PlotFuns():
 
 if __name__=="__main__":
   
+  filename=None #add filename of loss.csv to plot
   plotter = PlotFuns()
-  plotter.plot_loss_metrics()
+  plotter.plot_loss_metrics(filename)
   
