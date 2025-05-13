@@ -188,7 +188,7 @@ class PlotFuns():
     
     return     
 
-  def plot_kl(self,ax,arr):
+  def plot_dynamic_kl(self,ax,arr):
 
     #arr = self.get_loss_output()
 
@@ -198,16 +198,28 @@ class PlotFuns():
     ax.set_xlabel("epochs")
     ax.set_ylabel(r"(dynamic) K.L.")
 
+  def plot_static_kl(self,ax,arr):
+
+    #arr = self.get_loss_output()
+
+    ax.plot(arr[:,0],arr[:,3],label=r"K.L. Divergence")
+
+    #set axis labels
+    ax.set_xlabel("epochs")
+    ax.set_ylabel(r"(static) K.L.")
+
   def plot_loss_metrics(self):
 
-    plt.figure()
+    plt.figure(figsize=(15,8))
 
     arr = self.get_loss_output()
 
-    ax1 = plt.subplot(121)
-    ax2 = plt.subplot(122)
+    ax1 = plt.subplot(131)
+    ax2 = plt.subplot(132)
+    ax3 = plt.subplot(133)
     self.plot_lhat(ax1,arr)
-    self.plot_kl(ax2,arr)
+    self.plot_dynamic_kl(ax2,arr)
+    self.plot_static_kl(ax3,arr)
 
     plt.tight_layout()
     plt.savefig(self.folder+"/losses.png")
