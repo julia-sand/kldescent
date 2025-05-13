@@ -66,6 +66,7 @@ class NeuralNetwork(nn.Module):
             nn.Linear(1, self.hidden_layer_neurons),  #
             MyActivation(),
             nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #64 outputs
+            nn.ReLU(), #ensure these are positive outputs 
             ) 
         self.NNx = nn.Sequential(
             nn.Linear(1, self.hidden_layer_neurons),  #input x
@@ -84,6 +85,7 @@ class NeuralNetwork(nn.Module):
             nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #64 outputs
             MyActivation(),
             nn.Linear(self.hidden_layer_neurons, 1),   #64 outputs
+            nn.ReLU(), #ensure these are positive outputs 
             )  
 
     def forward(self, input_vec):   #how the model should evaluate
@@ -97,8 +99,8 @@ class NeuralNetwork(nn.Module):
         
         return out
 
-    def initialize_weights(self):   #sets all the weights away from zero.
-        for m in self.modules():
+    def initialize_weights(self,net):   #sets all the weights away from zero.
+        for m in net.modules():
             if isinstance(m, nn.Linear):
                 torch.nn.init.xavier_normal_(m.weight,gain=4)
                 if m.bias is not None:
@@ -116,7 +118,7 @@ class MLP(nn.Module):
         self.flatten = nn.Flatten()
         self.linear_stack = nn.Sequential(
             nn.Linear(2, self.hidden_layer_neurons),  #two inputs
-            nn.Sigmoid(),
+            MyActivation(),
             nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
             nn.ReLU(),
             nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
@@ -124,7 +126,7 @@ class MLP(nn.Module):
             nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
             nn.ReLU(),
             nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
-            nn.Sigmoid(),
+            MyActivation(),
             nn.Linear(self.hidden_layer_neurons, 1)     #one output
         )    
         #load checkpoint

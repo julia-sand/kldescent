@@ -18,10 +18,14 @@ if args.boundary=="Landauer":
     net = nn.NeuralNetwork(args.hiddenlayerneurons,
                             boundary,
                             args.checkpointpath).to(args.device)
-
-else: #Linear OU
-    boundary = boundary.LinearOU(args.Tf)
+elif args.boundary=="LinearOU": #Linear OU
+    boundary = boundary.LinearOU()
     net = nn.MLP(args.hiddenlayerneurons,args.checkpointpath).to(args.device)
+elif args.boundary=="UnderdampedLandauer": #underdamped landauer
+    boundary = boundary.UnderdampedHalfBridge()
+    net = net = nn.NeuralNetwork(args.hiddenlayerneurons,
+                            boundary,
+                            args.checkpointpath).to(args.device)
 
 #create a log file and results directory
 plotter = plots.PlotFuns(boundary)
@@ -46,6 +50,11 @@ integrator.compute_metrics(net,0,0)
 trainer = train.Train(integrator, net, args.logstep) 
 
 for epoch in range(1,args.epochs+1):
-    trainer.train_step(epoch)
+    try:
+        trainer.train_step(epoch)
+    except KeyboardInterrupt:
+        print(f"Training interrupted at epoch {epoch}")
+        #plot the loss metrics
+        plotter.plot_loss_metrics()
 
 plotter.plot_loss_metrics()

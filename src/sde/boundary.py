@@ -1,13 +1,22 @@
 import numpy as np 
 import os
+from ..utils.parser import boundary_params
 #the boundary conditions    
 
 
 class HalfBridgeLandauer():
     def __init__(self):
-        self.sigma0 = 1
+        self.sigma0 = np.sqrt(2)
         self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
-        #self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
+        self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
+
+        #get params 
+        params = boundary_params()
+        self.epsilon = params.epsilon 
+        self.Tf = params.Tf
+        self.g = params.g        
+        
+        self.Generator = np.random.default_rng(seed=None)
 
 
     def Uinitial(self,q):
@@ -37,7 +46,7 @@ class HalfBridgeLandauer():
 
     def q_marginal_initial(self,q):
 
-        return #qinitial(q)/(self.pi_norm)
+        return self.qinitial(q)/(self.pi_norm)
 
 
     def q_marginal_final(self,q): 
@@ -55,14 +64,14 @@ class HalfBridgeLandauer():
         return (self.q_marginal_final(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
 
     #generate the initial data
-    def generate_samples_q(self,shape,mode):
+    def generate_samples_q(self,batch_samples,mode):
         
         ##sample points from the intial distribution for q 
         #output as a tensor
 
         #from where to sample the q marginals
         if mode=="initial":
-            out = np.zeros(shape)
+            out = np.zeros((batch_samples,1))
             #q_marginal = self.q_marginal_initial
 
         elif mode=="final": 
@@ -85,8 +94,8 @@ class HalfBridgeLandauer():
 
         #gives the initialisation of the underdamped
              
-        return torch.column_stack((self.generate_samples_q(batch_samples,mode)
-                                ,torch.randn((batch_samples,1),dtype=torch.float32)))
+        return np.column_stack((self.generate_samples_q(batch_samples,mode)
+                                ,self.Generator.standard_normal(size=(batch_samples,1))))
     
     def get_reference_timegrid(self):
         arr = np.loadtxt(self.get_ref_path(),
@@ -124,19 +133,26 @@ class HalfBridgeLandauer():
 
         return 0
 
-    def b(self,q,t):
+    def euler_maruyama_step(self,xn,du_bar,dt,dw,t):
+        #takes one step forward in the euler maruyama discretisation
+        
+        return xn + (self.sigma0*du_bar)*dt + self.sigma0*dw
 
-        return 0
 
 
 class LinearOU():
-    def __init__(self,Tf,d=1):
+    def __init__(self,d=1):
         self.d = d #dimension #TODO!!! this needs to be added 
-        self.Tf = Tf
         self.gamma = 1
         self.A = 0.2
         self.sigma0 = 1
         self.Lambda = 1
+
+        #get params 
+        params = boundary_params()
+        self.epsilon = params.epsilon 
+        self.Tf = params.Tf
+        self.g = params.g
 
         #set up npr generator 
         self.Generator = np.random.default_rng(seed=None)
@@ -198,6 +214,13 @@ class LinearOU():
     def b(self,q,t):
 
         return self.A*q
+
+    def euler_maruyama_step(self,xn,du_bar,dt,dw,t):
+        #takes one step forward in the euler maruyama discretisation
+        
+        return xn + (self.b(xn,t) \
+                     + self.sigma0*du_bar)*dt + self.sigma0*dw
+
 
 
 class QuadraticOU():
@@ -270,3 +293,167 @@ class QuadraticOU():
     def b(self,q,t):
 
         return self.A*q
+
+
+
+class UnderdampedHalfBridge():
+    def __init__(self):
+        self.sigma0 = 1
+        self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
+        self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
+
+        #get params 
+        params = boundary_params()
+        self.epsilon = params.epsilon 
+        self.Tf = params.Tf
+        self.g = params.g
+
+        self.Generator = np.random.default_rng(seed=None)
+
+    def Uinitial(self,q):
+
+        return (q**4)/4
+
+    def Ufinal(self,q):
+
+        return ((q**2-1)**2)/4
+
+    def scorefinal(self,q):
+
+        return -(q**2-1)*q
+
+    def qinitial(self,q):
+
+        return np.exp(-self.Uinitial(q))
+
+    def qfinal(self,q):
+
+        return np.exp(-self.Ufinal(q)) 
+
+    def get_ref_path(self):
+        #currdir = os.path.dirname(__file__)
+        print("Reference solution not available.")
+        return  #currdir+"/../refsolution/value.csv"
+
+    def q_marginal_initial(self,q):
+
+        return self.qinitial(q)/(self.pi_norm)
+
+
+    def q_marginal_final(self,q): 
+        
+        return self.qfinal(q)/self.pf_norm
+
+
+    def p_initial(self,q,p):
+
+        return 0#(self.q_marginal_initial(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
+
+
+    def p_final(self,q,p): 
+        
+        return (self.q_marginal_final(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
+
+    #generate the initial data
+    def generate_samples_q(self,shape,mode):
+        
+        ##sample points from the intial distribution for q 
+        #output as a tensor
+
+        #from where to sample the q marginals
+        if mode=="initial":
+            q_marginal = self.q_marginal_initial     
+        elif mode=="final": 
+            q_marginal = self.q_marginal_final
+
+        probs = q_marginal(np.linspace(-8,8,10000))/np.sum(q_marginal(np.linspace(-8,8,10000)))
+        out = np.random.choice(np.linspace(-8,8,10000),
+                                shape,
+                                p=probs)
+            
+        return out
+                            
+       
+    #generate the initial data
+    def generate_samples(self,batch_samples,mode):
+        
+        ##sample points from the intial distribution for q 
+        ##and from normal distribution for p and stack together 
+        #output as a tensor
+
+        #gives the initialisation of the underdamped
+             
+        return np.column_stack((self.generate_samples_q(batch_samples,mode)
+                                ,self.Generator.standard_normal(size=(batch_samples,1))))
+    
+    def get_reference_timegrid(self):
+        #arr = np.loadtxt(self.get_ref_path(),
+        #                delimiter=",") 
+        return np.linspace(0,self.Tf)
+
+    def get_reference_data(self,time):
+
+        #time is the time you want the data
+
+        ##fetch the reference data for halfbridge
+        
+        ##fetch the reference data approximation data
+        arrtemp = arr[np.where(arr[:,0]==np.round(time,5))] 
+        arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
+
+        #RETURNS X, DU for plotting
+        return np.zeros((1000)),np.zeros((1000))
+
+    def du_ref(self,q,time):
+
+        #returns the drift of the reference solution 
+        print("Reference solution not available.")
+        return np.zeros_like(q[:,0:0])
+        #np.interp(q,qref.reshape(5000),duref.reshape(5000),left=duref[0],right=duref[-1])
+
+    def g(self,x):
+
+        #Terminal cost
+        return (xn[:,1:1]**2)/2 + self.Ufinal(xn[:,0:0])
+        #(-np.log(self.q_marginal_final(q)) - (q**2)/2)
+
+    def f(self,x,t):
+
+        return 0
+
+    def b(self,x,t):
+
+        return 0
+    
+    def euler_maruyama_step(self,xn,du_bar,dt,dw,t):
+
+        #takes one step forward in the euler maruyama discretisation
+        #go forward one step 
+        xn[:,0:0] = xn[:,0:0] + self.epsilon*(xn[:,1:1])*dt 
+        xn[:,1:1] = xn[:,1:1] - (xn[:,0:0] + self.epsilon*du_bar)*dt \
+                                    + self.sigma0*dw
+
+        return xn
+
+class UnderdampedEntropyProduction():
+    def __init__():
+        self.Generator = np.random.default_rng(seed=None)
+
+        return
+
+    def underdamped_em_step(self,xn,du_bar,dt,dw,t):
+        #takes one step forward in the euler maruyama discretisation
+        #go forward one step 
+        xn[:,0:0] = xn[:,0:0] + self.epsilon*(xn[:,1:1]-self.g*self.epsilon*du_bar)*dt \
+                                    + self.boundary.sigma0*torch.sqrt(self.g)*dw
+        xn[:,1:1] = xn[:,1:1] + -(xn[:,0:0] + self.epsilon*du_bar)*dt \
+                                    + self.boundary.sigma0*dw
+
+        return xn
+
+
+if __name__=="__main__":
+
+    boundary = UnderdampedHalfBridge()
+    #temp = boundary.generate_samples(100,"final")
+    #print(temp.shape)

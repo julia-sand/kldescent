@@ -57,17 +57,28 @@ def integrator_params():
                         default=600,
                         help='Number of sample trajectories to take of the diffusion')
 
-    integrator_params.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=10,
-                        help='Number of hidden dimensions in each layer of the Neural network model')
-
-    integrator_params.add_argument('-Tf','--Tf', type=float, default=1,
-                        help='final time')
-
-    integrator_params.add_argument('-epsilon','--epsilon', type=float, default=1,
-                        help='constant')
-
     integrator_params.add_argument('-tsteps','--tsteps', type=int, default=10,
                         help='number of timesteps in the integration')
     args1 = integrator_params.parse_known_args()
 
     return args1[0]
+
+
+def boundary_params():
+
+    # Instantiate the parser
+    boundary_params = argparse.ArgumentParser()
+    #subparser = parser.add_subparsers()
+
+    boundary_params.add_argument('-Tf','--Tf', type=float, default=1,
+                        help='final time')
+
+    boundary_params.add_argument('-epsilon','--epsilon', type=float, default=1,
+                        help='constant')
+
+    boundary_params.add_argument('-g','--g', type=float, default=0,
+                        help='constant')
+
+    args2 = boundary_params.parse_known_args()
+
+    return args2[0]

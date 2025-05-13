@@ -6,7 +6,6 @@ def preprocess():
 
     #input: raw data from the reference solution computation (ie )
 
-
     from scipy.ndimage import generic_filter,median
     import os 
     dirname = os.path.dirname(__file__) #fetches current location 
