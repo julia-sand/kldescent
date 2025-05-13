@@ -150,9 +150,7 @@ class PlotFuns():
     ax.plot(np.linspace(-4,4),
               self.boundary.q_marginal_final(np.linspace(-4,4)),
               label="Assigned Final Distribution")
-    #ax.plot(np.linspace(-4,4),
-    #          (1/np.sqrt(2*np.pi))*np.exp(-(1/2)*np.linspace(-4,4)**2),
-    #          label="Normal(0,1)")
+    
 
     ax.tick_params(axis='both', labelsize=self.fontsizeticks)
 
