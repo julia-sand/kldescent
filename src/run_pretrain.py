@@ -1,5 +1,5 @@
 import torch
-from model import train as train
+from src.model import train as train
 import os
 
 def run_pretrain(net, newpath, boundary):

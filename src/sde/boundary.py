@@ -168,16 +168,16 @@ class LinearOU():
         #qfinal(q)/self.pf_norm
 
     #generate the initial data
-    def generate_samples_q(self,shape,mode):
+    def generate_samples(self,batch_samples,mode):
         
         ##sample points from the intial distribution for q 
         #output as a tensor
 
         #from where to sample the q marginals
         if mode=="initial":
-            out = self.Generator.normal(loc=0,scale=np.sqrt(0.5),size=shape)
+            out = self.Generator.normal(loc=0,scale=np.sqrt(0.5),size=(batch_samples,1))
         elif mode=="final": 
-            out = np.zeros(shape)
+            out = np.zeros((batch_samples,1))
             #q_marginal = self.q_marginal_final
         
         return out
@@ -214,6 +214,10 @@ class LinearOU():
     def b(self,q,t):
 
         return self.A*q
+
+    def get_reference_timegrid(self):
+         
+        return None
 
     def euler_maruyama_step(self,xn,du_bar,dt,dw,t):
         #takes one step forward in the euler maruyama discretisation

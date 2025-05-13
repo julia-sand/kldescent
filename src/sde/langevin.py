@@ -1,9 +1,9 @@
 #this file computes the dynamics 
 import numpy as np 
 import torch
-import sde.kl as kl
+import src.sde.kl as kl
 import pdb
-from utils.parser import integrator_params
+from ..utils.parser import integrator_params
 
 class SDEOverdamped():
     def __init__(self,
@@ -36,10 +36,11 @@ class SDEOverdamped():
 
     def testing_time_grid(self):
         #get an equally spaced time grid which can be used with the reference solution
-        
-        ##TODO Update so this can also be used with reference solution of the Halfbridge
-        return self.boundary.get_reference_timegrid()
-        #np.linspace(0,self.Tf,self.t_steps)
+        timeout = self.boundary.get_reference_timegrid()
+        if timeout is not None:
+            return timeout
+        else: 
+            return np.linspace(0,self.Tf,self.t_steps)
 
     def generate_innovation(self,dt):
         #generate a step of brownian motion
@@ -133,8 +134,8 @@ class SDEOverdamped():
                                                     ,xinit)))
             du_bar = du.detach()#.numpy() #untracked copy
 
-            xinit = self.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
-            xinit_ref = self.euler_maruyama_step(xinit_ref,du_ref,dt,dw,t_vec[i])
+            xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
+            xinit_ref = self.boundary.euler_maruyama_step(xinit_ref,du_ref,dt,dw,t_vec[i])
             kldyn = kldyn + dt*(torch.linalg.norm(du_bar-du_ref, axis=1) ** 2) 
 
         kl_static = kl.kl_div(xinit,xinit_ref)
