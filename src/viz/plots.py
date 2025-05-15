@@ -22,10 +22,8 @@ class PlotFuns():
     #self.subdir = self.folder #add default value to put plots into main folder if subdir has not been set
     self.boundary = boundary_data
     self.folder = os.path.dirname(__file__)
-
-    #get reference solution location 
-    self.dirname = os.path.dirname(__file__)
-
+    self.subdir = os.path.dirname(__file__)
+    
     #fontsizes
     self.fontsize = 22
     self.fontsizeticks = 18
@@ -125,6 +123,8 @@ class PlotFuns():
     input:
     - samples: the output of the evolutions
     """
+
+    
 
     fig =plt.figure()
     #get plot location

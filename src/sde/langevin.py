@@ -19,8 +19,8 @@ class SDEOverdamped():
         self.epsilon = self.boundary.epsilon 
         self.Tf = self.boundary.Tf
         self.g = self.boundary.g
-
-        self.logger.log_args(self.sde_params) #add to log
+        if self.logger is not None:
+            self.logger.log_args(self.sde_params) #add to log
 
 
     def generate_time_grid(self):
@@ -40,9 +40,9 @@ class SDEOverdamped():
         else: 
             return np.linspace(0,self.Tf,self.t_steps)
 
-    def generate_innovation(self,dt):
+    def generate_innovation(self,dt,size):
         #generate a step of brownian motion
-        return np.sqrt(dt)*torch.randn((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
+        return np.sqrt(dt)*torch.randn((size,1),requires_grad=False,dtype=torch.float32)
 
     
     def simulation_free(self,net):
@@ -72,7 +72,7 @@ class SDEOverdamped():
         for i in range(0,self.t_steps-1):
             dt = (t_vec[i+1]-t_vec[i])
             
-            dw = self.generate_innovation(dt)
+            dw = self.generate_innovation(dt,self.batch_samples)
            
             du = net.forward(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
                                                     ,xinit[:,0,None])))
@@ -122,24 +122,25 @@ class SDEOverdamped():
         """
             
         t_vec = self.testing_time_grid()
+        testing_samples = 256 #reduced number of samples in computing the loss metrics
 
         #initialise x values at \delta_0 (i.e. x=0)
-        xinit = torch.tensor(self.boundary.generate_samples(self.batch_samples,"initial"),requires_grad=False,dtype=torch.float32)
+        xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
         xinit_ref = torch.clone(xinit)
 
-        kldyn = torch.zeros((self.batch_samples,1),dtype=torch.float32)
+        kldyn = torch.zeros((testing_samples,1),dtype=torch.float32)
 
         #self.generate_time_grid()
         for i in range(0,len(t_vec)-1):
             dt = (t_vec[i+1]-t_vec[i])
             
-            dw = self.generate_innovation(dt)
+            dw = self.generate_innovation(dt,self.batch_samples)
 
             du_ref = torch.tensor(self.boundary.du_ref(xinit_ref[:,0,None],t_vec[i]),
                                     requires_grad=False,
                                     dtype=torch.float32)
 
-            du = net.forward(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
+            du = net.forward(torch.column_stack((t_vec[i]*torch.ones(testing_samples,dtype=torch.float32)
                                                     ,xinit[:,0,None])))
             du_bar = du.detach()#.numpy() #untracked copy
 
@@ -174,5 +175,54 @@ class SDEOverdamped():
         return 
 
 
+    def compute_sde(self,net,plotter):
+
+        """
+        Following 2410.05163 (see proposition 3). 
+
+        ====
+        Parameters
+        - net: neural network
+        ====
+
+        """
+            
+        t_vec = self.testing_time_grid()
+        testing_samples = 2000
+
+        #initialise x values at \delta_0 (i.e. x=0)
+        xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
+
+
+        #self.generate_time_grid()
+        for i in range(0,len(t_vec)-1):
+            dt = (t_vec[i+1]-t_vec[i])
+            
+            dw = self.generate_innovation(dt,testing_samples)
+
+            du = net.forward(torch.column_stack((t_vec[i]*torch.ones(testing_samples,dtype=torch.float32)
+                                                    ,xinit[:,0,None])))
+            du_bar = du.detach()#.numpy() #untracked copy
+
+            xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
+
+        plotter.marginal_distribution(xinit[:,0].detach().numpy())
+        
+        #free up the tensors
+        del xinit 
+        del du
+        del du_bar
+
+        return 
+
 if __name__=="__main__":
-    sde_evolve(net,t_vec,batch_samples,epsilon)
+    from ..model.nn import NeuralNetwork
+    from .boundary import UnderdampedHalfBridge
+    from ..viz.plots import PlotFuns
+
+    boundary_cond = UnderdampedHalfBridge()
+    net = NeuralNetwork(64,boundary_cond,checkpointpath="net_checkpoint_390.pt")
+
+    integrator = SDEOverdamped(boundary_cond,None)
+    plotter = PlotFuns(boundary_cond)
+    integrator.compute_sde(net,plotter)

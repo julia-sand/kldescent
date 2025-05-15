@@ -88,6 +88,10 @@ class NeuralNetwork(nn.Module):
             nn.ReLU(), #ensure these are positive outputs 
             )  
 
+        if checkpointpath is not None:
+            self.load_checkpoint(checkpointpath)
+
+
     def forward(self, input_vec):   #how the model should evaluate
         
         x = self.NNx(input_vec[:,1,None]) #do the time encoding on the parameter t
@@ -106,6 +110,10 @@ class NeuralNetwork(nn.Module):
                 if m.bias is not None:
                     torch.nn.init.constant_(m.bias, 0)
 
+    def load_checkpoint(self,checkpointpath):
+        self.load_state_dict(torch.load(checkpointpath, weights_only=True))
+        print("Checkpoint loaded successfully.")    
+        
 
 
 # FROM TORCH TUTORIAL
@@ -129,17 +137,6 @@ class MLP(nn.Module):
             MyActivation(),
             nn.Linear(self.hidden_layer_neurons, 1)     #one output
         )    
-        #load checkpoint
-        #if checkpointpath is not None:
-        #    if checkpointpath=="zeros":
-        #        self.initialize_weights()
-        #        print("Initial weights set to zero.")  
-        #    else:
-        #        self.load_state_dict(torch.load(os.path.dirname(__file__)+"/../.."+checkpointpath, weights_only=True))
-        #        print("Checkpoint loaded successfully.")    
-        #else:
-        #    print("Neural Network initialised using default method.")  
-
         self.initialize_weights()   
 
     def forward(self, x):   #how the model should evaluate
