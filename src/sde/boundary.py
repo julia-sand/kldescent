@@ -6,17 +6,19 @@ from ..utils.parser import boundary_params
 
 class HalfBridgeLandauer():
     def __init__(self):
-        self.sigma0 = np.sqrt(2)
+        self.sigma0 = 1#np.sqrt(2)
         self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
         self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
 
         #get params 
-        params = boundary_params()
-        self.epsilon = params.epsilon 
-        self.Tf = params.Tf
-        self.g = params.g        
+        self.params = boundary_params()
+        self.epsilon = self.params.epsilon 
+        self.Tf = self.params.Tf
+        self.g = self.params.g        
         
         self.Generator = np.random.default_rng(seed=None)
+
+        #self.logger.log_args(self.params) #add to log
 
 
     def Uinitial(self,q):
@@ -115,8 +117,8 @@ class HalfBridgeLandauer():
     def gfun(self,q):
         #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
 
-        return (-np.log(self.q_marginal_final(q)) - (q**2)/2)
-
+        return (self.Ufinal(q) - (q**2)/2)
+ 
     def f(self,q,t):
 
         return 0
@@ -290,17 +292,21 @@ class QuadraticOU():
 
 class UnderdampedHalfBridge():
     def __init__(self):
-        self.sigma0 = 1
-        self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
-        self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
 
         #get params 
-        params = boundary_params()
-        self.epsilon = params.epsilon 
-        self.Tf = params.Tf
-        self.g = params.g
+        self.params = boundary_params()
+        self.epsilon = self.params.epsilon 
+        self.Tf = self.params.Tf
+        self.g = self.params.g
+        self.beta = 2
+        self.tau = 1
+        self.m = 1
+        self.sigma0 = np.sqrt(2/self.beta)
 
         self.Generator = np.random.default_rng(seed=None)
+
+        self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
+        self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
 
     def Uinitial(self,q):
 
@@ -316,11 +322,11 @@ class UnderdampedHalfBridge():
 
     def qinitial(self,q):
 
-        return np.exp(-self.Uinitial(q))
+        return np.exp(-self.beta*self.Uinitial(q))
 
     def qfinal(self,q):
 
-        return np.exp(-self.Ufinal(q)) 
+        return np.exp(-self.beta*self.Ufinal(q)) 
 
     def get_ref_path(self):
         #currdir = os.path.dirname(__file__)
@@ -339,12 +345,12 @@ class UnderdampedHalfBridge():
 
     def p_initial(self,q,p):
 
-        return 0#(self.q_marginal_initial(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
+        return (self.q_marginal_initial(q)*np.exp(-self.beta*(p**2)/2))/np.sqrt(2*np.pi/self.beta)
 
 
     def p_final(self,q,p): 
         
-        return (self.q_marginal_final(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
+        return (self.q_marginal_final(q)*np.exp(-self.beta*(p**2)/2))/np.sqrt(2*np.pi/self.beta)
 
     #generate the initial data
     def generate_samples_q(self,batch_samples,mode):
@@ -405,8 +411,7 @@ class UnderdampedHalfBridge():
     def gfun(self,x):
 
         #Terminal cost
-        return (x[:,1,None]**2)/2 + self.Ufinal(x[:,0,None])
-        #(-np.log(self.q_marginal_final(q)) - (q**2)/2)
+        return -self.beta*((x[:,1,None]**2)/2 + self.Ufinal(x[:,0,None]))
 
     def f(self,x,t):
 
@@ -420,27 +425,29 @@ class UnderdampedHalfBridge():
 
         #takes one step forward in the euler maruyama discretisation
         #go forward one step 
-        xn[:,0,None] = xn[:,0,None] + self.epsilon*(xn[:,1,None])*dt 
-        xn[:,1,None] = xn[:,1,None] - (xn[:,0,None] + self.epsilon*du_bar)*dt \
+        xn[:,0,None] = xn[:,0,None] + (xn[:,1,None]/self.m)*dt 
+        xn[:,1,None] = xn[:,1,None] - (xn[:,1,None]/self.tau + du_bar)*dt \
                                     + self.sigma0*dw
 
         return xn
 
-class UnderdampedEntropyProduction():
-    def __init__():
-        self.Generator = np.random.default_rng(seed=None)
+class UnderdampedEntropyProduction(UnderdampedHalfBridge):
+   
+    def euler_maruyama_step(self,xn,du_bar,dt,dw,t):
 
-        return
-
-    def underdamped_em_step(self,xn,du_bar,dt,dw,t):
         #takes one step forward in the euler maruyama discretisation
         #go forward one step 
-        xn[:,0,None] = xn[:,0,None] + self.epsilon*(xn[:,1,None]-self.g*self.epsilon*du_bar)*dt \
-                                    + self.boundary.sigma0*torch.sqrt(self.g)*dw
-        xn[:,1,None] = xn[:,1,None] + -(xn[:,0,None] + self.epsilon*du_bar)*dt \
-                                    + self.boundary.sigma0*dw
+        xn[:,0,None] = xn[:,0,None] + (xn[:,1,None]/self.m - (self.g*self.tau/self.m)*du_bar)*dt \
+                                    + np.sqrt(2*self.tau*self.g/(self.m*self.beta))*dw[:,0,None]
+        xn[:,1,None] = xn[:,1,None] - (xn[:,1,None]/self.tau + du_bar)*dt \
+                                    + self.sigma0*dw[:,1,None]
 
         return xn
+
+
+    def f(self,x,t,du_bar):
+
+        return (self.beta/(self.tau*self.m))*(x[:,1,None]**2) - np.gradient()
 
 
 if __name__=="__main__":

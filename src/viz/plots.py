@@ -81,6 +81,7 @@ class PlotFuns():
     ax.set_ylabel(r"$q$",fontsize = self.fontsizetitles,labelpad=-10)
 
     plt.savefig(self.subdir+f"/test_plot.png")
+    plt.close()
 
   def format_drift_ax(self,ax1,time):
     ax1.set_xlim((-4,4))
@@ -129,14 +130,13 @@ class PlotFuns():
     #get plot location
     ax = fig.add_subplot(111)
 
-    ax.set_xlim((-4,4))
+    #ax.set_xlim((-4,4))
     ax.set_ylim(bottom = -0.01)
 
     #plot scatter graphs
     #ax.hist(samples,density =True)
     
     #fit kde 
-    # tophat KDE
     from sklearn.neighbors import KernelDensity
 
 
@@ -144,26 +144,23 @@ class PlotFuns():
       kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(samples[np.isfinite(samples)].reshape(-1,1))
       log_dens = kde.score_samples(np.linspace(-4,4).reshape(-1,1))
       ax.fill_between(np.linspace(-4,4,num=len(log_dens)), np.zeros(len(log_dens)), np.exp(log_dens), fc="#AAAAFF")
+      ax.plot(np.linspace(-4,4),
+                self.boundary.q_marginal_final(np.linspace(-4,4)),
+                label="Assigned Final Distribution")
+      
+
+      ax.tick_params(axis='both', labelsize=self.fontsizeticks)
+
+      ax.set_xlabel(r"$p$",fontsize = self.fontsizetitles)
+      ax.set_ylabel(r"$\rho_T(q)$",fontsize = self.fontsizetitles)
+
+      plt.legend()
+      plt.savefig(self.subdir+f"/final_density.png")
+      plt.close()    
+
     except ValueError:
-      print("The final density could not be computed.")
-    #Q,P = np.meshgrid(,np.linspace(-5,5))
-    ax.plot(np.linspace(-4,4),
-              self.boundary.q_marginal_final(np.linspace(-4,4)),
-              label="Assigned Final Distribution")
-    
-
-    ax.tick_params(axis='both', labelsize=self.fontsizeticks)
-
-    #if x_ind !=0:
-    ax.set_xlabel(r"$p$",fontsize = self.fontsizetitles,labelpad=-20)
-
-    #if y_ind == 2:
-    #make label and add text
-    ax.set_ylabel(r"$\rho_T(q)$",fontsize = self.fontsizetitles,labelpad=-10)
-
-    plt.legend()
-    plt.savefig(self.subdir+f"/final_density.png")
-    plt.close()
+      print("The final density could not be computed because the drift did not return any points in the area.")
+      plt.close()
 
   def get_loss_output(self,filename=None):
     if filename is not None:
@@ -194,7 +191,7 @@ class PlotFuns():
 
     #arr = self.get_loss_output()
 
-    ax.plot(arr[:,0],arr[:,2],label=r"K.L. Divergence")
+    ax.plot(arr[:,0],(self.boundary.beta/4)*arr[:,2],label=r"K.L. Divergence")
 
     #set axis labels
     ax.set_xlabel("epochs")
@@ -230,7 +227,7 @@ class PlotFuns():
     except IndexError:
       print("Not enough data to plot the loss metrics.\n \
                Ensure that there has been at least one epoch in the current run and logging frequency is configured correctly.")
-
+      plt.close()
     
     return     
   

@@ -37,9 +37,7 @@ class LossLogger():
     '''
 
     
-    def __init__(self,plotter):
-
-        self.plotter = plotter
+    def __init__(self):
 
         ##make a directory for the results
         dirname = os.getcwd()
@@ -52,6 +50,8 @@ class LossLogger():
         print("Output Directory created successfully.")   
        
         #create a log file to store the data output
+        self.datafile = self.newpath +"/data.txt" 
+
         self.filename = self.newpath +"/loss.csv" 
         with open(self.filename, 'w') as f:
                 fields=['epoch','Lhat','dynamic_kl','static_kl']
@@ -86,27 +86,32 @@ class LossLogger():
         return dus
 
 
-    def make_epoch_plots(self,epoch,xout,net):
+    def make_epoch_plots(self,epoch,xout,net,plotter):
         #create epoch folder and set plotter subdirectory
-        self.plotter.setsubdir(self.get_epoch_folder(epoch))
+        plotter.setsubdir(self.get_epoch_folder(epoch))
         #make plots
-        self.plotter.marginal_distribution(xout)
-        self.plotter.plot_drift(np.linspace(-4,4,1000),
+        plotter.marginal_distribution(xout)
+        plotter.plot_drift(np.linspace(-4,4,1000),
                             times = [0,0.5,1],
                             dus = self.evaluate_net_output(net,[0,0.5,1]))
 
-
-    def log_epoch_data(self,net,epoch,Lhat,kl_dyn,kl_val,xout):
+    def log_epoch_data(self,net,epoch,Lhat,kl_dyn,kl_val,xout,plotter):
 
         self.write_data_row(epoch,Lhat,kl_dyn,kl_val) #log
 
-        self.make_epoch_plots(epoch,xout,net)
+        self.make_epoch_plots(epoch,xout,net,plotter)
 
         self.save_checkpoint(net,epoch)
-
-
 
     def get_results_path(self):
         return self.newpath
 
-    
+    def add_param_to_log(self,name,val):
+        
+        with open(self.datafile, "a") as f:
+            print(str(name)+f"= {val}", file=f)
+
+    def log_args(self,args):
+        for arg in vars(args): 
+            self.add_param_to_log(arg, getattr(args, arg))
+        
