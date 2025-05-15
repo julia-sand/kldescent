@@ -7,7 +7,7 @@ import os
 # Swish Function 
 class Swish(nn.Module):
     def forward(self, x):
-        return x * torch.sigmoid(x)
+        return torch.sigmoid(x)
 
 #taken from qsh-zh/pis
 #time encoding 
@@ -90,12 +90,12 @@ class NeuralNetwork(nn.Module):
 
     def forward(self, input_vec):   #how the model should evaluate
         
-        x = self.NNx(input_vec[:,1].reshape((input_vec.shape[0],1))) #do the time encoding on the parameter t
-        t = self.NNt(input_vec[:,0].reshape((input_vec.shape[0],1)))
+        x = self.NNx(input_vec[:,1,None]) #do the time encoding on the parameter t
+        t = self.NNt(input_vec[:,0,None])
         #self.NNt(self.tencoding(input_vec[:,0].reshape((input_vec.shape[0],1))))
 
         #concatenate the outputs and put them through the part 2
-        out = self.NN1(torch.column_stack((t,x))) + self.NN2(t)*self.boundary.scorefinal(input_vec[:,1].reshape((input_vec.shape[0],1)))
+        out = self.NN1(torch.column_stack((t,x))) + self.NN2(t)*self.boundary.scorefinal(input_vec[:,1,None])
         
         return out
 

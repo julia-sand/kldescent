@@ -4,6 +4,8 @@ from torch import nn as torchnn
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.optim.lr_scheduler import ExponentialLR
+from torch.nn.utils import clip_grad_norm_
+import math 
 
 class Pretrain():
     #define the training parameters and loop for any pretraining. 
@@ -15,7 +17,7 @@ class Pretrain():
         self.gamma = 0.1 #decay rate of learning rate
         self.step_size = 10000 #frequency of learning rate decay (in epochs)
         self.n_epochs = 40000 #total number of epochs
-    
+      
     def save_epoch_trained_data(self,epoch):
         
         return
@@ -53,7 +55,7 @@ class Pretrain():
 class Train():
     #define the training parameters and one training step
 
-    def __init__(self, integrator, net, logstep):
+    def __init__(self, integrator, net, logstep, plotter):
 
         self.logstep = logstep #how frequently to save results
 
@@ -62,27 +64,40 @@ class Train():
         self.integrator = integrator
         self.net = net
 
+        self.gamma = 0.1 #rate of learning rate decrease.
+
+        self.clip = 0.01 #gradient clipping
+
 
         self.optimiser = Adam(self.net.parameters(), lr=self.lr)
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
         self.scheduler = CosineAnnealingLR(self.optimiser, T_max=100, eta_min=0.000001)
-        
+        #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
+
+        self.plotter = plotter
+
         self.net.train() #set neural net into train mode
         
     def train_step(self,epoch):  
-    
-        Lhat = self.integrator.simulation_free(self.net)
-
-        if (epoch % self.logstep == 0): #compute metrics 
-            with torch.no_grad():
-                self.integrator.compute_metrics(self.net,epoch,Lhat.item())
-
+        
         #reset gradients 
         self.optimiser.zero_grad()
         
+        Lhat = self.integrator.simulation_free(self.net)
+        clip_grad_norm_(self.net.parameters(), self.clip)
+
         ##training##
         Lhat.backward()
         self.optimiser.step()
         
+        
         self.scheduler.step()
+
+        if (epoch % self.logstep == 0): #compute metrics 
+            with torch.no_grad():
+                self.integrator.compute_metrics(self.net,epoch,Lhat.item(),self.plotter)
+
+        if math.isnan(Lhat.item()):
+            raise ValueError('Loss function is NaN. Terminating training process')
+   
 

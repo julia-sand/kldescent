@@ -13,12 +13,15 @@ class SDEOverdamped():
         self.logger = logger
 
         #get params 
-        sde_params = integrator_params()
-        self.batch_samples = sde_params.batchsamples # number of samples in each step 
-        self.t_steps = sde_params.tsteps #number of timesteps in discretisation
+        self.sde_params = integrator_params()
+        self.batch_samples = self.sde_params.batchsamples # number of samples in each step 
+        self.t_steps = self.sde_params.tsteps #number of timesteps in discretisation
         self.epsilon = self.boundary.epsilon 
         self.Tf = self.boundary.Tf
         self.g = self.boundary.g
+
+        self.logger.log_args(self.sde_params) #add to log
+
 
     def generate_time_grid(self):
 
@@ -91,11 +94,22 @@ class SDEOverdamped():
         #compute value of Lhat
         #see equation (10) and (11) in ref. 2410.05163
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + self.boundary.gfun(xinit)) * c))
+        
+        #free up memory again
+        del xinit 
+        del du
+        del du_bar
+        del t_vec
+
+        a = None
+        abar = None
+        bbar = None
+        c = None
 
         return Lhat
     
 
-    def compute_metrics(self,net,epoch,Lhat):
+    def compute_metrics(self,net,epoch,Lhat,plotter):
 
         """
         Following 2410.05163 (see proposition 3). 
@@ -143,9 +157,19 @@ class SDEOverdamped():
         self.logger.log_epoch_data(net,
                                     epoch,
                                     Lhat,
-                                    torch.mean(kldyn.detach()).item(),
+                                    torch.mean(kldyn).item(),
                                     kl_static,
-                                    xinit.detach().numpy())
+                                    xinit.detach().numpy(),
+                                    plotter)
+
+        #free up the tensors
+        del xinit 
+        del xinit_ref
+        del du
+        del du_bar
+        del du_ref
+        del kldyn
+
 
         return 
 

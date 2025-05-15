@@ -7,53 +7,64 @@ import src.viz.plots as plots
 import pdb
 import os
 
-#parse arguments from command line
-args = parser.overdamped_argparser()
+def run():
 
-#initialise the model
-#TODO: add gpu option, decide architectures
-#TODO: add config file to read these params
-if args.boundary=="Landauer":
-    boundary = boundary.HalfBridgeLandauer()
-    net = nn.NeuralNetwork(args.hiddenlayerneurons,
-                            boundary,
-                            args.checkpointpath).to(args.device)
-elif args.boundary=="LinearOU": #Linear OU
-    boundary = boundary.LinearOU()
-    net = nn.MLP(args.hiddenlayerneurons,args.checkpointpath).to(args.device)
-elif args.boundary=="UnderdampedLandauer": #underdamped landauer
-    boundary = boundary.UnderdampedHalfBridge()
-    net = net = nn.NeuralNetwork(args.hiddenlayerneurons,
-                            boundary,
-                            args.checkpointpath).to(args.device)
+    #create a log file and results directory
+    overdampedlogger = logger.LossLogger()
 
-#create a log file and results directory
-plotter = plots.PlotFuns(boundary)
-logger = logger.LossLogger(plotter)
-plotter.setresultsdir(logger.get_results_path())
+    #parse arguments from command line
+    args = parser.overdamped_argparser()
+    overdampedlogger.log_args(args)
 
-#pretraining - train to approximate a numeric drift given by a csv file
-if args.pretrain:
-    import run_pretrain
-    run_pretrain.run_pretrain(net,logger.get_results_path(),boundary)
+    #initialise the model
+    #TODO: add gpu option, decide architectures
+    #TODO: add config file to read these params
+    if args.boundary=="Landauer":
+        boundaryconditions = boundary.HalfBridgeLandauer()
+        net = nn.NeuralNetwork(args.hiddenlayerneurons,
+                                boundaryconditions,
+                                args.checkpointpath).to(args.device)
+    elif args.boundary=="LinearOU": #Linear OU
+        boundaryconditions = boundary.LinearOU()
+        net = nn.MLP(args.hiddenlayerneurons,args.checkpointpath).to(args.device)
+    elif args.boundary=="UnderdampedLandauer": #underdamped landauer
+        boundaryconditions = boundary.UnderdampedHalfBridge()
+        net = net = nn.NeuralNetwork(args.hiddenlayerneurons,
+                                boundaryconditions,
+                                args.checkpointpath).to(args.device)
 
-#intialise sde integration 
-#TODO add these arguments so they get read directly from the command line already in the sde file
-integrator = langevin.SDEOverdamped(boundary,
-                                    logger)
+    overdampedlogger.log_args(boundaryconditions.params)
 
-#plot intiial values
-integrator.compute_metrics(net,0,0)
+    plotter = plots.PlotFuns(boundaryconditions)
+    plotter.setresultsdir(overdampedlogger.get_results_path())
 
-#initialise trainer 
-trainer = train.Train(integrator, net, args.logstep) 
+    #pretraining - train to approximate a numeric drift given by a csv file
+    if args.pretrain:
+        import run_pretrain
+        run_pretrain.run_pretrain(net,overdampedlogger.get_results_path(),boundaryconditions)
 
-for epoch in range(1,args.epochs+1):
-    try:
-        trainer.train_step(epoch)
-    except KeyboardInterrupt:
-        print(f"Training interrupted at epoch {epoch}")
-        #plot the loss metrics
-        plotter.plot_loss_metrics()
+    #intialise sde integration 
+    #TODO add these arguments so they get read directly from the command line already in the sde file
+    integrator = langevin.SDEOverdamped(boundaryconditions,
+                                        overdampedlogger)
 
-plotter.plot_loss_metrics()
+    #plot intiial values
+    integrator.compute_metrics(net,0,0,plotter)
+
+    #initialise trainer 
+    trainer = train.Train(integrator, net, args.logstep, plotter) 
+
+    for epoch in range(1,args.epochs+1):
+        try:
+            trainer.train_step(epoch)
+        except KeyboardInterrupt:
+            print(f"Training interrupted at epoch {epoch}")
+            #plot the loss metrics
+            plotter.plot_loss_metrics()
+        except ValueError:
+            print("The training has resulted in NaN loss and therefore failed. Please retry.")
+            raise
+    plotter.plot_loss_metrics()
+
+if __name__=="__main__":
+    run()
