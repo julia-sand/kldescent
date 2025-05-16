@@ -8,4 +8,5 @@ steps to reproduce.txt
 core.*
 src/model/tempnn.py
 *.png
-
+*.txt
+*.dat

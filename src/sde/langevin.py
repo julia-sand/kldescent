@@ -2,7 +2,7 @@
 import numpy as np 
 import torch
 import src.sde.kl as kl
-import pdb
+#import pdb
 from ..utils.parser import integrator_params
 
 class SDEOverdamped():
@@ -35,10 +35,10 @@ class SDEOverdamped():
     def testing_time_grid(self):
         #get an equally spaced time grid which can be used with the reference solution
         timeout = self.boundary.get_reference_timegrid()
-        if timeout is not None:
-            return timeout
-        else: 
-            return np.linspace(0,self.Tf,self.t_steps)
+        #if timeout is not None:
+        #    return timeout
+        #else: 
+        return np.linspace(0,self.Tf,self.t_steps)
 
     def generate_innovation(self,dt,size):
         #generate a step of brownian motion
@@ -122,7 +122,7 @@ class SDEOverdamped():
         """
             
         t_vec = self.testing_time_grid()
-        testing_samples = 256 #reduced number of samples in computing the loss metrics
+        testing_samples = 1000 #reduced number of samples in computing the loss metrics
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
@@ -134,7 +134,7 @@ class SDEOverdamped():
         for i in range(0,len(t_vec)-1):
             dt = (t_vec[i+1]-t_vec[i])
             
-            dw = self.generate_innovation(dt,self.batch_samples)
+            dw = self.generate_innovation(dt,testing_samples)
 
             du_ref = torch.tensor(self.boundary.du_ref(xinit_ref[:,0,None],t_vec[i]),
                                     requires_grad=False,
@@ -188,7 +188,7 @@ class SDEOverdamped():
         """
             
         t_vec = self.testing_time_grid()
-        testing_samples = 2000
+        testing_samples = 4000
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
@@ -206,7 +206,7 @@ class SDEOverdamped():
 
             xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
 
-        plotter.marginal_distribution(xinit[:,0].detach().numpy())
+        plotter.marginal_distribution(xinit[:,1].detach().numpy())
         
         #free up the tensors
         del xinit 
@@ -221,7 +221,7 @@ if __name__=="__main__":
     from ..viz.plots import PlotFuns
 
     boundary_cond = UnderdampedHalfBridge()
-    net = NeuralNetwork(64,boundary_cond,checkpointpath="net_checkpoint_390.pt")
+    net = NeuralNetwork(64,boundary_cond,checkpointpath="net_checkpoint_2000.pt")
 
     integrator = SDEOverdamped(boundary_cond,None)
     plotter = PlotFuns(boundary_cond)

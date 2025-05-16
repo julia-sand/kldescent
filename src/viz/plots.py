@@ -80,6 +80,8 @@ class PlotFuns():
 
     plt.savefig(self.subdir+f"/test_plot.png")
     plt.close()
+    del Q 
+    del P 
 
   def format_drift_ax(self,ax1,time):
     ax1.set_xlim((-4,4))
@@ -114,6 +116,7 @@ class PlotFuns():
     plt.savefig(self.subdir+f"/drift.png")
     plt.close()
 
+
   ##scatter plot of final distribution 
   def marginal_distribution(self,samples):
 
@@ -144,18 +147,21 @@ class PlotFuns():
       kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(samples[np.isfinite(samples)].reshape(-1,1))
       log_dens = kde.score_samples(np.linspace(-4,4).reshape(-1,1))
       ax.fill_between(np.linspace(-4,4,num=len(log_dens)), np.zeros(len(log_dens)), np.exp(log_dens), fc="#AAAAFF")
-      ax.plot(np.linspace(-4,4),
-                self.boundary.q_marginal_final(np.linspace(-4,4)),
-                label="Assigned Final Distribution")
+      #ax.plot(np.linspace(-4,4),
+      #          self.boundary.q_marginal_final(np.linspace(-4,4)),
+      #          label="Assigned Final Distribution")
       
-
+      ax.plot(np.linspace(-4,4),
+                np.exp(-np.linspace(-4,4)**2)/np.sqrt(np.pi),
+                #self.boundary.q_marginal_final(np.linspace(-4,4)),
+                label="Assigned Final Distribution")
       ax.tick_params(axis='both', labelsize=self.fontsizeticks)
 
       ax.set_xlabel(r"$p$",fontsize = self.fontsizetitles)
       ax.set_ylabel(r"$\rho_T(q)$",fontsize = self.fontsizetitles)
 
       plt.legend()
-      plt.savefig(self.subdir+f"/final_density.png")
+      plt.savefig(self.subdir+f"/final_density1.png")
       plt.close()    
 
     except ValueError:
@@ -234,8 +240,9 @@ class PlotFuns():
 
 
 if __name__=="__main__":
-  
-  filename=None #add filename of loss.csv to plot
-  plotter = PlotFuns()
+  from ..sde.boundary import UnderdampedHalfBridge
+  boundary1 = UnderdampedHalfBridge()
+  filename="loss.csv" #add filename of loss.csv to plot
+  plotter = PlotFuns(boundary_data=boundary1)
   plotter.plot_loss_metrics(filename)
   
