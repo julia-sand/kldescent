@@ -7,13 +7,13 @@ def overdamped_argparser():
     parser = argparse.ArgumentParser()
     #subparser = parser.add_subparsers()
 
-    parser.add_argument('-epochs','--epochs', type=int, default=0,
+    parser.add_argument('-epochs','--epochs', type=int, default=1,
                         help='A required integer positional argument')
     
     parser.add_argument('-device','--device', default="cpu",
                         help='A required integer positional argument')
     
-    parser.add_argument('-logstep','--logstep', type=int, default=10,
+    parser.add_argument('-logstep','--logstep', type=int, default=1,
                         help='A required integer positional argument')
     
     parser.add_argument('-checkpointpath','--checkpointpath', type=str,
@@ -28,10 +28,7 @@ def overdamped_argparser():
     parser.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=10,
                         help='Number of hidden dimensions in each layer of the Neural network model')
 
-    parser.add_argument('-Tf','--Tf', type=float, default=1,
-                        help='final time')
-
-    parser.add_argument('-boundary','--boundary', type=str, default="LinearOU",
+    parser.add_argument('-boundary','--boundary', type=str, default="UnderdampedLandauer",
                         help='which set of boundary conditions to use. See Sde.Boundary for more details')
     
     args = parser.parse_known_args()
@@ -50,7 +47,7 @@ def integrator_params():
     #subparser = parser.add_subparsers()
 
     integrator_params.add_argument('-batchsamples','--batchsamples', type=int, 
-                        default=600,
+                        default=100,
                         help='Number of sample trajectories to take of the diffusion')
 
     integrator_params.add_argument('-tsteps','--tsteps', type=int, default=10,

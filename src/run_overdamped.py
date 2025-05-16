@@ -6,7 +6,10 @@ from src.utils import *
 import src.viz.plots as plots
 import pdb
 import os
+from memory_profiler import profile
 
+
+@profile
 def run():
 
     #create a log file and results directory
@@ -33,12 +36,11 @@ def run():
                                 boundaryconditions,
                                 args.checkpointpath).to(args.device)
 
-    overdampedlogger.log_args(boundaryconditions.params)
-
     plotter = plots.PlotFuns(boundaryconditions)
     plotter.setresultsdir(overdampedlogger.get_results_path())
 
-    #pretraining - train to approximate a numeric drift given by a csv file
+    #pretraining - train to approximate a n
+    overdampedlogger.log_args(boundaryconditions.params)
     if args.pretrain:
         import run_pretrain
         run_pretrain.run_pretrain(net,overdampedlogger.get_results_path(),boundaryconditions)
