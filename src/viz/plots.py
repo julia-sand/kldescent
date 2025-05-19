@@ -6,7 +6,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.lines as mlines
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from sklearn.neighbors import KernelDensity
-from memory_profiler import profile
+#from memory_profiler import profile
 
 
 '''

@@ -8,7 +8,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.optim.lr_scheduler import ExponentialLR
 from torch.nn.utils import clip_grad_norm_
 
-from memory_profiler import profile
+#from memory_profiler import profile
 
 
 class Pretrain():
