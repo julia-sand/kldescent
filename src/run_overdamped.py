@@ -1,15 +1,18 @@
+import os
+
 import numpy as np
 import torch
+
+import pdb
+from memory_profiler import profile
+
 from src.model import *
 from src.sde import *
 from src.utils import *
 import src.viz.plots as plots
-import pdb
-import os
-from memory_profiler import profile
 
 
-@profile
+#@profile
 def run():
 
     #create a log file and results directory

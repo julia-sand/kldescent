@@ -1,3 +1,5 @@
+import math 
+
 import numpy as np 
 import torch
 from torch import nn as torchnn
@@ -5,7 +7,9 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.optim.lr_scheduler import ExponentialLR
 from torch.nn.utils import clip_grad_norm_
-import math 
+
+from memory_profiler import profile
+
 
 class Pretrain():
     #define the training parameters and loop for any pretraining. 
@@ -78,6 +82,7 @@ class Train():
 
         self.net.train() #set neural net into train mode
         
+    #@profile
     def train_step(self,epoch):  
         
         #reset gradients 
@@ -94,8 +99,13 @@ class Train():
         self.scheduler.step()
 
         if (epoch % self.logstep == 0): #compute metrics 
+            loss_out = Lhat.detach().numpy().item()
             with torch.no_grad():
-                self.integrator.compute_metrics(self.net,epoch,Lhat.item(),self.plotter)
+                
+                self.integrator.compute_metrics(self.net,
+                                    epoch,
+                                    loss_out,
+                                    self.plotter)
 
         if math.isnan(Lhat.item()):
             raise ValueError('Loss function is NaN. Terminating training process')

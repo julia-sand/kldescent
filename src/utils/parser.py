@@ -7,7 +7,7 @@ def overdamped_argparser():
     parser = argparse.ArgumentParser()
     #subparser = parser.add_subparsers()
 
-    parser.add_argument('-epochs','--epochs', type=int, default=1,
+    parser.add_argument('-epochs','--epochs', type=int, default=4,
                         help='A required integer positional argument')
     
     parser.add_argument('-device','--device', default="cpu",

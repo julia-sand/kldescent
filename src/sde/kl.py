@@ -1,8 +1,14 @@
+import numpy as np 
+from scipy.spatial import KDTree
+
+from memory_profiler import profile
+
 """Computes the KL divergence between two sets of sampled points 
 via the k-nearest-neighbours method of 
 Wang, Qing and Kulkarni, Sanjeev R. and Verdu, Sergio. 
 In: IEEE Transactions on Information Theory (2009)
 """
+
 
 def kl_div(d1,d2,k=1):
 
@@ -16,14 +22,8 @@ def kl_div(d1,d2,k=1):
     Output: 
     -estimate of the KL divergence between the two empirical distributions
     """
-            
-    import numpy as np 
-    from scipy.spatial import KDTree
-
+          
     #check d1, d2 in the right shape
-
-
-
     batch_samples = d1.shape[0]
     
     #GET NEAREST NEIGHBOURS
@@ -31,10 +31,10 @@ def kl_div(d1,d2,k=1):
     tree1 = KDTree(d1)
     tree2 = KDTree(d2)
 
-    rho = tree1.query(d1, k=[k+1])[0] #2nd closesst point to x in data1 (since closest is alwayss itself)
-    nu = tree2.query(d1, k=[k])[0] #closest point in data2
+    #rho = tree1.query(d1, k=[k+1])[0] #2nd closesst point to x in data1 (since closest is alwayss itself)
+    #nu = tree2.query(d1, k=[k])[0] #closest point in data2
 
-    return (2/batch_samples)*np.log(nu/(rho+1e-10)).sum() + np.log(batch_samples/(batch_samples-1))
+    return (2/batch_samples)*np.log(tree2.query(d1, k=[k])[0]/(tree1.query(d1, k=[k+1])[0]+1e-10)).sum() + np.log(batch_samples/(batch_samples-1))
 
 
 if __name__=="__main__":
@@ -66,3 +66,4 @@ if __name__=="__main__":
     plt.legend()
     plt.xlabel("number of samples (power of ten)")
     plt.savefig(f"kldescent/tests/boundary_test.png")
+    
