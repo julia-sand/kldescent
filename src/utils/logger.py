@@ -6,7 +6,7 @@ import time
 import numpy as np 
 import torch
 
-import memory_profiler
+#import memory_profiler
 
 class LossLogger():
     '''
