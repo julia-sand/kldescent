@@ -1,10 +1,13 @@
+import os
+
 import numpy as np 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.lines as mlines
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-import os 
-from scipy.ndimage import generic_filter,median
+from sklearn.neighbors import KernelDensity
+from memory_profiler import profile
+
 
 '''
 #visualisations ideas
@@ -80,8 +83,7 @@ class PlotFuns():
 
     plt.savefig(self.subdir+f"/test_plot.png")
     plt.close()
-    del Q 
-    del P 
+
 
   def format_drift_ax(self,ax1,time):
     ax1.set_xlim((-4,4))
@@ -94,7 +96,7 @@ class PlotFuns():
     ax1.plot(x,du,
             label="Reference")
 
-
+  #@profile
   def plot_drift(self,x,times,dus=None):
 
     fig,ax = plt.subplots(1,len(times))
@@ -104,9 +106,7 @@ class PlotFuns():
       xref,duref = self.boundary.get_reference_data(times[t])
       self.plot_reference(ax[t],xref,duref)
 
-      for du in dus[t]:
-
-        ax[t].plot(x,du,label="N.N.")
+      ax[t].plot(x,dus[:,t],label="N.N.")
 
       self.format_drift_ax(ax[t],times[t])
     
@@ -118,6 +118,7 @@ class PlotFuns():
 
 
   ##scatter plot of final distribution 
+  #@profile
   def marginal_distribution(self,samples):
 
     """
@@ -129,44 +130,36 @@ class PlotFuns():
 
     
 
-    fig =plt.figure()
-    #get plot location
-    ax = fig.add_subplot(111)
-
-    #ax.set_xlim((-4,4))
-    ax.set_ylim(bottom = -0.01)
-
-    #plot scatter graphs
-    #ax.hist(samples,density =True)
-    
+  
     #fit kde 
-    from sklearn.neighbors import KernelDensity
 
 
     try:
       kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(samples[np.isfinite(samples)].reshape(-1,1))
       log_dens = kde.score_samples(np.linspace(-4,4).reshape(-1,1))
+      fig = plt.figure()
+      #get plot location
+      ax = fig.add_subplot(111)
+
+      #ax.set_ylim(bottom = -0.01)
+
+      #plot scatter graphs
       ax.fill_between(np.linspace(-4,4,num=len(log_dens)), np.zeros(len(log_dens)), np.exp(log_dens), fc="#AAAAFF")
-      #ax.plot(np.linspace(-4,4),
-      #          self.boundary.q_marginal_final(np.linspace(-4,4)),
-      #          label="Assigned Final Distribution")
       
       ax.plot(np.linspace(-4,4),
-                np.exp(-np.linspace(-4,4)**2)/np.sqrt(np.pi),
-                #self.boundary.q_marginal_final(np.linspace(-4,4)),
-                label="Assigned Final Distribution")
-      ax.tick_params(axis='both', labelsize=self.fontsizeticks)
+                np.exp(-np.linspace(-4,4)**2)/np.sqrt(np.pi))
+      #                label="Assigned Final Distribution")
+      #ax.tick_params(axis='both', labelsize=self.fontsizeticks)
 
-      ax.set_xlabel(r"$p$",fontsize = self.fontsizetitles)
-      ax.set_ylabel(r"$\rho_T(q)$",fontsize = self.fontsizetitles)
+      #ax.set_xlabel(r"$p$",fontsize = self.fontsizetitles)
+      #ax.set_ylabel(r"$\rho_T(q)$",fontsize = self.fontsizetitles)
 
-      plt.legend()
+      #plt.legend()
       plt.savefig(self.subdir+f"/final_density1.png")
       plt.close()    
 
     except ValueError:
-      print("The final density could not be computed because the drift did not return any points in the area.")
-      plt.close()
+      print("The final density could not be computed because the neural network did not return any finite values.")
 
   def get_loss_output(self,filename=None):
     if filename is not None:

@@ -10,3 +10,5 @@ src/model/tempnn.py
 *.png
 *.txt
 *.dat
+klenv
+
