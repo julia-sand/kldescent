@@ -38,6 +38,11 @@ def run():
         net = net = nn.NeuralNetwork(args.hiddenlayerneurons,
                                 boundaryconditions,
                                 args.checkpointpath).to(args.device)
+    elif args.boundary=="UnderdampedNoMomentum": #underdamped landauer
+        boundaryconditions = boundary.UnderdampedNoMomentum()
+        net = net = nn.NeuralNetwork(args.hiddenlayerneurons,
+                                boundaryconditions,
+                                args.checkpointpath).to(args.device)
 
     plotter = plots.PlotFuns(boundaryconditions)
     plotter.setresultsdir(overdampedlogger.get_results_path())

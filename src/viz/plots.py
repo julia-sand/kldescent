@@ -6,8 +6,11 @@ import matplotlib.gridspec as gridspec
 import matplotlib.lines as mlines
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from sklearn.neighbors import KernelDensity
+import torch
 #from memory_profiler import profile
 
+import matplotlib
+matplotlib.use('Agg')  # Use the 'Agg' backend for non-GUI rendering
 
 '''
 #visualisations ideas
@@ -119,7 +122,7 @@ class PlotFuns():
 
   ##scatter plot of final distribution 
   #@profile
-  def marginal_distribution(self,samples):
+  def marginal_distribution(self,samples,name):
 
     """
     Function that plots the scatter plot of the monte carlo approximation of the joint distribution
@@ -128,12 +131,6 @@ class PlotFuns():
     - samples: the output of the evolutions
     """
 
-    
-
-  
-    #fit kde 
-
-
     try:
       kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(samples[np.isfinite(samples)].reshape(-1,1))
       log_dens = kde.score_samples(np.linspace(-4,4).reshape(-1,1))
@@ -141,21 +138,13 @@ class PlotFuns():
       #get plot location
       ax = fig.add_subplot(111)
 
-      #ax.set_ylim(bottom = -0.01)
-
       #plot scatter graphs
       ax.fill_between(np.linspace(-4,4,num=len(log_dens)), np.zeros(len(log_dens)), np.exp(log_dens), fc="#AAAAFF")
       
       ax.plot(np.linspace(-4,4),
                 np.exp(-np.linspace(-4,4)**2)/np.sqrt(np.pi))
-      #                label="Assigned Final Distribution")
-      #ax.tick_params(axis='both', labelsize=self.fontsizeticks)
-
-      #ax.set_xlabel(r"$p$",fontsize = self.fontsizetitles)
-      #ax.set_ylabel(r"$\rho_T(q)$",fontsize = self.fontsizetitles)
-
-      #plt.legend()
-      plt.savefig(self.subdir+f"/final_density1.png")
+      
+      plt.savefig(self.subdir+f"/final_density_{name}.png")
       plt.close()    
 
     except ValueError:
@@ -229,7 +218,30 @@ class PlotFuns():
       plt.close()
     
     return     
-  
+
+  ##@profile
+  def evaluate_net_output(self,net,plot_times):
+      #computes neural network output (forward pass) to use in plotting
+      dus = np.zeros((1000,len(plot_times)))
+      for t in enumerate(plot_times):
+          with torch.no_grad():
+              dus[:,t[0],None] = net(torch.column_stack((t[1]*torch.ones(1000,dtype=torch.float32)
+                                                  ,torch.linspace(-4,4,1000)))).detach().numpy().reshape((1000,1))
+      return dus
+
+  #@profile
+  def make_epoch_plots(self,epoch,
+                            xout,
+                            net):
+      #create epoch folder and set plotter subdirectory
+      #make plots
+      self.marginal_distribution(xout[:,0],"POSITION")
+      if xout.shape[1] == 2:
+        self.marginal_distribution(xout[:,1],"MOMENTUM")
+      
+      self.plot_drift(np.linspace(-4,4,1000),
+                          times = [0,0.5,1],
+                          dus = self.evaluate_net_output(net,[0,0.5,1]))
 
 
 if __name__=="__main__":
