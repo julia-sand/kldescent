@@ -75,32 +75,10 @@ class LossLogger():
         os.makedirs(self.newpath+f"/epoch{epoch}", exist_ok = True)
         return f"/epoch{epoch}"
 
-    ##@profile
-    def evaluate_net_output(self,net,plot_times):
-        #computes neural network output (forward pass) to use in plotting
-        dus = np.zeros((1000,len(plot_times)))
-        for t in enumerate(plot_times):
-            with torch.no_grad():
-                dus[:,t[0],None] = net(torch.column_stack((t[1]*torch.ones(1000,dtype=torch.float32)
-                                                    ,torch.linspace(-4,4,1000)))).detach().numpy().reshape((1000,1))
-        return dus
-
     #@profile
-    def make_epoch_plots(self,epoch,xout,net,plotter):
-        #create epoch folder and set plotter subdirectory
-        plotter.setsubdir(self.get_epoch_folder(epoch))
-        #make plots
-        plotter.marginal_distribution(xout[:,0])
-        #plotter.plot_drift(np.linspace(-4,4,1000),
-        #                    times = [0,0.5,1],
-        #                    dus = self.evaluate_net_output(net,[0,0.5,1]))
-
-    #@profile
-    def log_epoch_data(self,net,epoch,lout,kl_dyn,kl_val,xout,plotter):
+    def log_epoch_data(self,net,epoch,lout,kl_dyn,kl_val,xout):
 
         self.write_data_row(epoch,lout,kl_dyn,kl_val) #log
-
-        #self.make_epoch_plots(epoch,xout,net,plotter)
 
         self.save_checkpoint(net,epoch)
 

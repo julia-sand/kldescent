@@ -11,7 +11,7 @@ import pdb
 class SDEOverdamped():
     def __init__(self,
                     boundary_data,
-                    logger):
+                    logger=None):
         self.boundary = boundary_data
         self.logger = logger
 
@@ -19,8 +19,7 @@ class SDEOverdamped():
         self.sde_params = integrator_params()
         self.batch_samples = self.sde_params.batchsamples # number of samples in each step 
         self.t_steps = self.sde_params.tsteps #number of timesteps in discretisation
-        self.epsilon = self.boundary.epsilon 
-        self.Tf = self.boundary.Tf
+        #self.Tf = self.boundary.Tf
         self.g = self.boundary.g
         if self.logger is not None:
             self.logger.log_args(self.sde_params) #add to log
@@ -31,8 +30,8 @@ class SDEOverdamped():
         #samples the interval [0,Tf] and returns sorted set of values to be used in integration
 
         return np.concatenate([[0],
-                                np.sort(np.random.uniform(0, self.Tf, self.t_steps-1)),
-                                [self.Tf]])
+                                np.sort(np.random.uniform(0, self.boundary.Tf, self.t_steps-1)),
+                                [self.boundary.Tf]])
 
 
     def testing_time_grid(self):
@@ -41,7 +40,7 @@ class SDEOverdamped():
         #if timeout is not None:
         #    return timeout
         #else: 
-        return np.linspace(0,self.Tf,self.t_steps)
+        return np.linspace(0,self.boundary.Tf,self.t_steps)
 
     def generate_innovation(self,dt,size):
         #generate a step of brownian motion
@@ -166,14 +165,17 @@ class SDEOverdamped():
             print("Value Error exception ignored. This means that the current value of the \n \
             neural network drift produces NaN values. ")
         
-
-        self.logger.log_epoch_data(net,
+        if self.logger is not None:
+            self.logger.log_epoch_data(net,
                                     epoch,
                                     lout,
                                     torch.mean(kldyn).item(),
                                     kl_static,
+                                    xinit.detach().numpy())
+
+        plotter.make_epoch_plots(epoch,
                                     xinit.detach().numpy(),
-                                    plotter)
+                                    net)
 
         #free up the tensors
         del xinit 
@@ -218,8 +220,6 @@ class SDEOverdamped():
 
             xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
 
-        plotter.marginal_distribution(xinit[:,1].detach().numpy())
-        
         #free up the tensors
         del xinit 
         del du
@@ -231,12 +231,14 @@ if __name__=="__main__":
     from ..model.nn import NeuralNetwork
     from .boundary import UnderdampedHalfBridge
     from ..viz.plots import PlotFuns
+    from ..utils.logger import LossLogger
 
     boundary_cond = UnderdampedHalfBridge()
-    net = NeuralNetwork(64,boundary_cond,checkpointpath="net_checkpoint_2000.pt")
+    net = NeuralNetwork(64,boundary_cond,checkpointpath="net_checkpoint_5000.pt")
 
-    integrator = SDEOverdamped(boundary_cond,None)
+    #logger1 = LossLogger()
+    integrator = SDEOverdamped(boundary_cond)
+
     plotter = PlotFuns(boundary_cond)
-    #
     integrator.compute_metrics(net,0,0,plotter)
     #integrator.compute_sde(net,plotter)

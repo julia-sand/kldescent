@@ -1,25 +1,35 @@
-import numpy as np 
 import os
+
+import numpy as np 
+
 from ..utils.parser import boundary_params
-#the boundary conditions    
 
-
-class HalfBridgeLandauer():
+class Boundaries():
     def __init__(self):
-        self.sigma0 = 1#np.sqrt(2)
-        self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
-        self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
 
+        self.sigma0 = 1 #np.sqrt(2)
+        
         #get params 
         self.params = boundary_params()
-        self.epsilon = self.params.epsilon 
         self.Tf = self.params.Tf
         self.g = self.params.g        
-        
+        self.beta = self.params.beta 
+        self.m = self.params.mass 
+        self.tau = self.params.tau 
+        self.epsilon = np.sqrt(self.tau**2 / (self.beta*self.m))
+
         self.Generator = np.random.default_rng(seed=None)
 
         #self.logger.log_args(self.params) #add to log
 
+
+class HalfBridgeLandauer(Boundaries):
+    def __init__(self):
+        Boundaries.__init__(self)
+        self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
+        self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
+
+        
 
     def Uinitial(self,q):
 
@@ -130,23 +140,13 @@ class HalfBridgeLandauer():
 
 
 
-class LinearOU():
+class LinearOU(Boundaries):
     def __init__(self,d=1):
+        Boundaries.__init__(self)
         self.d = d #dimension #TODO!!! this needs to be added 
         self.gamma = 1
         self.A = 0.2
-        self.sigma0 = 1
         self.Lambda = 1
-
-        #get params 
-        params = boundary_params()
-        self.epsilon = params.epsilon 
-        self.Tf = params.Tf
-        self.g = params.g
-
-        #set up npr generator 
-        self.Generator = np.random.default_rng(seed=None)
-
         
     def q_marginal_initial(self,q):
 
@@ -215,21 +215,14 @@ class LinearOU():
         return xn + (self.b(xn,t) \
                      + self.sigma0*du_bar)*dt + self.sigma0*dw
 
-
-
-class QuadraticOU():
+class QuadraticOU(Boundaries):
     def __init__(self,Tf,d=1):
+        Boundaries.__init__(self)
         self.d = d #dimension #TODO!!! this needs to be added 
-        self.Tf = Tf
         self.A = 0.2
         self.P = 0.2 
         self.Q = 0.1
-        self.sigma0 = 1
         self.Lambda = 1
-
-        #set up npr generator 
-        self.Generator = np.random.default_rng(seed=None)
-
         
     def q_marginal_initial(self,q):
 
@@ -289,21 +282,10 @@ class QuadraticOU():
         return self.A*q
 
 
-
-class UnderdampedHalfBridge():
+class UnderdampedHalfBridge(Boundaries):
     def __init__(self):
-
-        #get params 
-        self.params = boundary_params()
-        self.epsilon = self.params.epsilon 
-        self.Tf = self.params.Tf
-        self.g = self.params.g
-        self.beta = 2
-        self.tau = 1
-        self.m = 1
+        Boundaries.__init__(self)
         self.sigma0 = np.sqrt(2/self.beta)
-
-        self.Generator = np.random.default_rng(seed=None)
 
         self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
         self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
@@ -448,6 +430,17 @@ class UnderdampedEntropyProduction(UnderdampedHalfBridge):
     def f(self,x,t,du_bar):
 
         return (self.beta/(self.tau*self.m))*(x[:,1,None]**2) - np.gradient()
+
+
+class UnderdampedNoMomentum(UnderdampedHalfBridge):
+    def __init__(self):
+        super().__init__()
+
+    def gfun(self,x):
+        #overwrite the terminal cost function 
+
+        #Terminal cost
+        return -self.beta*self.Ufinal(x[:,0,None])
 
 
 if __name__=="__main__":

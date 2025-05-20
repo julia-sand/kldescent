@@ -66,7 +66,13 @@ def boundary_params():
     boundary_params.add_argument('-Tf','--Tf', type=float, default=1,
                         help='final time')
 
-    boundary_params.add_argument('-epsilon','--epsilon', type=float, default=1,
+    boundary_params.add_argument('-beta','--beta', type=float, default=2,
+                        help='constant')
+
+    boundary_params.add_argument('-mass','--mass', type=float, default=1,
+                        help='constant')
+
+    boundary_params.add_argument('-tau','--tau', type=float, default=1,
                         help='constant')
 
     boundary_params.add_argument('-g','--g', type=float, default=0,
