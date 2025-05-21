@@ -133,16 +133,16 @@ class PlotFuns():
 
     try:
       kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(samples[np.isfinite(samples)].reshape(-1,1))
-      log_dens = kde.score_samples(np.linspace(-4,4).reshape(-1,1))
+      log_dens = kde.score_samples(np.linspace(-6,6).reshape(-1,1))
       fig = plt.figure()
       #get plot location
       ax = fig.add_subplot(111)
 
       #plot scatter graphs
-      ax.fill_between(np.linspace(-4,4,num=len(log_dens)), np.zeros(len(log_dens)), np.exp(log_dens), fc="#AAAAFF")
+      ax.fill_between(np.linspace(-6,6,num=len(log_dens)), np.zeros(len(log_dens)), np.exp(log_dens), fc="#AAAAFF")
       
-      ax.plot(np.linspace(-4,4),
-                np.exp(-np.linspace(-4,4)**2)/np.sqrt(np.pi))
+      ax.plot(np.linspace(-6,6,),
+                np.exp(-np.linspace(-6,6,)**2)/np.sqrt(np.pi))
       
       plt.savefig(self.subdir+f"/final_density_{name}.png")
       plt.close()    
@@ -230,7 +230,7 @@ class PlotFuns():
       return dus
 
   #@profile
-  def make_epoch_plots(self,epoch,
+  def make_epoch_plots(self,
                             xout,
                             net):
       #create epoch folder and set plotter subdirectory

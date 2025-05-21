@@ -1,7 +1,7 @@
 import numpy as np 
 from scipy.spatial import KDTree
 
-from memory_profiler import profile
+#from memory_profiler import profile
 
 """Computes the KL divergence between two sets of sampled points 
 via the k-nearest-neighbours method of 

@@ -5,7 +5,7 @@ import torch
 from torch import nn as torchnn
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
-from torch.optim.lr_scheduler import ExponentialLR
+#from torch.optim.lr_scheduler import ExponentialLR
 from torch.nn.utils import clip_grad_norm_
 
 #from memory_profiler import profile
@@ -59,7 +59,7 @@ class Pretrain():
 class Train():
     #define the training parameters and one training step
 
-    def __init__(self, integrator, net, logstep, plotter):
+    def __init__(self, integrator, net, logstep):
 
         self.logstep = logstep #how frequently to save results
 
@@ -77,8 +77,6 @@ class Train():
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
         self.scheduler = CosineAnnealingLR(self.optimiser, T_max=100, eta_min=0.000001)
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
-
-        self.plotter = plotter
 
         self.net.train() #set neural net into train mode
         
@@ -104,8 +102,7 @@ class Train():
                 
                 self.integrator.compute_metrics(self.net,
                                     epoch,
-                                    loss_out,
-                                    self.plotter)
+                                    loss_out)
 
         if math.isnan(Lhat.item()):
             raise ValueError('Loss function is NaN. Terminating training process')
