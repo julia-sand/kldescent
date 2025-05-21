@@ -76,7 +76,7 @@ class LossLogger():
         return f"/epoch{epoch}"
 
     #@profile
-    def log_epoch_data(self,net,epoch,lout,kl_dyn,kl_val,xout):
+    def log_epoch_data(self,net,epoch,lout,kl_dyn,kl_val):
 
         self.write_data_row(epoch,lout,kl_dyn,kl_val) #log
 

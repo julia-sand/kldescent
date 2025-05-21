@@ -5,8 +5,8 @@ import src.sde.kl as kl
 
 #import pdb
 from ..utils.parser import integrator_params
-from memory_profiler import profile
-import pdb
+#from memory_profiler import profile
+#import pdb
 
 class SDEOverdamped():
     def __init__(self,
@@ -110,7 +110,7 @@ class SDEOverdamped():
         return Lhat
     
     #@profile
-    def compute_metrics(self,net,epoch,lout,plotter):
+    def compute_metrics(self,net,epoch,lout):
 
         """
         Following 2410.05163 (see proposition 3). 
@@ -125,7 +125,7 @@ class SDEOverdamped():
 
         net.eval()
         t_vec = self.testing_time_grid()
-        testing_samples = 1000 #reduced number of samples in computing the loss metrics
+        testing_samples = 10000 #reduced number of samples in computing the loss metrics
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
@@ -156,8 +156,6 @@ class SDEOverdamped():
         
             xinit_ref = self.boundary.euler_maruyama_step(xinit_ref,du_ref,dt,dw,t_vec[i])
         
-        #pdb.set_trace()
-
         try:
             kl_static = kl.kl_div(xinit,xinit_ref)
         except ValueError:
@@ -170,12 +168,7 @@ class SDEOverdamped():
                                     epoch,
                                     lout,
                                     torch.mean(kldyn).item(),
-                                    kl_static,
-                                    xinit.detach().numpy())
-
-        plotter.make_epoch_plots(epoch,
-                                    xinit.detach().numpy(),
-                                    net)
+                                    kl_static)
 
         #free up the tensors
         del xinit 
@@ -202,28 +195,29 @@ class SDEOverdamped():
         """
             
         t_vec = self.testing_time_grid()
-        testing_samples = 4000
+        testing_samples = 2000
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
 
+        with torch.no_grad():
 
-        #self.generate_time_grid()
-        for i in range(0,len(t_vec)-1):
-            dt = (t_vec[i+1]-t_vec[i])
-            
-            dw = self.generate_innovation(dt,testing_samples)
+            #self.generate_time_grid()
+            for i in range(0,len(t_vec)-1):
+                dt = (t_vec[i+1]-t_vec[i])
+                
+                dw = self.generate_innovation(dt,testing_samples)
+                du = net.forward(torch.column_stack((t_vec[i]*torch.ones(testing_samples,dtype=torch.float32)
+                                                        ,xinit[:,0,None])))
 
-            du = net.forward(torch.column_stack((t_vec[i]*torch.ones(testing_samples,dtype=torch.float32)
-                                                    ,xinit[:,0,None])))
-            du_bar = du.detach().numpy() #untracked copy
+                xinit = self.boundary.euler_maruyama_step(xinit,du,dt,dw,t_vec[i])
 
-            xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
+        plotter.make_epoch_plots(xinit.detach().numpy(),
+                                    net)
 
         #free up the tensors
         del xinit 
         del du
-        del du_bar
 
         return 
 
@@ -231,14 +225,11 @@ if __name__=="__main__":
     from ..model.nn import NeuralNetwork
     from .boundary import UnderdampedHalfBridge
     from ..viz.plots import PlotFuns
-    from ..utils.logger import LossLogger
 
     boundary_cond = UnderdampedHalfBridge()
     net = NeuralNetwork(64,boundary_cond,checkpointpath="net_checkpoint_5000.pt")
 
-    #logger1 = LossLogger()
     integrator = SDEOverdamped(boundary_cond)
 
     plotter = PlotFuns(boundary_cond)
-    integrator.compute_metrics(net,0,0,plotter)
-    #integrator.compute_sde(net,plotter)
+    integrator.compute_sde(net,plotter)

@@ -35,12 +35,12 @@ def run():
         net = nn.MLP(args.hiddenlayerneurons,args.checkpointpath).to(args.device)
     elif args.boundary=="UnderdampedLandauer": #underdamped landauer
         boundaryconditions = boundary.UnderdampedHalfBridge()
-        net = net = nn.NeuralNetwork(args.hiddenlayerneurons,
+        net = nn.NeuralNetwork(args.hiddenlayerneurons,
                                 boundaryconditions,
                                 args.checkpointpath).to(args.device)
-    elif args.boundary=="UnderdampedNoMomentum": #underdamped landauer
+    elif args.boundary=="UnderdampedNoMomentum": #
         boundaryconditions = boundary.UnderdampedNoMomentum()
-        net = net = nn.NeuralNetwork(args.hiddenlayerneurons,
+        net = nn.NeuralNetwork(args.hiddenlayerneurons,
                                 boundaryconditions,
                                 args.checkpointpath).to(args.device)
 
@@ -59,10 +59,10 @@ def run():
                                         overdampedlogger)
 
     #plot intiial values
-    integrator.compute_metrics(net,0,0,plotter)
+    integrator.compute_metrics(net,0,0)
 
     #initialise trainer 
-    trainer = train.Train(integrator, net, args.logstep, plotter) 
+    trainer = train.Train(integrator, net, args.logstep) 
 
     for epoch in range(1,args.epochs+1):
         try:
