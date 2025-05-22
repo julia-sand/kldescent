@@ -92,12 +92,11 @@ class Train():
         ##training##
         Lhat.backward()
         self.optimiser.step()
-        
-        
+               
         self.scheduler.step()
 
         if (epoch % self.logstep == 0): #compute metrics 
-            loss_out = Lhat.detach().numpy().item()
+            loss_out = Lhat.detach().numpy().item() #note. This must happen AFTER update
             with torch.no_grad( ):
                 
                 self.integrator.compute_metrics(self.net,

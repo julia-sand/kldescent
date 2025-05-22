@@ -4,10 +4,13 @@ import torch
 import src.sde.kl as kl
 from ..utils.parser import integrator_params
 
+#import pdb
+
 class SDEOverdamped():
     def __init__(self,
                     boundary_data,
-                    logger=None):
+                    logger=None,
+                    device="cpu"):
         self.boundary = boundary_data
         self.logger = logger
 
@@ -57,14 +60,16 @@ class SDEOverdamped():
         t_vec = self.generate_time_grid()
 
         #initialise x values 
-        xinit = torch.tensor(self.boundary.generate_samples(self.batch_samples,"initial"),requires_grad=False,dtype=torch.float32)
+        xinit = torch.tensor(self.boundary.generate_samples(self.batch_samples,"initial"),requires_grad=False,dtype=torch.float32).to_device(device)
 
         #set up a,abar,c,cbar
         a = torch.zeros((self.batch_samples,1),dtype=torch.float32)
         abar = torch.zeros((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
         bbar = torch.zeros((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
         c = torch.zeros((self.batch_samples,1),dtype=torch.float32)
+        dw = torch.zeros((self.batch_samples,1),dtype=torch.float32)
 
+        #pdb.set_trace()
         #self.generate_time_grid()
         for i in range(0,self.t_steps-1):
             dt = (t_vec[i+1]-t_vec[i])
@@ -76,9 +81,7 @@ class SDEOverdamped():
                     
             a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True) ** 2) 
             
-            c = c + torch.matmul(torch.unsqueeze(du, 1),
-                                          torch.unsqueeze(dw, 2),
-                                                ).reshape((self.batch_samples,1)) #du*dw
+            c = c + (du*dw)
             du_bar = du.detach()#.numpy() #untracked copy
 
             with torch.no_grad(): #no gradient 
@@ -97,6 +100,7 @@ class SDEOverdamped():
         del du
         del du_bar
         del t_vec
+        del dw
 
         a = None
         abar = None
@@ -232,6 +236,7 @@ if __name__=="__main__":
     net = NeuralNetwork(64,boundary_cond,checkpointpath=new_folder+"/net_checkpoint_2400.pt")
     integrator = SDEOverdamped(boundary_cond)
 
-    plotter = PlotFuns(boundary_cond)
-    plotter.setresultsdir(new_folder)
-    integrator.compute_sde(net,plotter)
+    #plotter = PlotFuns(boundary_cond)
+    #plotter.setresultsdir(new_folder)
+    #integrator.compute_sde(net,plotter)
+    integrator.simulation_free(net)
