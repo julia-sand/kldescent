@@ -1,6 +1,5 @@
 """
-This file is used to compute a reference solution and deposits the results in a csv.
-
+This file is used to compute a reference solution given a Burger's equation
 See Section 3. of my notes for how this is done. 
 
 for comparison with 2411.08518, use set their beta = 2 
@@ -9,60 +8,54 @@ for comparison with 2411.08518, use set their beta = 2
 import os
 dirname = os.path.dirname(__file__)
 
-
 import numpy as np 
 import numpy.random as npr
 from scipy.ndimage import generic_filter,median
-import pdb
 
-beta = 1
+#import pdb
+def integrate(a,b,Tf,vfinal,
+                mc_samples = 20,
+                num_qsamples = 5):
 
-#final value function 
-def vfinal(q): # this is '-r'
-    return (((q**2 - 1)**2) / 4) - ((q**2)/2)
+    """
+    Parameters:
+    a - negative coefficient of second derivative in the burgers equation
+    b - coefficient of the squared first derivative
+    Tf - final time
+    vfinal - terminal condition
 
-def phifinal(q):
-    return np.exp(-vfinal(q))
+    mcsamples - number of MonteCarlo trajectories
+    qsamples - number of points along q which are 
+    """
 
-#final value function 
-def dvfinal(q):
-    return q**3 - (2*q)
-    #q**3 - q
-
-#final value function 
-def dphifinal(q):
-    return dvfinal(q)*phifinal(q)
-
-
-mc_samples = 20000
-
-Tf = 1#0.2
-tstep = 0.05#0.005
-
-##get a timegrid 
-num_tsteps = int(np.floor(Tf/tstep)+1) #number of timesteps
-t_vec = np.linspace(0,Tf,num_tsteps)
-#pdb.set_trace()
-# 
-
-num_qsamples = 5000
+    def phifinal(q):
+        return np.exp(-(b/a)*vfinal(q))
 
 
-qaxis = np.linspace(-4,4,num_qsamples)
-qaxis_samples = np.concatenate([qaxis[np.newaxis,:]]*(num_tsteps-1))
-qaxis_samples = np.concatenate([qaxis_samples[np.newaxis,:,:]]*(mc_samples))
+    Tf = 1#0.2
+    tstep = 0.1
 
-#pdb.set_trace()
+    ##get a timegrid 
+    num_tsteps = int(np.floor(Tf/tstep)+1)
+    #t_vec = np.linspace(0,Tf,int(np.floor(Tf/tstep)+1))
+   
+    qaxis = np.linspace(-4,4,num_qsamples)
+    qaxis_samples = np.concatenate([qaxis[np.newaxis,:]]*(num_tsteps-1))
+    qaxis_samples = np.concatenate([qaxis_samples[np.newaxis,:,:]]*(mc_samples))
 
-#generate trajectories
-traj = qaxis_samples + np.cumsum(np.sqrt(tstep)*np.random.Generator.standard_normal((mc_samples, num_tsteps-1,num_qsamples)),axis=1)
-#npr.randn(mc_samples, num_tsteps-1,num_qsamples)
-traj = np.flip(traj,axis = 1) #flip along columns
+    #generate trajectories
+    traj = qaxis_samples + \
+        np.cumsum(np.sqrt(tstep)*np.random.Generator.standard_normal((mc_samples, num_tsteps-1,num_qsamples)),axis=1)
+    #npr.randn(mc_samples, num_tsteps-1,num_qsamples)
+    traj = np.flip(traj,axis = 1) #flip along columns
 
-#find for t = T
-arr = np.column_stack((Tf*np.ones(num_qsamples),qaxis,vfinal(qaxis),dvfinal(qaxis)))
+    arr = np.zeros((len(qaxis)*len(num_tsteps),4))
 
-for i in range(0,num_tsteps-1): 
+    temp = -np.log(np.mean(phifinal(traj),axis=0))
+    test= np.gradient(temp,qaxis,axis=0).reshape(len(qaxis)*len(t_vec))
+
+    #find for t = T
+    #np.column_stack((Tf*np.ones(num_qsamples),qaxis,vfinal(qaxis),dvfinal(qaxis)))
 
     vout = -np.log(np.mean(phifinal(traj[:,i,:]),axis=0)).reshape(num_qsamples)
     
@@ -70,13 +63,23 @@ for i in range(0,num_tsteps-1):
     #phi = generic_filter(phiout,median,50,mode="nearest")
     #generic_filter(np.log(phiout),median,50,mode="nearest")
 
-    dvout = np.gradient(vout, qaxis)#generic_filter(,median,500,mode="nearest")
-    
+    dvout = np.gradient(vout, qaxis)
+
     arr = np.vstack((arr,np.column_stack((np.ones(num_qsamples)*t_vec[i],qaxis,vout,dvout))))
 
-np.savetxt(os.path.join(dirname, "value_orig.csv"),arr ,fmt="%10.6f",header = "t,q,v,du",delimiter=',')
-print("done.")
+    np.savetxt(os.path.join(dirname, "value_orig.csv"),arr ,fmt="%10.6f",header = "t,q,v,du",delimiter=',')
+    print("done.")
 
+if __name__=="__main__":
+    
+    Tf = 1
+    a = -(Tf - 1 + np.exp(-Tf))/Tf
+    b = -(1 - (1-np.exp(-Tf))*(3-np.exp(-Tf))/(2*Tf))
 
+    #final value function 
+    def vfinal(q): # this is '-r'
+        return (((q**2 - 1)**2) / 4) - ((q**2)/2)
+
+    integrate(a,b,Tf,)
 
 

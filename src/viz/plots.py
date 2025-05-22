@@ -2,9 +2,6 @@ import os
 
 import numpy as np 
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import matplotlib.lines as mlines
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from sklearn.neighbors import KernelDensity
 import torch
 #from memory_profiler import profile
@@ -28,7 +25,7 @@ class PlotFuns():
     #self.subdir = self.folder #add default value to put plots into main folder if subdir has not been set
     self.boundary = boundary_data
     self.folder = os.path.dirname(__file__)
-    self.subdir = os.path.dirname(__file__)
+    
     
     #fontsizes
     self.fontsize = 22
@@ -47,6 +44,7 @@ class PlotFuns():
   def setresultsdir(self,folder):
     #set output location 
     self.folder = folder
+    self.subdir = folder #also set the subdirectory to default to folder name
 
   def setsubdir(self, subdir):
     self.subdir = self.folder+subdir #os.path.join(self.folder,subdir)

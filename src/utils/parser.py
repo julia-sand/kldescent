@@ -13,7 +13,7 @@ def overdamped_argparser():
     parser.add_argument('-device','--device', default="cpu",
                         help='A required integer positional argument')
     
-    parser.add_argument('-logstep','--logstep', type=int, default=1,
+    parser.add_argument('-logstep','--logstep', type=int, default=100,
                         help='A required integer positional argument')
     
     parser.add_argument('-checkpointpath','--checkpointpath', type=str,
@@ -47,7 +47,7 @@ def integrator_params():
     #subparser = parser.add_subparsers()
 
     integrator_params.add_argument('-batchsamples','--batchsamples', type=int, 
-                        default=100,
+                        default=200,
                         help='Number of sample trajectories to take of the diffusion')
 
     integrator_params.add_argument('-tsteps','--tsteps', type=int, default=10,

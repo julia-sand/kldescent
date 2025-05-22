@@ -98,7 +98,7 @@ class Train():
 
         if (epoch % self.logstep == 0): #compute metrics 
             loss_out = Lhat.detach().numpy().item()
-            with torch.no_grad():
+            with torch.no_grad( ):
                 
                 self.integrator.compute_metrics(self.net,
                                     epoch,

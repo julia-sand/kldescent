@@ -2,11 +2,7 @@ import numpy as np
 import torch
 
 import src.sde.kl as kl
-
-#import pdb
 from ..utils.parser import integrator_params
-#from memory_profiler import profile
-#import pdb
 
 class SDEOverdamped():
     def __init__(self,
@@ -87,7 +83,7 @@ class SDEOverdamped():
 
             with torch.no_grad(): #no gradient 
 
-                abar = abar + dt*(torch.linalg.norm(du_bar, axis=1) ** 2) 
+                abar = abar + dt*(torch.linalg.norm(du_bar, axis=1, keepdim=True) ** 2) 
                 bbar = bbar + dt*(self.boundary.f(xinit,t_vec[i])) 
                 
             xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
@@ -222,14 +218,20 @@ class SDEOverdamped():
         return 
 
 if __name__=="__main__":
+    import os 
+
     from ..model.nn import NeuralNetwork
     from .boundary import UnderdampedHalfBridge
     from ..viz.plots import PlotFuns
 
-    boundary_cond = UnderdampedHalfBridge()
-    net = NeuralNetwork(64,boundary_cond,checkpointpath="net_checkpoint_5000.pt")
 
+    new_folder = "tests/4000_batch_iter2400"
+    os.makedirs(new_folder, exist_ok = True) 
+
+    boundary_cond = UnderdampedHalfBridge()
+    net = NeuralNetwork(64,boundary_cond,checkpointpath=new_folder+"/net_checkpoint_2400.pt")
     integrator = SDEOverdamped(boundary_cond)
 
     plotter = PlotFuns(boundary_cond)
+    plotter.setresultsdir(new_folder)
     integrator.compute_sde(net,plotter)
