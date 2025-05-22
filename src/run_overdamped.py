@@ -57,16 +57,18 @@ def run():
     #TODO add these arguments so they get read directly from the command line already in the sde file
     integrator = langevin.SDEOverdamped(boundaryconditions,
                                         overdampedlogger)
+                                        #args.device)
 
     #plot intiial values
-    #integrator.compute_metrics(net,0,0)
+    integrator.compute_metrics(net,0,0)
 
     #initialise trainer 
     trainer = train.Train(integrator, net, args.logstep) 
 
-    for epoch in range(0,args.epochs+1):
+    for epoch in range(1,args.epochs+1):
         try:
             trainer.train_step(epoch)
+            print(epoch)
         except KeyboardInterrupt:
             print(f"Training interrupted at epoch {epoch}")
             #plot the loss metrics
