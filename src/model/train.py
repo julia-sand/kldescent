@@ -72,7 +72,6 @@ class Train():
 
         self.clip = 0.01 #gradient clipping
 
-
         self.optimiser = Adam(self.net.parameters(), lr=self.lr)
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
         self.scheduler = CosineAnnealingLR(self.optimiser, T_max=100, eta_min=0.000001)

@@ -98,7 +98,10 @@ class PlotFuns():
             label="Reference")
 
   #@profile
-  def plot_drift(self,x,times,dus=None):
+  def plot_drift(self,x,times,net):
+
+    
+    dus = self.evaluate_net_output(net,times)
 
     fig,ax = plt.subplots(1,len(times))
   
@@ -197,7 +200,7 @@ class PlotFuns():
 
     plt.figure(figsize=(15,8))
 
-    arr = self.get_loss_output()
+    arr = self.get_loss_output(filename)
 
     ax1 = plt.subplot(131)
     ax2 = plt.subplot(132)
@@ -206,6 +209,8 @@ class PlotFuns():
       self.plot_lhat(ax1,arr)
       self.plot_dynamic_kl(ax2,arr)
       self.plot_static_kl(ax3,arr)
+      for ax in [ax1,ax2,ax3]:
+        ax.set_ylim((-2.5,2.5))
       plt.tight_layout()
       plt.savefig(self.folder+"/losses.png")
       plt.close()
@@ -230,7 +235,8 @@ class PlotFuns():
   #@profile
   def make_epoch_plots(self,
                             xout,
-                            net):
+                            net,
+                            plot_times):
       #create epoch folder and set plotter subdirectory
       #make plots
       self.marginal_distribution(xout[:,0],"POSITION")
@@ -238,14 +244,15 @@ class PlotFuns():
         self.marginal_distribution(xout[:,1],"MOMENTUM")
       
       self.plot_drift(np.linspace(-4,4,1000),
-                          times = [0,0.5,1],
-                          dus = self.evaluate_net_output(net,[0,0.5,1]))
+                          times = plot_times,
+                          net=net)
 
 
 if __name__=="__main__":
-  from ..sde.boundary import UnderdampedHalfBridge
-  boundary1 = UnderdampedHalfBridge()
-  filename="loss.csv" #add filename of loss.csv to plot
-  plotter = PlotFuns(boundary_data=boundary1)
+
+  from ..sde.boundary import UnderdampedNoMomentum
+  boundary_cond = UnderdampedNoMomentum()
+  filename="tests/20250523-171743/loss.csv" #add filename of loss.csv to plot
+  plotter = PlotFuns(boundary_cond)
   plotter.plot_loss_metrics(filename)
   

@@ -82,6 +82,31 @@ def boundary_params():
 
     return args2[0]
 
+
+#TODO separate the parser into smaller so that we can parse straight into other files
+def network_params():
+    #general configs for the training process
+    # Instantiate the parser
+    parser3 = argparse.ArgumentParser()
+    
+    parser3.add_argument('-checkpointpath','--checkpointpath', type=str,
+                        default=None,
+                        help='path to a checkpoint for warm-start training. Path should be provided from the current folder.')
+
+    parser3.add_argument('-pretrain','--pretrain', default=False,
+                        help='whether or not to pretrain the network. Requires a csv containing a reference solution to be uploaded into the ref-solution module. See model/train for parameters of the training process.')
+                      
+    parser3.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=10,
+                        help='Number of hidden dimensions in each layer of the Neural network model')
+
+    args3 = parser3.parse_known_args()
+
+    #add validations?
+    #if args.pos_arg > 10:
+    #    parser.error("pos_arg cannot be larger than 10")
+
+    return args3[0]
+
 if __name__=="__main__":
     params_test = integrator_params()
     print(params_test.batchsamples)
