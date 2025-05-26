@@ -12,6 +12,9 @@ import numpy as np
 import numpy.random as npr
 from scipy.ndimage import generic_filter,median
 
+
+Generator = np.random.default_rng(seed=None)
+
 #import pdb
 def integrate(a,b,Tf,vfinal,
                 mc_samples = 20,
@@ -37,7 +40,7 @@ def integrate(a,b,Tf,vfinal,
 
     ##get a timegrid 
     num_tsteps = int(np.floor(Tf/tstep)+1)
-    #t_vec = np.linspace(0,Tf,int(np.floor(Tf/tstep)+1))
+    t_vec = np.linspace(0,Tf,int(np.floor(Tf/tstep)+1))
    
     qaxis = np.linspace(-4,4,num_qsamples)
     qaxis_samples = np.concatenate([qaxis[np.newaxis,:]]*(num_tsteps-1))
@@ -45,27 +48,22 @@ def integrate(a,b,Tf,vfinal,
 
     #generate trajectories
     traj = qaxis_samples + \
-        np.cumsum(np.sqrt(tstep)*np.random.Generator.standard_normal((mc_samples, num_tsteps-1,num_qsamples)),axis=1)
+        np.cumsum(np.sqrt(tstep)*Generator.standard_normal((mc_samples, num_tsteps-1,num_qsamples)),axis=1)
     #npr.randn(mc_samples, num_tsteps-1,num_qsamples)
     traj = np.flip(traj,axis = 1) #flip along columns
 
-    arr = np.zeros((len(qaxis)*len(num_tsteps),4))
+    arr = np.column_stack((Tf*np.ones(num_qsamples),qaxis,vfinal(qaxis)))#,dvfinal(qaxis)))
+    for i in range(0,num_tsteps-1): 
 
-    temp = -np.log(np.mean(phifinal(traj),axis=0))
-    test= np.gradient(temp,qaxis,axis=0).reshape(len(qaxis)*len(t_vec))
+        vout = -np.log(np.mean(phifinal(traj[:,i,:]),axis=0)).reshape(num_qsamples)
+        
+        #smooth
+        #phi = generic_filter(phiout,median,50,mode="nearest")
+        #generic_filter(np.log(phiout),median,50,mode="nearest")
 
-    #find for t = T
-    #np.column_stack((Tf*np.ones(num_qsamples),qaxis,vfinal(qaxis),dvfinal(qaxis)))
-
-    vout = -np.log(np.mean(phifinal(traj[:,i,:]),axis=0)).reshape(num_qsamples)
-    
-    #smooth
-    #phi = generic_filter(phiout,median,50,mode="nearest")
-    #generic_filter(np.log(phiout),median,50,mode="nearest")
-
-    dvout = np.gradient(vout, qaxis)
-
-    arr = np.vstack((arr,np.column_stack((np.ones(num_qsamples)*t_vec[i],qaxis,vout,dvout))))
+        #dvout = np.gradient(vout, qaxis)#generic_filter(,median,500,mode="nearest")
+        
+        arr = np.vstack((arr,np.column_stack((np.ones(num_qsamples)*t_vec[i],qaxis,vout))))
 
     np.savetxt(os.path.join(dirname, "value_orig.csv"),arr ,fmt="%10.6f",header = "t,q,v,du",delimiter=',')
     print("done.")
@@ -78,8 +76,8 @@ if __name__=="__main__":
 
     #final value function 
     def vfinal(q): # this is '-r'
-        return (((q**2 - 1)**2) / 4) - ((q**2)/2)
+        return (((q**2 - 1)**2) / 4) 
 
-    integrate(a,b,Tf,)
+    integrate(a,b,Tf,vfinal)
 
 

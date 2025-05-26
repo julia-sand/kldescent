@@ -9,41 +9,6 @@ class Swish(nn.Module):
     def forward(self, x):
         return torch.sigmoid(x)
 
-#taken from qsh-zh/pis
-#time encoding 
-class TimeConder(nn.Module):
-    def __init__(self, 
-                    channel, #input size
-                    out_dim=64, #output size 
-                    num_layers=2 #number of layers in the network
-                    ): 
-        super().__init__()
-        self.register_buffer(
-            "timestep_coeff", torch.linspace(start=0.1, end=100, steps=channel)[None]
-        )
-        self.timestep_phase = nn.Parameter(torch.randn(channel)[None])
-        self.layers = nn.Sequential(
-            nn.Linear(2 * channel, channel),
-            *[
-                nn.Sequential(
-                    nn.GELU(),
-                    nn.Linear(channel, channel),
-                )
-                for _ in range(num_layers - 1)
-            ],
-            nn.GELU(),
-            nn.Linear(channel, out_dim)
-        )
-
-        self.layers[-1].weight.data.fill_(0.0)
-        self.layers[-1].bias.data.fill_(0.01)
-
-    def forward(self, t):
-        sin_cond = torch.sin((self.timestep_coeff * t.float()) + self.timestep_phase)
-        cos_cond = torch.cos((self.timestep_coeff * t.float()) + self.timestep_phase)
-        #cond = rearrange([sin_cond, cos_cond], "d b w -> b (d w)")
-        return self.layers(sin_cond,cos_cond)
-
 class MyActivation(nn.Module):
     def forward(self, x):
         return x * torch.sigmoid(x)
