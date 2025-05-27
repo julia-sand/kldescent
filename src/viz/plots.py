@@ -85,12 +85,11 @@ class PlotFuns():
     plt.savefig(self.subdir+f"/test_plot.png")
     plt.close()
 
-
   def format_drift_ax(self,ax1,time):
     ax1.set_xlim((-4,4))
     ax1.set_title(f"t={time}")
     ax1.set_xlabel("q")
-    #ax1.set_ylim((-10,10))
+    ax1.set_ylim((-10,10))
       
   def plot_reference(self,ax1,x,du):
 
@@ -101,16 +100,20 @@ class PlotFuns():
   def plot_drift(self,x,times,net):
 
     
-    dus = self.evaluate_net_output(net,times)
 
     fig,ax = plt.subplots(1,len(times))
   
     for t in range(len(times)):  
-          
-      xref,duref = self.boundary.get_reference_data(times[t])
-      self.plot_reference(ax[t],xref,duref)
+      
+      try:
+        xref,duref = self.boundary.get_reference_data(times[t])
+        self.plot_reference(ax[t],xref,duref)
 
-      ax[t].plot(x,dus[:,t],label="N.N.")
+      except FileNotFoundError: 
+        print("The reference solution file was not found. \n \
+                    Please make sure that it has been created by running the scripts in valueref.py or that it has not been moved")
+
+      ax[t].plot(x,self.evaluate_net_output(net,times[t]),label="N.N.")
 
       self.format_drift_ax(ax[t],times[t])
     
@@ -223,14 +226,11 @@ class PlotFuns():
     return     
 
   ##@profile
-  def evaluate_net_output(self,net,plot_times):
+  def evaluate_net_output(self,net,time):
       #computes neural network output (forward pass) to use in plotting
-      dus = np.zeros((1000,len(plot_times)))
-      for t in enumerate(plot_times):
-          with torch.no_grad():
-              dus[:,t[0],None] = net(torch.column_stack((t[1]*torch.ones(1000,dtype=torch.float32)
+      return net(torch.column_stack((time*torch.ones(1000,dtype=torch.float32)
                                                   ,torch.linspace(-4,4,1000)))).detach().numpy().reshape((1000,1))
-      return dus
+      
 
   #@profile
   def make_epoch_plots(self,

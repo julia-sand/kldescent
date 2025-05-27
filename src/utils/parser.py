@@ -63,7 +63,7 @@ def boundary_params():
     boundary_params = argparse.ArgumentParser()
     #subparser = parser.add_subparsers()
 
-    boundary_params.add_argument('-Tf','--Tf', type=float, default=1,
+    boundary_params.add_argument('-Tf','--Tf', type=float, default=5,
                         help='final time')
 
     boundary_params.add_argument('-beta','--beta', type=float, default=2,
@@ -77,6 +77,9 @@ def boundary_params():
 
     boundary_params.add_argument('-g','--g', type=float, default=0,
                         help='constant')
+
+    boundary_params.add_argument('-ellsq','--ellsq', type=float, default=12.5,
+                        help='typical length scale squared')
 
     args2 = boundary_params.parse_known_args()
 
