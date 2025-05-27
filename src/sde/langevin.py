@@ -35,11 +35,10 @@ class SDEOverdamped():
 
     def testing_time_grid(self,final_time=5):
         #get an equally spaced time grid which can be used with the reference solution
-        timeout = self.boundary.get_reference_timegrid()
-        #if timeout is not None:
-        #    return timeout
-        #else: 
-        return np.linspace(0,final_time,self.t_steps)
+        try:
+            return self.boundary.get_reference_timegrid()
+        except: 
+            return np.linspace(0,final_time,self.t_steps)
 
     def generate_innovation(self,dt,size):
         #generate a step of brownian motion

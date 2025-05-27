@@ -1,11 +1,11 @@
+import math
 import torch
 
 def compute_sde(net,
                 plottime,
                 testing_samples,
                 plotter,
-                boundary,
-                integrator):
+                boundary):
 
     """
     Computes the SDE and returns plots 
@@ -17,7 +17,8 @@ def compute_sde(net,
 
     """
         
-    t_vec = integrator.testing_time_grid(plottime)
+    t_vec = torch.linspace(0,boundary.Tf,100)
+    #boundary.get_reference_timegrid(plottime)
 
     #initialise x values at \delta_0 (i.e. x=0)
     xinit = torch.tensor(boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
@@ -28,7 +29,7 @@ def compute_sde(net,
         for i in range(0,len(t_vec)-1):
             dt = (t_vec[i+1]-t_vec[i])
             
-            dw = integrator.generate_innovation(dt,testing_samples)
+            dw = math.sqrt(dt)*torch.randn((testing_samples,1))
             du = net.forward(torch.column_stack((t_vec[i]*torch.ones(testing_samples,dtype=torch.float32)
                                                     ,xinit[:,0,None])))
 
@@ -48,18 +49,16 @@ if __name__=="__main__":
     import os 
 
     from ..model.nn import NeuralNetwork
-    from ..sde.boundary import UnderdampedHalfBridge
+    from ..sde.boundary import UnderdampedNoMomentum
     from .plots import PlotFuns
-    from ..sde.langevin import SDEOverdamped
 
 
     new_folder = "tests/20250523-174017"
 
-    boundary_cond = UnderdampedHalfBridge()
+    boundary_cond = UnderdampedNoMomentum()
     net = NeuralNetwork(64,boundary_cond,
-                    checkpointpath=new_folder+"/checkpoints/net_checkpoint_1000.pt")
-    integrator = SDEOverdamped(boundary_cond)
+                    checkpointpath=new_folder+"/checkpoints/net_checkpoint_2000.pt")
 
     plotter = PlotFuns(boundary_cond)
     plotter.setresultsdir(new_folder)
-    compute_sde(net,4.9,10000,plotter,boundary_cond,integrator)
+    compute_sde(net,5,10000,plotter,boundary_cond)

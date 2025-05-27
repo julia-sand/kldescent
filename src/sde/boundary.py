@@ -16,7 +16,8 @@ class Boundaries():
         self.beta = self.params.beta 
         self.m = self.params.mass 
         self.tau = self.params.tau 
-        self.epsilon = np.sqrt(self.tau**2 / (self.beta*self.m))
+        self.ell = np.sqrt(self.params.ellsq)
+        self.epsilon = np.sqrt(self.tau**2 / (self.beta*(self.ell**2)*self.m))
 
         self.Generator = np.random.default_rng(seed=None)
 
@@ -108,21 +109,20 @@ class HalfBridgeLandauer(Boundaries):
 
         ##fetch the reference data for halfbridge
         arr = np.loadtxt(self.get_ref_path(),
-            #os.path.join(self.dirname, "./src/refsolution/value.csv"),
                         delimiter=",")  
        
         ##fetch the reference data approximation data
-        arrtemp = arr[np.where(arr[:,0]==np.round(time,5))] 
+        arrtemp = arr[np.where(arr[:,0]==np.round(time,8))] 
         arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
 
         #RETURNS X, DU
-        return arrtemp[:,1],arrtemp[:,-1]
+        return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,-1])
 
     def du_ref(self,q,time):
 
         #returns the drift of the reference solution 
         qref,duref = self.get_reference_data(time)
-        return np.interp(q,qref.reshape(5000),duref.reshape(5000),left=duref[0],right=duref[-1])
+        return np.interp(q,qref,duref,left=duref[0],right=duref[-1])
 
     def gfun(self,q):
         #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
@@ -348,6 +348,12 @@ class UnderdampedHalfBridge(Boundaries):
         return xn
 
 
+    def get_ref_path(self):
+        #returns the folder where the reference solution is expected to be
+
+        return os.path.dirname(__file__) + f"/../refsolution/{self.__class__.__name__}"
+
+
 class UnderdampedNoMomentum(UnderdampedHalfBridge):
     def __init__(self):
         super().__init__()
@@ -357,6 +363,39 @@ class UnderdampedNoMomentum(UnderdampedHalfBridge):
 
         #Terminal cost
         return self.beta*self.Ufinal(x[:,0,None])
+
+    def get_reference_timegrid(self,plottime):
+        
+        ##TODO this only works for t=5 at the moment.
+        #time is the time you want the data
+        arr = np.loadtxt(self.get_ref_path()+"/value.csv",
+                               delimiter=",")
+        return np.unique(arr[:,0])/(self.epsilon**2)
+
+    def get_reference_data(self,time):
+
+        #time is the time you want the data
+        arr = np.loadtxt(self.get_ref_path()+"/value.csv",
+                               delimiter=",")
+
+        ##fetch the reference data approximation data
+        arrtemp = arr[np.where(arr[:,0]==np.round(time*self.epsilon**2,7))] 
+        arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
+
+        #coeff
+        coeff = 2*(1 - np.exp((time - self.Tf)))
+
+
+        #RETURNS X, DU for plotting
+        return np.squeeze(arrtemp[:,1])*self.ell,coeff*np.squeeze(arrtemp[:,-1])
+
+    def du_ref(self,q,time):
+
+      
+        #returns the drift of the reference solution 
+        qref,duref = self.get_reference_data(time)
+        return np.interp(q,qref,duref,left=duref[0],right=duref[-1])
+
 
 class UnderdampedEntropyProduction(UnderdampedHalfBridge):
     ###TODO! fix the brownian motion inputs, we need to sample also for the position process!!!
