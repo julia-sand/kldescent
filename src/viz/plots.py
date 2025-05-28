@@ -97,7 +97,7 @@ class PlotFuns():
             label="Reference")
 
   #@profile
-  def plot_drift(self,x,times,net):
+  def plot_drift(self,times,net):
 
     fig,ax = plt.subplots(1,len(times))
   
@@ -111,7 +111,9 @@ class PlotFuns():
         print("The reference solution file was not found. \n \
                     Please make sure that it has been created by running the scripts in valueref.py or that it has not been moved")
 
-      ax[t].plot(x,self.evaluate_net_output(net,times[t]),label="N.N.")
+      ax[t].plot(np.linspace(-4,4,1000),
+                self.evaluate_net_output(net,times[t]),
+                label="N.N.")
 
       self.format_drift_ax(ax[t],times[t])
     
@@ -134,7 +136,6 @@ class PlotFuns():
       pass
 
   ##scatter plot of final distribution 
-  #@profile
   def marginal_distribution(self,xs):
 
     """
@@ -252,8 +253,7 @@ class PlotFuns():
       #make plots
       self.marginal_distribution(xs)
       
-      self.plot_drift(np.linspace(-4,4,1000),
-                          times = plot_times,
+      self.plot_drift(times = plot_times,
                           net=net)
 
 

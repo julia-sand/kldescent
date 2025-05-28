@@ -364,19 +364,22 @@ class UnderdampedNoMomentum(UnderdampedHalfBridge):
         #Terminal cost
         return self.beta*self.Ufinal(x[:,0,None])
 
+    def get_reference_array(self):
+        return np.loadtxt(self.get_ref_path()+"/value.csv",
+                               delimiter=",")
+
     def get_reference_timegrid(self,plottime):
         
         ##TODO this only works for t=5 at the moment.
         #time is the time you want the data
-        arr = np.loadtxt(self.get_ref_path()+"/value.csv",
-                               delimiter=",")
+        arr = self.get_reference_array()
+
         return np.unique(arr[:,0])/(self.epsilon**2)
+
 
     def get_reference_data(self,time):
 
-        #time is the time you want the data
-        arr = np.loadtxt(self.get_ref_path()+"/value.csv",
-                               delimiter=",")
+        arr = self.get_reference_array()
 
         ##fetch the reference data approximation data
         arrtemp = arr[np.where(arr[:,0]==np.round(time*self.epsilon**2,7))] 
@@ -385,9 +388,20 @@ class UnderdampedNoMomentum(UnderdampedHalfBridge):
         #coeff
         coeff = (1 - np.exp((time - self.Tf)))
 
-
         #RETURNS X, DU for plotting
         return np.squeeze(arrtemp[:,1])*self.ell,2*coeff*np.squeeze(arrtemp[:,-1])/self.beta
+
+    def get_reference_value(self,time):
+
+        arr = self.get_reference_array()
+
+        ##fetch the reference data approximation data
+        arrtemp = arr[np.where(arr[:,0]==np.round(time*self.epsilon**2,7))] 
+        arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
+
+
+        #RETURNS X, DU for plotting
+        return np.squeeze(arrtemp[:,1])*self.ell,np.squeeze(arrtemp[:,-2])
 
     def du_ref(self,q,time):
 
@@ -395,25 +409,6 @@ class UnderdampedNoMomentum(UnderdampedHalfBridge):
         #returns the drift of the reference solution 
         qref,duref = self.get_reference_data(time)
         return np.interp(q,qref,duref,left=duref[0],right=duref[-1])[:, np.newaxis]
-
-
-class UnderdampedEntropyProduction(UnderdampedHalfBridge):
-    ###TODO! fix the brownian motion inputs, we need to sample also for the position process!!!
-    def euler_maruyama_step(self,xn,du_bar,dt,dw,t):
-
-        #takes one step forward in the euler maruyama discretisation
-        #go forward one step 
-        xn[:,0,None] = xn[:,0,None] + (xn[:,1,None]/self.m - (self.g*self.tau/self.m)*du_bar)*dt \
-                                    + np.sqrt(2*self.tau*self.g/(self.m*self.beta))*dw_new
-        xn[:,1,None] = xn[:,1,None] - (xn[:,1,None]/self.tau + du_bar)*dt \
-                                    + self.sigma0*dw
-
-        return xn
-
-
-    def f(self,x,t,du_bar):
-
-        return (self.beta/(self.tau*self.m))*(x[:,1,None]**2) - np.gradient()
 
 
 if __name__=="__main__":
