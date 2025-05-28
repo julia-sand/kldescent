@@ -389,7 +389,7 @@ class UnderdampedNoMomentum(UnderdampedHalfBridge):
         coeff = (1 - np.exp((time - self.Tf)))
 
         #RETURNS X, DU for plotting
-        return np.squeeze(arrtemp[:,1])*self.ell,2*coeff*np.squeeze(arrtemp[:,-1])/self.beta
+        return np.squeeze(arrtemp[:,1])/self.ell,2*coeff*np.squeeze(arrtemp[:,-1])/self.beta
 
     def get_reference_value(self,time):
 
@@ -401,7 +401,7 @@ class UnderdampedNoMomentum(UnderdampedHalfBridge):
 
 
         #RETURNS X, DU for plotting
-        return np.squeeze(arrtemp[:,1])*self.ell,np.squeeze(arrtemp[:,-2])
+        return np.squeeze(arrtemp[:,1])/self.ell,np.squeeze(arrtemp[:,-2])
 
     def du_ref(self,q,time):
 

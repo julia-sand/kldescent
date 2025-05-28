@@ -1,11 +1,12 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 from .plots import PlotFuns
 
 class RefSol(PlotFuns):
 
-    def __init__(self):
-        super(PlotFuns,self).__init__() #fetches the general plotting params from plotfuns
+    def __init__(self,boundary):
+        super().__init__(boundary) #fetches the general plotting params from plotfuns
     
     def plot_value(self,times):
 
@@ -16,13 +17,16 @@ class RefSol(PlotFuns):
         xref,vref = self.boundary.get_reference_value(times[t])
         self.plot_reference(ax[t],xref,vref)
 
-        self.format_drift_ax(ax[t],times[t])
+        #self.format_drift_ax(ax[t],times[t])
       
         ax[t].set_ylabel(r"$\mathbb{U}$")
+        ax[t].set_xlim((-2,2))
+
+      ax[-1].plot(np.linspace(-2,2),0.25*(12.5*np.linspace(-2,2)**2 -1)**2)
       
       plt.legend()
       plt.tight_layout()
-      plt.savefig(self.subdir+f"/value.png", bbox_inches='tight')
+      plt.savefig(self.folder+f"/value.png", bbox_inches='tight')
       plt.close()
 
 
@@ -30,7 +34,7 @@ if __name__=="__main__":
     from ..sde.boundary import UnderdampedNoMomentum
 
     boundary_cond = UnderdampedNoMomentum()
-    RefSol(boundary_cond).plot_value([0,0.5,1])
+    RefSol(boundary_cond).plot_value([0,2.5,5])
 
 
 
