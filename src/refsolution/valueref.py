@@ -10,7 +10,7 @@ import os
 import numpy as np 
 
 #import pdb
-def integrate(a,b,Tf,vfinal,dirname,
+def integrate(a,b,T2f,vfinal,dirname,
                 tstep=0.005,
                 mc_samples = 20000,
                 num_qsamples = 5000):
@@ -19,7 +19,7 @@ def integrate(a,b,Tf,vfinal,dirname,
     Parameters:
     a - negative coefficient of second derivative in the burgers equation
     b - coefficient of the squared first derivative
-    Tf - final time
+    T2f - final time in the fast time
     vfinal - terminal condition
 
     mcsamples - number of MonteCarlo trajectories
@@ -31,10 +31,9 @@ def integrate(a,b,Tf,vfinal,dirname,
     def phifinal(q):
         return np.exp(-(b/a)*vfinal(q))
 
-
     ##get a timegrid 
-    num_tsteps = int(np.floor(Tf/tstep)+1)
-    t_vec = np.linspace(0,Tf,int(np.floor(Tf/tstep)+1))
+    num_tsteps = int(np.floor(T2f/tstep)+1)
+    t_vec = np.linspace(0,T2f,int(np.floor(T2f/tstep)+1))
    
     qaxis = np.linspace(-4,4,num_qsamples)
     qaxis_samples = np.concatenate([qaxis[np.newaxis,:]]*(num_tsteps-1))
@@ -46,7 +45,7 @@ def integrate(a,b,Tf,vfinal,dirname,
     #npr.randn(mc_samples, num_tsteps-1,num_qsamples)
     traj = np.flip(traj,axis = 1) #flip along columns
 
-    arr = np.column_stack((Tf*np.ones(num_qsamples),qaxis,vfinal(qaxis),np.gradient(vfinal(qaxis),qaxis)))
+    arr = np.column_stack((T2f*np.ones(num_qsamples),qaxis,vfinal(qaxis),np.gradient(vfinal(qaxis),qaxis)))
     for i in range(0,num_tsteps-1): 
 
         vout = -np.log(np.mean(phifinal(traj[:,i,:]),axis=0)).reshape(num_qsamples)
@@ -61,20 +60,20 @@ def integrate(a,b,Tf,vfinal,dirname,
 
 
 if __name__=="__main__":
-    dirname = "src/refsolution/UnderdampedNoMomentum"
 
-    Tf = 5
-    epsilon = 0.2
+    from ..sde.boundary import UnderdampedNoMomentum
+    boundary_cond = UnderdampedNoMomentum()
+    dirname = f"src/refsolution/{boundary_cond.__class__.__name__}"
+
+    Tf = boundary_cond.Tf
+    epsilon = boundary_cond.epsilon
     T2f = (epsilon**2)*Tf
 
     a = -(Tf - 1 + np.exp(-Tf))/Tf
     b = -(1 - (1-np.exp(-Tf))*(3-np.exp(-Tf))/(2*Tf))
 
-    beta = 2
-    #final value function 
-    def vfinal(q):
-        return beta*(((q**2 - 1)**2) / 4) 
-
-    integrate(a,b,T2f,vfinal,dirname)
+    beta = boundary_cond.beta
+    
+    integrate(a,b,T2f,boundary_cond.gfun,dirname)
 
 
