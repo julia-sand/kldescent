@@ -1,7 +1,9 @@
 import torch
 from torch import nn
 import os
-#from einops import rearrange
+
+from ..utils.parser import network_params
+
 
 #https://www.geeksforgeeks.org/swish-activation-function-in-pytorch/
 # Swish Function 
@@ -16,12 +18,12 @@ class MyActivation(nn.Module):
 # FROM TORCH TUTORIAL
 #create a simple neural network to parametrise the drift. 
 class NeuralNetwork(nn.Module):
-    def __init__(self,hiddenlayerneurons,
-                        boundary,
-                        checkpointpath=None):
+    def __init__(self,boundary):
+        
+        self.params = network_params()
 
         #params
-        self.hidden_layer_neurons = hiddenlayerneurons 
+        self.hidden_layer_neurons = self.params.hiddenlayerneurons 
         self.boundary = boundary
 
         super(NeuralNetwork, self).__init__()
@@ -53,8 +55,8 @@ class NeuralNetwork(nn.Module):
             nn.ReLU(), #ensure these are positive outputs 
             )  
 
-        if checkpointpath is not None:
-            self.load_checkpoint(checkpointpath)
+        if self.params.checkpointpath is not None:
+            self.load_checkpoint(self.params.checkpointpath)
 
 
     def forward(self, input_vec):   #how the model should evaluate

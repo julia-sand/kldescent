@@ -35,28 +35,24 @@ def run():
     #TODO: add config file to read these params
     if args.boundary=="Landauer":
         boundaryconditions = boundary.HalfBridgeLandauer()
-        net = nn.NeuralNetwork(args.hiddenlayerneurons,
-                                boundaryconditions,
-                                args.checkpointpath).to(args.device)
+        net = nn.NeuralNetwork(boundaryconditions).to(args.device)
     elif args.boundary=="LinearOU": #Linear OU
         boundaryconditions = boundary.LinearOU()
         net = nn.MLP(args.hiddenlayerneurons,args.checkpointpath).to(args.device)
     elif args.boundary=="UnderdampedLandauer": #underdamped landauer
         boundaryconditions = boundary.UnderdampedHalfBridge()
-        net = nn.NeuralNetwork(args.hiddenlayerneurons,
-                                boundaryconditions,
-                                args.checkpointpath).to(args.device)
+        net = nn.NeuralNetwork(boundaryconditions).to(args.device)
     elif args.boundary=="UnderdampedNoMomentum": #
         boundaryconditions = boundary.UnderdampedNoMomentum()
-        net = nn.NeuralNetwork(args.hiddenlayerneurons,
-                                boundaryconditions,
-                                args.checkpointpath).to(args.device)
+        net = nn.NeuralNetwork(boundaryconditions).to(args.device)
 
     plotter = plots.PlotFuns(boundaryconditions)
     plotter.setresultsdir(metrics_logger.get_results_path())
 
-    #pretraining - train to approximate a n
+    #save all params
     metrics_logger.log_args(boundaryconditions.params)
+    metrics_logger.log_args(net.params)
+
     if args.pretrain:
         import run_pretrain
         run_pretrain.run_pretrain(net,metrics_logger.get_results_path(),boundaryconditions)
@@ -65,7 +61,6 @@ def run():
     #TODO add these arguments so they get read directly from the command line already in the sde file
     integrator = langevin.SDEOverdamped(boundaryconditions,
                                         metrics_logger)
-                                        #args.device)
 
     #initialise trainer 
     trainer = train.Train(integrator, net, args.logstep) 
