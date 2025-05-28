@@ -10,7 +10,7 @@ import os
 import numpy as np 
 
 #import pdb
-def integrate(a,b,T2f,vfinal,dirname,
+def integrate(a,b,T2f,vfinal,beta,dirname,
                 tstep=0.005,
                 mc_samples = 20000,
                 num_qsamples = 5000):
@@ -61,19 +61,23 @@ def integrate(a,b,T2f,vfinal,dirname,
 
 if __name__=="__main__":
 
-    from ..sde.boundary import UnderdampedNoMomentum
-    boundary_cond = UnderdampedNoMomentum()
-    dirname = f"src/refsolution/{boundary_cond.__class__.__name__}"
+    
+    dirname = f"src/refsolution/UnderdampedNoMomentum"
 
-    Tf = boundary_cond.Tf
-    epsilon = boundary_cond.epsilon
+    Tf = 5
+    epsilon = 0.2
     T2f = (epsilon**2)*Tf
+    ell = np.sqrt(12.5)
+    beta = 2
 
     a = -(Tf - 1 + np.exp(-Tf))/Tf
     b = -(1 - (1-np.exp(-Tf))*(3-np.exp(-Tf))/(2*Tf))
 
-    beta = boundary_cond.beta
-    
-    integrate(a,b,T2f,boundary_cond.gfun,dirname)
+    def vfinal(q):
+        return (((q*ell)**2-1)**2)/4
+    integrate(a,b,T2f,
+                vfinal,
+                beta,
+                dirname)
 
 
