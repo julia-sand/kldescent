@@ -17,11 +17,11 @@ def compute_sde(net,
 
     """
         
-    t_vec = torch.linspace(0,boundary.Tf,100)
-    #boundary.get_reference_timegrid(plottime)
+    t_vec = boundary.get_reference_timegrid(plottime)
 
     #initialise x values at \delta_0 (i.e. x=0)
     xinit = torch.tensor(boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
+    xref = torch.clone(xinit)
 
     with torch.no_grad():
 
@@ -33,9 +33,11 @@ def compute_sde(net,
             du = net.forward(torch.column_stack((t_vec[i]*torch.ones(testing_samples,dtype=torch.float32)
                                                     ,xinit[:,0,None])))
 
+            
             xinit = boundary.euler_maruyama_step(xinit,du,dt,dw,t_vec[i])
+            xref = boundary.euler_maruyama_step(xref,boundary_cond.du_ref(xref[:,0],t_vec[i]),dt,dw,t_vec[i])
 
-    plotter.make_epoch_plots(xinit.detach().numpy(),
+    plotter.make_epoch_plots([xinit.numpy(),xref.numpy()],
                                 net,plot_times=[0,0.5*plottime,plottime])
 
     #free up the tensors
@@ -61,4 +63,4 @@ if __name__=="__main__":
 
     plotter = PlotFuns(boundary_cond)
     plotter.setresultsdir(new_folder)
-    compute_sde(net,5,10000,plotter,boundary_cond)
+    compute_sde(net,5,2000,plotter,boundary_cond)

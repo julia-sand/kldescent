@@ -82,7 +82,7 @@ class PlotFuns():
     ax.set_xlabel(r"$p$",fontsize = self.fontsizetitles,labelpad=-20)
     ax.set_ylabel(r"$q$",fontsize = self.fontsizetitles,labelpad=-10)
 
-    plt.savefig(self.subdir+f"/test_plot.png")
+    plt.savefig(self.subdir+f"/test_plot.png", bbox_inches='tight')
     plt.close()
 
   def format_drift_ax(self,ax1,time):
@@ -98,8 +98,6 @@ class PlotFuns():
 
   #@profile
   def plot_drift(self,x,times,net):
-
-    
 
     fig,ax = plt.subplots(1,len(times))
   
@@ -117,16 +115,27 @@ class PlotFuns():
 
       self.format_drift_ax(ax[t],times[t])
     
-    ax[0].set_ylabel(r"$\mathbb{U}$")
+      ax[t].set_ylabel(r"$\mathbb{U}$")
+    
     plt.legend()
     plt.tight_layout()
-    plt.savefig(self.subdir+f"/drift.png")
+    plt.savefig(self.subdir+f"/drift.png", bbox_inches='tight')
     plt.close()
 
+  def fit_kde(self,xs):
+
+    try:
+
+      kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(xs[np.isfinite(xs)].reshape(-1,1))
+      return kde.score_samples(np.linspace(-6,6,num =1000).reshape(-1,1))
+
+    except ValueError:
+      print("The final density could not be computed because the neural network did not return any finite values.")
+      pass
 
   ##scatter plot of final distribution 
   #@profile
-  def marginal_distribution(self,samples,name):
+  def marginal_distribution(self,xs):
 
     """
     Function that plots the scatter plot of the monte carlo approximation of the joint distribution
@@ -135,24 +144,28 @@ class PlotFuns():
     - samples: the output of the evolutions
     """
 
-    try:
-      kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(samples[np.isfinite(samples)].reshape(-1,1))
-      log_dens = kde.score_samples(np.linspace(-6,6).reshape(-1,1))
-      fig = plt.figure()
-      #get plot location
-      ax = fig.add_subplot(111)
+    fig = plt.figure()
+    #get plot location
+    ax_pos = fig.add_subplot(121)
+    ax_mom = fig.add_subplot(122)
+
+    ax_pos.plot(np.linspace(-6,6,),
+              np.exp(-np.linspace(-6,6,)**2)/np.sqrt(np.pi))
+
+    ax_mom.plot(np.linspace(-6,6,),
+              np.exp(-np.linspace(-6,6,)**2)/np.sqrt(np.pi))
+
+    ax_pos.set_title("Position")
+    ax_mom.set_title("Momentum")
+
+    for x in xs:
 
       #plot scatter graphs
-      ax.fill_between(np.linspace(-6,6,num=len(log_dens)), np.zeros(len(log_dens)), np.exp(log_dens), fc="#AAAAFF")
-      
-      ax.plot(np.linspace(-6,6,),
-                np.exp(-np.linspace(-6,6,)**2)/np.sqrt(np.pi))
-      
-      plt.savefig(self.subdir+f"/final_density_{name}.png")
-      plt.close()    
-
-    except ValueError:
-      print("The final density could not be computed because the neural network did not return any finite values.")
+      ax_mom.fill_between(np.linspace(-6,6,num=1000), np.zeros(1000), np.exp(self.fit_kde(x[:,1])))
+      ax_pos.fill_between(np.linspace(-6,6,num=1000), np.zeros(1000), np.exp(self.fit_kde(x[:,0])))
+    
+    plt.savefig(self.subdir+"/marginals.png",bbox_inches="tight")
+    plt.close()
 
   def get_loss_output(self,filename=None):
     if filename is not None:
@@ -174,8 +187,6 @@ class PlotFuns():
     #set axis labels
     ax.set_xlabel("epochs")
     ax.set_ylabel(r"Effective Loss, $\hat\mathcal{L}$")
-
-    
     
     return     
 
@@ -215,7 +226,7 @@ class PlotFuns():
       for ax in [ax1,ax2,ax3]:
         ax.set_ylim((-2.5,2.5))
       plt.tight_layout()
-      plt.savefig(self.folder+"/losses.png")
+      plt.savefig(self.folder+"/losses.png", bbox_inches='tight')
       plt.close()
     
     except IndexError:
@@ -234,14 +245,12 @@ class PlotFuns():
 
   #@profile
   def make_epoch_plots(self,
-                            xout,
+                            xs,
                             net,
                             plot_times):
       #create epoch folder and set plotter subdirectory
       #make plots
-      self.marginal_distribution(xout[:,0],"POSITION")
-      if xout.shape[1] == 2:
-        self.marginal_distribution(xout[:,1],"MOMENTUM")
+      self.marginal_distribution(xs)
       
       self.plot_drift(np.linspace(-4,4,1000),
                           times = plot_times,

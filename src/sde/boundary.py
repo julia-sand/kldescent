@@ -383,18 +383,18 @@ class UnderdampedNoMomentum(UnderdampedHalfBridge):
         arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
 
         #coeff
-        coeff = 2*(1 - np.exp((time - self.Tf)))
+        coeff = (1 - np.exp((time - self.Tf)))
 
 
         #RETURNS X, DU for plotting
-        return np.squeeze(arrtemp[:,1])*self.ell,coeff*np.squeeze(arrtemp[:,-1])
+        return np.squeeze(arrtemp[:,1])*self.ell,2*coeff*np.squeeze(arrtemp[:,-1])/self.beta
 
     def du_ref(self,q,time):
 
       
         #returns the drift of the reference solution 
         qref,duref = self.get_reference_data(time)
-        return np.interp(q,qref,duref,left=duref[0],right=duref[-1])
+        return np.interp(q,qref,duref,left=duref[0],right=duref[-1])[:, np.newaxis]
 
 
 class UnderdampedEntropyProduction(UnderdampedHalfBridge):
@@ -418,7 +418,6 @@ class UnderdampedEntropyProduction(UnderdampedHalfBridge):
 
 if __name__=="__main__":
 
-    boundary = UnderdampedHalfBridge()
-    temp = boundary.generate_samples(100,"initial")
-    print(temp[:,0,None].shape)
+    boundary = UnderdampedNoMomentum()
     
+    print(boundary.du_ref(np.linspace(0,3,10),0).shape)
