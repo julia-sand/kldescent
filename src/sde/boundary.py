@@ -2,7 +2,7 @@ import os
 
 import numpy as np 
 
-from ..utils.parser import boundary_params
+from ..utils.parser import boundary_params, gaussian_params
 
 class Boundaries():
     def __init__(self):
@@ -412,8 +412,78 @@ class UnderdampedNoMomentum(UnderdampedHalfBridge):
         return np.interp(q,qref,duref,left=duref[0],right=duref[-1])[:, np.newaxis]
 
 
+class UnderdampedHalfGaussian(UnderdampedHalfBridge):
+    def __init__(self):
+        Boundaries.__init__(self)
+        self.sigma0 = np.sqrt(2*self.m/(self.tau*self.beta))
+
+        self.gauss_boundary = gaussian_params()
+
+    def Uinitial(self,q):
+
+        return (q-self.gauss_boundary.muinitial)**2/(2*(self.gauss_boundary.sigmainitial**2))
+
+    def Ufinal(self,q):
+
+        return (q-self.gauss_boundary.mufinal)**2/(2*(self.gauss_boundary.sigmafinal**2))
+
+    def scorefinal(self,q):
+
+        return -(q-self.gauss_boundary.muinitial)/((self.gauss_boundary.sigmainitial**2))
+
+
+    def q_marginal_initial(self,q):
+
+        return self.qinitial(q)/np.sqrt(2*(self.gauss_boundary.sigmainitial**2)/self.params.beta)
+
+
+    def q_marginal_final(self,q): 
+        
+        return self.qfinal(q)/np.sqrt(2*(self.gauss_boundary.sigmafinal**2)/self.params.beta)
+
+
+    #generate the initial data
+    def generate_samples_q(self,batch_samples,mode):
+        
+        ##sample points from the intial distribution for q 
+        #output as a tensor
+
+        #from where to sample the q marginals
+        if mode=="initial":
+            out = self.Generator.normal(loc=self.gauss_boundary.muinitial,scale=self.gauss_boundary.sigmainitial*np.sqrt(1/self.beta),size=(batch_samples,1))     
+        elif mode=="final": 
+            out = self.Generator.normal(loc=self.gauss_boundary.mufinal,scale=self.gauss_boundary.sigmafinal*np.sqrt(1/self.beta),size=(batch_samples,1))     
+
+            
+        return out
+                             
+    def get_reference_timegrid(self):
+        #arr = np.loadtxt(self.get_ref_path(),
+        #                delimiter=",") 
+        return np.linspace(0,self.Tf)
+
+    def get_reference_data(self,time):
+
+        #RETURNS X, DU for plotting
+        return np.zeros(1000),np.zeros(1000)
+
+    def du_ref(self,q,time):
+
+        #returns the drift of the reference solution 
+        #print("Reference solution not available.")
+        return np.zeros_like(q)
+
+    def gfun(self,x):
+
+        #Terminal cost
+        return self.beta*((x[...,[1]]**2)/2 + self.Ufinal(x[...,[0]]))
+
+    def get_ref_path(self):
+        #returns the folder where the reference solution is expected to be
+
+        return os.path.dirname(__file__) + f"/../refsolution/{self.__class__.__name__}"
+
 if __name__=="__main__":
 
-    boundary = UnderdampedNoMomentum()
+    boundary = UnderdampedHalfGaussian()
     
-    print(boundary.du_ref(np.linspace(0,3,10),0).shape)
