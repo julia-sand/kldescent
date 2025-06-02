@@ -263,9 +263,9 @@ class UnderdampedHalfBridge(Boundaries):
         return (self.q_marginal_initial(q)*np.exp(-self.beta*(p**2)/2))/np.sqrt(2*np.pi/self.beta)
 
 
-    def p_final(self,q,p): 
+    def p_final(self,x): 
         
-        return (self.q_marginal_final(q)*np.exp(-self.beta*(p**2)/2))/np.sqrt(2*np.pi/self.beta)
+        return (self.q_marginal_final(x[:,0,None])*np.exp(-self.beta*(x[:,1,None]**2)/2))/np.sqrt(2*np.pi/self.beta)
 
     #generate the initial data
     def generate_samples_q(self,batch_samples,mode):
@@ -300,20 +300,13 @@ class UnderdampedHalfBridge(Boundaries):
         return np.column_stack((self.generate_samples_q(batch_samples,mode)
                                 ,self.Generator.normal(loc=0,scale=np.sqrt(1/self.beta),size=(batch_samples,1))))
     
+   
     def get_reference_timegrid(self):
         #arr = np.loadtxt(self.get_ref_path(),
         #                delimiter=",") 
         return np.linspace(0,self.Tf)
 
     def get_reference_data(self,time):
-
-        #time is the time you want the data
-
-        ##fetch the reference data for halfbridge
-        
-        ##fetch the reference data approximation data
-        #arrtemp = arr[np.where(arr[:,0]==np.round(time,5))] 
-        #arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
 
         #RETURNS X, DU for plotting
         return np.zeros(1000),np.zeros(1000)
@@ -348,6 +341,14 @@ class UnderdampedHalfBridge(Boundaries):
         return xn
 
 
+    def girsanov_scheme(self,xn,du_bar,dt,dw,t):
+
+        #takes one step forward in the euler maruyama discretisation
+        #go forward one step 
+        xn[...,[0]] = xn[...,[0]] + (xn[...,[1]]/self.m)*dt 
+        xn[...,[1]] = xn[...,[1]] + du_bar*dt + self.sigma0*dw
+
+        return xn
     def get_ref_path(self):
         #returns the folder where the reference solution is expected to be
 
@@ -370,11 +371,11 @@ class UnderdampedNoMomentum(UnderdampedHalfBridge):
 
     def get_reference_timegrid(self,plottime):
         
-        ##TODO this only works for t=5 at the moment.
         #time is the time you want the data
         arr = self.get_reference_array()
+        ttemp = np.round(np.unique(arr[:,0])/(self.epsilon**2),5) #rescale
 
-        return np.unique(arr[:,0])/(self.epsilon**2)
+        return ttemp[np.where(ttemp<plottime)]
 
 
     def get_reference_data(self,time):
@@ -389,7 +390,7 @@ class UnderdampedNoMomentum(UnderdampedHalfBridge):
         coeff = (1 - np.exp((time - self.Tf)))
 
         #RETURNS X, DU for plotting
-        return np.squeeze(arrtemp[:,1])/self.ell,2*coeff*np.squeeze(arrtemp[:,-1])/self.beta
+        return np.squeeze(arrtemp[:,1]),2*coeff*np.squeeze(arrtemp[:,-1])/self.beta
 
     def get_reference_value(self,time):
 
@@ -401,7 +402,7 @@ class UnderdampedNoMomentum(UnderdampedHalfBridge):
 
 
         #RETURNS X, DU for plotting
-        return np.squeeze(arrtemp[:,1])/self.ell,np.squeeze(arrtemp[:,-2])
+        return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,-2])
 
     def du_ref(self,q,time):
 

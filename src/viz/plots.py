@@ -1,13 +1,16 @@
 import os
+import string
 
 import numpy as np 
-import matplotlib.pyplot as plt
 from sklearn.neighbors import KernelDensity
 import torch
-#from memory_profiler import profile
 
 import matplotlib
 matplotlib.use('Agg')  # Use the 'Agg' backend for non-GUI rendering
+import matplotlib.pyplot as plt
+from matplotlib.cm import ScalarMappable
+import matplotlib.patches as mpatches
+import matplotlib.lines as mlines
 
 '''
 #visualisations ideas
@@ -49,44 +52,181 @@ class PlotFuns():
   def setsubdir(self, subdir):
     self.subdir = self.folder+subdir #os.path.join(self.folder,subdir)
 
-  ##scatter plot of final distribution 
-  def joint_distribution_scatter(self,samples):
+  #function for plotting
+  def joint_distributions_scatter(self,fig,
+                                  gs_joint_distributions,
+                                  plot_index,
+                                  joint_out,
+                                  x_samples,
+                                  time,vmax=0.5):
 
     """
     Function that plots the scatter plot of the monte carlo approximation of the joint distribution
 
     input:
-    - samples: the output of the evolutions
+    - fig: the figure for plotting
+    - plot_index: location of plot
+    - joint_out: joint distribution as a numpy array
+    - Q: q-coordinate
+    - P: p-coordinate
+    - time
+    - vmax: maximum value for the scatter plots
     """
 
-    fig = plt.figure()
+    pmax,qmax = 4,4
+    p_init = np.linspace(-pmax,pmax,x_samples)
+    q_init = np.linspace(-qmax,qmax,x_samples)
+    
+    Q,P = np.meshgrid(q_init,p_init)
+
+    x_ind = int(np.floor(plot_index/3))
+    y_ind = plot_index % 3
+
+    plot_title_value = round(time/self.boundary.Tf,2)
+
     #get plot location
-    ax = fig.add_subplot(111)
+    ax = fig.add_subplot(gs_joint_distributions[x_ind,y_ind])
 
-    ax.set_xlim((-4,4))
-    ax.set_ylim((-4,4))
+    ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
+    ax_qmarginal = ax.inset_axes([-0.65, 0, 0.6, 1])
+    ax_pmarginal.text(-9,0.4,"("+string.ascii_lowercase[plot_index]+")",fontsize = self.fontsizetitles,zorder = 200)
 
-    #get the samples into numpy for plotting
-    #since this was output of the neural net, we need detach. GPU will be (maybe) implemented in the future.
-    #samples = samples.detach().cpu().numpy()
+    #compute joint distribution
+    idx = np.argwhere(~np.isnan(joint_out))
+    
+    pmarginal = np.nansum(joint_out.reshape((x_samples,x_samples)),axis=1)
+    porder = np.argsort(p_init)
+    pnorm = 1#np.trapz(pmarginal[porder],p_init[porder])
+    ax_pmarginal.plot(p_init[porder],pmarginal[porder]/pnorm
+                      ,color=self.c1,lw=self.lw)
+
+
+    qmarginal = np.nansum(joint_out.reshape((x_samples,x_samples)),axis=0)#[np.nansum(joint_out[i::samples]) for i in range(0,samples)]
+    qorder = np.argsort(q_init)
+    qnorm = 1#np.trapz(qmarginal[qorder],q_init[qorder])
+
+    ax_qmarginal.plot(qmarginal[qorder]/qnorm
+                      ,q_init[qorder],color=self.c1,lw=self.lw)
+
+    #self.format_dist_axes(ax_pmarginal)
+
+    ax_pmarginal.set_xlim((-pmax,pmax))
+    ax_pmarginal.set_ylim((-0.05,0.7))
+
+    ax_qmarginal.set_ylim((-qmax,qmax))
+    ax_qmarginal.set_xlim((-0.05,0.7))
 
     #plot scatter graphs
-    ax.scatter(samples[:,0],samples[:,1])
+    zout = joint_out[idx]#/max(joint_out[idx])
+
+    order = np.argsort(zout.flatten())
+    pout = P.flatten()[idx].flatten()
+    qout = Q.flatten()[idx].flatten()
+    ax.scatter(pout[order],qout[order],c=zout.flatten()[order]
+              ,cmap="Blues",norm="log",vmin=0.001,vmax=vmax)
+
+    ###ticks formatting and labelling
+    ax_pmarginal.yaxis.tick_right()
+    ax.yaxis.tick_right()
     
-    Q,P = np.meshgrid(np.linspace(-5,5),np.linspace(-5,5))
-    ax.contour(Q,P,
-              self.boundary.p_final(Q,P))
+    ax_pmarginal.tick_params(
+        axis='y',
+        which='both',
+        length=5,
+        rotation=-20,
+        pad = -3,
+        labelsize = self.fontsizeticks)
+    ax_pmarginal.tick_params(
+        axis='x',
+        which='both',
+        labelsize = self.fontsizeticks)
+    ax_qmarginal.tick_params(
+        axis='x',          # changes apply to the x-axis
+        which='both',
+        rotation=70,
+        labelsize = self.fontsizeticks,
+        length =5,
+        pad = -3,
+        labelleft=False)
+    ax_qmarginal.tick_params(
+        axis='y',          # changes apply to the y-axis
+        which='both',      #both major and minor ticks
+        left=False,
+        labelleft=False)
 
-    ax.tick_params(axis='both', labelsize=self.fontsizeticks)
+    ax.set_xlim((-pmax,pmax))
+    ax.set_ylim((-qmax,qmax))
 
-    ax.set_xlabel(r"$p$",fontsize = self.fontsizetitles,labelpad=-20)
-    ax.set_ylabel(r"$q$",fontsize = self.fontsizetitles,labelpad=-10)
+    ax.tick_params(axis='both', 
+                    labelsize=self.fontsizeticks)
+    ax_pmarginal.set_xticklabels([])
+   
+    ax.set_xlabel(r"$p$",fontsize = self.fontsizetitles)
+    ax_qmarginal.set_xlabel(r"$\rho_t(q)$",fontsize = self.fontsizetitles)
 
-    plt.savefig(self.subdir+f"/test_plot.png", bbox_inches='tight')
-    plt.close()
+    ax.set_ylabel(r"$q$",fontsize = self.fontsizetitles)
+    ax_pmarginal.set_ylabel(r"$\rho_t(p)$",fontsize = self.fontsizetitles)
+    ax.yaxis.set_label_position("right")
+    #add boundary conditions to first plot and format titles
+    if plot_index ==0:
+      ax.set_title(f"$t = 0$", loc = "center", fontsize=self.fontsizetitles)
+      ax_pmarginal.fill_between(q_init,np.exp(-self.boundary.beta*(q_init**2)/2)/np.sqrt(np.pi*2/self.boundary.beta),color=self.c2)
+      ax_qmarginal.fill_between(self.boundary.q_marginal_initial(q_init),q_init,color=self.c2)
+    elif plot_index == 5:
+      ax.set_title(f"$t = t_f$", loc = "center", fontsize=self.fontsizetitles)
+      #ax_pmarginal.fill_between(q_init,np.exp(-self.boundary.beta*(q_init**2)/2)/np.sqrt(np.pi*2/self.boundary.beta),color=self.c2)
+      #ax_qmarginal.fill_between(self.boundary.q_marginal_final(q_init),q_init,color=self.c2)
+    else:
+      ax.set_title(f"$t = {plot_title_value} t_f$", loc = "center", fontsize=self.fontsizetitles)
+
+    plt.setp(ax_pmarginal.yaxis.get_majorticklabels(), va="bottom")
+    plt.setp(ax_qmarginal.xaxis.get_majorticklabels(), ha="right")
+    ax.set_aspect('equal', adjustable='box')
+    ax_qmarginal.invert_xaxis()
+    ax.set_xticks([-2.5,0,2.5])
+
+  def make_colourbar(self,fig,vmax):
+    #adds a colour
+
+    sm =  ScalarMappable(norm="log",cmap=plt.get_cmap("Blues"))
+    sm.set_array([])
+    sm.set_clim(vmin=0.001, vmax=vmax)
+
+
+    cbar_ax = fig.add_axes([0.2, -0.15, 0.55, 0.05])
+    cb = fig.colorbar(sm,
+                                            cax=cbar_ax,
+                                            orientation="horizontal")
+
+    cb.ax.tick_params(labelsize=self.fontsizeticks)
+    cb.ax.set_xlabel("Joint Distribution",fontsize=self.fontsizetitles)
+
+  def make_legend(self,fig):
+    #create the legend 
+    blue_line = mlines.Line2D([], [],color=self.c1,lw=self.lw)
+    #orange_line = mlines.Line2D([], [],color="orange",lw=self.lw)
+    #green_line = mlines.Line2D([], [],color="green",lw=self.lw,linestyle="dashed")
+    blue_patch = mpatches.Patch(color = self.c2, alpha=1)
+
+    legend = fig.legend(handles=[blue_line,
+                                  #orange_line,
+                                  #green_line,
+                                  blue_patch],
+                        labels = ["Marginal Distributions",
+                                  #"Perturbative Prediction",
+                                  #"Gaussian Prediction",
+                                  "Assigned Boundary Conditions"],
+            fontsize = self.fontsizetitles,
+            frameon = False,
+            handlelength = 2,
+            ncols = 2,
+            bbox_to_anchor=(0.75,0.2))
+
+    #move the legend
+    legend.set_bbox_to_anchor(bbox=(0.85,0.25))
 
   def format_drift_ax(self,ax1,time):
-    ax1.set_xlim((-4,4))
+    ax1.set_xlim((-2,2))
     ax1.set_title(f"t={time}")
     ax1.set_xlabel("q")
     ax1.set_ylim((-10,10))
@@ -136,7 +276,7 @@ class PlotFuns():
       pass
 
   ##scatter plot of final distribution 
-  def marginal_distribution(self,xs):
+  def marginal_distribution(self,xs,plottime):
 
     """
     Function that plots the scatter plot of the monte carlo approximation of the joint distribution
@@ -151,7 +291,7 @@ class PlotFuns():
     ax_mom = fig.add_subplot(122)
 
     ax_pos.plot(np.linspace(-6,6,),
-              np.exp(-np.linspace(-6,6,)**2)/np.sqrt(np.pi))
+              self.boundary.q_marginal_final(np.linspace(-6,6,)))
 
     ax_mom.plot(np.linspace(-6,6,),
               np.exp(-np.linspace(-6,6,)**2)/np.sqrt(np.pi))
@@ -162,9 +302,12 @@ class PlotFuns():
     for x in xs:
 
       #plot scatter graphs
-      ax_mom.fill_between(np.linspace(-6,6,num=1000), np.zeros(1000), np.exp(self.fit_kde(x[:,1])))
-      ax_pos.fill_between(np.linspace(-6,6,num=1000), np.zeros(1000), np.exp(self.fit_kde(x[:,0])))
+      ax_mom.plot(np.linspace(-6,6,num=1000), np.exp(self.fit_kde(x[:,1])))
+      ax_pos.plot(np.linspace(-6,6,num=1000), np.exp(self.fit_kde(x[:,0])))
     
+    ax_mom.set_xlim((-4,4))
+    ax_pos.set_xlim((-4,4))
+    plt.suptitle(f"t = {plottime}")
     plt.savefig(self.subdir+"/marginals.png",bbox_inches="tight")
     plt.close()
 
@@ -251,7 +394,7 @@ class PlotFuns():
                             plot_times):
       #create epoch folder and set plotter subdirectory
       #make plots
-      self.marginal_distribution(xs)
+      self.marginal_distribution(xs,plottime)
       
       self.plot_drift(times = plot_times,
                           net=net)
