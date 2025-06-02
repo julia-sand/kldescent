@@ -1,7 +1,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt 
 import torch
-
+import pdb
 ##creates the contour plot showing the full joint pdf
 
 def generate_mesh(x_samples,testing_samples):
@@ -10,7 +10,51 @@ def generate_mesh(x_samples,testing_samples):
                         np.linspace(-4,4,x_samples))
 
     return np.repeat(np.column_stack((P.reshape(x_samples*x_samples),Q.reshape(x_samples*x_samples)))[np.newaxis, ...], testing_samples, axis=0)
-    #np.dstack([np.column_stack((P.reshape(x_samples*x_samples),Q.reshape(x_samples*x_samples)))]*testing_samples)
+
+@torch.no_grad
+def compute_joint(t,net,
+                    testing_samples,
+                    x_samples,
+                    boundary_cond):
+
+    net.eval()
+    #
+    #pdb.set_trace()
+    t_vec = np.array(boundary_cond.get_reference_timegrid(t+.0001))
+    
+    #start_index = np.where(t_vec==t)[0][0]
+
+    #start the trajectories
+    xinit = torch.tensor(generate_mesh(x_samples,testing_samples),
+                            requires_grad=False,
+                            dtype=torch.float32)
+    #reset girsanov
+    girsanov = torch.zeros((testing_samples,x_samples*x_samples,1))
+
+    for i in range(1,len(t_vec)):#range(0,len(t_vec)):
+
+        dt = np.abs(t_vec[-i-1]-t_vec[-i])
+        
+        dw = np.sqrt(dt)*torch.randn((testing_samples,x_samples*x_samples,1))
+        nn_input = torch.dstack((t_vec[-i]*torch.ones((testing_samples,x_samples**2,1),dtype=torch.float32),
+                                    xinit[...,[0]]))
+        du = torch.hstack([net.forward(nn_input[:,i,:]) for i in range(x_samples**2)])[...,np.newaxis]
+
+        #underdamped dynamics
+        #backward (T-t0) evolution in t0
+        xinit = boundary_cond.girsanov_scheme(xinit,du,-dt,-dw,t_vec[i])
+        
+        #remove escaped particles
+        xinit[xinit>30] = torch.nan
+        xinit[xinit<-30] = torch.nan
+
+        #compute girsanov factor
+        girsanov = girsanov + (np.sqrt(1/boundary_cond.sigma0)*(xinit[...,[1]]*dw) + (dt/(boundary_cond.sigma0**2))*torch.square(xinit[...,[1]]))
+
+    return np.nanmean(np.multiply(boundary_cond.p_initial(xinit[...,[0]],xinit[...,[1]]),np.exp(-girsanov)),axis=0)
+
+    
+
 
 @torch.no_grad
 def plot_contour(fig_joint_distributions_meshgrid,
@@ -21,45 +65,16 @@ def plot_contour(fig_joint_distributions_meshgrid,
                     boundary_cond,
                     plot_times):
 
-    net.eval()
-    #pdb.set_trace()
-    t_vec = np.array(boundary_cond.get_reference_timegrid(boundary_cond.Tf+.0001))
-    
     #reset plot index
     plot_index = 0
 
     for t in plot_times:
 
-        start_index = np.where(t_vec==t)[0][0]
-
-        #start the trajectories
-        xinit = torch.tensor(generate_mesh(x_samples,testing_samples),
-                                requires_grad=False,
-                                dtype=torch.float32)
-        #reset girsanov
-        girsanov = torch.zeros((testing_samples,x_samples*x_samples,1))
-
-        for i in range(0,start_index):
-
-            dt = np.abs(t_vec[start_index-i]-t_vec[start_index-i-1])
-            
-            dw = np.sqrt(dt)*torch.randn((testing_samples,x_samples*x_samples,1))
-            nn_input = torch.dstack((t_vec[start_index-i]*torch.ones((testing_samples,x_samples**2,1),dtype=torch.float32),
-                                        xinit[...,[0]]))
-            du = torch.hstack([net.forward(nn_input[:,i,:]) for i in range(x_samples**2)])[...,np.newaxis]
-
-            #underdamped dynamics
-            #backward (T-t0) evolution in t0
-            xinit = boundary_cond.girsanov_scheme(xinit,du,-dt,-dw,t_vec[i])
-            
-            #remove escaped particles
-            xinit[xinit>30] = torch.nan
-            xinit[xinit<-30] = torch.nan
-
-            #compute girsanov factor
-            girsanov = girsanov + (np.sqrt(1/boundary_cond.sigma0)*(xinit[...,[1]]*dw) + (dt/(boundary_cond.sigma0**2))*torch.square(xinit[...,[1]]))
-
-        joint_out = np.nanmean(np.multiply(boundary_cond.p_initial(xinit[...,[0]],xinit[...,[1]]),np.exp(-girsanov)),axis=0)
+        joint_out = compute_joint(t,net,
+                    testing_samples,
+                    x_samples,
+                    boundary_cond)
+        #np.nanmean(np.multiply(boundary_cond.p_initial(xinit[...,[0]],xinit[...,[1]]),np.exp(-girsanov)),axis=0)
 
         
         plotter.joint_distributions_scatter(fig_joint_distributions_meshgrid,
@@ -112,9 +127,10 @@ if __name__=="__main__":
     from ..model.nn import NeuralNetwork
     from ..sde.boundary import UnderdampedNoMomentum
     from .plots import PlotFuns
-
-    testing_samples = 10
-    x_samples = 8
+    from ..utils.parser import girsanov_plot_params
+    girs_params = girsanov_plot_params()
+    testing_samples = girs_params.mcsamples
+    x_samples = girs_params.xsamples
     vmax = 0.5
 
     new_folder = "tests/20250523-174017"

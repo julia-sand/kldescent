@@ -45,9 +45,13 @@ def run():
     elif args.boundary=="UnderdampedNoMomentum": #
         boundaryconditions = boundary.UnderdampedNoMomentum()
         net = nn.NeuralNetwork(boundaryconditions).to(args.device)
+    elif args.boundary=="UnderdampedHalfGaussian": #
+        boundaryconditions = boundary.UnderdampedHalfGaussian()
+        net = nn.NeuralNetwork(boundaryconditions).to(args.device)
+        metrics_logger.log_args(boundaryconditions.gauss_boundary)
 
-    plotter = plots.PlotFuns(boundaryconditions)
-    plotter.setresultsdir(metrics_logger.get_results_path())
+    #plotter = plots.PlotFuns(boundaryconditions)
+    #plotter.setresultsdir(metrics_logger.get_results_path())
 
     #save all params
     metrics_logger.log_args(boundaryconditions.params)
@@ -68,21 +72,20 @@ def run():
     for epoch in range(0,args.epochs+1):
         try:
             trainer.train_step(epoch)
-            print(epoch)
         except KeyboardInterrupt:
             print(f"Training interrupted at epoch {epoch}")
             #plot the loss metrics
-            plotter.plot_loss_metrics()
+            #plotter.plot_loss_metrics()
         except ValueError:
             print("The training has resulted in NaN loss and therefore failed. Please retry.")
             raise
         except TimeLimitException:
             print(f"The training must be stopped because SLURM is about to kill the job. Training ended at epoch {epoch}")
             metrics_logger.save_checkpoint(net,epoch)
-            plotter.plot_loss_metrics()
+            #plotter.plot_loss_metrics()
 
 
-    plotter.plot_loss_metrics()
+    #plotter.plot_loss_metrics()
 
 if __name__=="__main__":
     run()
