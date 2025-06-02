@@ -21,8 +21,9 @@ class RefSol(PlotFuns):
       
         ax[t].set_ylabel(r"$\mathbb{U}$")
         ax[t].set_xlim((-2,2))
+        ax[t].set_ylim((-0.2,6))
 
-      ax[-1].plot(np.linspace(-2,2),0.25*(12.5*np.linspace(-2,2)**2 -1)**2)
+      ax[-1].plot(np.linspace(-2,2),0.25*((np.linspace(-2,2))**2 -1)**2)
       
       plt.legend()
       plt.tight_layout()

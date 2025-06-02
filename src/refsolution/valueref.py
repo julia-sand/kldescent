@@ -61,8 +61,9 @@ def integrate(a,b,T2f,vfinal,beta,dirname,
 
 if __name__=="__main__":
 
-    
-    dirname = f"src/refsolution/UnderdampedNoMomentum"
+    dirname_curr = os.path.dirname(__file__)
+
+    dirname = dirname_curr+f"/UnderdampedNoMomentum"
 
     Tf = 5
     epsilon = 0.2

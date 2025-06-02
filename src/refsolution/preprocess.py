@@ -6,18 +6,28 @@ import numpy as np
 
 from scipy.ndimage import generic_filter,median
 
-def preprocess(dirname):
-    ##this is a script to preprocess the results of the reference solution calculation
+def preprocess(dirname,ell):
+    """this is a script to preprocess the results of the reference solution calculation
     #we smooth the noise from the numerical calculation and multiply by the constant (-2)
 
-    #input: raw data from the reference solution computation (ie )
+    ====
+    Parameters
+    - ell: scaling factor of the numeric solution
+    - dirname: location of raw results of integrating burger's equation
+                and output location
+    
+    Out: 
+    - csv containing the smoothed and differentiated results. 
+    ====
 
+    """
     refsolfile=dirname+"/value_orig.csv"
     
     ##fetch the perturbative underdamped approximation data
     arr = np.loadtxt(refsolfile,
                         delimiter=",")  
 
+    arr[:,1] *= ell #rescale
     times = np.unique(arr[:,0])
     for t in range(len(times)):  
         filter_delta = 200
@@ -35,6 +45,7 @@ def preprocess(dirname):
 
 
 if __name__=="__main__":
+    ell = np.sqrt(12.5) #scaling factor for the q variable
     dirname = "src/refsolution/UnderdampedNoMomentum"
 
-    preprocess(dirname)
+    preprocess(dirname,ell)

@@ -38,7 +38,7 @@ def compute_sde(net,
             xref = boundary.euler_maruyama_step(xref,boundary_cond.du_ref(xref[:,0],t_vec[i]),dt,dw,t_vec[i])
 
     plotter.make_epoch_plots([xinit.numpy(),xref.numpy()],
-                                net,plot_times=[0,0.5*plottime,plottime])
+                                net,plottime,plot_times=[0,boundary.Tf/2,boundary.Tf])
 
     #free up the tensors
     del xinit 
@@ -58,9 +58,9 @@ if __name__=="__main__":
     new_folder = "tests/20250523-174017"
 
     boundary_cond = UnderdampedNoMomentum()
-    net = NeuralNetwork(64,boundary_cond,
-                    checkpointpath=new_folder+"/checkpoints/net_checkpoint_2000.pt")
+    net = NeuralNetwork(boundary_cond)
+    net.load_checkpoint(new_folder+"/checkpoints/net_checkpoint_2000.pt")
 
     plotter = PlotFuns(boundary_cond)
     plotter.setresultsdir(new_folder)
-    compute_sde(net,5,2000,plotter,boundary_cond)
+    compute_sde(net,5,6000,plotter,boundary_cond)

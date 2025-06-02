@@ -16,18 +16,6 @@ def overdamped_argparser():
     parser.add_argument('-logstep','--logstep', type=int, default=100,
                         help='A required integer positional argument')
     
-    parser.add_argument('-checkpointpath','--checkpointpath', type=str,
-                        default=None,
-                        #default="zeros",
-                        #default="/results/20250429-195812/checkpoints/net_checkpoint_0.pt",    # default=None,
-                        help='path to a checkpoint for warm-start training. Path should be provided from the current folder.')
-
-    parser.add_argument('-pretrain','--pretrain', default=False,
-                        help='whether or not to pretrain the network. Requires a csv containing a reference solution to be uploaded into the ref-solution module. See model/train for parameters of the training process.')
-                      
-    parser.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=10,
-                        help='Number of hidden dimensions in each layer of the Neural network model')
-
     parser.add_argument('-boundary','--boundary', type=str, default="UnderdampedLandauer",
                         help='which set of boundary conditions to use. See Sde.Boundary for more details')
     
@@ -99,7 +87,32 @@ def network_params():
     parser3.add_argument('-pretrain','--pretrain', default=False,
                         help='whether or not to pretrain the network. Requires a csv containing a reference solution to be uploaded into the ref-solution module. See model/train for parameters of the training process.')
                       
-    parser3.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=10,
+    parser3.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=64,
+                        help='Number of hidden dimensions in each layer of the Neural network model')
+
+    args3 = parser3.parse_known_args()
+
+    #add validations?
+    #if args.pos_arg > 10:
+    #    parser.error("pos_arg cannot be larger than 10")
+
+    return args3[0]
+
+
+#TODO separate the parser into smaller so that we can parse straight into other files
+def girsanov_plot_params():
+    #general configs for the training process
+    # Instantiate the parser
+    parser4 = argparse.ArgumentParser()
+    
+    parser4.add_argument('-xsamples','--xsamples', type=str,
+                        default=None,
+                        help='how many coordinates per axis. Total number of coordinates is xsamples**2')
+
+    parser4.add_argument('-mcsamples','--mcsamples', default=False,
+                        help='Number of monte carlo trajectories to use per coordinate.')
+                      
+    parser3.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=64,
                         help='Number of hidden dimensions in each layer of the Neural network model')
 
     args3 = parser3.parse_known_args()
