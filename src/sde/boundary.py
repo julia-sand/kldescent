@@ -284,7 +284,7 @@ class UnderdampedHalfBridge(Boundaries):
                                 (batch_samples,1),
                                 p=probs)
             
-        return out
+        return out 
                             
        
     #generate the initial data
@@ -301,10 +301,10 @@ class UnderdampedHalfBridge(Boundaries):
                                 ,self.Generator.normal(loc=0,scale=np.sqrt(1/self.beta),size=(batch_samples,1))))
     
    
-    def get_reference_timegrid(self):
-        #arr = np.loadtxt(self.get_ref_path(),
-        #                delimiter=",") 
-        return np.linspace(0,self.Tf)
+    def get_reference_timegrid(self,time=None):
+        if time is None:
+            time = self.Tf
+        return np.linspace(0,time)
 
     def get_reference_data(self,time):
 
@@ -320,7 +320,7 @@ class UnderdampedHalfBridge(Boundaries):
     def gfun(self,x):
 
         #Terminal cost
-        return self.beta*((x[:,1,None]**2)/2 + self.Ufinal(x[:,0,None]))
+        return self.beta*((x[...,[1]]**2)/2 + self.Ufinal(x[...,[0]]))
 
     def f(self,x,t):
 
@@ -341,6 +341,13 @@ class UnderdampedHalfBridge(Boundaries):
         return xn
 
 
+    def overdamped_counterpart(self,xn,du_bar,dt,dw,t):
+
+        #takes one step forward in the euler maruyama discretisation
+        #go forward one step 
+        xn = xn + du_bar*dt + self.sigma0*dw
+
+        return xn
     def girsanov_scheme(self,xn,du_bar,dt,dw,t):
 
         #takes one step forward in the euler maruyama discretisation
@@ -363,7 +370,7 @@ class UnderdampedNoMomentum(UnderdampedHalfBridge):
         #overwrite the terminal cost function 
 
         #Terminal cost
-        return self.beta*self.Ufinal(x[:,0,None])
+        return self.beta*self.Ufinal(x[...,[0]])
 
     def get_reference_array(self):
         return np.loadtxt(self.get_ref_path()+"/value.csv",
@@ -453,14 +460,13 @@ class UnderdampedHalfGaussian(UnderdampedHalfBridge):
             out = self.Generator.normal(loc=self.gauss_boundary.muinitial,scale=self.gauss_boundary.sigmainitial*np.sqrt(1/self.beta),size=(batch_samples,1))     
         elif mode=="final": 
             out = self.Generator.normal(loc=self.gauss_boundary.mufinal,scale=self.gauss_boundary.sigmafinal*np.sqrt(1/self.beta),size=(batch_samples,1))     
-
             
         return out
                              
-    def get_reference_timegrid(self):
-        #arr = np.loadtxt(self.get_ref_path(),
-        #                delimiter=",") 
-        return np.linspace(0,self.Tf)
+    def get_reference_timegrid(self,time=None):
+        if time is None:
+            time = self.Tf
+        return np.linspace(0,time)
 
     def get_reference_data(self,time):
 
@@ -473,15 +479,22 @@ class UnderdampedHalfGaussian(UnderdampedHalfBridge):
         #print("Reference solution not available.")
         return np.zeros_like(q)
 
-    def gfun(self,x):
-
-        #Terminal cost
-        return self.beta*((x[...,[1]]**2)/2 + self.Ufinal(x[...,[0]]))
-
     def get_ref_path(self):
         #returns the folder where the reference solution is expected to be
 
         return os.path.dirname(__file__) + f"/../refsolution/{self.__class__.__name__}"
+
+
+class UnderdampedHalfGaussianNoMomentum(UnderdampedHalfGaussian):
+    def __init__(self):
+        UnderdampedHalfGaussian.__init__(self)
+
+    def gfun(self,x):
+        #overwrite the terminal cost function 
+
+        #Terminal cost
+        return self.beta*self.Ufinal(x[...,[0]])
+
 
 if __name__=="__main__":
 
