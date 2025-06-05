@@ -13,3 +13,4 @@ src/model/tempnn.py
 klenv
 *.out
 *.bash
+*.jl

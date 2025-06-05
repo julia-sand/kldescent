@@ -166,7 +166,7 @@ class SDEOverdamped():
             self.logger.log_epoch_data(net,
                                     epoch,
                                     lout,
-                                    torch.mean(kldyn).item(),
+                                    (self.boundary.beta*self.boundary.tau/(4*self.boundary.m))*torch.mean(kldyn).item(),
                                     kl_static)
 
         #free up the tensors

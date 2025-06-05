@@ -29,6 +29,8 @@ class PlotFuns():
     self.boundary = boundary_data
     self.folder = os.path.dirname(__file__)
     
+    #borders of xaxis
+    self.qmax = 6
     
     #fontsizes
     self.fontsize = 22
@@ -96,19 +98,17 @@ class PlotFuns():
     
     pmarginal = np.nansum(joint_out.reshape((x_samples,x_samples)),axis=1)
     porder = np.argsort(p_init)
-    pnorm = 1#np.trapz(pmarginal[porder],p_init[porder])
+    pnorm = np.trapz(pmarginal[porder],p_init[porder])
     ax_pmarginal.plot(p_init[porder],pmarginal[porder]/pnorm
                       ,color=self.c1,lw=self.lw)
 
 
     qmarginal = np.nansum(joint_out.reshape((x_samples,x_samples)),axis=0)#[np.nansum(joint_out[i::samples]) for i in range(0,samples)]
     qorder = np.argsort(q_init)
-    qnorm = 1#np.trapz(qmarginal[qorder],q_init[qorder])
+    qnorm = np.trapz(qmarginal[qorder],q_init[qorder])
 
     ax_qmarginal.plot(qmarginal[qorder]/qnorm
                       ,q_init[qorder],color=self.c1,lw=self.lw)
-
-    #self.format_dist_axes(ax_pmarginal)
 
     ax_pmarginal.set_xlim((-pmax,pmax))
     ax_pmarginal.set_ylim((-0.05,0.7))
@@ -225,12 +225,42 @@ class PlotFuns():
     #move the legend
     legend.set_bbox_to_anchor(bbox=(0.85,0.25))
 
+  def make_legend_marginals(self,fig):
+    #create the legend 
+    blue_line = mlines.Line2D([], [],color=self.c1,lw=self.lw)
+    orange_line = mlines.Line2D([], [],color="orange",lw=self.lw)
+    green_line = mlines.Line2D([], [],color="green",lw=self.lw)
+    
+    legend = fig.legend(handles=[blue_line,
+                                  orange_line,
+                                  green_line],
+                        labels = ["Reference",
+                                  "Controlled by NN.",
+                                  "Free Diffusion"],
+            fontsize = self.fontsizeticks,
+            frameon = False,
+            handlelength = 1,
+            ncols = 3,bbox_to_anchor=(0.5, 0.1),
+            loc='lower center')
+
+    #move the legend
+    #legend.set_bbox_to_anchor(bbox=(0.85,-0.25))
+
   def format_drift_ax(self,ax1,time):
-    ax1.set_xlim((-2,2))
+    ax1.set_xlim((-self.qmax,self.qmax))
     ax1.set_title(f"t={time}")
     ax1.set_xlabel("q")
-    ax1.set_ylim((-10,10))
+    ax1.set_ylim((-1.8,1.8))
       
+  def normal_distribution(self,x,mu=0,sigmasq=1):
+    return np.exp(-((x-mu)**2)/(2*sigmasq))/np.sqrt(2*sigmasq*np.pi)
+      
+  def format_distribution_ax(self,ax1):
+    ax1.set_xlim((-self.qmax,self.qmax))
+    #ax1.set_xlabel("q")
+    ax1.set_ylim((-0.01,0.65))
+    ax1.tick_params(which="both",axis="both",labelsize=self.fontsizeticks)
+
   def plot_reference(self,ax1,x,du):
 
     ax1.plot(x,du,
@@ -251,7 +281,7 @@ class PlotFuns():
         print("The reference solution file was not found. \n \
                     Please make sure that it has been created by running the scripts in valueref.py or that it has not been moved")
 
-      ax[t].plot(np.linspace(-4,4,1000),
+      ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
                 self.evaluate_net_output(net,times[t]),
                 label="N.N.")
 
@@ -269,7 +299,7 @@ class PlotFuns():
     try:
 
       kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(xs[np.isfinite(xs)].reshape(-1,1))
-      return kde.score_samples(np.linspace(-6,6,num =1000).reshape(-1,1))
+      return kde.score_samples(np.linspace(-self.qmax,self.qmax,num =1000).reshape(-1,1))
 
     except ValueError:
       print("The final density could not be computed because the neural network did not return any finite values.")
@@ -285,29 +315,42 @@ class PlotFuns():
     - samples: the output of the evolutions
     """
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(10,8))
     #get plot location
     ax_pos = fig.add_subplot(121)
     ax_mom = fig.add_subplot(122)
 
-    ax_pos.plot(np.linspace(-6,6,),
-              self.boundary.q_marginal_final(np.linspace(-6,6,)))
+    ax_pos.plot(np.linspace(-self.qmax,self.qmax),
+              self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax)))
 
-    ax_mom.plot(np.linspace(-6,6,),
-              np.exp(-np.linspace(-6,6,)**2)/np.sqrt(np.pi))
+    ax_mom.plot(np.linspace(-self.qmax,self.qmax,),
+              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=0,sigmasq=1/2))
+              #np.exp(-np.linspace(-self.qmax,self.qmax,)**2)/np.sqrt(np.pi))
 
-    ax_pos.set_title("Position")
-    ax_mom.set_title("Momentum")
-
+    ax_pos.set_title("Position",fontsize=self.fontsizetitles)
+    ax_mom.set_title("Momentum",fontsize=self.fontsizetitles)
+    
     for x in xs:
 
       #plot scatter graphs
-      ax_mom.plot(np.linspace(-6,6,num=1000), np.exp(self.fit_kde(x[:,1])))
-      ax_pos.plot(np.linspace(-6,6,num=1000), np.exp(self.fit_kde(x[:,0])))
-    
-    ax_mom.set_xlim((-4,4))
-    ax_pos.set_xlim((-4,4))
-    plt.suptitle(f"t = {plottime}")
+      ax_mom.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[:,1])))
+      ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[:,0])))
+      ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000),
+          self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=np.nanmean(x[:,0]),sigmasq=np.nanvar(x[:,0])),
+          color="gray",lw=self.lw,linestyle="dashed",alpha=0.5)
+      print("mean ",np.nanmean(x[:,0]))
+      print("var ",np.nanvar(x[:,0]))
+    #ax_mom.set_xlim((-6,6))
+    #ax_pos.set_xlim((-6,6))
+    self.format_distribution_ax(ax_mom)
+    self.format_distribution_ax(ax_pos)
+
+    plt.suptitle(f"t = {plottime}",fontsize=self.fontsizetitles)
+
+
+    fig.subplots_adjust(bottom=0.3, wspace=0.33)
+
+    self.make_legend_marginals(fig)
     plt.savefig(self.subdir+"/marginals.png",bbox_inches="tight")
     plt.close()
 
@@ -338,7 +381,7 @@ class PlotFuns():
 
     #arr = self.get_loss_output()
 
-    ax.plot(arr[:,0],(self.boundary.beta/4)*arr[:,2],label=r"K.L. Divergence")
+    ax.plot(arr[:,0],arr[:,2],label=r"K.L. Divergence")
 
     #set axis labels
     ax.set_xlabel("epochs")
@@ -384,19 +427,20 @@ class PlotFuns():
   def evaluate_net_output(self,net,time):
       #computes neural network output (forward pass) to use in plotting
       return net(torch.column_stack((time*torch.ones(1000,dtype=torch.float32)
-                                                  ,torch.linspace(-4,4,1000)))).detach().numpy().reshape((1000,1))
+                                                  ,torch.linspace(-self.qmax,self.qmax,1000)))).detach().numpy().reshape((1000,1))
       
 
   #@profile
   def make_epoch_plots(self,
                             xs,
                             net,
-                            plot_times):
+                            marginal_plot_time,
+                            drift_plot_times):
       #create epoch folder and set plotter subdirectory
       #make plots
-      self.marginal_distribution(xs,plottime)
+      self.marginal_distribution(xs,marginal_plot_time)
       
-      self.plot_drift(times = plot_times,
+      self.plot_drift(times = drift_plot_times,
                           net=net)
 
 
@@ -404,7 +448,9 @@ if __name__=="__main__":
 
   from ..sde.boundary import UnderdampedNoMomentum
   boundary_cond = UnderdampedNoMomentum()
-  filename="tests/20250523-171743/loss.csv" #add filename of loss.csv to plot
+  fileloc="tests/UnderdampedHalfGauss"
+  filename = fileloc+"/loss.csv" #add filename of loss.csv to plot
   plotter = PlotFuns(boundary_cond)
+  plotter.setresultsdir(fileloc)
   plotter.plot_loss_metrics(filename)
   

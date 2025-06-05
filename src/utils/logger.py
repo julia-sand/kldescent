@@ -5,6 +5,7 @@ import time
 
 import numpy as np 
 import torch
+import yaml
 
 #import memory_profiler
 
@@ -53,6 +54,9 @@ class LossLogger():
         print("Output Directory created successfully.")   
        
         #create a log file to store the data output
+        self.datayaml = self.newpath +"/data.yml" 
+
+        #create a log file to store the data output
         self.datafile = self.newpath +"/data.txt" 
 
         self.filename = self.newpath +"/loss.csv" 
@@ -94,3 +98,7 @@ class LossLogger():
         for arg in vars(args): 
             self.add_param_to_log(arg, getattr(args, arg))
         
+    def log_dict(self,dictparams):
+                
+        with open(self.datayaml, 'w') as outfile:
+            yaml.dump(dictparams, outfile)#, default_flow_style=False)

@@ -4,7 +4,6 @@ import os
 
 from ..utils.parser import network_params
 
-
 #https://www.geeksforgeeks.org/swish-activation-function-in-pytorch/
 # Swish Function 
 class Swish(nn.Module):

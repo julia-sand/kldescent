@@ -1,5 +1,4 @@
 import os
-import signal
 
 import numpy as np
 import torch
@@ -12,13 +11,6 @@ from src.sde import *
 from src.utils import *
 import src.viz.plots as plots
 
-
-class TimeLimitException(Exception):
-    pass
-
-def handle_signal(signal_num, frame):
-    if signal_num == signal.SIGTERM:
-        raise TimeLimitException()
 
 #@profile
 def run():
@@ -49,6 +41,10 @@ def run():
         boundaryconditions = boundary.UnderdampedHalfGaussian()
         net = nn.NeuralNetwork(boundaryconditions).to(args.device)
         metrics_logger.log_args(boundaryconditions.gauss_boundary)
+    elif args.boundary=="UnderdampedHalfGaussianNoMomentum": #
+        boundaryconditions = boundary.UnderdampedHalfGaussianNoMomentum()
+        net = nn.NeuralNetwork(boundaryconditions).to(args.device)
+        metrics_logger.log_args(boundaryconditions.gauss_boundary)
 
     #plotter = plots.PlotFuns(boundaryconditions)
     #plotter.setresultsdir(metrics_logger.get_results_path())
@@ -56,7 +52,7 @@ def run():
     #save all params
     metrics_logger.log_args(boundaryconditions.params)
     metrics_logger.log_args(net.params)
-
+    metrics_logger.log_dict(net.params)
     if args.pretrain:
         import run_pretrain
         run_pretrain.run_pretrain(net,metrics_logger.get_results_path(),boundaryconditions)
