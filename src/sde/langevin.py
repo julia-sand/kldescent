@@ -33,11 +33,16 @@ class SDEOverdamped():
                                 [self.boundary.Tf]])
 
 
-    def testing_time_grid(self,final_time=5):
+    def testing_time_grid(self,final_time=None):
+
+        if final_time==None:
+            final_time = self.boundary.Tf
+            
         #get an equally spaced time grid which can be used with the reference solution
-        try:
-            return self.boundary.get_reference_timegrid()
-        except: 
+        time_grid = self.boundary.get_reference_timegrid()
+        if time_grid is not None:
+            return time_grid
+        else:
             return np.linspace(0,final_time,self.t_steps)
 
     def generate_innovation(self,dt,size):

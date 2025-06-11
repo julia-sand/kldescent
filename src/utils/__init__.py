@@ -1,2 +1,3 @@
 __all__ = ["logger",
-            "parser"]
+            "parser",
+            "slurmhandler"]

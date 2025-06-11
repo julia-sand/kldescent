@@ -8,9 +8,9 @@ import torch
 
 from src.model import *
 from src.sde import *
+import src.sde.boundary as boundaries
 from src.utils import *
 import src.viz.plots as plots
-
 
 #@profile
 def run():
@@ -25,26 +25,12 @@ def run():
     #initialise the model
     #TODO: add gpu option, decide architectures
     #TODO: add config file to read these params
-    if args.boundary=="Landauer":
-        boundaryconditions = boundary.HalfBridgeLandauer()
+    #dynamically create boundary class bsaed on input
+    boundaryconditions = getattr(boundaries,args.boundary)()
+    if args.boundary=="LinearOU":
+        net = nn.MLP().to(args.device)
+    else:
         net = nn.NeuralNetwork(boundaryconditions).to(args.device)
-    elif args.boundary=="LinearOU": #Linear OU
-        boundaryconditions = boundary.LinearOU()
-        net = nn.MLP(args.hiddenlayerneurons,args.checkpointpath).to(args.device)
-    elif args.boundary=="UnderdampedLandauer": #underdamped landauer
-        boundaryconditions = boundary.UnderdampedHalfBridge()
-        net = nn.NeuralNetwork(boundaryconditions).to(args.device)
-    elif args.boundary=="UnderdampedNoMomentum": #
-        boundaryconditions = boundary.UnderdampedNoMomentum()
-        net = nn.NeuralNetwork(boundaryconditions).to(args.device)
-    elif args.boundary=="UnderdampedHalfGaussian": #
-        boundaryconditions = boundary.UnderdampedHalfGaussian()
-        net = nn.NeuralNetwork(boundaryconditions).to(args.device)
-        metrics_logger.log_args(boundaryconditions.gauss_boundary)
-    elif args.boundary=="UnderdampedHalfGaussianNoMomentum": #
-        boundaryconditions = boundary.UnderdampedHalfGaussianNoMomentum()
-        net = nn.NeuralNetwork(boundaryconditions).to(args.device)
-        metrics_logger.log_args(boundaryconditions.gauss_boundary)
 
     #plotter = plots.PlotFuns(boundaryconditions)
     #plotter.setresultsdir(metrics_logger.get_results_path())
@@ -53,6 +39,12 @@ def run():
     metrics_logger.log_args(boundaryconditions.params)
     metrics_logger.log_args(net.params)
     metrics_logger.log_dict(net.params)
+    
+    try:
+        metrics_logger.log_args(boundaryconditions.gauss_boundary)
+    except AttributeError: #skip if not available
+        pass
+
     if args.pretrain:
         import run_pretrain
         run_pretrain.run_pretrain(net,metrics_logger.get_results_path(),boundaryconditions)
@@ -75,7 +67,7 @@ def run():
         except ValueError:
             print("The training has resulted in NaN loss and therefore failed. Please retry.")
             raise
-        except TimeLimitException:
+        except slurmhandler.TimeLimitException:
             print(f"The training must be stopped because SLURM is about to kill the job. Training ended at epoch {epoch}")
             metrics_logger.save_checkpoint(net,epoch)
             #plotter.plot_loss_metrics()

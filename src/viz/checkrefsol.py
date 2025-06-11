@@ -14,8 +14,8 @@ class RefSol(PlotFuns):
     
       for t in range(len(times)):  
         
-        xref,vref = self.boundary.get_reference_value(times[t])
-        self.plot_reference(ax[t],xref,vref)
+        xref,vref = self.boundary.get_reference_data(times[t])
+        self.plot_reference(ax[t],xref,-vref)
 
         #self.format_drift_ax(ax[t],times[t])
       
@@ -32,9 +32,12 @@ class RefSol(PlotFuns):
 
 
 if __name__=="__main__":
-    from ..sde.boundary import UnderdampedNoMomentum
+    from .checkpoint_plots import load_net
 
-    boundary_cond = UnderdampedNoMomentum()
+    boundary_cond = UnderdampedQuarterGaussian()
+    epoch = 4000 
+    
+
     RefSol(boundary_cond).plot_value([0,2.5,5])
 
 
