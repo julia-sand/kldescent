@@ -76,6 +76,7 @@ class NeuralNetwork(nn.Module):
                     torch.nn.init.constant_(m.bias, 0)
 
     def load_checkpoint(self,checkpointpath):
+        checkpointpath = os.path.dirname( __file__ )+ '/../../' +checkpointpath
         self.load_state_dict(torch.load(checkpointpath, weights_only=True))
         print("Checkpoint loaded successfully.")    
         
@@ -84,9 +85,12 @@ class NeuralNetwork(nn.Module):
 # FROM TORCH TUTORIAL
 #create a simple neural network to parametrise the drift. 
 class MLP(nn.Module):
-    def __init__(self,hiddenlayerneurons,checkpointpath=None):
-        self.hidden_layer_neurons = hiddenlayerneurons 
+    def __init__(self,checkpointpath=None):
+        self.params = network_params()
 
+        #params
+        self.hidden_layer_neurons = self.params.hiddenlayerneurons
+        
         super(MLP, self).__init__()
         self.flatten = nn.Flatten()
         self.linear_stack = nn.Sequential(

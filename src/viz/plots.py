@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib.cm import ScalarMappable
 import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
+import matplotlib.gridspec as gridspec
 
 '''
 #visualisations ideas
@@ -46,6 +47,10 @@ class PlotFuns():
     self.c3 = "#33a02c" #dark green
     self.c4 = "#b2df8a" #light green
 
+    self.titlepad = 5
+    self.titlex = 0.07
+    self.titley = 0.88
+
   def setresultsdir(self,folder):
     #set output location 
     self.folder = folder
@@ -53,6 +58,9 @@ class PlotFuns():
 
   def setsubdir(self, subdir):
     self.subdir = self.folder+subdir #os.path.join(self.folder,subdir)
+
+  def make_plot_label(self,plot_index):
+    return "("+string.ascii_lowercase[plot_index]+")"
 
   #function for plotting
   def joint_distributions_scatter(self,fig,
@@ -91,7 +99,7 @@ class PlotFuns():
 
     ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
     ax_qmarginal = ax.inset_axes([-0.65, 0, 0.6, 1])
-    ax_pmarginal.text(-9,0.4,"("+string.ascii_lowercase[plot_index]+")",fontsize = self.fontsizetitles,zorder = 200)
+    ax_pmarginal.text(-9,0.4,self.make_plot_label(plot_index),fontsize = self.fontsizetitles,zorder = 200)
 
     #compute joint distribution
     idx = np.argwhere(~np.isnan(joint_out))
@@ -251,7 +259,10 @@ class PlotFuns():
     ax1.set_title(f"t={time}")
     ax1.set_xlabel("q")
     ax1.set_ylim((-1.8,1.8))
-      
+
+  def format_ticks(self,ax):
+    ax.tick_params(which="both",axis="both",labelsize=self.fontsizeticks)
+
   def normal_distribution(self,x,mu=0,sigmasq=1):
     return np.exp(-((x-mu)**2)/(2*sigmasq))/np.sqrt(2*sigmasq*np.pi)
       
@@ -320,37 +331,38 @@ class PlotFuns():
     ax_pos = fig.add_subplot(121)
     ax_mom = fig.add_subplot(122)
 
-    ax_pos.plot(np.linspace(-self.qmax,self.qmax),
-              self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax)))
+    #ax_pos.plot(np.linspace(-self.qmax,self.qmax),
+    #          self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax)))
 
     ax_mom.plot(np.linspace(-self.qmax,self.qmax,),
-              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=0,sigmasq=1/2))
+              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=0,sigmasq=1/self.boundary.beta),)
               #np.exp(-np.linspace(-self.qmax,self.qmax,)**2)/np.sqrt(np.pi))
 
     ax_pos.set_title("Position",fontsize=self.fontsizetitles)
     ax_mom.set_title("Momentum",fontsize=self.fontsizetitles)
+    colors = ["orange",self.c1]
+    labels = ["Controlled by NN.","Free Diffusion"]
+    for x in enumerate(xs):
     
-    for x in xs:
-
-      #plot scatter graphs
-      ax_mom.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[:,1])))
-      ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[:,0])))
+      ax_mom.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,1])), color=colors[x[0]],label=labels[x[0]])
+      ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,0])), color=colors[x[0]],label=labels[x[0]])
+      
       ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000),
-          self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=np.nanmean(x[:,0]),sigmasq=np.nanvar(x[:,0])),
+          self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=np.nanmean(x[1][:,0]),sigmasq=np.nanvar(x[1][:,0])),
           color="gray",lw=self.lw,linestyle="dashed",alpha=0.5)
-      print("mean ",np.nanmean(x[:,0]))
-      print("var ",np.nanvar(x[:,0]))
-    #ax_mom.set_xlim((-6,6))
-    #ax_pos.set_xlim((-6,6))
+      
+      ax_mom.set_xlim((-self.qmax,self.qmax))
+      ax_pos.set_xlim((-self.qmax,self.qmax))
+    
     self.format_distribution_ax(ax_mom)
     self.format_distribution_ax(ax_pos)
 
     plt.suptitle(f"t = {plottime}",fontsize=self.fontsizetitles)
 
-
     fig.subplots_adjust(bottom=0.3, wspace=0.33)
 
-    self.make_legend_marginals(fig)
+    plt.legend(fontsize=self.fontsizetitles)
+    #self.make_legend_marginals(fig)
     plt.savefig(self.subdir+"/marginals.png",bbox_inches="tight")
     plt.close()
 
@@ -430,25 +442,77 @@ class PlotFuns():
                                                   ,torch.linspace(-self.qmax,self.qmax,1000)))).detach().numpy().reshape((1000,1))
       
 
-  #@profile
-  def make_epoch_plots(self,
-                            xs,
-                            net,
-                            marginal_plot_time,
-                            drift_plot_times):
-      #create epoch folder and set plotter subdirectory
-      #make plots
-      self.marginal_distribution(xs,marginal_plot_time)
-      
-      self.plot_drift(times = drift_plot_times,
-                          net=net)
+
+
+  def make_cumulant_subplot(self,gs_location,
+                            ylabel_text,t_vec,cumulants_nn_plot,cumulants_ref_plot):
+    
+    #get index:
+    if ylabel_text=="Position Mean":
+      index = 0 
+    elif ylabel_text=="Momentum Mean":
+      index = 1
+    elif ylabel_text=="Position Variance":
+      index = 2 
+    elif ylabel_text=="Momentum Variance":
+      index = 3 
+    elif ylabel_text=="Cross Correlation":
+      index = 4 
+
+    # position mean
+    plt.subplot(gs_location)
+    plt.plot(t_vec, cumulants_nn_plot[:,index], lw=self.lw,color="orange")
+    plt.plot(t_vec, cumulants_ref_plot[:,index], lw=self.lw,color=self.c1)
+    try:
+      plt.plot(self.boundary.get_known_solution_cumulants(ylabel_text)[0],
+                self.boundary.get_known_solution_cumulants(ylabel_text)[1],lw=self.lw,color="green")
+    except (ValueError,TypeError):
+      pass
+    plt.title(self.make_plot_label(index),fontsize = self.fontsizetitles,pad = self.titlepad,x = self.titlex, y = self.titley,zorder = 1000000)
+    plt.ylabel(ylabel_text,fontsize = self.fontsizetitles)
+    plt.xlim((-0.1,t_vec[-1]+0.1))
+    self.format_ticks(plt.gca())    
+
+  def plot_cumulants(self,t_vec,cumulants_nn_plot,cumulants_ref_plot):
+
+    # Plotting the cumulants
+    fig1 = plt.figure(figsize=(15, 8))#, constrained_layout=True)
+
+    # Create a 1x5 grid with different widths for the bottom row
+    gs_cumulants = gridspec.GridSpec(2, 6, width_ratios=[1, 1, 1, 1,1,1], height_ratios=[1, 1])
+            
+    # position mean
+    self.make_cumulant_subplot(gs_cumulants[0, 0:2],"Position Mean",t_vec,cumulants_nn_plot,cumulants_ref_plot)
+    self.make_cumulant_subplot(gs_cumulants[0, 2:4],"Position Variance",t_vec,cumulants_nn_plot,cumulants_ref_plot)
+    self.make_cumulant_subplot(gs_cumulants[0, 4:],"Momentum Mean",t_vec,cumulants_nn_plot,cumulants_ref_plot)
+    self.make_cumulant_subplot(gs_cumulants[1,:3],"Momentum Variance",t_vec,cumulants_nn_plot,cumulants_ref_plot)
+    self.make_cumulant_subplot(gs_cumulants[1, 3:],"Cross Correlation",t_vec,cumulants_nn_plot,cumulants_ref_plot)
+                      
+    plt.tight_layout()
+
+    #get legend
+    orange_line = mlines.Line2D([], [],color="orange",lw=self.lw)
+    blue_line = mlines.Line2D([], [],color=self.c1,lw=self.lw)
+    green_line = mlines.Line2D([], [],color="green",lw=self.lw)
+
+    legend = fig1.legend(handles=[blue_line,orange_line,green_line],#,green_line],
+              labels = ["Free Diffusion","Controlled","Known Reference Solution"],
+              fontsize = self.fontsizetitles,
+              frameon = False,
+              handlelength = 1,
+              ncols = 3)
+
+    #move the legend
+    legend.set_bbox_to_anchor(bbox=(0.95,0.07))
+    plt.savefig(self.subdir+f"/cumulants.png", bbox_inches='tight')
+    plt.close()
 
 
 if __name__=="__main__":
 
-  from ..sde.boundary import UnderdampedNoMomentum
-  boundary_cond = UnderdampedNoMomentum()
-  fileloc="tests/UnderdampedHalfGauss"
+  from ..sde.boundary import *
+  boundary_cond = UnderdampedHalfGaussian()
+  fileloc=f"tests/{boundary_cond.__class__.__name__}"
   filename = fileloc+"/loss.csv" #add filename of loss.csv to plot
   plotter = PlotFuns(boundary_cond)
   plotter.setresultsdir(fileloc)

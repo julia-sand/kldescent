@@ -21,16 +21,24 @@ class Boundaries():
 
         self.Generator = np.random.default_rng(seed=None)
 
-        #self.logger.log_args(self.params) #add to log
+        self.ref_path = self.get_ref_path()+"/refsol.csv"
 
+    def get_ref_path(self):
+        #returns the folder where the reference solution is expected to be
+
+        return os.path.dirname(__file__) + f"/../refsolution/{self.__class__.__name__}"
+ 
 
 class HalfBridgeLandauer(Boundaries):
     def __init__(self):
         Boundaries.__init__(self)
         self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
-        self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
+        self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
 
+
+    def overwrite_ref_path(self,new_path):
         
+        self.ref_path = new_path + "/refsol.csv"
 
     def Uinitial(self,q):
 
@@ -51,11 +59,6 @@ class HalfBridgeLandauer(Boundaries):
     def qfinal(self,q):
 
         return np.exp(-self.Ufinal(q)) 
-
-    def get_ref_path(self):
-        currdir = os.path.dirname(__file__)
-        
-        return currdir+"/../refsolution/value.csv"
 
     def q_marginal_initial(self,q):
 
@@ -99,7 +102,7 @@ class HalfBridgeLandauer(Boundaries):
                             
        
     def get_reference_timegrid(self):
-        arr = np.loadtxt(self.get_ref_path(),
+        arr = np.loadtxt(self.ref_path,
                         delimiter=",") 
         return np.unique(arr[:,0])
 
@@ -108,7 +111,7 @@ class HalfBridgeLandauer(Boundaries):
         #time is the time you want the data
 
         ##fetch the reference data for halfbridge
-        arr = np.loadtxt(self.get_ref_path(),
+        arr = np.loadtxt(self.ref_path,
                         delimiter=",")  
        
         ##fetch the reference data approximation data
@@ -137,7 +140,6 @@ class HalfBridgeLandauer(Boundaries):
         #takes one step forward in the euler maruyama discretisation
         
         return xn + (self.sigma0*du_bar)*dt + self.sigma0*dw
-
 
 
 class LinearOU(Boundaries):
@@ -205,7 +207,7 @@ class LinearOU(Boundaries):
 
         return self.A*q
 
-    def get_reference_timegrid(self):
+    def get_reference_timegrid(self,time=None):
          
         return None
 
@@ -215,9 +217,9 @@ class LinearOU(Boundaries):
         return xn + (self.b(xn,t) \
                      + self.sigma0*du_bar)*dt + self.sigma0*dw
 
-class UnderdampedHalfBridge(Boundaries):
+class UnderdampedHalfLandauer(HalfBridgeLandauer):
     def __init__(self):
-        Boundaries.__init__(self)
+        HalfBridgeLandauer.__init__(self)
         self.sigma0 = np.sqrt(2*self.m/(self.tau*self.beta))
 
         self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
@@ -242,11 +244,6 @@ class UnderdampedHalfBridge(Boundaries):
     def qfinal(self,q):
 
         return np.exp(-self.beta*self.Ufinal(q)) 
-
-    def get_ref_path(self):
-        #currdir = os.path.dirname(__file__)
-        print("Reference solution not available.")
-        return  #currdir+"/../refsolution/value.csv"
 
     def q_marginal_initial(self,q):
 
@@ -320,7 +317,7 @@ class UnderdampedHalfBridge(Boundaries):
     def gfun(self,x):
 
         #Terminal cost
-        return self.beta*((x[...,[1]]**2)/2 + self.Ufinal(x[...,[0]]))
+        return (x[...,[1]]**2)/2 + self.Ufinal(x[...,[0]])
 
     def f(self,x,t):
 
@@ -348,6 +345,7 @@ class UnderdampedHalfBridge(Boundaries):
         xn = xn + du_bar*dt + self.sigma0*dw
 
         return xn
+
     def girsanov_scheme(self,xn,du_bar,dt,dw,t):
 
         #takes one step forward in the euler maruyama discretisation
@@ -356,13 +354,9 @@ class UnderdampedHalfBridge(Boundaries):
         xn[...,[1]] = xn[...,[1]] + du_bar*dt + self.sigma0*dw
 
         return xn
-    def get_ref_path(self):
-        #returns the folder where the reference solution is expected to be
+        
 
-        return os.path.dirname(__file__) + f"/../refsolution/{self.__class__.__name__}"
-
-
-class UnderdampedNoMomentum(UnderdampedHalfBridge):
+class UnderdampedNoMomentum(UnderdampedHalfLandauer):
     def __init__(self):
         super().__init__()
 
@@ -370,10 +364,11 @@ class UnderdampedNoMomentum(UnderdampedHalfBridge):
         #overwrite the terminal cost function 
 
         #Terminal cost
-        return self.beta*self.Ufinal(x[...,[0]])
+        return self.Ufinal(x[...,[0]]) #self.beta*
+        
 
     def get_reference_array(self):
-        return np.loadtxt(self.get_ref_path()+"/value.csv",
+        return np.loadtxt(self.ref_path,
                                delimiter=",")
 
     def get_reference_timegrid(self,plottime):
@@ -419,7 +414,7 @@ class UnderdampedNoMomentum(UnderdampedHalfBridge):
         return np.interp(q,qref,duref,left=duref[0],right=duref[-1])[:, np.newaxis]
 
 
-class UnderdampedHalfGaussian(UnderdampedHalfBridge):
+class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
     def __init__(self):
         Boundaries.__init__(self)
         self.sigma0 = np.sqrt(2*self.m/(self.tau*self.beta))
@@ -433,6 +428,7 @@ class UnderdampedHalfGaussian(UnderdampedHalfBridge):
     def Ufinal(self,q):
 
         return (q-self.gauss_boundary.mufinal)**2/(2*(self.gauss_boundary.sigmafinal**2))
+
 
     def scorefinal(self,q):
 
@@ -461,42 +457,82 @@ class UnderdampedHalfGaussian(UnderdampedHalfBridge):
         elif mode=="final": 
             out = self.Generator.normal(loc=self.gauss_boundary.mufinal,scale=self.gauss_boundary.sigmafinal*np.sqrt(1/self.beta),size=(batch_samples,1))     
             
-        return out
-                             
+        return out                           
+
+    def get_ref_data(self):
+        #returns the folder where the reference solution is expected to be
+        arr = np.loadtxt(open(self.ref_path),
+                        delimiter=",",skiprows=1) 
+        return arr 
+
     def get_reference_timegrid(self,time=None):
         if time is None:
-            time = self.Tf
-        return np.linspace(0,time)
+            time = self.Tf + 0.00001
+        
+        try: 
+            arr = self.get_ref_data()
+            return np.unique(arr[:,0])
+        except FileNotFoundError:
+            return np.linspace(0,time)
 
     def get_reference_data(self,time):
-
-        #RETURNS X, DU for plotting
-        return np.zeros(1000),np.zeros(1000)
+        arr = self.get_ref_data()
+        
+        return np.linspace(-4,4),-(np.squeeze(arr[np.where(arr[:,0]==time),-1]) + np.squeeze(arr[np.where(arr[:,0]==time),-2])*np.linspace(-4,4))
 
     def du_ref(self,q,time):
-
-        #returns the drift of the reference solution 
-        #print("Reference solution not available.")
+        #A FREE DIFFUSION
+        # ie. returns zero drift of the right shape! 
         return np.zeros_like(q)
 
-    def get_ref_path(self):
-        #returns the folder where the reference solution is expected to be
+    def get_known_solution_cumulants(self,cumulant_type):
+        arr = np.loadtxt(open(self.ref_path),
+                        delimiter=",",skiprows=1) 
+        
+        if cumulant_type == "Position Variance": 
+         return arr[:,0],arr[:,4]
+        elif cumulant_type == "Momentum Variance":
+         return arr[:,0],arr[:,6]
+        elif cumulant_type == "Cross Correlation":
+         return arr[:,0],arr[:,5]
+        elif cumulant_type == "Momentum Mean":
+         return arr[:,0],arr[:,8]
+        elif cumulant_type == "Position Mean":
+         return arr[:,0],arr[:,7]
+        else:
+         return None
+ 
 
-        return os.path.dirname(__file__) + f"/../refsolution/{self.__class__.__name__}"
-
-
-class UnderdampedHalfGaussianNoMomentum(UnderdampedHalfGaussian):
+class UnderdampedQuarterGaussianNoMomentum(UnderdampedQuarterGaussian):
     def __init__(self):
-        UnderdampedHalfGaussian.__init__(self)
+        UnderdampedQuarterGaussian.__init__(self)
 
     def gfun(self,x):
         #overwrite the terminal cost function 
 
         #Terminal cost
-        return self.beta*self.Ufinal(x[...,[0]])
+        return self.Ufinal(x[...,[0]])
+
+
+class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
+    def __init__(self):
+        UnderdampedQuarterGaussian.__init__(self)
+
+    def Utemp(self,q,mean,var):
+
+        return (q-mean)**2/(2*var/self.beta)
+
+    def gfun(self,x):      
+
+        mean0 = np.nanmean(x[...,[0]])
+        var0 = np.nanvar(x[...,[0]])
+
+        #Terminal cost
+        return -self.Utemp(x[...,[0]],mean0,var0) + self.beta*self.Utemp(x[...,[0]],self.gauss_boundary.mufinal, self.gauss_boundary.sigmafinal**2) \
+                    + np.log(self.gauss_boundary.sigmafinal/np.sqrt(var0))
 
 
 if __name__=="__main__":
 
-    boundary = UnderdampedHalfGaussian()
+    boundary = UnderdampedQuarterGaussian()
     
