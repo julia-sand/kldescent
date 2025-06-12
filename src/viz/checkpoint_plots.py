@@ -91,7 +91,6 @@ if __name__=="__main__":
     params = checkpoint_plot_params()
     boundary_cond = getattr(boundaries,params.boundary)()
     
-
     net, plotter = load_net(boundary_cond,params.epoch,params.folder)      
-    compute_sde(net,boundary_cond.Tf,5000,plotter,boundary_cond)
+    compute_sde(net,boundary_cond.Tf,params.samples,plotter,boundary_cond)
     plotter.plot_drift(times = [0,boundary_cond.Tf/2,boundary_cond.Tf],net=net)

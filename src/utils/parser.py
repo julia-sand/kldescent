@@ -111,7 +111,7 @@ def network_params():
                         default=None,
                         help='path to a checkpoint for warm-start training. Path should be provided from the current folder.')
          
-    parser3.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=8,
+    parser3.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=64,
                         help='Number of hidden dimensions in each layer of the Neural network model')
 
     args3 = parser3.parse_known_args()
@@ -152,7 +152,9 @@ def checkpoint_plot_params():
     parser5.add_argument('-boundary','--boundary', type=str, default="UnderdampedHalfGaussian",
                         help='Boundary conditions used in the plot')
                       
-
+    parser5.add_argument('-samples','--samples', type=int, default=5000,
+                        help='How many samples to use to make the plots.')
+            
     parser5.add_argument('-folder','--folder', type=str, default=None,
                         help='Folder where to run the plots.')
             
