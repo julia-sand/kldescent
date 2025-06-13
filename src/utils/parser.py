@@ -58,20 +58,20 @@ def boundary_params():
     boundary_params.add_argument('-Tf','--Tf', type=float, default=5,
                         help='final time')
 
-    boundary_params.add_argument('-beta','--beta', type=float, default=2,
+    boundary_params.add_argument('-epsilon','--epsilon', type=float, default=0.2,
                         help='constant')
 
-    boundary_params.add_argument('-mass','--mass', type=float, default=1,
-                        help='constant')
+    #boundary_params.add_argument('-mass','--mass', type=float, default=1,
+    #                    help='constant')
 
-    boundary_params.add_argument('-tau','--tau', type=float, default=1,
-                        help='constant')
+    #boundary_params.add_argument('-tau','--tau', type=float, default=1,
+    #                    help='constant')
 
     boundary_params.add_argument('-g','--g', type=float, default=0,
                         help='constant')
 
-    boundary_params.add_argument('-ellsq','--ellsq', type=float, default=12.5,
-                        help='typical length scale squared')
+    #boundary_params.add_argument('-ellsq','--ellsq', type=float, default=12.5,
+    #                    help='typical length scale squared')
     
     args2 = boundary_params.parse_known_args()
 

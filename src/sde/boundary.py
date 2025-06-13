@@ -13,12 +13,8 @@ class Boundaries():
         self.params = boundary_params()
         self.Tf = self.params.Tf
         self.g = self.params.g        
-        self.beta = self.params.beta 
-        self.m = self.params.mass 
-        self.tau = self.params.tau 
-        self.ell = np.sqrt(self.params.ellsq)
-        self.epsilon = np.sqrt(self.tau**2 / (self.beta*(self.ell**2)*self.m))
-
+        
+        self.epsilon = self.params.epsilon 
         self.Generator = np.random.default_rng(seed=None)
 
         self.ref_path = self.get_ref_path()+"/refsol.csv"
@@ -220,7 +216,7 @@ class LinearOU(Boundaries):
 class UnderdampedHalfLandauer(HalfBridgeLandauer):
     def __init__(self):
         HalfBridgeLandauer.__init__(self)
-        self.sigma0 = np.sqrt(2*self.m/(self.tau*self.beta))
+        self.sigma0 = np.sqrt(2)
 
         self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
         self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
@@ -239,11 +235,11 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
 
     def qinitial(self,q):
 
-        return np.exp(-self.beta*self.Uinitial(q))
+        return np.exp(-self.Uinitial(q))
 
     def qfinal(self,q):
 
-        return np.exp(-self.beta*self.Ufinal(q)) 
+        return np.exp(-self.Ufinal(q)) 
 
     def q_marginal_initial(self,q):
 
@@ -257,12 +253,12 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
 
     def p_initial(self,q,p):
 
-        return (self.q_marginal_initial(q)*np.exp(-self.beta*(p**2)/2))/np.sqrt(2*np.pi/self.beta)
+        return (self.q_marginal_initial(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
 
 
     def p_final(self,x): 
         
-        return (self.q_marginal_final(x[:,0,None])*np.exp(-self.beta*(x[:,1,None]**2)/2))/np.sqrt(2*np.pi/self.beta)
+        return (self.q_marginal_final(x[:,0,None])*np.exp(-(x[:,1,None]**2)/2))/np.sqrt(2*np.pi)
 
     #generate the initial data
     def generate_samples_q(self,batch_samples,mode):
@@ -292,10 +288,9 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
         #output as a tensor
 
         #gives the initialisation of the underdamped
-        #TODO add beta to initial sampler of momentum 
              
         return np.column_stack((self.generate_samples_q(batch_samples,mode)
-                                ,self.Generator.normal(loc=0,scale=np.sqrt(1/self.beta),size=(batch_samples,1))))
+                                ,self.Generator.standard_normal(size=(batch_samples,1))))
     
    
     def get_reference_timegrid(self,time=None):
@@ -331,9 +326,13 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
 
         #takes one step forward in the euler maruyama discretisation
         #go forward one step 
-        xn[:,0,None] = xn[:,0,None] + (xn[:,1,None]/self.m)*dt 
-        xn[:,1,None] = xn[:,1,None] - (xn[:,1,None]/self.tau - du_bar)*dt \
+        xn[:,0,None] = xn[:,0,None] + self.epsilon*xn[:,1,None]*dt 
+        xn[:,1,None] = xn[:,1,None] - (xn[:,1,None] - du_bar)*dt \
                                     + self.sigma0*dw
+        
+        #xn[:,0,None] = xn[:,0,None] + (xn[:,1,None]/self.m)*dt 
+        #xn[:,1,None] = xn[:,1,None] - (xn[:,1,None]/self.tau - du_bar)*dt \
+        #                            + self.sigma0*dw
 
         return xn
 
@@ -350,7 +349,7 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
 
         #takes one step forward in the euler maruyama discretisation
         #go forward one step 
-        xn[...,[0]] = xn[...,[0]] + (xn[...,[1]]/self.m)*dt 
+        xn[...,[0]] = xn[...,[0]] + self.epsilon*xn[...,[1]]*dt 
         xn[...,[1]] = xn[...,[1]] + du_bar*dt + self.sigma0*dw
 
         return xn
@@ -364,7 +363,7 @@ class UnderdampedNoMomentum(UnderdampedHalfLandauer):
         #overwrite the terminal cost function 
 
         #Terminal cost
-        return self.Ufinal(x[...,[0]]) #self.beta*
+        return self.Ufinal(x[...,[0]]) #
         
 
     def get_reference_array(self):
@@ -392,7 +391,7 @@ class UnderdampedNoMomentum(UnderdampedHalfLandauer):
         coeff = (1 - np.exp((time - self.Tf)))
 
         #RETURNS X, DU for plotting
-        return np.squeeze(arrtemp[:,1]),2*coeff*np.squeeze(arrtemp[:,-1])/self.beta
+        return np.squeeze(arrtemp[:,1]),2*coeff*np.squeeze(arrtemp[:,-1])
 
     def get_reference_value(self,time):
 
@@ -417,7 +416,7 @@ class UnderdampedNoMomentum(UnderdampedHalfLandauer):
 class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
     def __init__(self):
         Boundaries.__init__(self)
-        self.sigma0 = np.sqrt(2*self.m/(self.tau*self.beta))
+        self.sigma0 = np.sqrt(2)
 
         self.gauss_boundary = gaussian_params()
 
@@ -437,12 +436,12 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
 
     def q_marginal_initial(self,q):
 
-        return self.qinitial(q)/np.sqrt(2*(self.gauss_boundary.sigmainitial**2)/self.params.beta)
+        return self.qinitial(q)/np.sqrt(2*(self.gauss_boundary.sigmainitial**2))
 
 
     def q_marginal_final(self,q): 
         
-        return self.qfinal(q)/np.sqrt(2*(self.gauss_boundary.sigmafinal**2)/self.params.beta)
+        return self.qfinal(q)/np.sqrt(2*(self.gauss_boundary.sigmafinal**2))
 
 
     #generate the initial data
@@ -453,9 +452,9 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
 
         #from where to sample the q marginals
         if mode=="initial":
-            out = self.Generator.normal(loc=self.gauss_boundary.muinitial,scale=self.gauss_boundary.sigmainitial*np.sqrt(1/self.beta),size=(batch_samples,1))     
+            out = self.Generator.normal(loc=self.gauss_boundary.muinitial,scale=self.gauss_boundary.sigmainitial,size=(batch_samples,1))     
         elif mode=="final": 
-            out = self.Generator.normal(loc=self.gauss_boundary.mufinal,scale=self.gauss_boundary.sigmafinal*np.sqrt(1/self.beta),size=(batch_samples,1))     
+            out = self.Generator.normal(loc=self.gauss_boundary.mufinal,scale=self.gauss_boundary.sigmafinal,size=(batch_samples,1))     
             
         return out                           
 
@@ -520,7 +519,7 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
 
     def Utemp(self,q,mean,var):
 
-        return (q-mean)**2/(2*var/self.beta)
+        return (q-mean)**2/(2*var)
 
     def gfun(self,x):      
 
@@ -528,9 +527,10 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
         var0 = np.nanvar(x[...,[0]])
 
         #Terminal cost
-        return -self.Utemp(x[...,[0]],mean0,var0) + self.beta*self.Utemp(x[...,[0]],self.gauss_boundary.mufinal, self.gauss_boundary.sigmafinal**2) \
-                    + np.log(self.gauss_boundary.sigmafinal/np.sqrt(var0))
-
+        return -self.Utemp(x[...,[0]],mean0,var0)+self.Utemp(x[...,[0]],self.gauss_boundary.mufinal, self.gauss_boundary.sigmafinal**2)
+        #+ np.log(self.gauss_boundary.sigmafinal/np.sqrt(var0))
+        #-self.Utemp(x[...,[0]],mean0,var0) + self.beta*self.Utemp(x[...,[0]],self.gauss_boundary.mufinal, self.gauss_boundary.sigmafinal**2) \
+               #     
 
 if __name__=="__main__":
 

@@ -178,7 +178,7 @@ class PlotFuns():
     #add boundary conditions to first plot and format titles
     if plot_index ==0:
       ax.set_title(f"$t = 0$", loc = "center", fontsize=self.fontsizetitles)
-      ax_pmarginal.fill_between(q_init,np.exp(-self.boundary.beta*(q_init**2)/2)/np.sqrt(np.pi*2/self.boundary.beta),color=self.c2)
+      ax_pmarginal.fill_between(q_init,np.exp(-(q_init**2)/2)/np.sqrt(np.pi*2),color=self.c2)
       ax_qmarginal.fill_between(self.boundary.q_marginal_initial(q_init),q_init,color=self.c2)
     elif plot_index == 5:
       ax.set_title(f"$t = t_f$", loc = "center", fontsize=self.fontsizetitles)
@@ -286,7 +286,7 @@ class PlotFuns():
       
       try:
         xref,duref = self.boundary.get_reference_data(times[t])
-        self.plot_reference(ax[t],xref,duref)
+        self.plot_reference(ax[t],xref,duref/self.boundary.epsilon)
 
       except FileNotFoundError: 
         print("The reference solution file was not found. \n \
@@ -335,7 +335,7 @@ class PlotFuns():
     #          self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax)))
 
     ax_mom.plot(np.linspace(-self.qmax,self.qmax,),
-              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=0,sigmasq=1/self.boundary.beta),)
+              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=0,sigmasq=1),)
               #np.exp(-np.linspace(-self.qmax,self.qmax,)**2)/np.sqrt(np.pi))
 
     ax_pos.set_title("Position",fontsize=self.fontsizetitles)
@@ -507,14 +507,27 @@ class PlotFuns():
     plt.savefig(self.subdir+f"/cumulants.png", bbox_inches='tight')
     plt.close()
 
+def plot_loss(folder):
+  if folder == None:
+    #from ..sde.boundary import *
+    #boundary_cond = UnderdampedHalfGaussian()
+    #folder=f"tests/{boundary_cond.__class__.__name__}"
+    folder="tests/UnderdampedHalfGaussian"
+
+  plotter = PlotFuns()
+  plotter.setresultsdir(folder)
+  plotter.plot_loss_metrics(folder+"/loss.csv")
 
 if __name__=="__main__":
+  from ..utils.parser import checkpoint_plot_params
+  params = checkpoint_plot_params()
 
-  from ..sde.boundary import *
-  boundary_cond = UnderdampedHalfGaussian()
-  fileloc=f"tests/{boundary_cond.__class__.__name__}"
-  filename = fileloc+"/loss.csv" #add filename of loss.csv to plot
-  plotter = PlotFuns(boundary_cond)
-  plotter.setresultsdir(fileloc)
-  plotter.plot_loss_metrics(filename)
+  plot_loss(params.folder)
+  #from ..sde.boundary import *
+  #boundary_cond = UnderdampedHalfGaussian()
+  #fileloc=f"tests/{boundary_cond.__class__.__name__}"
+  #filename = fileloc+"/loss.csv" #add filename of loss.csv to plot
+  #plotter = PlotFuns(boundary_cond)
+  #plotter.setresultsdir(fileloc)
+  #plotter.plot_loss_metrics(filename)
   
