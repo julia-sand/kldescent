@@ -64,7 +64,7 @@ class Train():
         self.logstep = logstep #how frequently to save results
 
         #set defaults of training process
-        self.lr = 0.003 #initial learning rate
+        self.lr = 0.005 #initial learning rate
         self.integrator = integrator
         self.net = net
 
@@ -86,7 +86,7 @@ class Train():
         self.optimiser.zero_grad()
         
         Lhat = self.integrator.simulation_free(self.net)
-        clip_grad_norm_(self.net.parameters(), self.clip)
+        #clip_grad_norm_(self.net.parameters(), self.clip)
 
         ##training##
         Lhat.backward()
