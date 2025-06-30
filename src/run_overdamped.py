@@ -11,6 +11,7 @@ from src.sde import *
 import src.sde.boundary as boundaries
 from src.utils import *
 import src.viz.plots as plots
+from src.viz.checkpoint_plots import *
 
 #@profile
 def run():
@@ -73,7 +74,8 @@ def run():
             #plotter.plot_loss_metrics()
 
 
-    #plotter.plot_loss_metrics()
+    checkpoint_plots_all(metrics_logger,boundaryconditions,net,plotter)
+    plotter.plot_loss_metrics()
 
 if __name__=="__main__":
     run()

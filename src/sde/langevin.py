@@ -114,7 +114,7 @@ class SDEOverdamped():
         return Lhat
     
     #@profile
-    def compute_metrics(self,net,epoch,lout):
+    def compute_metrics(self,net,epoch,lout,lr):
 
         """
         Following 2410.05163 (see proposition 3). 
@@ -129,7 +129,7 @@ class SDEOverdamped():
 
         net.eval()
         t_vec = self.testing_time_grid()
-        testing_samples = 1000 #reduced number of samples in computing the loss metrics
+        testing_samples = 4000 #reduced number of samples in computing the loss metrics
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
@@ -169,10 +169,11 @@ class SDEOverdamped():
         
         if self.logger is not None:
             self.logger.log_epoch_data(net,
-                                    epoch,
-                                    lout,
-                                    (self.boundary.epsilon**2)*torch.mean(kldyn).item(),
-                                    kl_static)
+                                        epoch,
+                                        lout,
+                                        torch.mean(kldyn).item(),
+                                        kl_static,
+                                        lr)
 
         #free up the tensors
         del xinit 
@@ -185,6 +186,42 @@ class SDEOverdamped():
 
         return 
 
+    
+    def compute_ref_statistics(self,net,testing_samples = 4096):
+
+        """
+        computes estimates of the metrics to update the g function 
+
+        ====
+        Parameters
+        - net: neural network
+        ====
+
+        """
+
+        with torch.no_grad():
+
+            net.eval()
+            t_vec = np.linspace(0,self.boundary.Tf,self.t_steps)#self.testing_time_grid()
+
+            xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
+
+            for i in range(0,len(t_vec)-1):
+                dt = (t_vec[i+1]-t_vec[i])
+                
+                dw = self.generate_innovation(dt,testing_samples)
+
+                du_bar = net(torch.column_stack((t_vec[i]*torch.ones(testing_samples,requires_grad=False,dtype=torch.float32)
+                                                        ,xinit[:,0,None]))).detach()
+                
+                xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
+        
+
+            self.boundary.set_ref_statistics(np.nanmean(xinit[...,[0]]), np.nanvar(xinit[...,[0]]))
+        
+        #free up the tensors
+        del xinit 
+        del du_bar
 
 if __name__=="__main__":
     pass

@@ -1,3 +1,4 @@
+import os
 import math 
 
 import numpy as np 
@@ -77,11 +78,12 @@ class Train():
         self.scheduler = CosineAnnealingLR(self.optimiser, T_max=100, eta_min=0.000001)
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
 
+        self.milestone = 100 #how often to decay learning rate
         self.net.train() #set neural net into train mode
         
     #@profile
     def train_step(self,epoch):  
-        
+        self.integrator.compute_ref_statistics(self.net)
         #reset gradients 
         self.optimiser.zero_grad()
         
@@ -93,6 +95,8 @@ class Train():
         self.optimiser.step()
                
         self.scheduler.step()
+        #if (epoch % self.milestone == 0) and (epoch>0):
+        #    self.integrator.compute_ref_statistics(self.net)
 
         if (epoch % self.logstep == 0): #compute metrics 
             loss_out = Lhat.detach().numpy().item() #note. This must happen AFTER update
@@ -100,7 +104,8 @@ class Train():
                 
                 self.integrator.compute_metrics(self.net,
                                     epoch,
-                                    loss_out)
+                                    loss_out,
+                                    self.scheduler.get_last_lr()[0])
 
         if math.isnan(Lhat.item()):
             raise ValueError('Loss function is NaN. Terminating training process')
