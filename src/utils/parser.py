@@ -25,10 +25,6 @@ def overdamped_argparser():
              
     args = parser.parse_known_args()
 
-    #add validations?
-    #if args.pos_arg > 10:
-    #    parser.error("pos_arg cannot be larger than 10")
-
     return args[0]
 
 
@@ -61,11 +57,8 @@ def boundary_params():
     boundary_params.add_argument('-epsilon','--epsilon', type=float, default=0.2,
                         help='constant')
 
-    #boundary_params.add_argument('-mass','--mass', type=float, default=1,
-    #                    help='constant')
-
-    #boundary_params.add_argument('-tau','--tau', type=float, default=1,
-    #                    help='constant')
+    boundary_params.add_argument('-weight','--weight', type=float, default=1,
+                        help='weight constant in front of the terminal cost')
 
     boundary_params.add_argument('-g','--g', type=float, default=0,
                         help='constant')

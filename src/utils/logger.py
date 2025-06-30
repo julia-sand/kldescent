@@ -11,6 +11,7 @@ import yaml
 
 class LossLogger():
     '''
+    This class deals with making results folder and recording losses and plots. also saving checkpoints
 
     Attributes
     ----------
@@ -43,9 +44,8 @@ class LossLogger():
     
     def __init__(self):
 
-        ##make a directory for the results
+        ##make a directory for the results in  the place the file is run
         dirname = os.getcwd()
-        #os.path.dirname(__file__) #fetches current location 
         run_id = time.strftime("%Y%m%d-%H%M%S")
 
         self.newpath = os.path.join(dirname,f'results/{run_id}')
@@ -61,16 +61,16 @@ class LossLogger():
 
         self.filename = self.newpath +"/loss.csv" 
         with open(self.filename, 'w') as f:
-                fields=['epoch','Lhat','dynamic_kl','static_kl']
+                fields=['epoch','Lhat','dynamic_kl','static_kl','learning_rate']
                 writer = csv.writer(f)
                 writer.writerow(fields)
         print("Log file created successfully.")   
 
-    def write_data_row(self,epoch,Lhat,kl_dyn,klval):
+    def write_data_row(self,epoch,Lhat,kl_dyn,klval,lr):
 
         with open(self.filename, 'a') as f:
             writer = csv.writer(f)
-            writer.writerow([epoch, Lhat, kl_dyn, klval])
+            writer.writerow([epoch, Lhat, kl_dyn, klval,lr])
 
     def save_checkpoint(self,net,epoch):
         torch.save(net.state_dict(),self.newpath+f"/checkpoints/net_checkpoint_{epoch}.pt") 
@@ -80,9 +80,9 @@ class LossLogger():
         return f"/epoch{epoch}"
 
     #@profile
-    def log_epoch_data(self,net,epoch,lout,kl_dyn,kl_val):
+    def log_epoch_data(self,net,epoch,lout,kl_dyn,kl_val,lr):
 
-        self.write_data_row(epoch,lout,kl_dyn,kl_val) #log
+        self.write_data_row(epoch,lout,kl_dyn,kl_val,lr) #log
 
         self.save_checkpoint(net,epoch)
 
@@ -101,4 +101,4 @@ class LossLogger():
     def log_dict(self,dictparams):
                 
         with open(self.datayaml, 'w') as outfile:
-            yaml.dump(dictparams, outfile)#, default_flow_style=False)
+            yaml.dump(dictparams, outfile)

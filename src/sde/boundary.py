@@ -489,15 +489,15 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
                         delimiter=",",skiprows=1) 
         
         if cumulant_type == "Position Variance": 
-         return arr[:,0],arr[:,4]
+         return np.squeeze(arr[:,4])
         elif cumulant_type == "Momentum Variance":
-         return arr[:,0],arr[:,6]
+         return np.squeeze(arr[:,6])
         elif cumulant_type == "Cross Correlation":
-         return arr[:,0],arr[:,5]
+         return np.squeeze(arr[:,5])
         elif cumulant_type == "Momentum Mean":
-         return arr[:,0],arr[:,8]
+         return np.squeeze(arr[:,8])
         elif cumulant_type == "Position Mean":
-         return arr[:,0],arr[:,7]
+         return np.squeeze(arr[:,7])
         else:
          return None
  
@@ -505,7 +505,7 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
 class UnderdampedQuarterGaussianNoMomentum(UnderdampedQuarterGaussian):
     def __init__(self):
         UnderdampedQuarterGaussian.__init__(self)
-
+        
     def gfun(self,x):
         #overwrite the terminal cost function 
 
@@ -516,21 +516,25 @@ class UnderdampedQuarterGaussianNoMomentum(UnderdampedQuarterGaussian):
 class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
     def __init__(self):
         UnderdampedQuarterGaussian.__init__(self)
+        self.mean0 = 0
+        self.var0 = 1
+
+    def set_ref_statistics(self,mean0,var0):
+        """overwrite the mean and variance of the reference parameters"""
+
+        self.mean0 = mean0
+        self.var0 = var0
 
     def Utemp(self,q,mean,var):
+
 
         return (q-mean)**2/(2*var)
 
     def gfun(self,x):      
-
-        mean0 = np.nanmean(x[...,[0]])
-        var0 = np.nanvar(x[...,[0]])
+        print(self.mean0)
 
         #Terminal cost
-        return -self.Utemp(x[...,[0]],mean0,var0)+self.Utemp(x[...,[0]],self.gauss_boundary.mufinal, self.gauss_boundary.sigmafinal**2)
-        #+ np.log(self.gauss_boundary.sigmafinal/np.sqrt(var0))
-        #-self.Utemp(x[...,[0]],mean0,var0) + self.beta*self.Utemp(x[...,[0]],self.gauss_boundary.mufinal, self.gauss_boundary.sigmafinal**2) \
-               #     
+        return self.params.weight*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.gauss_boundary.mufinal, self.gauss_boundary.sigmafinal**2))
 
 if __name__=="__main__":
 
