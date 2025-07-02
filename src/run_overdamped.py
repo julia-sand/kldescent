@@ -33,9 +33,6 @@ def run():
     else:
         net = nn.NeuralNetwork(boundaryconditions).to(args.device)
 
-    #plotter = plots.PlotFuns(boundaryconditions)
-    #plotter.setresultsdir(metrics_logger.get_results_path())
-
     #save all params
     metrics_logger.log_args(boundaryconditions.params)
     metrics_logger.log_args(net.params)
@@ -74,6 +71,8 @@ def run():
             #plotter.plot_loss_metrics()
 
 
+    plotter = plots.PlotFuns(boundaryconditions)
+    plotter.setresultsdir(metrics_logger.get_results_path())
     checkpoint_plots_all(metrics_logger,boundaryconditions,net,plotter)
     plotter.plot_loss_metrics()
 

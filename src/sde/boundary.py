@@ -520,7 +520,7 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
         self.var0 = 1
 
     def set_ref_statistics(self,mean0,var0):
-        """overwrite the mean and variance of the reference parameters"""
+        """overwrites the mean and variance of the reference parameters"""
 
         self.mean0 = mean0
         self.var0 = var0
@@ -528,13 +528,13 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
     def Utemp(self,q,mean,var):
 
 
-        return (q-mean)**2/(2*var)
+        return (q-mean)**2/(var)
 
     def gfun(self,x):      
-        print(self.mean0)
+        #print(self.mean0)
 
         #Terminal cost
-        return self.params.weight*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.gauss_boundary.mufinal, self.gauss_boundary.sigmafinal**2))
+        return (self.params.weight/2)*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.gauss_boundary.mufinal, self.gauss_boundary.sigmafinal**2))
 
 if __name__=="__main__":
 

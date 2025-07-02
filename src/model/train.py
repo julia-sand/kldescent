@@ -1,5 +1,5 @@
 import os
-import math 
+#import math 
 
 import numpy as np 
 import torch
@@ -74,16 +74,20 @@ class Train():
         self.clip = 0.01 #gradient clipping
 
         self.optimiser = Adam(self.net.parameters(), lr=self.lr)
+        self.milestone = 100 #how often to decay learning rate
+
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
-        self.scheduler = CosineAnnealingLR(self.optimiser, T_max=100, eta_min=0.000001)
+        self.scheduler = CosineAnnealingLR(self.optimiser, 
+                            T_max=self.logstep, eta_min=0.000001)
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
 
-        self.milestone = 100 #how often to decay learning rate
-        self.net.train() #set neural net into train mode
         
     #@profile
     def train_step(self,epoch):  
-        self.integrator.compute_ref_statistics(self.net)
+        #self.integrator.update_ref_statistics(self.net)
+        
+        self.net.train() #set neural net into train mode
+
         #reset gradients 
         self.optimiser.zero_grad()
         
@@ -96,7 +100,7 @@ class Train():
                
         self.scheduler.step()
         #if (epoch % self.milestone == 0) and (epoch>0):
-        #    self.integrator.compute_ref_statistics(self.net)
+            
 
         if (epoch % self.logstep == 0): #compute metrics 
             loss_out = Lhat.detach().numpy().item() #note. This must happen AFTER update
@@ -107,7 +111,7 @@ class Train():
                                     loss_out,
                                     self.scheduler.get_last_lr()[0])
 
-        if math.isnan(Lhat.item()):
+        if np.isnan(Lhat.item()):
             raise ValueError('Loss function is NaN. Terminating training process')
    
 

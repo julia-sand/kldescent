@@ -2,10 +2,12 @@
 import torch
 import numpy as np
 #from scipy.stats import bootstrap
-#import pdb
+
+import pdb
 
 from ..model.nn import NeuralNetwork
 from .plots import PlotFuns
+import src.sde.boundary as boundaries
 
 def save_cumulants(save_array,x):
     #pdb.set_trace()
@@ -14,37 +16,13 @@ def save_cumulants(save_array,x):
                                             np.nanmean(temp[...,1]),
                                             np.nanvar(temp[...,0]),
                                             np.nanvar(temp[...,1]),
-                                            np.correlate(temp[...,0],temp[...,1])[0]/len(temp[...,0])]]),axis=0)#cross corr
-
-
-def get_var_confidence_intervals(x):
-    res = bootstrap(x, np.nanvar, confidence_level=0.9) 
-    ci = res.confidence_interval
-    return ci[0],ci[1]
- 
-def get_mean_confidence_intervals(x):
-    res = bootstrap(x, np.nanmean, confidence_level=0.9) 
-    ci = res.confidence_interval
-    return np.array([[ci[0],ci[1]]])
-
-
-def compute_ci(posmean_ci,
-                posvar_ci,
-                mommean_ci,
-                momvar_ci,x):
-    #temp = x.numpy()
-
-    #posmean_ci = np.append(posmean_ci,get_mean_confidence_intervals(temp[...,[0]]),axis=0)
-    #mommean_ci = np.append(mommean_ci,get_mean_confidence_intervals(temp[...,[1]]),axis=0)
-    #posvar_ci = np.append(mommean_ci,get_var_confidence_intervals(temp[...,[0]]),axis=0)
-    #momvar_ci = np.append(mommean_ci,get_var_confidence_intervals(temp[...,[1]]),axis=0)
-    return  posmean_ci,posvar_ci,mommean_ci,momvar_ci
+                                            np.correlate(temp[...,0],temp[...,1])[0]/(len(temp[...,0]))]]),axis=0)#cross corr
 
 def compute_sde(net,
                 marginal_plot_time,
                 testing_samples,
                 plotter,
-                boundary):
+                boundary_cond):
 
     """
     Computes the SDE and returns plots 
@@ -56,20 +34,17 @@ def compute_sde(net,
 
     """
         
-    t_vec = boundary.get_reference_timegrid(marginal_plot_time)
+    #pdb.set_trace()
+    t_vec = boundary_cond.get_reference_timegrid(marginal_plot_time)
 
     #initialise x values at \delta_0 (i.e. x=0)
-    xinit = torch.tensor(boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
+    xinit = torch.tensor(boundary_cond.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
     xref = torch.clone(xinit)
 
     #save the cumulants of the evolutions
     cumulants_nn = save_cumulants(np.empty((0,5)),xinit)
     cumulants_ref = save_cumulants(np.empty((0,5)),xref)
-    posmean_ci = np.empty((0,2))
-    posvar_ci = np.empty((0,2))
-    mommean_ci = np.empty((0,2))
-    momvar_ci = np.empty((0,2))
-    
+
     with torch.no_grad():
 
         #self.generate_time_grid()
@@ -77,22 +52,18 @@ def compute_sde(net,
             dt = (t_vec[i+1]-t_vec[i])
             
             dw = np.sqrt(dt)*torch.randn((testing_samples,1))
-            du = net.forward(torch.column_stack((t_vec[i]*torch.ones(testing_samples,dtype=torch.float32)
-                                                    ,xinit[:,0,None])))
+            xdata = torch.column_stack((t_vec[i]*torch.ones(testing_samples,dtype=torch.float32)
+                                                    ,xinit[:,0,None]))
+            du = net(xdata)
 
             
-            xinit = boundary.euler_maruyama_step(xinit,du,dt,dw,t_vec[i])
-            xref = boundary.euler_maruyama_step(xref,boundary_cond.du_ref(xref[:,[0]],t_vec[i]),dt,dw,t_vec[i])
+            xinit = boundary_cond.euler_maruyama_step(xinit,du,dt,dw,t_vec[i])
+            xref = boundary_cond.euler_maruyama_step(xref,boundary_cond.du_ref(xref[:,[0]],t_vec[i]),dt,dw,t_vec[i])
             cumulants_nn = save_cumulants(cumulants_nn,xinit)
             cumulants_ref = save_cumulants(cumulants_ref,xref)
-            posmean_ci,posvar_ci,mommean_ci,momvar_ci = compute_ci(posmean_ci,
-                                                                    posvar_ci,
-                                                                    mommean_ci,
-                                                                    momvar_ci,xinit) 
-
+            
     plotter.marginal_distribution([xinit.numpy(),xref.numpy()],marginal_plot_time)
-    plotter.plot_cumulants(t_vec,cumulants_nn,cumulants_ref,
-                        [posmean_ci,posvar_ci,mommean_ci,momvar_ci])
+    plotter.plot_cumulants(t_vec,cumulants_nn,cumulants_ref,testing_samples)
     
     #free up the tensors
     del xinit 
@@ -131,4 +102,4 @@ if __name__=="__main__":
     
     net, plotter = load_net(boundary_cond,params.epoch,params.folder)      
     compute_sde(net,boundary_cond.Tf,params.samples,plotter,boundary_cond)
-    plotter.plot_drift(times = [0,boundary_cond.Tf/2,boundary_cond.Tf],net=net)
+    #plotter.plot_drift(times = [0,boundary_cond.Tf/2,boundary_cond.Tf],net=net)
