@@ -59,8 +59,8 @@ class NeuralNetwork(nn.Module):
 
     def forward(self, input_vec):   #how the model should evaluate
         
-        x = self.NNx(input_vec[:,1,None]) 
-        t = self.NNt(input_vec[:,0,None]) #do the time encoding on the parameter t
+        x = self.NNx(input_vec[...,[1]]) #self.NNx(input_vec[:,1,None]) 
+        t = self.NNt(input_vec[...,[0]]) #do the time encoding on the parameter t
         
         #concatenate the outputs and put them through the part 2
         out = self.NN1(torch.column_stack((t,x))) + self.NN2(t)*self.boundary.scorefinal(input_vec[:,1,None])
@@ -118,3 +118,7 @@ class MLP(nn.Module):
                 torch.nn.init.xavier_normal_(m.weight,gain=4)
                 if m.bias is not None:
                     torch.nn.init.constant_(m.bias, 0)
+
+
+if __name__=="__main__":
+    net = NeuralNetwork()

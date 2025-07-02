@@ -38,7 +38,7 @@ def compute_joint(t,net,
         dw = np.sqrt(dt)*torch.randn((testing_samples,x_samples*x_samples,1))
         nn_input = torch.dstack((t_vec[-i]*torch.ones((testing_samples,x_samples**2,1),dtype=torch.float32),
                                     xinit[...,[0]]))
-        du = torch.hstack([net.forward(nn_input[:,i,:]) for i in range(x_samples**2)])[...,np.newaxis]
+        du = torch.hstack([net(nn_input[:,i,:]) for i in range(x_samples**2)])[...,np.newaxis]
 
         #underdamped dynamics
         #backward (T-t0) evolution in t0

@@ -35,7 +35,7 @@ def integrator_params():
     #subparser = parser.add_subparsers()
 
     integrator_params.add_argument('-batchsamples','--batchsamples', type=int, 
-                        default=10,
+                        default=100,
                         help='Number of sample trajectories to take of the diffusion')
 
     integrator_params.add_argument('-tsteps','--tsteps', type=int, default=10,
@@ -104,7 +104,7 @@ def network_params():
                         default=None,
                         help='path to a checkpoint for warm-start training. Path should be provided from the current folder.')
          
-    parser3.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=64,
+    parser3.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=16,
                         help='Number of hidden dimensions in each layer of the Neural network model')
 
     args3 = parser3.parse_known_args()

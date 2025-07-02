@@ -18,7 +18,6 @@ class SDEOverdamped():
         self.sde_params = integrator_params()
         self.batch_samples = self.sde_params.batchsamples # number of samples in each step 
         self.t_steps = self.sde_params.tsteps #number of timesteps in discretisation
-        #self.Tf = self.boundary.Tf
         self.g = self.boundary.g
         if self.logger is not None:
             self.logger.log_args(self.sde_params) #add to log
@@ -61,6 +60,7 @@ class SDEOverdamped():
 
         """
         
+        net.train()
         t_vec = self.generate_time_grid()
 
         #initialise x values 
@@ -80,7 +80,7 @@ class SDEOverdamped():
             
             dw = self.generate_innovation(dt,self.batch_samples)
            
-            du = net.forward(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
+            du = net(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
                                                     ,xinit[:,0,None])))
                     
             a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True) ** 2) 
@@ -126,7 +126,6 @@ class SDEOverdamped():
 
         """
 
-
         net.eval()
         t_vec = self.testing_time_grid()
         testing_samples = 4000 #reduced number of samples in computing the loss metrics
@@ -142,7 +141,6 @@ class SDEOverdamped():
             dt = (t_vec[i+1]-t_vec[i])
             
             dw = self.generate_innovation(dt,testing_samples)
-
 
             du_ref = torch.tensor(self.boundary.du_ref(xinit_ref[:,0,None],t_vec[i]),
                                     requires_grad=False,
@@ -167,6 +165,9 @@ class SDEOverdamped():
             print("Value Error exception ignored. This means that the current value of the \n \
             neural network drift produces NaN values. ")
         
+        #update the reference statistics (ie mean and var of final distribution)
+        self.boundary.set_ref_statistics(np.nanmean(xinit[...,0]), np.nanvar(xinit[...,0]))
+
         if self.logger is not None:
             self.logger.log_epoch_data(net,
                                         epoch,
@@ -187,7 +188,7 @@ class SDEOverdamped():
         return 
 
     
-    def compute_ref_statistics(self,net,testing_samples = 4096):
+    def update_ref_statistics(self,net,testing_samples = 4096):
 
         """
         computes estimates of the metrics to update the g function 
@@ -198,10 +199,10 @@ class SDEOverdamped():
         ====
 
         """
+        net.eval()
 
         with torch.no_grad():
 
-            net.eval()
             t_vec = np.linspace(0,self.boundary.Tf,self.t_steps)#self.testing_time_grid()
 
             xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
@@ -217,11 +218,12 @@ class SDEOverdamped():
                 xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
         
 
-            self.boundary.set_ref_statistics(np.nanmean(xinit[...,[0]]), np.nanvar(xinit[...,[0]]))
+            self.boundary.set_ref_statistics(np.nanmean(xinit[...,0]), np.nanvar(xinit[...,0]))
         
         #free up the tensors
         del xinit 
         del du_bar
 
 if __name__=="__main__":
-    pass
+    integrator = SDEOverdamped()
+    integrator.compute_ref_statistics
