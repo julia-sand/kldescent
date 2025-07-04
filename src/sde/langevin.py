@@ -166,7 +166,7 @@ class SDEOverdamped():
             neural network drift produces NaN values. ")
         
         #update the reference statistics (ie mean and var of final distribution)
-        self.boundary.set_ref_statistics(np.nanmean(xinit[...,0]), np.nanvar(xinit[...,0]))
+        #self.boundary.set_ref_statistics(np.nanmean(xinit[...,0]), np.nanvar(xinit[...,0]))
 
         if self.logger is not None:
             self.logger.log_epoch_data(net,
@@ -175,6 +175,8 @@ class SDEOverdamped():
                                         torch.mean(kldyn).item(),
                                         kl_static,
                                         lr)
+        
+        self.boundary.set_ref_statistics(np.nanmean(xinit[...,0]), np.nanvar(xinit[...,0]))
 
         #free up the tensors
         del xinit 
@@ -224,6 +226,8 @@ class SDEOverdamped():
         del xinit 
         del du_bar
 
+        return
+        
 if __name__=="__main__":
     integrator = SDEOverdamped()
     integrator.compute_ref_statistics
