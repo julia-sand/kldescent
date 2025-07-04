@@ -84,7 +84,6 @@ class Train():
         
     #@profile
     def train_step(self,epoch):  
-        #self.integrator.update_ref_statistics(self.net)
         
         self.net.train() #set neural net into train mode
 
@@ -104,14 +103,19 @@ class Train():
 
         if (epoch % self.logstep == 0): #compute metrics 
             loss_out = Lhat.detach().numpy().item() #note. This must happen AFTER update
-            with torch.no_grad( ):
-                
+            with torch.no_grad():
+                #this also updates the ref. cumulants
                 self.integrator.compute_metrics(self.net,
                                     epoch,
                                     loss_out,
                                     self.scheduler.get_last_lr()[0])
 
+        else: 
+
+            with torch.no_grad():
+                self.integrator.update_ref_statistics(self.net)
+            
         if np.isnan(Lhat.item()):
             raise ValueError('Loss function is NaN. Terminating training process')
    
-
+        return 

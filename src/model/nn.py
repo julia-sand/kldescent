@@ -54,9 +54,12 @@ class NeuralNetwork(nn.Module):
             nn.ReLU(), #must be positive
             )  
 
+
         if self.params.checkpointpath is not None: #automatically loads a checkpoint from the command line
             self.load_checkpoint(self.params.checkpointpath)
 
+        
+        self.initialize_weights(self,net)
     def forward(self, input_vec):   #how the model should evaluate
         
         x = self.NNx(input_vec[...,[1]]) #self.NNx(input_vec[:,1,None]) 
