@@ -487,19 +487,21 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
     def get_known_solution_cumulants(self,cumulant_type):
         arr = np.loadtxt(open(self.ref_path),
                         delimiter=",",skiprows=1) 
-        
-        if cumulant_type == "Position Variance": 
-         return np.squeeze(arr[:,4])
-        elif cumulant_type == "Momentum Variance":
-         return np.squeeze(arr[:,6])
-        elif cumulant_type == "Cross Correlation":
-         return np.squeeze(arr[:,5])
-        elif cumulant_type == "Momentum Mean":
-         return np.squeeze(arr[:,8])
-        elif cumulant_type == "Position Mean":
-         return np.squeeze(arr[:,7])
-        else:
-         return None
+        try:  
+            if cumulant_type == "Position Variance": 
+                return np.squeeze(arr[:,4])
+            elif cumulant_type == "Momentum Variance":
+                return np.squeeze(arr[:,6])
+            elif cumulant_type == "Cross Correlation":
+                return np.squeeze(arr[:,5])
+            elif cumulant_type == "Momentum Mean":
+                return np.squeeze(arr[:,8])
+            elif cumulant_type == "Position Mean":
+                return np.squeeze(arr[:,7])
+            else:
+                return np.zeros_like(np.squeeze(arr[:,0]))
+        except IndexError:
+            return    
  
 
 class UnderdampedQuarterGaussianNoMomentum(UnderdampedQuarterGaussian):
