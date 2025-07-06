@@ -59,7 +59,7 @@ class NeuralNetwork(nn.Module):
             self.load_checkpoint(self.params.checkpointpath)
 
         
-        self.initialize_weights(self,net)
+        #self.initialize_weights(self,net)
     def forward(self, input_vec):   #how the model should evaluate
         
         x = self.NNx(input_vec[...,[1]]) #self.NNx(input_vec[:,1,None]) 
