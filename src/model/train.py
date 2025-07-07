@@ -58,11 +58,13 @@ class Pretrain():
     
     
 class Train():
-    #define the training parameters and one training step
+    """Defines the parameters of the training process and 
+    the training step
+    
+    """
 
-    def __init__(self, integrator, net, logstep):
+    def __init__(self, net, integrator):
 
-        self.logstep = logstep #how frequently to save results
 
         #set defaults of training process
         self.lr = 0.005 #initial learning rate
@@ -100,9 +102,33 @@ class Train():
         self.scheduler.step()
         #if (epoch % self.milestone == 0) and (epoch>0):
             
+        return Lhat.detach().numpy().item()
 
+
+class Metrics():
+    """
+    Class for finding metrics during the training process 
+
+
+    Method: update_metrics
+    - logs the metrics at logstep
+    - checks for nan loss
+    - updates the metrics for final distribution, gaussian reference. 
+    """
+
+    def __init__(self, trainer, logstep, boundary):
+        #use trainer class to initialise 
+        self.integrator = trainer.integrator
+        self.net = trainer.net
+        self.scheduler = trainer.scheduler # for testing out different schedules, we record the learning rate 
+        self.logstep = logstep #how frequently to save results
+    
+    def update_metrics(self, epoch, loss_out):
+        
+        if np.isnan(loss_out):
+            raise ValueError('Loss function is NaN. Terminating training process')
+        
         if (epoch % self.logstep == 0): #compute metrics 
-            loss_out = Lhat.detach().numpy().item() #note. This must happen AFTER update
             with torch.no_grad():
                 #this also updates the ref. cumulants
                 self.integrator.compute_metrics(self.net,
@@ -113,9 +139,5 @@ class Train():
         else: 
 
             with torch.no_grad():
-                self.integrator.update_ref_statistics(self.net)
-            
-        if np.isnan(Lhat.item()):
-            raise ValueError('Loss function is NaN. Terminating training process')
-   
-        return 
+                self.integrator.update_ref_statistics(net)
+        
