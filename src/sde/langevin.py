@@ -176,7 +176,8 @@ class SDEOverdamped():
                                         kl_static,
                                         lr)
         
-        self.boundary.set_ref_statistics(np.nanmean(xinit[...,0]), np.nanvar(xinit[...,0]))
+        if boundary.__class__.__name__== "UnderdampedHalfGaussian":
+            self.boundary.set_ref_statistics(np.nanmean(xinit[...,0]), np.nanvar(xinit[...,0]))
 
         #free up the tensors
         del xinit 
@@ -201,33 +202,43 @@ class SDEOverdamped():
         ====
 
         """
-        net.eval()
-
-        with torch.no_grad():
-
-            t_vec = np.linspace(0,self.boundary.Tf,self.t_steps)#self.testing_time_grid()
-
-            xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
-
-            for i in range(0,len(t_vec)-1):
-                dt = (t_vec[i+1]-t_vec[i])
-                
-                dw = self.generate_innovation(dt,testing_samples)
-
-                du_bar = net(torch.column_stack((t_vec[i]*torch.ones(testing_samples,requires_grad=False,dtype=torch.float32)
-                                                        ,xinit[:,0,None]))).detach()
-                
-                xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
         
+        if boundary.__class__.__name__== "UnderdampedHalfGaussian":
 
-            self.boundary.set_ref_statistics(np.nanmean(xinit[...,0]), np.nanvar(xinit[...,0]))
-        
-        #free up the tensors
-        del xinit 
-        del du_bar
+            net.eval()
+
+            with torch.no_grad():
+
+                t_vec = np.linspace(0,self.boundary.Tf,self.t_steps)#self.testing_time_grid()
+
+                xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
+
+                for i in range(0,len(t_vec)-1):
+                    dt = (t_vec[i+1]-t_vec[i])
+                    
+                    dw = self.generate_innovation(dt,testing_samples)
+
+                    du_bar = net(torch.column_stack((t_vec[i]*torch.ones(testing_samples,requires_grad=False,dtype=torch.float32)
+                                                            ,xinit[:,0,None]))).detach()
+                    
+                    xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
+            
+
+                self.boundary.set_ref_statistics(np.nanmean(xinit[...,0]), np.nanvar(xinit[...,0]))
+            
+            #free up the tensors
+            del xinit 
+            del du_bar
+
+            return
+
+        else:
+            pass
 
         return
-        
+
+
+
 if __name__=="__main__":
     integrator = SDEOverdamped()
     integrator.compute_ref_statistics
