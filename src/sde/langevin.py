@@ -85,8 +85,8 @@ class SDEOverdamped():
             
             dw = self.generate_innovation(dt,self.batch_samples)
            
-            du = net((t_vec[i]*torch.ones((self.batch_samples,1),dtype=torch.float32)
-                                                    ,xinit[:,0,None]))
+            du = net(t_vec[i]*torch.ones((self.batch_samples,1),dtype=torch.float32)
+                                                    ,xinit[:,0,None])
                     
             a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True) ** 2) 
             
@@ -153,8 +153,8 @@ class SDEOverdamped():
 
             with torch.no_grad():
 
-                du_bar = net((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
-                                                        ,xinit[:,0,None])).detach()
+                du_bar = net(t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
+                                                        ,xinit[:,0,None]).detach()
                 kldyn = kldyn + dt*(torch.linalg.norm(torch.sub(du_bar, du_ref), axis=1,keepdim=True)) 
                 #torch.randn((testing_samples,1),requires_grad=False,dtype=torch.float32)
 
