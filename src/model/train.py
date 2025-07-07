@@ -65,7 +65,6 @@ class Train():
 
     def __init__(self, net, integrator):
 
-
         #set defaults of training process
         self.lr = 0.005 #initial learning rate
         self.integrator = integrator
@@ -80,12 +79,12 @@ class Train():
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
         self.scheduler = CosineAnnealingLR(self.optimiser, 
-                            T_max=self.logstep, eta_min=0.000001)
+                            T_max=100, eta_min=0.000001)
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
 
         
     #@profile
-    def train_step(self,epoch):  
+    def train_step(self):  
         
         self.net.train() #set neural net into train mode
 
@@ -116,7 +115,7 @@ class Metrics():
     - updates the metrics for final distribution, gaussian reference. 
     """
 
-    def __init__(self, trainer, logstep, boundary):
+    def __init__(self, trainer, logstep):
         #use trainer class to initialise 
         self.integrator = trainer.integrator
         self.net = trainer.net
