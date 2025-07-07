@@ -3,6 +3,7 @@ import torch
 
 import src.sde.kl as kl
 from ..utils.parser import integrator_params
+#from src.utils.parser import integrator_params
 
 
 class SDEOverdamped():
@@ -191,7 +192,8 @@ class SDEOverdamped():
         return 
 
     
-    def update_ref_statistics(self,net,testing_samples=None):
+    def update_ref_statistics(self,net,testing_samples=None,debug=False):
+
 
         """
         computes estimates of the metrics to update the g function 
@@ -203,7 +205,8 @@ class SDEOverdamped():
         ====
 
         """
-
+        if debug:
+            pdb.set_trace()
         if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
             if testing_samples == None: #default to the integrator 
                 testing_samples = self.sde_params.testsamples 
@@ -212,7 +215,7 @@ class SDEOverdamped():
 
             with torch.no_grad():
 
-                t_vec = np.linspace(0,self.boundary.Tf,self.t_steps)#self.testing_time_grid()
+                t_vec = torch.linspace(0,self.boundary.Tf,self.t_steps)#self.testing_time_grid()
 
                 xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
 
@@ -220,28 +223,35 @@ class SDEOverdamped():
                     dt = (t_vec[i+1]-t_vec[i])
                     
                     dw = self.generate_innovation(dt,testing_samples)
-
-                    du_bar = net(torch.column_stack((t_vec[i]*torch.ones(testing_samples,requires_grad=False,dtype=torch.float32)
-                                                            ,xinit[:,0,None]))).detach()
+                    #xdata = torch.column_stack(())
+                    du_bar = net(t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
+                                                            ,xinit[:,0,None])
                     
                     xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
             
 
-                self.boundary.set_ref_statistics(np.nanmean(xinit[...,0]), np.nanvar(xinit[...,0]))
+                self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]).item(), torch.var(xinit[...,0]).item())
             
             #free up the tensors
             del xinit 
             del du_bar
-
-            return
 
         else:
             pass
 
         return
 
-
 if __name__=="__main__":
-    #run()
-    pass
+    from src.model import nn
+    from src.sde.boundary import UnderdampedHalfGaussian
+    import pdb
+    from src.utils.parser import integrator_params
+
+    boundaryconditions = UnderdampedHalfGaussian()#getattr(boundaries,"UnderdampedHalfGaussian")()
+    net = nn.NeuralNetwork(boundaryconditions).to("cpu")
+ 
+    #intialise sde integration 
+    integrator = SDEOverdamped(boundaryconditions)
+
+    integrator.update_ref_statistics(net,10,debug=True)
 
