@@ -129,7 +129,7 @@ class SDEOverdamped():
 
         net.eval()
         t_vec = self.testing_time_grid()
-        testing_samples = self.sde_params.testingsamples #4000 #reduced number of samples in computing the loss metrics
+        testing_samples = self.sde_params.testsamples #4000 #reduced number of samples in computing the loss metrics
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
@@ -206,7 +206,7 @@ class SDEOverdamped():
         """
 
         if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
-            testing_samples = self.sde_params.testingsamples #4000 #reduced number of samples in computing the loss metrics
+            testing_samples = self.sde_params.testsamples #4000 #reduced number of samples in computing the loss metrics
 
             net.eval()
 
