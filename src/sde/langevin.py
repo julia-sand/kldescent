@@ -6,6 +6,8 @@ from ..utils.parser import integrator_params
 #from src.utils.parser import integrator_params
 
 
+
+
 class SDEOverdamped():
     def __init__(self,
                     boundary_data,
@@ -22,6 +24,8 @@ class SDEOverdamped():
 
         if self.logger is not None:
             self.logger.log_args(self.sde_params) #add to log
+        
+
 
 
     def generate_time_grid(self):
@@ -81,20 +85,20 @@ class SDEOverdamped():
             
             dw = self.generate_innovation(dt,self.batch_samples)
            
-            du = net(torch.column_stack((t_vec[i]*torch.ones(self.batch_samples,dtype=torch.float32)
-                                                    ,xinit[:,0,None])))
+            du = net((t_vec[i]*torch.ones((self.batch_samples,1),dtype=torch.float32)
+                                                    ,xinit[:,0,None]))
                     
             a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True) ** 2) 
             
             c = c + (du*dw)
-            du_bar = du.detach()#.numpy() #untracked copy
+            #du_bar = du.detach()#.numpy() #untracked copy
 
             with torch.no_grad(): #no gradient 
 
-                abar = abar + dt*(torch.linalg.norm(du_bar, axis=1, keepdim=True) ** 2) 
+                abar = abar + dt*(torch.linalg.norm(du.detach(), axis=1, keepdim=True) ** 2) 
                 bbar = bbar + dt*(self.boundary.f(xinit,t_vec[i])) 
                 
-            xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
+            xinit = self.boundary.euler_maruyama_step(xinit,du.detach(),dt,dw,t_vec[i])
 
         #compute value of Lhat
         #see equation (10) and (11) in ref. 2410.05163
@@ -149,8 +153,8 @@ class SDEOverdamped():
 
             with torch.no_grad():
 
-                du_bar = net(torch.column_stack((t_vec[i]*torch.ones(testing_samples,requires_grad=False,dtype=torch.float32)
-                                                        ,xinit[:,0,None]))).detach()
+                du_bar = net((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
+                                                        ,xinit[:,0,None])).detach()
                 kldyn = kldyn + dt*(torch.linalg.norm(torch.sub(du_bar, du_ref), axis=1,keepdim=True)) 
                 #torch.randn((testing_samples,1),requires_grad=False,dtype=torch.float32)
 
@@ -212,7 +216,7 @@ class SDEOverdamped():
                 testing_samples = self.sde_params.testsamples 
 
             net.eval()
-
+            
             with torch.no_grad():
 
                 t_vec = torch.linspace(0,self.boundary.Tf,self.t_steps)#self.testing_time_grid()
