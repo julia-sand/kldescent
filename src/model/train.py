@@ -138,5 +138,5 @@ class Metrics():
         else: 
 
             with torch.no_grad():
-                self.integrator.update_ref_statistics(net)
+                self.integrator.update_ref_statistics(self.net)
         

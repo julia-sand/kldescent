@@ -4,7 +4,6 @@ import torch
 import src.sde.kl as kl
 from ..utils.parser import integrator_params
 
-#import pdb
 
 class SDEOverdamped():
     def __init__(self,
@@ -192,7 +191,7 @@ class SDEOverdamped():
         return 
 
     
-    def update_ref_statistics(self,net):
+    def update_ref_statistics(self,net,testing_samples=None):
 
         """
         computes estimates of the metrics to update the g function 
@@ -206,7 +205,8 @@ class SDEOverdamped():
         """
 
         if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
-            testing_samples = self.sde_params.testsamples #4000 #reduced number of samples in computing the loss metrics
+            if testing_samples == None: #default to the integrator 
+                testing_samples = self.sde_params.testsamples 
 
             net.eval()
 
@@ -241,7 +241,7 @@ class SDEOverdamped():
         return
 
 
-
 if __name__=="__main__":
-    integrator = SDEOverdamped()
-    integrator.compute_ref_statistics
+    #run()
+    pass
+
