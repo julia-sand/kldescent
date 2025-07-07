@@ -55,6 +55,7 @@ class NeuralNetwork(nn.Module):
             )  
 
 
+
         if self.params.checkpointpath is not None: #automatically loads a checkpoint from the command line
             self.load_checkpoint(self.params.checkpointpath)
 

@@ -52,9 +52,8 @@ def compute_sde(net,
             dt = (t_vec[i+1]-t_vec[i])
             
             dw = np.sqrt(dt)*torch.randn((testing_samples,1))
-            xdata = torch.column_stack((t_vec[i]*torch.ones(testing_samples,dtype=torch.float32)
-                                                    ,xinit[:,0,None]))
-            du = net(xdata)
+            du = net(t_vec[i]*torch.ones((testing_samples,1),dtype=torch.float32)
+                                                    ,xinit[:,0,None])
 
             
             xinit = boundary_cond.euler_maruyama_step(xinit,du,dt,dw,t_vec[i])

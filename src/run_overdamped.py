@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import torch
+from torch.nn import DataParallel
 
 #import pdb
 #from memory_profiler import profile
@@ -38,6 +39,8 @@ def run():
     metrics_logger.log_args(net.params)
     metrics_logger.log_dict(net.params)
     
+    net = DataParallel(net)
+
     try:
         metrics_logger.log_args(boundaryconditions.gauss_boundary)
     except AttributeError: #skip if not available
@@ -47,6 +50,8 @@ def run():
         import run_pretrain
         run_pretrain.run_pretrain(net,metrics_logger.get_results_path(),boundaryconditions)
 
+    
+    
     #intialise sde integration 
     #TODO add these arguments so they get read directly from the command line already in the sde file
     integrator = langevin.SDEOverdamped(boundaryconditions,
