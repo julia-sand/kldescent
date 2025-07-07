@@ -53,11 +53,13 @@ def run():
                                         metrics_logger)
 
     #initialise trainer 
-    trainer = train.Train(integrator, net, args.logstep) 
+    trainer = train.Train(net,integrator) 
+    metrics = train.Metrics(trainer,args.logstep)
 
     for epoch in range(0,args.epochs+1):
         try:
-            trainer.train_step(epoch)
+            loss_out = trainer.train_step()
+            metrics.update_metrics(epoch,loss_out)
         except KeyboardInterrupt:
             print(f"Training interrupted at epoch {epoch}")
             #plot the loss metrics

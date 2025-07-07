@@ -19,6 +19,7 @@ class SDEOverdamped():
         self.batch_samples = self.sde_params.batchsamples # number of samples in each step 
         self.t_steps = self.sde_params.tsteps #number of timesteps in discretisation
         self.g = self.boundary.g
+
         if self.logger is not None:
             self.logger.log_args(self.sde_params) #add to log
 
@@ -128,7 +129,7 @@ class SDEOverdamped():
 
         net.eval()
         t_vec = self.testing_time_grid()
-        testing_samples = 4000 #reduced number of samples in computing the loss metrics
+        testing_samples = self.sde_params.testingsamples #4000 #reduced number of samples in computing the loss metrics
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
@@ -176,7 +177,7 @@ class SDEOverdamped():
                                         kl_static,
                                         lr)
         
-        if boundary.__class__.__name__== "UnderdampedHalfGaussian":
+        if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
             self.boundary.set_ref_statistics(np.nanmean(xinit[...,0]), np.nanvar(xinit[...,0]))
 
         #free up the tensors
@@ -191,10 +192,11 @@ class SDEOverdamped():
         return 
 
     
-    def update_ref_statistics(self,net,testing_samples = 4096):
+    def update_ref_statistics(self,net):
 
         """
         computes estimates of the metrics to update the g function 
+        This should only run for the Half Bridge classes. 
 
         ====
         Parameters
@@ -202,8 +204,9 @@ class SDEOverdamped():
         ====
 
         """
-        
-        if boundary.__class__.__name__== "UnderdampedHalfGaussian":
+
+        if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
+            testing_samples = self.sde_params.testingsamples #4000 #reduced number of samples in computing the loss metrics
 
             net.eval()
 
