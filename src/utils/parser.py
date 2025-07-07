@@ -90,7 +90,7 @@ def gaussian_params():
     params1.add_argument('-sigmafinal','--sigmafinal', type=float, default=2,
                         help='Final value of the scale in the assigned final value function')
 
-    params1.add_argument('-mufinal','--mufinal', type=float, default=1,
+    params1.add_argument('-mufinal','--mufinal', type=float, default=0,
                         help='Final value of the shift in the assigned final value function')
 
     args5 = params1.parse_known_args()

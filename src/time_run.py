@@ -11,12 +11,9 @@ from src.utils import *
 
 #@profile
 def run(testing_samples):
-    #
-    #
-
-
+    
     #initialise the model
-    #TODO: add gpu option, decide architectures
+    #TODO: add gpu option
     #TODO: add config file to read these params
     #dynamically create boundary class bsaed on input
     boundaryconditions = boundaries.UnderdampedHalfGaussian()#getattr(boundaries,"UnderdampedHalfGaussian")()
