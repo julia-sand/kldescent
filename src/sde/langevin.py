@@ -85,20 +85,20 @@ class SDEOverdamped():
             
             dw = self.generate_innovation(dt,self.batch_samples)
            
-            du = net(t_vec[i]*torch.ones((self.batch_samples,1),dtype=torch.float32)
-                                                    ,xinit[:,0,None])
+            du = net(torch.column_stack((t_vec[i]*torch.ones((self.batch_samples,1),dtype=torch.float32)
+                                                    ,xinit[...,[0]])))
                     
             a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True) ** 2) 
             
             c = c + (du*dw)
-            #du_bar = du.detach()#.numpy() #untracked copy
+            du_bar = du.detach()#.numpy() #untracked copy
 
             with torch.no_grad(): #no gradient 
 
-                abar = abar + dt*(torch.linalg.norm(du.detach(), axis=1, keepdim=True) ** 2) 
+                abar = abar + dt*(torch.linalg.norm(du_bar, axis=1, keepdim=True) ** 2) 
                 bbar = bbar + dt*(self.boundary.f(xinit,t_vec[i])) 
                 
-            xinit = self.boundary.euler_maruyama_step(xinit,du.detach(),dt,dw,t_vec[i])
+            xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
 
         #compute value of Lhat
         #see equation (10) and (11) in ref. 2410.05163
@@ -153,8 +153,8 @@ class SDEOverdamped():
 
             with torch.no_grad():
 
-                du_bar = net(t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
-                                                        ,xinit[:,0,None]).detach()
+                du_bar = net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
+                                                        ,xinit[...,[0]]))).detach()
                 kldyn = kldyn + dt*(torch.linalg.norm(torch.sub(du_bar, du_ref), axis=1,keepdim=True)) 
                 #torch.randn((testing_samples,1),requires_grad=False,dtype=torch.float32)
 
@@ -182,13 +182,11 @@ class SDEOverdamped():
                                         lr)
         
         if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
-            self.boundary.set_ref_statistics(np.nanmean(xinit[...,0]), np.nanvar(xinit[...,0]))
+            self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]), torch.var(xinit[...,0]))
 
         #free up the tensors
         del xinit 
         del xinit_ref
-        #del du
-        del du_bar
         del du_ref
         del kldyn
 
@@ -228,8 +226,8 @@ class SDEOverdamped():
                     
                     dw = self.generate_innovation(dt,testing_samples)
                     #xdata = torch.column_stack(())
-                    du_bar = net(t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
-                                                            ,xinit[:,0,None])
+                    du_bar = net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
+                                                            ,xinit[...,[0]])))
                     
                     xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
             

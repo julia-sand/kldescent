@@ -52,8 +52,8 @@ def compute_sde(net,
             dt = (t_vec[i+1]-t_vec[i])
             
             dw = np.sqrt(dt)*torch.randn((testing_samples,1))
-            du = net(t_vec[i]*torch.ones((testing_samples,1),dtype=torch.float32)
-                                                    ,xinit[:,0,None])
+            du = net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),dtype=torch.float32)
+                                                    ,xinit[...,[0]])))
 
             
             xinit = boundary_cond.euler_maruyama_step(xinit,du,dt,dw,t_vec[i])
@@ -101,4 +101,4 @@ if __name__=="__main__":
     
     net, plotter = load_net(boundary_cond,params.epoch,params.folder)      
     compute_sde(net,boundary_cond.Tf,params.samples,plotter,boundary_cond)
-    #plotter.plot_drift(times = [0,boundary_cond.Tf/2,boundary_cond.Tf],net=net)
+    plotter.plot_drift(times = [0,boundary_cond.Tf/2,boundary_cond.Tf],net=net)

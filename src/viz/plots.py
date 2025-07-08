@@ -452,10 +452,11 @@ class PlotFuns():
 
   ##@profile
   def evaluate_net_output(self,net,time):
-      #computes neural network output (forward pass) to use in plotting
-      return net(time*torch.ones((1000,1),requires_grad=False,dtype=torch.float32)
-                                                  ,torch.linspace(-self.qmax,self.qmax,1000,requires_grad=False))
-      
+      with torch.no_grad():
+        #computes neural network output (forward pass) to use in plotting
+        return net(torch.column_stack((time*torch.ones((1000,1),requires_grad=False,dtype=torch.float32)
+                                                    ,torch.linspace(-self.qmax,self.qmax,1000,requires_grad=False))))
+        
   def position_mean_free_diffusion(self,t_vec,q0,p0):
       return q0 + self.boundary.params.epsilon*(1-np.exp(-t_vec))*p0
 
