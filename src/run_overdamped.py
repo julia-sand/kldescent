@@ -63,8 +63,8 @@ def run():
 
     for epoch in range(0,args.epochs+1):
         try:
-            loss_out = trainer.train_step()
-            metrics.update_metrics(epoch,loss_out)
+            trainer.train_step()
+            metrics.update_metrics(epoch,0)
         except KeyboardInterrupt:
             print(f"Training interrupted at epoch {epoch}")
             #plot the loss metrics

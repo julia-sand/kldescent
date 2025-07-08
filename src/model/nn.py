@@ -60,19 +60,17 @@ class NeuralNetwork(nn.Module):
 
         
         #self.initialize_weights(self,net)
-    def forward(self, t, x):   #how the model should evaluate
+    def forward(self, x):   #how the model should evaluate
         #pdb.set_trace()
-        score_temp = self.boundary.scorefinal(x)
 
-        x = self.NNx(x)
-        t = self.NNt(t)
+        x = self.NNx(x[...,[1]])
+        t = self.NNt(x[...,[0]])
         
         #x = self.NNx(input_vec[...,[1]]) #self.NNx(input_vec[:,1,None]) 
         #t = self.NNt(input_vec[...,[0]]) #do the time encoding on the parameter t
      
         #concatenate the outputs and put them through the part 2
-        out = self.NN1(torch.column_stack((t,x))) + self.NN2(t)*score_temp #self.boundary.scorefinal(input_vec[:,1,None])
-        #self.NN1(torch.column_stack((t,x))) + self.NN2(t)*self.boundary.scorefinal(input_vec[:,1,None])
+        out = self.NN1(torch.column_stack((t,x))) + self.NN2(t)*self.boundary.scorefinal(x[...,[1]])
         
         return out
 
@@ -139,5 +137,5 @@ if __name__=="__main__":
     boundaryconditions = UnderdampedHalfGaussian()#getattr(boundaries,"UnderdampedHalfGaussian")()
     net = NeuralNetwork(boundaryconditions).to("cpu")
     
-    net(torch.ones((100,1),requires_grad=False,dtype=torch.float32),
-        torch.linspace(0,10,steps=100).reshape(100,1))
+    #net(torch.column_stack((torch.ones((100,1),requires_grad=False,dtype=torch.float32),
+    #    torch.linspace(0,10,steps=100).reshape(100,1))))

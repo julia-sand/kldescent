@@ -9,6 +9,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 #from torch.optim.lr_scheduler import ExponentialLR
 from torch.nn.utils import clip_grad_norm_
 
+torch.autograd.set_detect_anomaly(True)
 #from memory_profiler import profile
 
 
@@ -101,7 +102,8 @@ class Train():
         self.scheduler.step()
         #if (epoch % self.milestone == 0) and (epoch>0):
             
-        return Lhat.detach().numpy().item()
+        #loss_out = Lhat.detach().numpy().item()
+        return 
 
 
 class Metrics():
@@ -123,20 +125,20 @@ class Metrics():
         self.logstep = logstep #how frequently to save results
     
     def update_metrics(self, epoch, loss_out):
-        
-        if np.isnan(loss_out):
-            raise ValueError('Loss function is NaN. Terminating training process')
-        
-        if (epoch % self.logstep == 0): #compute metrics 
-            with torch.no_grad():
-                #this also updates the ref. cumulants
-                self.integrator.compute_metrics(self.net,
-                                    epoch,
-                                    loss_out,
-                                    self.scheduler.get_last_lr()[0])
+        with torch.no_grad():
+            if np.isnan(loss_out):
+                raise ValueError('Loss function is NaN. Terminating training process')
+            
+            if (epoch % self.logstep == 0): #compute metrics 
+                with torch.no_grad():
+                    #this also updates the ref. cumulants
+                    self.integrator.compute_metrics(self.net,
+                                        epoch,
+                                        loss_out,
+                                        self.scheduler.get_last_lr()[0])
 
-        else: 
+            else: 
 
-            with torch.no_grad():
-                self.integrator.update_ref_statistics(self.net)
-        
+                with torch.no_grad():
+                    self.integrator.update_ref_statistics(self.net)
+            
