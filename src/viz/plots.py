@@ -29,7 +29,7 @@ class PlotFuns():
     #self.subdir = self.folder #add default value to put plots into main folder if subdir has not been set
     self.boundary = boundary_data
     self.folder = os.path.dirname(__file__)
-    self.epsilon = 1 if boundary_data==None else boundary_data.epsilon
+    #self.epsilon = 1 #if boundary_data==None else boundary_data.params["epsilon"]
 
     #borders of xaxis
     self.qmax = 6
@@ -93,7 +93,7 @@ class PlotFuns():
     x_ind = int(np.floor(plot_index/3))
     y_ind = plot_index % 3
 
-    plot_title_value = round(time/self.boundary.Tf,2)
+    plot_title_value = round(time/self.boundary["Tf"],2)
 
     #get plot location
     ax = fig.add_subplot(gs_joint_distributions[x_ind,y_ind])
@@ -458,19 +458,19 @@ class PlotFuns():
                                                     ,torch.linspace(-self.qmax,self.qmax,1000,requires_grad=False))))
         
   def position_mean_free_diffusion(self,t_vec,q0,p0):
-      return q0 + self.boundary.params.epsilon*(1-np.exp(-t_vec))*p0
+      return q0 + self.boundary.params["epsilon"]*(1-np.exp(-t_vec))*p0
 
   def momentum_mean_free_diffusion(self,t_vec,p0):
       return np.exp(-t_vec)*p0
 
   def position_variance_free_diffusion(self,t_vec,pos_var0,mom_var0):
-      return pos_var0 + (self.boundary.params.epsilon**2)*(((1-np.exp(-t_vec))**2)*mom_var0 + 2*t_vec - 3 +4*np.exp(-t_vec) - np.exp(-2*t_vec))
+      return pos_var0 + (self.boundary.params["epsilon"]**2)*(((1-np.exp(-t_vec))**2)*mom_var0 + 2*t_vec - 3 +4*np.exp(-t_vec) - np.exp(-2*t_vec))
 
   def momentum_variance_free_diffusion(self,t_vec,mom_var0):
       return 1 - np.exp(-2*t_vec) + np.exp(-2*t_vec)*mom_var0
 
   def cross_correlation_free_diffusion(self,t_vec,pos_var0,mom_var0):
-      return (self.boundary.params.epsilon**2)*np.exp(-t_vec)*(1-np.exp(-t_vec))*mom_var0 + self.boundary.params.epsilon*(1-2*np.exp(-t_vec)+np.exp(-2*t_vec))
+      return (self.boundary.params["epsilon"]**2)*np.exp(-t_vec)*(1-np.exp(-t_vec))*mom_var0 + self.boundary.params["epsilon"]*(1-2*np.exp(-t_vec)+np.exp(-2*t_vec))
 
   def plot_free_diffusion_sol(self,ax,t_vec,cumulant):
       ax.plot(t_vec,cumulant,lw=self.lw,

@@ -11,43 +11,41 @@ from ..utils.parser import integrator_params
 class SDEOverdamped():
     def __init__(self,
                     boundary_data,
+                    sde_params=None,
                     logger=None,
                     device="cpu"):
         self.boundary = boundary_data
         self.logger = logger
 
         #get params 
-        self.sde_params = integrator_params()
-        self.batch_samples = self.sde_params.batchsamples # number of samples in each step 
-        self.t_steps = self.sde_params.tsteps #number of timesteps in discretisation
-        self.g = self.boundary.g
+        if sde_params is not None:
+            self.sde_params = sde_params #take params from given yaml
+        else:
+            self.sde_params = integrator_params() #parse command line
 
         if self.logger is not None:
             self.logger.log_args(self.sde_params) #add to log
         
-
-
-
     def generate_time_grid(self):
 
         #samples the interval [0,Tf] and returns sorted set of values to be used in integration
 
         return np.concatenate([[0],
-                                np.sort(np.random.uniform(0, self.boundary.Tf, self.t_steps-1)),
-                                [self.boundary.Tf]])
+                                np.sort(np.random.uniform(0, self.boundary.params["Tf"], self.sde_params["tsteps"]-1)),
+                                [self.boundary.params["Tf"]]])
 
 
     def testing_time_grid(self,final_time=None):
 
         if final_time==None:
-            final_time = self.boundary.Tf
+            final_time = self.boundary.params["Tf"]
             
         #get an equally spaced time grid which can be used with the reference solution
         time_grid = self.boundary.get_reference_timegrid()
         if time_grid is not None:
             return time_grid
         else:
-            return np.linspace(0,final_time,self.t_steps)
+            return np.linspace(0,final_time,self.sde_params["tsteps"])
 
     def generate_innovation(self,dt,size):
         #generate a step of brownian motion
@@ -69,23 +67,23 @@ class SDEOverdamped():
         t_vec = self.generate_time_grid()
 
         #initialise x values 
-        xinit = torch.tensor(self.boundary.generate_samples(self.batch_samples,"initial"),requires_grad=False,dtype=torch.float32)#.to_device(device)
+        xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32)#.to_device(device)
 
         #set up a,abar,c,cbar
-        a = torch.zeros((self.batch_samples,1),dtype=torch.float32)
-        abar = torch.zeros((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
-        bbar = torch.zeros((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
-        c = torch.zeros((self.batch_samples,1),dtype=torch.float32)
-        dw = torch.zeros((self.batch_samples,1),requires_grad=False,dtype=torch.float32)
+        a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
+        abar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32)
+        bbar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32)
+        c = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
+        dw = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32)
 
         #pdb.set_trace()
         #self.generate_time_grid()
-        for i in range(0,self.t_steps-1):
+        for i in range(0,self.sde_params["tsteps"]-1):
             dt = (t_vec[i+1]-t_vec[i])
             
-            dw = self.generate_innovation(dt,self.batch_samples)
+            dw = self.generate_innovation(dt,self.sde_params["batchsamples"])
            
-            du = net(torch.column_stack((t_vec[i]*torch.ones((self.batch_samples,1),dtype=torch.float32)
+            du = net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32)
                                                     ,xinit[...,[0]])))
                     
             a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True) ** 2) 
@@ -133,7 +131,7 @@ class SDEOverdamped():
 
         net.eval()
         t_vec = self.testing_time_grid()
-        testing_samples = self.sde_params.testsamples #4000 #reduced number of samples in computing the loss metrics
+        testing_samples = self.sde_params["testsamples"] #4000 #reduced number of samples in computing the loss metrics
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
@@ -211,13 +209,13 @@ class SDEOverdamped():
             pdb.set_trace()
         if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
             if testing_samples == None: #default to the integrator 
-                testing_samples = self.sde_params.testsamples 
+                testing_samples = self.sde_params["testsamples"] 
 
             net.eval()
             
             with torch.no_grad():
 
-                t_vec = torch.linspace(0,self.boundary.Tf,self.t_steps)#self.testing_time_grid()
+                t_vec = torch.linspace(0,self.boundary.params["Tf"],self.sde_params["tsteps"])#self.testing_time_grid()
 
                 xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
 
@@ -262,7 +260,7 @@ class SDEOverdamped():
         t_vec = self.boundary.get_reference_timegrid(marginal_plot_time)
 
         #initialise x values at \delta_0 (i.e. x=0)
-        xinit = torch.tensor(self.boundary.generate_samples(self.sde_params.testsamples,"initial"),requires_grad=False,dtype=torch.float32)
+        xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["testsamples"],"initial"),requires_grad=False,dtype=torch.float32)
         xref = torch.clone(xinit)
 
         #save the cumulants of the evolutions
@@ -275,8 +273,8 @@ class SDEOverdamped():
             for i in range(0,len(t_vec)-1):
                 dt = (t_vec[i+1]-t_vec[i])
                 
-                dw = self.generate_innovation(dt,self.sde_params.testsamples)
-                du = net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params.testsamples,1),dtype=torch.float32)
+                dw = self.generate_innovation(dt,self.sde_params["testsamples"])
+                du = net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["testsamples"],1),dtype=torch.float32)
                                                         ,xinit[...,[0]])))
                 
                 xinit = self.boundary.euler_maruyama_step(xinit,du,dt,dw,t_vec[i])
@@ -285,7 +283,7 @@ class SDEOverdamped():
                 cumulants_ref = plotter.save_cumulants(cumulants_ref,xref.numpy())
                 
         plotter.marginal_distribution([xinit.numpy(),xref.numpy()],marginal_plot_time)
-        plotter.plot_cumulants(t_vec,cumulants_nn,cumulants_ref,self.sde_params.testsamples)
+        plotter.plot_cumulants(t_vec,cumulants_nn,cumulants_ref,self.sde_params["testsamples"])
         
         #free up the tensors
         del xinit 

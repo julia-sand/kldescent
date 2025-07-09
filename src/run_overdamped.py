@@ -23,6 +23,7 @@ def run():
     #parse arguments from command line
     args = parser.overdamped_argparser()
     metrics_logger.log_args(args)
+    metrics_logger.log_dict(args)
 
     #initialise the model
     #TODO: add gpu option, decide architectures
@@ -35,15 +36,12 @@ def run():
         net = nn.NeuralNetwork(boundaryconditions).to(args.device)
 
     #save all params
-    metrics_logger.log_args(boundaryconditions.params)
     metrics_logger.log_dict(boundaryconditions.params)
-    metrics_logger.log_args(net.params)
     metrics_logger.log_dict(net.params)
     
     net = DataParallel(net)
 
     try:
-        metrics_logger.log_args(boundaryconditions.gauss_boundary)
         metrics_logger.log_dict(boundaryconditions.gauss_boundary)
     except AttributeError: #skip if not available
         pass
