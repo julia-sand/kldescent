@@ -243,6 +243,56 @@ class SDEOverdamped():
 
         return
 
+
+    def compute_sde(self,net,
+                        plotter,
+                        marginal_plot_time):
+
+        """
+        Computes the SDE, saves cumulants and plots 
+
+        ====
+        Parameters
+        - net: neural network
+        ====
+
+        """
+            
+        #pdb.set_trace()
+        t_vec = self.boundary.get_reference_timegrid(marginal_plot_time)
+
+        #initialise x values at \delta_0 (i.e. x=0)
+        xinit = torch.tensor(self.boundary.generate_samples(self.sde_params.testsamples,"initial"),requires_grad=False,dtype=torch.float32)
+        xref = torch.clone(xinit)
+
+        #save the cumulants of the evolutions
+        cumulants_nn = plotter.save_cumulants(np.empty((0,5)),xinit.numpy())
+        cumulants_ref = plotter.save_cumulants(np.empty((0,5)),xref.numpy())
+
+        with torch.no_grad():
+
+            #self.generate_time_grid()
+            for i in range(0,len(t_vec)-1):
+                dt = (t_vec[i+1]-t_vec[i])
+                
+                dw = self.generate_innovation(dt,self.sde_params.testsamples)
+                du = net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params.testsamples,1),dtype=torch.float32)
+                                                        ,xinit[...,[0]])))
+                
+                xinit = self.boundary.euler_maruyama_step(xinit,du,dt,dw,t_vec[i])
+                xref = self.boundary.euler_maruyama_step(xref,self.boundary.du_ref(xref[:,[0]],t_vec[i]),dt,dw,t_vec[i])
+                cumulants_nn = plotter.save_cumulants(cumulants_nn,xinit.numpy())
+                cumulants_ref = plotter.save_cumulants(cumulants_ref,xref.numpy())
+                
+        plotter.marginal_distribution([xinit.numpy(),xref.numpy()],marginal_plot_time)
+        plotter.plot_cumulants(t_vec,cumulants_nn,cumulants_ref,self.sde_params.testsamples)
+        
+        #free up the tensors
+        del xinit 
+        del du
+
+        return 
+
 if __name__=="__main__":
     from src.model import nn
     from src.sde.boundary import UnderdampedHalfGaussian

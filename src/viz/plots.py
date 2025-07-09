@@ -559,6 +559,15 @@ class PlotFuns():
     plt.savefig(self.subdir+f"/cumulants.png", bbox_inches='tight')
     plt.close()
 
+  def save_cumulants(self,save_array,temp):
+      #pdb.set_trace()
+      
+      return np.append(save_array,np.array([[np.nanmean(temp[...,0]),
+                                              np.nanmean(temp[...,1]),
+                                              np.nanvar(temp[...,0]),
+                                              np.nanvar(temp[...,1]),
+                                              np.correlate(temp[...,0],temp[...,1])[0]/(len(temp[...,0]))]]),axis=0)#cross corr
+
 
 def plot_loss(folder):
   if folder == None:

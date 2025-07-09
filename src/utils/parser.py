@@ -1,11 +1,8 @@
 import argparse
-"""handles parameter loading"""
 
-class LoadFromFile(argparse.Action):
-    def __call__ (self, parser, namespace, values, option_string = None):
-        with values as f:
-            # parse arguments in the file and store them in the target namespace
-            parser.parse_args(f.read().split(), namespace)
+"""
+handles parameter loading
+"""
 
 class CustomArgParse(argparse.ArgumentParser):
     """
@@ -16,7 +13,7 @@ class CustomArgParse(argparse.ArgumentParser):
     """
     #overwrites the default behaviour if using results folder to use the parameter file available
     def __init__(self):
-        self.loc = self.fetch_results_folder_from_cmd()
+        self.loc = fetch_results_folder_from_cmd()
         if self.loc is not None:
             argparse.ArgumentParser.__init__(self,fromfile_prefix_chars = '@')
 
@@ -29,21 +26,21 @@ class CustomArgParse(argparse.ArgumentParser):
         #disallow abbreviations    
         self.allow_abbrev = False
 
-
     #TODO update to handle the data.txt format 
     #def convert_arg_line_to_args(self,arg_line):
     #    return arg_line.split
 
-    def fetch_results_folder_from_cmd(self):
-        # Instantiate the parser
-        parser6 = argparse.ArgumentParser()
-        
-        parser6.add_argument('-folder','--folder', type=str, default=None,
-                            help='Folder where to run the plots.')
 
-        args6 = parser6.parse_known_args()
+def fetch_results_folder_from_cmd():
+    # Instantiate the parser
+    parser6 = argparse.ArgumentParser()
+    
+    parser6.add_argument('-folder','--folder', type=str, default=None,
+                        help='Folder where to run the plots.')
 
-        return args6[0].folder
+    args6 = parser6.parse_known_args()
+
+    return args6[0].folder
 
 def overdamped_argparser():
     #general configs for the training process
@@ -184,22 +181,12 @@ def girsanov_plot_params():
 def checkpoint_plot_params():
 
     # Instantiate the parser
-    parser5 = CustomArgParse()
+    parser5 = argparse.ArgumentParser()
     
     parser5.add_argument('-epoch','--epoch', type=int,
-                        default=2000,
+                        default=10,
                         help='At which epoch checkpoint to plot. The checkpoint file must be available.')
-
-    parser5.add_argument('-boundary','--boundary', type=str, default="UnderdampedHalfGaussian",
-                        help='Boundary conditions used in the plot')
-                      
-    parser5.add_argument('-samples','--samples', type=int, default=5000,
-                        help='How many samples to use to make the plots.')
-            
-    parser5.add_argument('-folder','--folder', type=str, default=None,
-                        help='Folder where to run the plots.')
-            
-    args5 = parser5.parse_known_args(parser5.argfile)
+    args5 = parser5.parse_known_args()
 
     return args5[0]
 
