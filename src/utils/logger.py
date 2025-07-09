@@ -54,7 +54,7 @@ class LossLogger():
         print("Output Directory created successfully.")   
        
         #create a log file to store the data output
-        self.datayaml = self.newpath +"/data.yml" 
+        self.datayaml = self.newpath +"/data.yaml" 
 
         #create a log file to store the data output
         self.datafile = self.newpath +"/data.txt" 
@@ -100,5 +100,6 @@ class LossLogger():
         
     def log_dict(self,dictparams):
                 
-        with open(self.datayaml, 'w') as outfile:
+        with open(self.datayaml, 'a+') as outfile:
             yaml.dump(dictparams, outfile)
+

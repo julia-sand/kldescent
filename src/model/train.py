@@ -1,5 +1,4 @@
 import os
-#import math 
 
 import numpy as np 
 import torch
@@ -9,9 +8,8 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 #from torch.optim.lr_scheduler import ExponentialLR
 from torch.nn.utils import clip_grad_norm_
 
-torch.autograd.set_detect_anomaly(True)
+#torch.autograd.set_detect_anomaly(True)
 #from memory_profiler import profile
-
 
 class Pretrain():
     #define the training parameters and loop for any pretraining. 
@@ -59,9 +57,9 @@ class Pretrain():
     
     
 class Train():
-    """Defines the parameters of the training process and 
+    """
+    Defines the parameters of the training process and 
     the training step
-    
     """
 
     def __init__(self, net, integrator):
@@ -84,7 +82,6 @@ class Train():
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
 
         
-    #@profile
     def train_step(self):  
         
         self.net.train() #set neural net into train mode
@@ -102,14 +99,13 @@ class Train():
         self.scheduler.step()
         #if (epoch % self.milestone == 0) and (epoch>0):
             
-        #loss_out = Lhat.detach().numpy().item()
-        return 
+        loss_out = Lhat.detach().numpy().item()
+        return loss_out
 
 
 class Metrics():
     """
     Class for finding metrics during the training process 
-
 
     Method: update_metrics
     - logs the metrics at logstep

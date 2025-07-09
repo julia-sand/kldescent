@@ -28,10 +28,16 @@ def load_net(boundary_cond,epoch,folder=None):
 
     return net, plotter, integrator
 
-def checkpoint_plots_all(logger,boundary_cond,net,plotter):
+def checkpoint_plots_all(logger,
+                            boundary_cond,
+                            net,
+                            plotter,
+                            integrator):
 
     folder = logger.get_results_path()
-    compute_sde(net,plotter,boundary_cond)
+    integrator.compute_sde(net,
+                    plotter,
+                    boundary_cond.Tf)
     plotter.plot_drift(times = [0,boundary_cond.Tf/2,boundary_cond.Tf],net=net)
 
 

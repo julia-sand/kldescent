@@ -36,6 +36,7 @@ def run():
 
     #save all params
     metrics_logger.log_args(boundaryconditions.params)
+    metrics_logger.log_dict(boundaryconditions.params)
     metrics_logger.log_args(net.params)
     metrics_logger.log_dict(net.params)
     
@@ -43,6 +44,7 @@ def run():
 
     try:
         metrics_logger.log_args(boundaryconditions.gauss_boundary)
+        metrics_logger.log_dict(boundaryconditions.gauss_boundary)
     except AttributeError: #skip if not available
         pass
 
@@ -63,8 +65,8 @@ def run():
 
     for epoch in range(0,args.epochs+1):
         try:
-            trainer.train_step()
-            metrics.update_metrics(epoch,0)
+            loss_out = trainer.train_step()
+            metrics.update_metrics(epoch,loss_out)
         except KeyboardInterrupt:
             print(f"Training interrupted at epoch {epoch}")
             #plot the loss metrics
@@ -80,7 +82,11 @@ def run():
 
     plotter = plots.PlotFuns(boundaryconditions)
     plotter.setresultsdir(metrics_logger.get_results_path())
-    checkpoint_plots_all(metrics_logger,boundaryconditions,net,plotter)
+    checkpoint_plots_all(metrics_logger,
+                            boundaryconditions,
+                            net,
+                            plotter,
+                            integrator)
     plotter.plot_loss_metrics()
 
 if __name__=="__main__":

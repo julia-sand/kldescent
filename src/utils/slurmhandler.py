@@ -1,4 +1,8 @@
 import signal
+"""Handles kill signal error from job timeouts
+
+"""
+
 
 class TimeLimitException(Exception):
     pass
