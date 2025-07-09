@@ -17,47 +17,50 @@ class MyActivation(nn.Module):
 # FROM TORCH TUTORIAL
 #create a simple neural network to parametrise the drift. 
 class NeuralNetwork(nn.Module):
-    def __init__(self,boundary):
+    def __init__(self,boundary,nn_params=None):
         
-        self.params = network_params()
+        if nn_params is not None:
+            self.params = nn_params    
+        else:
+            self.params = network_params()
 
         #params
-        self.hidden_layer_neurons = self.params.hiddenlayerneurons 
         self.boundary = boundary
 
         super(NeuralNetwork, self).__init__()
         self.flatten = nn.Flatten()
         #self.tencoding = TimeConder(1,self.hidden_layer_neurons) #fourier positional encoding goes here! 
         self.NNt = nn.Sequential(
-            nn.Linear(1, self.hidden_layer_neurons),  #
+            nn.Linear(1, self.params["hiddenlayerneurons"] ),  #
             nn.SiLU(), #MyActivation(),
-            nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #64 outputs
+            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
             nn.ReLU(),  #must be positive
             ) 
         self.NNx = nn.Sequential(
-            nn.Linear(1, self.hidden_layer_neurons),  #input x
+            nn.Linear(1, self.params["hiddenlayerneurons"] ),  #input x
             nn.SiLU(),
-            nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #64 outputs
+            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
             )    
         self.NN1 = nn.Sequential(
-            nn.Linear(2*self.hidden_layer_neurons, self.hidden_layer_neurons),  #input 2x64 features: concatenated output of NNt and NNx t and x 
+            nn.Linear(2*self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
             nn.SiLU(),
-            nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #64 outputs
+            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
             nn.SiLU(),
-            nn.Linear(self.hidden_layer_neurons, 1))   #64 outputs)  
+            nn.Linear(self.params["hiddenlayerneurons"] , 1))   #64 outputs)  
         self.NN2 = nn.Sequential(
-            nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),  #input 2x64 features: concatenated output of NNt and NNx t and x 
+            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
             nn.SiLU(),
-            nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #64 outputs
+            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
             nn.SiLU(),
-            nn.Linear(self.hidden_layer_neurons, 1),   #64 outputs
+            nn.Linear(self.params["hiddenlayerneurons"] , 1),   #64 outputs
             nn.ReLU(), #must be positive
             )  
 
-
-        if self.params.checkpointpath is not None: #automatically loads a checkpoint from the command line
-            self.load_checkpoint(self.params.checkpointpath)
-
+        try:
+            if self.params["checkpointpath"] is not None: #automatically loads a checkpoint from the command line
+                self.load_checkpoint(self.params.checkpointpath)
+        except AttributeError:
+            pass
         
         #self.initialize_weights(self,net)
     def forward(self, input_vec):   #how the model should evaluate
@@ -66,9 +69,6 @@ class NeuralNetwork(nn.Module):
         x = self.NNx(input_vec[...,[1]])
         t = self.NNt(input_vec[...,[0]])
         
-        #x = self.NNx(input_vec[...,[1]]) #self.NNx(input_vec[:,1,None]) 
-        #t = self.NNt(input_vec[...,[0]]) #do the time encoding on the parameter t
-     
         #concatenate the outputs and put them through the part 2
         out = self.NN1(torch.column_stack((t,x))) + self.NN2(t)*self.boundary.scorefinal(input_vec[...,[1]])
         
@@ -84,12 +84,13 @@ class NeuralNetwork(nn.Module):
     def load_checkpoint(self,checkpointpath):
         
         try:
+            print(self.params["hiddenlayerneurons"] )
             checkpointpath = os.getcwd() + "/" + checkpointpath
             self.load_state_dict(torch.load(checkpointpath, weights_only=True))
             print("Checkpoint loaded successfully.")    
         except FileNotFoundError:
             print("The checkpoint file was not found. The filepath should be provided from the current working directory.")
-
+            raise FileNotFoundError
 
 # FROM TORCH TUTORIAL
 #create a simple neural network to parametrise the drift. 
@@ -97,23 +98,21 @@ class MLP(nn.Module):
     def __init__(self,checkpointpath=None):
         self.params = network_params()
 
-        #params
-        self.hidden_layer_neurons = self.params.hiddenlayerneurons
         
         super(MLP, self).__init__()
         self.flatten = nn.Flatten()
         self.linear_stack = nn.Sequential(
-            nn.Linear(2, self.hidden_layer_neurons),  #two inputs
+            nn.Linear(2, self.params["hiddenlayerneurons"] ),  #two inputs
             MyActivation(),
-            nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
+            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #hidden layer
             nn.ReLU(),
-            nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
+            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #hidden layer
             nn.ReLU(),
-            nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
+            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #hidden layer
             nn.ReLU(),
-            nn.Linear(self.hidden_layer_neurons, self.hidden_layer_neurons),   #hidden layer
+            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #hidden layer
             MyActivation(),
-            nn.Linear(self.hidden_layer_neurons, 1)     #one output
+            nn.Linear(self.params["hiddenlayerneurons"] , 1)     #one output
         )    
         self.initialize_weights()   
 
@@ -128,6 +127,7 @@ class MLP(nn.Module):
                 torch.nn.init.xavier_normal_(m.weight,gain=4)
                 if m.bias is not None:
                     torch.nn.init.constant_(m.bias, 0)
+
 
 
 if __name__=="__main__":

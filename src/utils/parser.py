@@ -17,9 +17,7 @@ class CustomArgParse(argparse.ArgumentParser):
         if self.loc is not None:
             argparse.ArgumentParser.__init__(self,fromfile_prefix_chars = '@')
 
-            
-            #self.argfile = [f'@{self.loc}/data.txt']
-            self.argfile = [f'@{self.loc}/data.yaml']
+            self.argfile = [f'@{self.loc}/data.txt']
 
         else:
             argparse.ArgumentParser.__init__(self)
@@ -68,7 +66,7 @@ def overdamped_argparser():
              
     args = parser.parse_known_args(parser.argfile)
 
-    return args[0]
+    return vars(args[0])
 
 
 def integrator_params():
@@ -89,7 +87,7 @@ def integrator_params():
 
     args1 = integrator_params.parse_known_args(integrator_params.argfile)
 
-    return args1[0]
+    return vars(args1[0])
 
 
 def boundary_params():
@@ -115,7 +113,7 @@ def boundary_params():
     
     args2 = boundary_params.parse_known_args(boundary_params.argfile)
 
-    return args2[0]
+    return vars(args2[0])
 
 
 def gaussian_params():
@@ -138,7 +136,7 @@ def gaussian_params():
 
     args5 = params1.parse_known_args(params1.argfile)
 
-    return args5[0]
+    return vars(args5[0])
 
 
 #TODO separate the parser into smaller so that we can parse straight into other files
@@ -160,7 +158,7 @@ def network_params():
     #if args.pos_arg > 10:
     #    parser.error("pos_arg cannot be larger than 10")
 
-    return args3[0]
+    return vars(args3[0])
 
 
 def girsanov_plot_params():
@@ -177,7 +175,7 @@ def girsanov_plot_params():
                       
     args4 = parser4.parse_known_args(parser4.argfile)
 
-    return args4[0]
+    return vars(args4[0])
 
 
 def checkpoint_plot_params():
@@ -190,10 +188,11 @@ def checkpoint_plot_params():
                         help='At which epoch checkpoint to plot. The checkpoint file must be available.')
     args5 = parser5.parse_known_args()
 
-    return args5[0]
+    return vars(args5[0])
 
 if __name__=="__main__":
     
 
     params_test = overdamped_argparser()
-    print(params_test.epochs)
+
+    print(params_test)

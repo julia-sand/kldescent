@@ -5,16 +5,17 @@ import numpy as np
 from ..utils.parser import boundary_params, gaussian_params
 
 class Boundaries():
-    def __init__(self):
+    def __init__(self,params=None):
 
         self.sigma0 = 1 #np.sqrt(2)
         
         #get params 
-        self.params = boundary_params()
-        self.Tf = self.params.Tf
-        self.g = self.params.g        
+        if params is not None:
+            self.params = params
+        else:
+            self.params = boundary_params()
+            
         
-        self.epsilon = self.params.epsilon 
         self.Generator = np.random.default_rng(seed=None)
 
         self.ref_path = self.get_ref_path()+"/refsol.csv"
@@ -171,7 +172,7 @@ class LinearOU(Boundaries):
         return out
 
     def analytic_sol(self,time):
-        return -self.sigma0*np.exp(self.A*(self.Tf-time))*self.gamma
+        return -self.sigma0*np.exp(self.A*(self.params["Tf"]-time))*self.gamma
 
 
     def get_reference_data(self,time):
@@ -295,7 +296,7 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
    
     def get_reference_timegrid(self,time=None):
         if time is None:
-            time = self.Tf
+            time = self.params["Tf"]
         return np.linspace(0,time)
 
     def get_reference_data(self,time):
@@ -326,7 +327,7 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
 
         #takes one step forward in the euler maruyama discretisation
         #go forward one step 
-        xn[:,0,None] = xn[:,0,None] + self.epsilon*xn[:,1,None]*dt 
+        xn[:,0,None] = xn[:,0,None] + self.params["epsilon"]*xn[:,1,None]*dt 
         xn[:,1,None] = xn[:,1,None] - (xn[:,1,None] - du_bar)*dt \
                                     + self.sigma0*dw
         
@@ -349,7 +350,7 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
 
         #takes one step forward in the euler maruyama discretisation
         #go forward one step 
-        xn[...,[0]] = xn[...,[0]] + self.epsilon*xn[...,[1]]*dt 
+        xn[...,[0]] = xn[...,[0]] + self.params["epsilon"]*xn[...,[1]]*dt 
         xn[...,[1]] = xn[...,[1]] + du_bar*dt + self.sigma0*dw
 
         return xn
@@ -374,7 +375,7 @@ class UnderdampedNoMomentum(UnderdampedHalfLandauer):
         
         #time is the time you want the data
         arr = self.get_reference_array()
-        ttemp = np.round(np.unique(arr[:,0])/(self.epsilon**2),5) #rescale
+        ttemp = np.round(np.unique(arr[:,0])/(self.params["epsilon"]**2),5) #rescale
 
         return ttemp[np.where(ttemp<plottime)]
 
@@ -384,11 +385,11 @@ class UnderdampedNoMomentum(UnderdampedHalfLandauer):
         arr = self.get_reference_array()
 
         ##fetch the reference data approximation data
-        arrtemp = arr[np.where(arr[:,0]==np.round(time*self.epsilon**2,7))] 
+        arrtemp = arr[np.where(arr[:,0]==np.round(time*self.params["epsilon"]**2,7))] 
         arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
 
         #coeff
-        coeff = (1 - np.exp((time - self.Tf)))
+        coeff = (1 - np.exp((time - self.params["Tf"])))
 
         #RETURNS X, DU for plotting
         return np.squeeze(arrtemp[:,1]),2*coeff*np.squeeze(arrtemp[:,-1])
@@ -398,7 +399,7 @@ class UnderdampedNoMomentum(UnderdampedHalfLandauer):
         arr = self.get_reference_array()
 
         ##fetch the reference data approximation data
-        arrtemp = arr[np.where(arr[:,0]==np.round(time*self.epsilon**2,7))] 
+        arrtemp = arr[np.where(arr[:,0]==np.round(time*self.params["epsilon"]**2,7))] 
         arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
 
 
@@ -414,24 +415,26 @@ class UnderdampedNoMomentum(UnderdampedHalfLandauer):
 
 
 class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
-    def __init__(self):
+    def __init__(self,gauss_params=None):
         Boundaries.__init__(self)
         self.sigma0 = np.sqrt(2)
-
-        self.gauss_boundary = gaussian_params()
+        if gauss_params is not None:
+            self.gauss_boundary = gauss_params
+        else:
+            self.gauss_boundary = gaussian_params()
 
     def Uinitial(self,q):
 
-        return (q-self.gauss_boundary.muinitial)**2/(2*(self.gauss_boundary.sigmainitial**2))
+        return (q-self.gauss_boundary["muinitial"])**2/(2*(self.gauss_boundary["sigmainitial"]**2))
 
     def Ufinal(self,q):
 
-        return (q-self.gauss_boundary.mufinal)**2/(2*(self.gauss_boundary.sigmafinal**2))
+        return (q-self.gauss_boundary["mufinal"])**2/(2*(self.gauss_boundary["sigmafinal"]**2))
 
 
     def scorefinal(self,q):
 
-        return -(q-self.gauss_boundary.muinitial)/((self.gauss_boundary.sigmainitial**2))
+        return -(q-self.gauss_boundary["muinitial"])/((self.gauss_boundary["sigmainitial"]**2))
 
 
     def q_marginal_initial(self,q):
@@ -441,7 +444,7 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
 
     def q_marginal_final(self,q): 
         
-        return self.qfinal(q)/np.sqrt(2*(self.gauss_boundary.sigmafinal**2))
+        return self.qfinal(q)/np.sqrt(2*(self.gauss_boundary["sigmafinal"]**2))
 
 
     #generate the initial data
@@ -452,9 +455,9 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
 
         #from where to sample the q marginals
         if mode=="initial":
-            out = self.Generator.normal(loc=self.gauss_boundary.muinitial,scale=self.gauss_boundary.sigmainitial,size=(batch_samples,1))     
+            out = self.Generator.normal(loc=self.gauss_boundary["muinitial"],scale=self.gauss_boundary["sigmainitial"],size=(batch_samples,1))     
         elif mode=="final": 
-            out = self.Generator.normal(loc=self.gauss_boundary.mufinal,scale=self.gauss_boundary.sigmafinal,size=(batch_samples,1))     
+            out = self.Generator.normal(loc=self.gauss_boundary["mufinal"],scale=self.gauss_boundary["sigmafinal"],size=(batch_samples,1))     
             
         return out                           
 
@@ -466,7 +469,7 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
 
     def get_reference_timegrid(self,time=None):
         if time is None:
-            time = self.Tf + 0.00001
+            time = self.params["Tf"] + 0.00001
         
         try: 
             arr = self.get_ref_data()
@@ -536,7 +539,7 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
         #print(self.mean0)
 
         #Terminal cost
-        return (self.params.weight/2)*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.gauss_boundary.mufinal, self.gauss_boundary.sigmafinal**2))
+        return (self.params["weight"]/2)*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.gauss_boundary["mufinal"], self.gauss_boundary["sigmafinal"]**2))
 
 if __name__=="__main__":
 

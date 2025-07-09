@@ -101,5 +101,5 @@ class LossLogger():
     def log_dict(self,dictparams):
                 
         with open(self.datayaml, 'a+') as outfile:
-            yaml.dump(dictparams, outfile)
+            yaml.dump(vars(dictparams), outfile)
 
