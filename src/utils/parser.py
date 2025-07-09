@@ -17,7 +17,9 @@ class CustomArgParse(argparse.ArgumentParser):
         if self.loc is not None:
             argparse.ArgumentParser.__init__(self,fromfile_prefix_chars = '@')
 
-            self.argfile = [f'@{self.loc}/data.txt']
+            
+            #self.argfile = [f'@{self.loc}/data.txt']
+            self.argfile = [f'@{self.loc}/data.yaml']
 
         else:
             argparse.ArgumentParser.__init__(self)
