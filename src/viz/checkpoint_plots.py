@@ -1,14 +1,15 @@
-#import math
-import torch
-import numpy as np
-#from scipy.stats import bootstrap
+import os
+import yaml 
 
-import pdb
+import torch
+#from torch.nn import DataParallel
+import numpy as np
 
 from ..model.nn import NeuralNetwork
 from .plots import PlotFuns
-#import src.sde.boundary as boundaries
 from ..sde import langevin
+from ..utils.parser import checkpoint_plot_params,overdamped_argparser, fetch_results_folder_from_cmd
+from ..sde import boundary as boundaries 
 
 def load_net(boundary_cond,epoch,param_data,folder=None):
 
@@ -26,7 +27,10 @@ def load_net(boundary_cond,epoch,param_data,folder=None):
 
 
     plotter = PlotFuns(boundary_cond)
-    plotter.setresultsdir(folder)
+    #make new folder for the results
+    os.makedirs(folder+f"/plots_{epoch}", exist_ok = True) 
+    plotter.setresultsdir(folder+f"/plots_{epoch}")
+
     integrator = langevin.SDEOverdamped(boundary_cond,param_data)
 
     return net, plotter, integrator
@@ -44,14 +48,7 @@ def checkpoint_plots_all(logger,
     plotter.plot_drift(times = [0,boundary_cond.params["Tf"]/2,boundary_cond.params["Tf"]],net=net)
 
 
-
-
 if __name__=="__main__":
-    from ..utils.parser import checkpoint_plot_params,overdamped_argparser, fetch_results_folder_from_cmd
-    import src.sde.boundary as boundaries 
-    from torch.nn import DataParallel
-
-    import yaml 
 
     folder = fetch_results_folder_from_cmd()
         
@@ -59,15 +56,17 @@ if __name__=="__main__":
         # Read YAML file
         with open(f'{folder}/data.yaml', 'r') as stream:
             data_loaded = yaml.safe_load(stream)
-        boundary_cond = getattr(boundaries,data_loaded["boundary"])(data_loaded)
-    except FileNotFoundError:
+        boundary_cond = getattr(boundaries,data_loaded["boundary"])(params=data_loaded)
+    except FileNotFoundError: #if no yaml file is provided, use the defaults
+        print("No parameter file given. The plots will be created using the default values. See -h for values.")
+
         data_loaded = None
-        #use defaults
+        
         run_params = overdamped_argparser()
         boundary_cond = getattr(boundaries,run_params["boundary"])()
 
 
-    params = checkpoint_plot_params()
+    params = checkpoint_plot_params() #get checkpoint plot parameters from cmd line
     
     net, plotter, integrator = load_net(boundary_cond,params["epoch"],data_loaded,
                                         folder)    
