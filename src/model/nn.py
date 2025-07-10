@@ -87,7 +87,6 @@ class NeuralNetwork(nn.Module):
     def load_checkpoint(self,checkpointpath):
         
         try:
-            print(self.params["hiddenlayerneurons"] )
             checkpointpath = os.getcwd() + "/" + checkpointpath
             self.load_state_dict(torch.load(checkpointpath, weights_only=True))
             print("Checkpoint loaded successfully.")    
