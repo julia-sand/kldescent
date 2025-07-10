@@ -22,60 +22,41 @@ def run():
 
     #parse arguments from command line
     args = parser.overdamped_argparser()
-    metrics_logger.log_args(args)
     metrics_logger.log_dict(args)
 
     #initialise the model
-    #TODO: add gpu option, decide architectures
-    #TODO: add config file to read these params
-    #dynamically create boundary class bsaed on input
-    boundaryconditions = getattr(boundaries,args.boundary)()
-    if args.boundary=="LinearOU":
-        net = nn.MLP().to(args.device)
+    boundaryconditions = getattr(boundaries,args["boundary"])(logger=metrics_logger)
+    if args["boundary"]=="LinearOU":
+        net = nn.MLP().to(args["device"])
     else:
-        net = nn.NeuralNetwork(boundaryconditions).to(args.device)
+        net = nn.NeuralNetwork(boundaryconditions,logger=metrics_logger).to(args["device"])
 
-    #save all params
-    metrics_logger.log_dict(boundaryconditions.params)
-    metrics_logger.log_dict(net.params)
-    
     net = DataParallel(net)
 
-    try:
-        metrics_logger.log_dict(boundaryconditions.gauss_boundary)
-    except AttributeError: #skip if not available
-        pass
-
-    if args.pretrain:
+    if args["pretrain"]: #TODO this needs updating
         import run_pretrain
         run_pretrain.run_pretrain(net,metrics_logger.get_results_path(),boundaryconditions)
-
-    
     
     #intialise sde integration 
-    #TODO add these arguments so they get read directly from the command line already in the sde file
     integrator = langevin.SDEOverdamped(boundaryconditions,
-                                        metrics_logger)
+                                        logger=metrics_logger)
 
-    #initialise trainer 
+    #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
-    metrics = train.Metrics(trainer,args.logstep)
+    metrics = train.Metrics(trainer,args["logstep"])
 
-    for epoch in range(0,args.epochs+1):
+    for epoch in range(0,args["epochs"]+1):
         try:
             loss_out = trainer.train_step()
             metrics.update_metrics(epoch,loss_out)
         except KeyboardInterrupt:
             print(f"Training interrupted at epoch {epoch}")
-            #plot the loss metrics
-            #plotter.plot_loss_metrics()
         except ValueError:
             print("The training has resulted in NaN loss and therefore failed. Please retry.")
             raise
-        except slurmhandler.TimeLimitException:
+        except slurmhandler.TimeLimitException: #TODO check this works?
             print(f"The training must be stopped because SLURM is about to kill the job. Training ended at epoch {epoch}")
             metrics_logger.save_checkpoint(net,epoch)
-            #plotter.plot_loss_metrics()
 
 
     plotter = plots.PlotFuns(boundaryconditions)
