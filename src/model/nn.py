@@ -92,7 +92,8 @@ class NeuralNetwork(nn.Module):
             self.load_state_dict(torch.load(checkpointpath, weights_only=True))
             print("Checkpoint loaded successfully.")    
         except FileNotFoundError:
-            print("The checkpoint file was not found. The filepath should be provided from the current working directory.")
+            print("The checkpoint file was not found.  \n \
+                    An epoch with a saved checkpoint must be specified. Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch.")
             raise FileNotFoundError
 
 # FROM TORCH TUTORIAL
