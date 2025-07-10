@@ -17,11 +17,13 @@ class CustomArgParse(argparse.ArgumentParser):
         if self.loc is not None:
             argparse.ArgumentParser.__init__(self,fromfile_prefix_chars = '@')
 
-            self.argfile = [f'@{self.loc}/data.txt']
+            #uncomment this to use a custom file format
+            #self.argfile = [f'@{self.loc}/data.txt']
 
         else:
             argparse.ArgumentParser.__init__(self)
-            self.argfile = None
+        
+        self.argfile = None
 
         #disallow abbreviations    
         self.allow_abbrev = False
@@ -182,10 +184,9 @@ def checkpoint_plot_params():
 
     # Instantiate the parser
     parser5 = argparse.ArgumentParser()
-    
-    parser5.add_argument('-epoch','--epoch', type=int,
-                        default=10,
-                        help='At which epoch checkpoint to plot. The checkpoint file must be available.')
+    requiredNamed = parser5.add_argument_group('required named arguments')
+    requiredNamed.add_argument('-epoch','--epoch', type=int,
+                                help='At which epoch checkpoint to plot. The checkpoint file must be available.')
     args5 = parser5.parse_known_args()
 
     return vars(args5[0])
