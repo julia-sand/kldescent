@@ -70,9 +70,13 @@ class LossLogger():
 
         with open(self.filename, 'a') as f:
             writer = csv.writer(f)
-            writer.writerow([epoch, Lhat, kl_dyn, klval,lr])
+            writer.writerow([epoch, Lhat, kl_dyn, klval, lr])
 
     def save_checkpoint(self,net,epoch):
+
+        if isinstance(net, torch.nn.DataParallel):
+            net = net.module
+            
         torch.save(net.state_dict(),self.newpath+f"/checkpoints/net_checkpoint_{epoch}.pt") 
 
     def get_epoch_folder(self,epoch):
@@ -94,12 +98,12 @@ class LossLogger():
         with open(self.datafile, "a") as f:
             print(str(name)+f"= {val}", file=f)
 
-    def log_args(self,args):
-        for arg in vars(args): 
-            self.add_param_to_log(arg, getattr(args, arg))
+    #def log_args(self,args):
+    #    for arg in vars(args): 
+    #        self.add_param_to_log(arg, getattr(args, arg))
         
     def log_dict(self,dictparams):
                 
         with open(self.datayaml, 'a+') as outfile:
-            yaml.dump(vars(dictparams), outfile)
+            yaml.dump(dictparams, outfile)
 

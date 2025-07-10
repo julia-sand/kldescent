@@ -20,6 +20,7 @@ def load_net(boundary_cond,epoch,param_data,folder=None):
     print(folder+f"/checkpoints/net_checkpoint_{epoch}.pt")
 
     net = NeuralNetwork(boundary_cond,param_data)
+    #net = DataParallel(net)
 
     net.load_checkpoint(folder+f"/checkpoints/net_checkpoint_{epoch}.pt")
 
@@ -48,6 +49,7 @@ def checkpoint_plots_all(logger,
 if __name__=="__main__":
     from ..utils.parser import checkpoint_plot_params,overdamped_argparser, fetch_results_folder_from_cmd
     import src.sde.boundary as boundaries 
+    from torch.nn import DataParallel
 
     import yaml 
 

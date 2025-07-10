@@ -4,8 +4,13 @@ import numpy as np
 
 from ..utils.parser import boundary_params, gaussian_params
 
+"""
+Stores different boundary conditions for experiments
+
+"""
+
 class Boundaries():
-    def __init__(self,params=None):
+    def __init__(self,params=None,logger=None):
 
         self.sigma0 = 1 #np.sqrt(2)
         
@@ -20,6 +25,9 @@ class Boundaries():
 
         self.ref_path = self.get_ref_path()+"/refsol.csv"
 
+        if logger is not None:
+            logger.log_dict(self.params) #add to log
+        
     def get_ref_path(self):
         #returns the folder where the reference solution is expected to be
 
@@ -27,8 +35,8 @@ class Boundaries():
  
 
 class HalfBridgeLandauer(Boundaries):
-    def __init__(self):
-        Boundaries.__init__(self)
+    def __init__(self,params=None,logger=None):
+        Boundaries.__init__(self,params,logger)
         self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
         self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
 
@@ -215,8 +223,8 @@ class LinearOU(Boundaries):
                      + self.sigma0*du_bar)*dt + self.sigma0*dw
 
 class UnderdampedHalfLandauer(HalfBridgeLandauer):
-    def __init__(self):
-        HalfBridgeLandauer.__init__(self)
+    def __init__(self,params=None,logger=None):
+        HalfBridgeLandauer.__init__(self,params,logger)
         self.sigma0 = np.sqrt(2)
 
         self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
@@ -357,8 +365,8 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
         
 
 class UnderdampedNoMomentum(UnderdampedHalfLandauer):
-    def __init__(self):
-        super().__init__()
+    def __init__(self,params=None,logger=None):
+        super().__init__(self,params,logger)
 
     def gfun(self,x):
         #overwrite the terminal cost function 
@@ -415,14 +423,18 @@ class UnderdampedNoMomentum(UnderdampedHalfLandauer):
 
 
 class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
-    def __init__(self,gauss_params=None):
-        Boundaries.__init__(self)
+    def __init__(self,params=None,gauss_params=None,logger=None):
+        Boundaries.__init__(self,params,logger)
         self.sigma0 = np.sqrt(2)
-        if gauss_params is not None:
+
+        if gauss_params is not None: #read from file if available
             self.gauss_boundary = gauss_params
-        else:
+        else: #fetch from command line
             self.gauss_boundary = gaussian_params()
 
+        if logger is not None:
+            logger.log_dict(self.gauss_boundary) #add to log
+        
     def Uinitial(self,q):
 
         return (q-self.gauss_boundary["muinitial"])**2/(2*(self.gauss_boundary["sigmainitial"]**2))
@@ -508,8 +520,8 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
  
 
 class UnderdampedQuarterGaussianNoMomentum(UnderdampedQuarterGaussian):
-    def __init__(self):
-        UnderdampedQuarterGaussian.__init__(self)
+    def __init__(self,params=None,gauss_params=None,logger=None):
+        UnderdampedQuarterGaussian.__init__(self,params,gauss_params,logger)
         
     def gfun(self,x):
         #overwrite the terminal cost function 
@@ -519,8 +531,8 @@ class UnderdampedQuarterGaussianNoMomentum(UnderdampedQuarterGaussian):
 
 
 class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
-    def __init__(self):
-        UnderdampedQuarterGaussian.__init__(self)
+    def __init__(self,params=None,gauss_params=None,logger=None):
+        UnderdampedQuarterGaussian.__init__(self,params,gauss_params,logger)
         self.mean0 = 0
         self.var0 = 1
 

@@ -6,8 +6,6 @@ from ..utils.parser import integrator_params
 #from src.utils.parser import integrator_params
 
 
-
-
 class SDEOverdamped():
     def __init__(self,
                     boundary_data,
@@ -24,7 +22,7 @@ class SDEOverdamped():
             self.sde_params = integrator_params() #parse command line
 
         if self.logger is not None:
-            self.logger.log_args(self.sde_params) #add to log
+            self.logger.log_dict(self.sde_params) #add to log
         
     def generate_time_grid(self):
 
@@ -39,7 +37,7 @@ class SDEOverdamped():
 
         if final_time==None:
             final_time = self.boundary.params["Tf"]
-            
+        
         #get an equally spaced time grid which can be used with the reference solution
         time_grid = self.boundary.get_reference_timegrid()
         if time_grid is not None:

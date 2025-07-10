@@ -17,12 +17,15 @@ class MyActivation(nn.Module):
 # FROM TORCH TUTORIAL
 #create a simple neural network to parametrise the drift. 
 class NeuralNetwork(nn.Module):
-    def __init__(self,boundary,nn_params=None):
+    def __init__(self,boundary,nn_params=None,logger=None):
         
         if nn_params is not None:
             self.params = nn_params    
         else:
             self.params = network_params()
+        
+        if logger is not None:
+            logger.log_dict(self.params)
 
         #params
         self.boundary = boundary
