@@ -14,13 +14,8 @@ import matplotlib.lines as mlines
 import matplotlib.gridspec as gridspec
 
 '''
-#visualisations ideas
+This file holds all the functions used in plotting.
 
-1. Plot of the drift compared to the reference at the start of training
-2. Plot of the KL divergence of final boundary conditions vs training epoch
-3. Plot histogram/scatter of final probability distribution 
-4. NN drift vs perturbative during training. 
-5. loss vs epoch
 '''
 
 class PlotFuns():
@@ -581,10 +576,9 @@ def plot_loss(folder):
   plotter.plot_loss_metrics(folder+"/loss.csv")
 
 if __name__=="__main__":
-  from ..utils.parser import checkpoint_plot_params
-  params = checkpoint_plot_params()
+  from ..utils.parser import fetch_results_folder_from_cmd
 
-  plot_loss(params.folder)
+  plot_loss(fetch_results_folder_from_cmd())
   #from ..sde.boundary import *
   #boundary_cond = UnderdampedHalfGaussian()
   #fileloc=f"tests/{boundary_cond.__class__.__name__}"
