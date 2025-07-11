@@ -500,8 +500,8 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
         return np.zeros_like(q)
 
     def get_known_solution_cumulants(self,cumulant_type):
-        arr = np.loadtxt(open(self.ref_path),
-                        delimiter=",",skiprows=1) 
+        arr = self.get_ref_data()#np.loadtxt(open(self.ref_path),
+              #          delimiter=",",skiprows=1) 
         try:  
             if cumulant_type == "Position Variance": 
                 return np.squeeze(arr[:,4])
@@ -552,6 +552,7 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
 
         #Terminal cost
         return (self.params["weight"]/2)*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.gauss_boundary["mufinal"], self.gauss_boundary["sigmafinal"]**2))
+
 
 if __name__=="__main__":
 

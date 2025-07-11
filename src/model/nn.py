@@ -35,36 +35,41 @@ class NeuralNetwork(nn.Module):
         #self.tencoding = TimeConder(1,self.hidden_layer_neurons) #fourier positional encoding goes here! 
         self.NNt = nn.Sequential(
             nn.Linear(1, self.params["hiddenlayerneurons"] ),  #
-            nn.SiLU(), #MyActivation(),
+            nn.GELU(), #MyActivation(),
             nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
             nn.ReLU(),  #must be positive
             ) 
         self.NNx = nn.Sequential(
             nn.Linear(1, self.params["hiddenlayerneurons"] ),  #input x
-            nn.SiLU(),
+            nn.GELU(),
             nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
             )    
         self.NN1 = nn.Sequential(
             nn.Linear(2*self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
-            nn.SiLU(),
+            nn.GELU(),
             nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
-            nn.SiLU(),
+            nn.GELU(),
             nn.Linear(self.params["hiddenlayerneurons"] , 1))   #64 outputs)  
         self.NN2 = nn.Sequential(
             nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
-            nn.SiLU(),
+            nn.GELU(),
             nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
-            nn.SiLU(),
+            nn.GELU(),
             nn.Linear(self.params["hiddenlayerneurons"] , 1),   #64 outputs
             nn.ReLU(), #must be positive
             )  
+
+        
+        #self.initialize_weights(self.NNx)
+        #self.initialize_weights(self.NN1)
+        #self.initialize_weights(self.NN2)
+        #self.initialize_weights(self.NNt)
 
         try:
             if self.params["checkpointpath"] is not None: #automatically loads a checkpoint from the command line
                 self.load_checkpoint(self.params.checkpointpath)
         except AttributeError:
             pass
-        
         #self.initialize_weights(self,net)
     def forward(self, input_vec):   #how the model should evaluate
         #pdb.set_trace()
@@ -80,7 +85,7 @@ class NeuralNetwork(nn.Module):
     def initialize_weights(self,net):   #sets all the weights away from zero.
         for m in net.modules():
             if isinstance(m, nn.Linear):
-                torch.nn.init.xavier_normal_(m.weight,gain=4)
+                torch.nn.init.xavier_normal_(m.weight,gain=2)
                 if m.bias is not None:
                     torch.nn.init.constant_(m.bias, 0)
 
