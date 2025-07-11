@@ -18,7 +18,7 @@ def load_net(boundary_cond,epoch,param_data,folder=None):
     else: #if a folder path is provided, assume that the reference solution is there and overwrite the default    
         boundary_cond.overwrite_ref_path(folder)
 
-    print(folder+f"/checkpoints/net_checkpoint_{epoch}.pt")
+    #print(folder+f"/checkpoints/net_checkpoint_{epoch}.pt")
 
     net = NeuralNetwork(boundary_cond,param_data)
     #net = DataParallel(net)

@@ -252,6 +252,7 @@ class PlotFuns():
 
   def format_drift_ax(self,ax1,time):
     ax1.set_xlim((-self.qmax,self.qmax))
+    #ax1.set_xlim((-2,2))
     ax1.set_title(f"t={time}")
     ax1.set_xlabel("q")
     #ax1.set_ylim((-1.8,1.8))
@@ -300,6 +301,14 @@ class PlotFuns():
     plt.tight_layout()
     plt.savefig(self.subdir+f"/drift.png", bbox_inches='tight')
     plt.close()
+
+  #@profile
+  def compute_ref_kl(self):
+    kl_ref = np.empty(0)
+    for t in self.boundary.get_reference_timegrid():
+      q,du = self.boundary.get_reference_data(t)
+      kl_ref = np.append(kl_ref,np.trapz(du,q))
+    return np.trapz(kl_ref,self.get_reference_timegrid())
 
   def fit_kde(self,xs):
 
