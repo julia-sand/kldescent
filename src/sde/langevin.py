@@ -169,17 +169,17 @@ class SDEOverdamped():
         #update the reference statistics (ie mean and var of final distribution)
         #self.boundary.set_ref_statistics(np.nanmean(xinit[...,0]), np.nanvar(xinit[...,0]))
 
+        if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
+            self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]).item(), torch.var(xinit[...,0]).item())
+
         if self.logger is not None:
             self.logger.log_epoch_data(net,
                                         epoch,
                                         lout,
                                         torch.mean(kldyn).item(),
                                         kl_static,
-                                        lr)
+                                        lr,self.boundary.mean0,self.boundary.var0)
         
-        if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
-            self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]), torch.var(xinit[...,0]))
-
         #free up the tensors
         del xinit 
         del xinit_ref
@@ -239,6 +239,12 @@ class SDEOverdamped():
 
         return
 
+
+    def get_net_grad(self,net,t):
+        dx = 0.01
+        grad_temp = (net(torch.column_stack((t*torch.ones(1),dt*torch.ones(1)))) - net(torch.column_stack((t*torch.ones(1),0*torch.ones(1)))))
+
+        return grad_temp/dx
 
     def compute_sde(self,net,
                         plotter,

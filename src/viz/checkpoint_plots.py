@@ -35,6 +35,7 @@ def load_net(boundary_cond,epoch,param_data,folder=None):
 
     return net, plotter, integrator
 
+
 def checkpoint_plots_all(logger,
                             boundary_cond,
                             net,
@@ -46,6 +47,8 @@ def checkpoint_plots_all(logger,
                     plotter,
                     boundary_cond.params["Tf"])
     plotter.plot_drift(times = [0,boundary_cond.params["Tf"]/2,boundary_cond.params["Tf"]],net=net)
+
+
 
 
 if __name__=="__main__":

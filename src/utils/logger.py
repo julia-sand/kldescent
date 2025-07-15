@@ -61,16 +61,16 @@ class LossLogger():
 
         self.filename = self.newpath +"/loss.csv" 
         with open(self.filename, 'w') as f:
-                fields=['epoch','Lhat','dynamic_kl','static_kl','learning_rate']
+                fields=['epoch','Lhat','dynamic_kl','static_kl','learning_rate', "ref_mean", "ref_var"]
                 writer = csv.writer(f)
                 writer.writerow(fields)
         print("Log file created successfully.")   
 
-    def write_data_row(self,epoch,Lhat,kl_dyn,klval,lr):
+    def write_data_row(self,epoch,Lhat,kl_dyn,klval,lr,refmean,refvar):
 
         with open(self.filename, 'a') as f:
             writer = csv.writer(f)
-            writer.writerow([epoch, Lhat, kl_dyn, klval, lr])
+            writer.writerow([epoch, Lhat, kl_dyn, klval, lr, refmean, refvar])
 
     def save_checkpoint(self,net,epoch):
 
@@ -84,9 +84,9 @@ class LossLogger():
         return f"/epoch{epoch}"
 
     #@profile
-    def log_epoch_data(self,net,epoch,lout,kl_dyn,kl_val,lr):
+    def log_epoch_data(self,net,epoch,lout,kl_dyn,kl_val,lr,mean0,var0):
 
-        self.write_data_row(epoch,lout,kl_dyn,kl_val,lr) #log
+        self.write_data_row(epoch,lout,kl_dyn,kl_val,lr,mean0,var0) #log
 
         self.save_checkpoint(net,epoch)
 

@@ -71,7 +71,7 @@ class Train():
 
         self.gamma = 0.1 #rate of learning rate decrease.
 
-        self.clip = 0.01 #gradient clipping
+        self.clip = 0.001 #gradient clipping
 
         self.optimiser = Adam(self.net.parameters(), lr=self.lr)
         self.milestone = 100 #how often to decay learning rate
