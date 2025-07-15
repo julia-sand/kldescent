@@ -6,6 +6,8 @@ from torch import nn
 
 from ..utils.parser import network_params
 
+#import pdb
+
 #https://www.geeksforgeeks.org/swish-activation-function-in-pytorch/
 # Swish Function 
 class Swish(nn.Module):
@@ -18,7 +20,7 @@ class MyActivation(nn.Module):
 
 ##FROM: https://github.com/miaotianyi 
 class FourierFeatures(nn.Module):
-    def __init__(self, in_features: int, out_features: int,
+    def __init__(self, out_features: int,
                  sigma: float = 1.,
                  trainable: bool = False,
                  device=None, dtype=None):
@@ -63,16 +65,16 @@ class FourierFeatures(nn.Module):
         trainable: bool, default: False
             If True, the linear transformation is trainable by gradient descent.
         """
-        super(FourierFeatures, self).__init__()
+        super().__init__()
         assert out_features % 2 == 0, "number of out_features must be even"
-        self.in_features = in_features
+        self.in_features = 1 #in_features
         self.out_features = out_features
         self.sigma = sigma  # standard deviation for normal initialization
         self.trainable = bool(trainable)
 
         # define linear layer
         self.linear = nn.Linear(
-            in_features=in_features, out_features=out_features // 2,
+            in_features=self.in_features, out_features=out_features // 2,
             bias=False,
             device=device, dtype=dtype)
 
@@ -83,11 +85,12 @@ class FourierFeatures(nn.Module):
         for param in self.linear.parameters():
             param.requires_grad_(self.trainable)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.linear(x)
-        x = 2 * math.pi * x
-        x = torch.cat((x.sin(), x.cos()), dim=-1)
-        return x
+    def forward(self, t: torch.Tensor) -> torch.Tensor:
+        #pdb.set_trace()
+        t = self.linear(t)
+        t = 2 * math.pi * t
+        t = torch.cat((t.sin(), t.cos()), dim=-1)
+        return t
 
 # FROM TORCH TUTORIAL
 #create a simple neural network to parametrise the drift. 
@@ -124,16 +127,16 @@ class NeuralNetwork(nn.Module):
             nn.GELU(),
             nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
             nn.GELU(),
-            nn.Linear(self.params["hiddenlayerneurons"] , 1))   #64 outputs)  
+            nn.Linear(self.params["hiddenlayerneurons"] , 1))  
         self.NN2 = nn.Sequential(
-            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
+            nn.Linear(2*self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
             nn.GELU(),
             nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
             nn.GELU(),
             nn.Linear(self.params["hiddenlayerneurons"] , 1),   #64 outputs
             nn.ReLU(), #must be positive
             )  
-
+        self.FourierFeatures = FourierFeatures(2*self.params["hiddenlayerneurons"])
         
         #self.initialize_weights(self.NNx)
         #self.initialize_weights(self.NN1)
@@ -152,9 +155,9 @@ class NeuralNetwork(nn.Module):
         x = self.NNx(input_vec[...,[1]])
         t = self.NNt(input_vec[...,[0]])
         #self.NNt(input_vec[...,[0]])
-        
+        tout = self.FourierFeatures(input_vec[...,[0]])
         #concatenate the outputs and put them through the part 2
-        out = self.NN1(torch.column_stack((t,x))) + FourierFeatures(t)*self.boundary.scorefinal(input_vec[...,[1]])
+        out = self.NN1(torch.column_stack((t,x))) + self.NN2(tout)*self.boundary.scorefinal(input_vec[...,[1]])
         
         return out
 
@@ -215,6 +218,11 @@ class MLP(nn.Module):
 
 
 if __name__ == "__main__":
-    from ..sde.boundary import Boundaries
-    boundary_cond = "UnderdampedHalfGaussian"#getattr(boundaries,run_params["boundary"])()
+    from torchinfo import summary
+
+    from ..sde.boundary import UnderdampedHalfGaussian
+    boundary_cond = UnderdampedHalfGaussian() #getattr(boundaries,run_params["boundary"])()
     
+    net = NeuralNetwork(boundary_cond)
+    #net(torch.ones((100,2)))
+    summary(net, input_size=(1,2))
