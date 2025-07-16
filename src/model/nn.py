@@ -112,7 +112,7 @@ class NeuralNetwork(nn.Module):
         self.flatten = nn.Flatten()
         #self.tencoding = TimeConder(1,self.hidden_layer_neurons) #fourier positional encoding goes here! 
         self.NNt = nn.Sequential(
-            nn.Linear(1, self.params["hiddenlayerneurons"] ),  #
+            nn.Linear(2*self.params["hiddenlayerneurons"], self.params["hiddenlayerneurons"] ),  #
             nn.GELU(), #MyActivation(),
             nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
             nn.ReLU(),  #must be positive
@@ -153,9 +153,9 @@ class NeuralNetwork(nn.Module):
         #pdb.set_trace()
 
         x = self.NNx(input_vec[...,[1]])
-        t = self.NNt(input_vec[...,[0]])
+        t = self.FourierFeatures(input_vec[...,[0]])#
         #self.NNt(input_vec[...,[0]])
-        tout = self.FourierFeatures(input_vec[...,[0]])
+        tout = self.NNt(t)
         #concatenate the outputs and put them through the part 2
         out = self.NN1(torch.column_stack((t,x))) + self.NN2(tout)*self.boundary.scorefinal(input_vec[...,[1]])
         
