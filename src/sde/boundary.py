@@ -336,7 +336,7 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
         #takes one step forward in the euler maruyama discretisation
         #go forward one step 
         xn[:,0,None] = xn[:,0,None] + self.params["epsilon"]*xn[:,1,None]*dt 
-        xn[:,1,None] = xn[:,1,None] - (xn[:,1,None] - du_bar)*dt \
+        xn[:,1,None] = xn[:,1,None] - (xn[:,1,None] - self.sigma0*du_bar)*dt \
                                     + self.sigma0*dw
         
         #xn[:,0,None] = xn[:,0,None] + (xn[:,1,None]/self.m)*dt 
@@ -534,7 +534,7 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
     def __init__(self,params=None,gauss_params=None,logger=None):
         UnderdampedQuarterGaussian.__init__(self,params,gauss_params,logger)
         self.mean0 = 0
-        self.var0 = 1.7264518706772707#1
+        self.var0 = 1
 
     def set_ref_statistics(self,mean0,var0):
         """overwrites the mean and variance of the reference parameters"""

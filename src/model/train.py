@@ -134,7 +134,6 @@ class Metrics():
                                         self.scheduler.get_last_lr()[0])
 
             else: 
-                pass
-                #with torch.no_grad():
-                #    self.integrator.update_ref_statistics(self.net)
+                with torch.no_grad():
+                    self.integrator.update_ref_statistics(self.net)
             

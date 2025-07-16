@@ -100,7 +100,7 @@ class SDEOverdamped():
         #see equation (10) and (11) in ref. 2410.05163
         #Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + self.boundary.gfun(xinit)) * c))
         #Lhat = torch.mean(0.5 * a + (((1/4) * abar + bbar + self.boundary.gfun(xinit)) * c))
-        Lhat = torch.mean(0.5 * a + ((abar + bbar + self.boundary.gfun(xinit)) * c))
+        Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + self.boundary.gfun(xinit)) * c))
         
         #free up memory again
         del xinit 
@@ -168,12 +168,10 @@ class SDEOverdamped():
             print("Value Error exception ignored. This means that the current value of the \n \
             neural network drift produces NaN values. ")
         
-        #update the reference statistics (ie mean and var of final distribution)
-        #self.boundary.set_ref_statistics(np.nanmean(xinit[...,0]), np.nanvar(xinit[...,0]))
-
+        
         if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
-            #self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]).item(), torch.var(xinit[...,0]).item())
-            pass
+            self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]).item(), torch.var(xinit[...,0]).item())
+
         if self.logger is not None:
             self.logger.log_epoch_data(net,
                                         epoch,
