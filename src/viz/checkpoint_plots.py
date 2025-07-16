@@ -2,7 +2,6 @@ import os
 import yaml 
 
 import torch
-#from torch.nn import DataParallel
 import numpy as np
 
 from ..model.nn import NeuralNetwork
@@ -48,8 +47,17 @@ def checkpoint_plots_all(logger,
                     boundary_cond.params["Tf"])
     plotter.plot_drift(times = [0,boundary_cond.params["Tf"]/2,boundary_cond.params["Tf"]],net=net)
 
-
-
+def compute_ref_kl(boundary):
+    times = boundary.get_reference_timegrid()
+    klout = np.empty(len(times))
+    #mean_t = boundary.get_known_solution_cumulants("Position Mean")
+    var_t = boundary.get_known_solution_cumulants("Position Variance")
+    for t in enumerate(times):
+        xref,duref = boundary.get_reference_data(t[1])
+        ptx = plotter.normal_distribution(xref,0,var_t[t[0]])
+        #np.exp(-(xref-mean_t[t[0]])**2/(2*var_t[t[0]]))/(np.sqrt(2*np.pi*var_t[t[0]]))
+        klout[t[0]] = np.trapz(duref*ptx,xref)
+    return np.trapz(klout,times)
 
 if __name__=="__main__":
 
@@ -77,3 +85,4 @@ if __name__=="__main__":
                             plotter,
                             boundary_cond.params["Tf"])
     plotter.plot_drift(times = [0,boundary_cond.params["Tf"]/2,boundary_cond.params["Tf"]],net=net)
+    #print(compute_ref_kl(boundary_cond))

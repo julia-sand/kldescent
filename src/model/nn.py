@@ -157,7 +157,7 @@ class NeuralNetwork(nn.Module):
         #self.NNt(input_vec[...,[0]])
         tout = self.NNt(t)
         #concatenate the outputs and put them through the part 2
-        out = self.NN1(torch.column_stack((t,x))) + self.NN2(tout)*self.boundary.scorefinal(input_vec[...,[1]])
+        out = self.NN1(torch.column_stack((tout,x))) + self.NN2(t)*self.boundary.scorefinal(input_vec[...,[1]])
         
         return out
 
