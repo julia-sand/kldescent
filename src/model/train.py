@@ -78,7 +78,7 @@ class Train():
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
         self.scheduler = CosineAnnealingLR(self.optimiser, 
-                            T_max=1000, eta_min=0.000001)
+                            T_max=100, eta_min=1e-10)
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
 
         
@@ -134,7 +134,7 @@ class Metrics():
                                         self.scheduler.get_last_lr()[0])
 
             else: 
-
-                with torch.no_grad():
-                    self.integrator.update_ref_statistics(self.net)
+                pass
+                #with torch.no_grad():
+                #    self.integrator.update_ref_statistics(self.net)
             

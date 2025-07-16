@@ -98,7 +98,9 @@ class SDEOverdamped():
 
         #compute value of Lhat
         #see equation (10) and (11) in ref. 2410.05163
-        Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + self.boundary.gfun(xinit)) * c))
+        #Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + self.boundary.gfun(xinit)) * c))
+        #Lhat = torch.mean(0.5 * a + (((1/4) * abar + bbar + self.boundary.gfun(xinit)) * c))
+        Lhat = torch.mean(0.5 * a + ((abar + bbar + self.boundary.gfun(xinit)) * c))
         
         #free up memory again
         del xinit 
@@ -160,7 +162,7 @@ class SDEOverdamped():
             xinit_ref = self.boundary.euler_maruyama_step(xinit_ref,du_ref,dt,dw,t_vec[i])
         
         try:
-            kl_static = kl.kl_div(xinit,xinit_ref)
+            kl_static = 0#kl.kl_div(xinit,xinit_ref)
         except ValueError:
             kl_static = 0
             print("Value Error exception ignored. This means that the current value of the \n \
@@ -170,8 +172,8 @@ class SDEOverdamped():
         #self.boundary.set_ref_statistics(np.nanmean(xinit[...,0]), np.nanvar(xinit[...,0]))
 
         if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
-            self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]).item(), torch.var(xinit[...,0]).item())
-
+            #self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]).item(), torch.var(xinit[...,0]).item())
+            pass
         if self.logger is not None:
             self.logger.log_epoch_data(net,
                                         epoch,

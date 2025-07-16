@@ -534,7 +534,7 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
     def __init__(self,params=None,gauss_params=None,logger=None):
         UnderdampedQuarterGaussian.__init__(self,params,gauss_params,logger)
         self.mean0 = 0
-        self.var0 = 1
+        self.var0 = 1.7264518706772707#1
 
     def set_ref_statistics(self,mean0,var0):
         """overwrites the mean and variance of the reference parameters"""
