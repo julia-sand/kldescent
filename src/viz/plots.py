@@ -302,14 +302,6 @@ class PlotFuns():
     plt.savefig(self.subdir+f"/drift.png", bbox_inches='tight')
     plt.close()
 
-  #@profile
-  def compute_ref_kl(self):
-    kl_ref = np.empty(0)
-    for t in self.boundary.get_reference_timegrid():
-      q,du = self.boundary.get_reference_data(t)
-      kl_ref = np.append(kl_ref,np.trapz(du,q))
-    return np.trapz(kl_ref,self.get_reference_timegrid())
-
   def fit_kde(self,xs):
 
     try:
@@ -382,11 +374,11 @@ class PlotFuns():
 
     return arr
 
-  def plot_lhat(self,ax,arr):
+  def plot_lhat(self,ax,arr,window_size=5):
 
 
     ax.plot(arr[:,0],arr[:,1],label=r"$\hat\mathcal{L}$")
-    #plt.plot(arr[:,0],arr[:,2],label=r"K.L. Divergence")
+    ax.plot(np.squeeze(arr[:,0])[window_size:-window_size],self.movingaverage(np.squeeze(arr[:,1]),window_size),linestyle="dashed")
 
     #set axis labels
     ax.set_xlabel("epochs")
@@ -394,21 +386,23 @@ class PlotFuns():
     
     return     
 
-  def plot_dynamic_kl(self,ax,arr):
+  def plot_dynamic_kl(self,ax,arr,window_size=5):
 
     #arr = self.get_loss_output()
 
     ax.plot(arr[:,0],arr[:,2],label=r"K.L. Divergence")
+    ax.plot(np.squeeze(arr[:,0])[window_size:-window_size],self.movingaverage(np.squeeze(arr[:,2]),window_size),linestyle="dashed")
 
     #set axis labels
     ax.set_xlabel("epochs")
     ax.set_ylabel(r"(dynamic) K.L.")
 
-  def plot_static_kl(self,ax,arr):
+  def plot_static_kl(self,ax,arr,window_size=5):
 
     #arr = self.get_loss_output()
 
     ax.plot(arr[:,0],arr[:,3],label=r"K.L. Divergence")
+    ax.plot(np.squeeze(arr[:,0])[window_size:-window_size],self.movingaverage(np.squeeze(arr[:,3]),5),linestyle="dashed")
 
     #set axis labels
     ax.set_xlabel("epochs")
@@ -439,10 +433,6 @@ class PlotFuns():
       self.plot_lhat(ax1,arr)
       self.plot_dynamic_kl(ax2,arr)
       self.plot_static_kl(ax3,arr)
-      #self.plot_learningrate(ax1,arr)
-
-      #for ax in [ax1,ax2,ax3]:
-      #  ax.set_ylim((-0.5,0.5))
       plt.tight_layout()
       plt.savefig(self.folder+"/losses.png", bbox_inches='tight')
       plt.close()
@@ -568,9 +558,14 @@ class PlotFuns():
       
       return np.append(save_array,np.array([[np.nanmean(temp[...,0]),
                                               np.nanmean(temp[...,1]),
-                                              np.nanvar(temp[...,0]),
-                                              np.nanvar(temp[...,1]),
+                                              np.nanvar(temp[...,0],ddof=1),
+                                              np.nanvar(temp[...,1],ddof=1),
                                               np.correlate(temp[...,0],temp[...,1])[0]/(len(temp[...,0]))]]),axis=0)#cross corr
+
+  def movingaverage(self, data, window_size):
+      data_means = np.convolve(data, np.ones(int(window_size))/float(window_size), 'same')
+      return data_means[window_size:-window_size]
+
 
 
 def plot_loss(folder):
