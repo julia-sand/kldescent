@@ -30,7 +30,7 @@ def load_net(boundary_cond,epoch,param_data,folder=None):
     os.makedirs(folder+f"/plots_{epoch}", exist_ok = True) 
     plotter.setresultsdir(folder+f"/plots_{epoch}")
 
-    integrator = langevin.SDEOverdamped(boundary_cond,param_data)
+    integrator = langevin.SDE(boundary_cond,param_data)
 
     return net, plotter, integrator
 
