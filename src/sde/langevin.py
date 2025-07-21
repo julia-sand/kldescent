@@ -6,7 +6,7 @@ from ..utils.parser import integrator_params
 #from src.utils.parser import integrator_params
 
 
-class SDEOverdamped():
+class SDE():
     def __init__(self,
                     boundary_data,
                     sde_params=None,
@@ -254,8 +254,8 @@ class SDEOverdamped():
         Computes the SDE, saves cumulants and plots 
 
         ====
-        Parameters
-        - net: neural network
+        args:
+          net: neural network
         ====
 
         """
@@ -305,7 +305,7 @@ if __name__=="__main__":
     net = nn.NeuralNetwork(boundaryconditions).to("cpu")
  
     #intialise sde integration 
-    integrator = SDEOverdamped(boundaryconditions)
+    integrator = SDE(boundaryconditions)
 
     integrator.update_ref_statistics(net,10,debug=True)
 

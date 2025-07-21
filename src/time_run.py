@@ -21,7 +21,7 @@ def run(testing_samples):
  
     #intialise sde integration 
     #TODO add these arguments so they get read directly from the command line already in the sde file
-    integrator = langevin.SDEOverdamped(boundaryconditions)
+    integrator = langevin.SDE(boundaryconditions)
 
     integrator.update_ref_statistics(net,testing_samples)
 
