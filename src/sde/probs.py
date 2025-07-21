@@ -1,47 +1,96 @@
 """
-Calculates estimate of the probability density using method of 2411.08158
+Calculates estimate of the joint probability density using method of 2411.08158
 
 """
 import torch
 
-import langevin 
+import pdb
 
-class FokkerPlanck(langevin.SDE):
+from ..sde.langevin import SDE 
+
+class FokkerPlanck(SDE):
     
-    def __init__(self):
-        __super__.__init__(self) #use same intialisation
+    def __init__(self,boundary_cond,
+                    sde_params=None,
+                    logger=None,
+                    device="cpu"):
 
-    def compute_joint(x0,net,
-                        x_samples):
+        SDE.__init__(self,boundary_cond,sde_params,logger) #use same intialisation
 
-        net.eval()
+    def simulation_free(self,net):
+
+        """
+        Following 2410.05163 (see proposition 3). 
+
+        ====
+        Parameters
+        - net: neural network
+        ====
+
+        """
         
-        t_vec = np.array(self.boundary.get_reference_timegrid(t+.0001))
+        net.train()
+        t_vec = self.generate_time_grid()
+
+        #initialise x values 
+        xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32)#.to_device(device)
+
+        #set up a,abar,c,cbar
+        a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
+        abar = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
+        c = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
         
-        #reset girsanov
-        girsanov = torch.zeros((self.sde_params["batchsamples"],1))
-
-        for i in range(1,len(t_vec)):#range(0,len(t_vec)):
-
-            dt = np.abs(t_vec[-i-1]-t_vec[-i])
+        #pdb.set_trace()
+        #self.generate_time_grid()
+        for i in range(0,self.sde_params["tsteps"]-1):
+            dt = (t_vec[i+1]-t_vec[i])
             
-            dw = self.generate_innovation(dt) #np.sqrt(dt)*torch.randn((testing_samples,x_samples*x_samples,1))
+            dw = self.generate_innovation(dt,self.sde_params["batchsamples"])
+           
+            du = net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32)
+                                                    ,xinit[...,[0]])))
+                    
+            a = a - dt*(torch.linalg.norm(du, axis=1, keepdim=True)*xinit[...,[1]]) 
             
-            nn_input = torch.dstack((t_vec[-i]*torch.ones((testing_samples,x_samples**2,1),dtype=torch.float32),
-                                        xinit[...,[0]]))
-            du = torch.hstack([net(nn_input[:,i,:]) for i in range(x_samples**2)])[...,np.newaxis]
+            c = c + (du*dw)
+            du_bar = du.detach()#.numpy() #untracked copy
 
-            #underdamped dynamics
-            #backward (T-t0) evolution in t0
-            xinit = boundary_cond.girsanov_scheme(xinit,du,-dt,-dw,t_vec[i])
-            
-            #remove escaped particles
-            #xinit[xinit>30] = torch.nan
-            #xinit[xinit<-30] = torch.nan
+            with torch.no_grad(): #no gradient 
 
-            #compute girsanov factor
-            girsanov = girsanov + (np.sqrt(1/boundary_cond.sigma0)*(xinit[...,[1]]*dw) + (dt/(boundary_cond.sigma0**2))*torch.square(xinit[...,[1]]))
+                abar = abar - dt*(torch.linalg.norm(du_bar, axis=1, keepdim=True)*xinit[...,[1]]) 
+                #bbar = bbar + dt*(self.boundary.f(xinit,t_vec[i])) 
+                
+            xinit = self.boundary.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[i])
 
-        return np.nanmean(np.multiply(boundary_cond.p_initial(xinit[...,[0]],xinit[...,[1]]),np.exp(-girsanov)),axis=0)
+        #compute value of Lhat
+        #see equation (10) and (11) in ref. 2410.05163
+        #Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + self.boundary.gfun(xinit)) * c))
+        #Lhat = torch.mean(0.5 * a + (((1/4) * abar + bbar + self.boundary.gfun(xinit)) * c))
+        Phat = torch.mean((self.boundary.p_final(xinit[...,[0]],xinit[...,[1]]) - (self.boundary.p_initial(xinit[...,[0]],xinit[...,[1]])*(a * torch.exp(a) + ((torch.exp(abar)) * c))))**2)
+        
+        #free up memory again
+        del xinit 
+        del du
+        del du_bar
+        del t_vec
+        del dw
 
+        a = None
+        abar = None
+        bbar = None
+        c = None
+
+        return Phat
+
+
+if __name__=="__main__":
+    import os 
+
+    from ..model.nn import NeuralNetwork
+    from ..sde.boundary import UnderdampedHalfGaussian
     
+    boundary_cond = UnderdampedHalfGaussian()
+    net = NeuralNetwork(boundary_cond)
+
+    fpk = FokkerPlanck(boundary_cond)
+    print(fpk.fpk_simulation_free(net))

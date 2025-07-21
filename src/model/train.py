@@ -136,4 +136,32 @@ class Metrics():
             else: 
                 with torch.no_grad():
                     self.integrator.update_ref_statistics(self.net)
-            
+
+
+
+class TrainBC(Train):
+    """
+    Defines the trianing loop for the loss function for learning boundary conditions
+    """
+
+    def __init__(self, net, integrator):
+        Train.__init__(self,net,integrator)
+
+        #set defaults of training process
+        self.lr = 0.005 #initial learning rate
+        self.integrator = integrator
+        self.net = net
+
+        self.gamma = 0.1 #rate of learning rate decrease.
+
+        self.clip = 0.001 #gradient clipping
+
+        self.optimiser = Adam(self.net.parameters(), lr=self.lr)
+        self.milestone = 100 #how often to decay learning rate
+
+        #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
+        self.scheduler = CosineAnnealingLR(self.optimiser, 
+                            T_max=100, eta_min=1e-10)
+        #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
+
+     
