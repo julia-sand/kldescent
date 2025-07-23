@@ -1,28 +1,28 @@
 import numpy as np 
 from scipy.spatial import KDTree
 
-#from memory_profiler import profile
-
-"""Computes the KL divergence between two sets of sampled points 
-via the k-nearest-neighbours method of 
-Wang, Qing and Kulkarni, Sanjeev R. and Verdu, Sergio. 
-In: IEEE Transactions on Information Theory (2009)
-"""
-
-
 def kl_div(d1,d2,k=1):
-
     """
-    Input: 
-    -d1: samples from distribution 1. This is the current estimated distribution
-    -d2: samples from the assigned distribution.
-    -k: number of nearest neighbours. 
-    in general: larger k reduces variance, small k reduces bias. 
+    Computes the KL divergence between two sets of sampled points 
+    via the k-nearest-neighbours method of 
+    Wang, Qing and Kulkarni, Sanjeev R. and Verdu, Sergio. 
+    In: IEEE Transactions on Information Theory (2009)
 
-    Output: 
-    -estimate of the KL divergence between the two empirical distributions
+    Parameters
+    ----------
+    d1 : array
+        Samples from a distribution
+    d2 : array
+        logger object of the training run. If given, the parameters are logged through this object
+    k : int
+        number of nearest neighbours to consider. As a rule,larger k reduces variance, small k reduces bias
+    
+    Returns
+    ------
+    klout : float
+        estimate of the KL divergence between the two empirical distributions d1,d2
     """
-          
+        
     #check d1, d2 in the right shape
     batch_samples = d1.shape[0]
     

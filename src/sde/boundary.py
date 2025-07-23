@@ -4,11 +4,6 @@ import numpy as np
 
 from ..utils.parser import boundary_params, gaussian_params
 
-"""
-Stores different boundary conditions for experiments
-
-"""
-
 class Boundaries():
     """
     A class used to store different boundary conditions
