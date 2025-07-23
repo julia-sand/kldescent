@@ -10,7 +10,37 @@ Stores different boundary conditions for experiments
 """
 
 class Boundaries():
+    """
+    A class used to store different boundary conditions
+
+    Attributes
+    ----------
+    params : dict
+        stores the boundary condition specific parameters
+    Generator : class
+        generator used for sampling from the distributions
+    ref_path : str
+        the file name of the default reference solution. 
+    sigma0 : float
+        sets the value of the 
+
+    Methods
+    -------
+    get_ref_path()
+        Returns the default location of reference solutions.
+    """
+
     def __init__(self,params=None,logger=None):
+        """
+        Initialises the class 
+
+        Parameters
+        ----------
+        params : dict
+            parameters of the boundary condition. If None, arguments are parsed from command line. If no arguments are parsed, defaults are used.
+        logger : class
+            logger object of the training run. If given, the parameters are logged through this object
+        """
 
         self.sigma0 = 1 #np.sqrt(2)
         
@@ -35,6 +65,43 @@ class Boundaries():
  
 
 class HalfBridgeLandauer(Boundaries):
+    """
+    Stores the boundary conditions for a bridge in the overdamped case, 
+    where the initial state is a delta peak at 0 and the assigned final boundary is a double peak,
+    See Arxiv refs. 2410. and 2403.  
+    Attributes inherited from parent (Boundaries)
+
+    Attributes
+    ----------
+    pf_norm : float
+        normalisation constant for the final reference distribution
+
+    Methods
+    -------
+    overwrite_ref_path()
+        Overwrites the default reference solution path. 
+    Ufinal()
+        Returns the exponent of the assigned final distribution
+    scorefinal()
+        Returns the score of the assigned final distribution
+    qfinal()
+        Returns the unnormalised assigned final distribution
+    q_marginal_final()
+        Returns the normalised assigned final distribution
+    generate_samples()
+        Generates samples from the boundary distributions
+    get_reference_timegrid()
+        Fetches time discretisation from reference solution
+    get_reference_data()
+        fetches reference data found in ref sol path
+    du_ref()
+        reference drift for integration
+    gfun() 
+        terminal cost function
+    euler_maruyama_step()
+        returns one step of the overdamped sde wrt problem description
+    """
+    
     def __init__(self,params=None,logger=None):
         Boundaries.__init__(self,params,logger)
         self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
@@ -45,9 +112,9 @@ class HalfBridgeLandauer(Boundaries):
         
         self.ref_path = new_path + "/refsol.csv"
 
-    def Uinitial(self,q):
+    #def Uinitial(self,q):
 
-        return (q**4)/4
+    #    return (q**4)/4
 
     def Ufinal(self,q):
 
@@ -57,17 +124,17 @@ class HalfBridgeLandauer(Boundaries):
 
         return -(q**2-1)*q
 
-    def qinitial(self,q):
+    #def qinitial(self,q):
 
-        return np.exp(-self.Uinitial(q))
+    #    return np.exp(-self.Uinitial(q))
 
     def qfinal(self,q):
 
         return np.exp(-self.Ufinal(q)) 
 
-    def q_marginal_initial(self,q):
+    #def q_marginal_initial(self,q):
 
-        return self.qinitial(q)/(self.pi_norm)
+    #    return self.qinitial(q)/(self.pi_norm)
 
 
     def q_marginal_final(self,q): 
@@ -75,14 +142,14 @@ class HalfBridgeLandauer(Boundaries):
         return self.qfinal(q)/self.pf_norm
 
 
-    def p_initial(self,q,p):
+    #def p_initial(self,q,p):
 
-        return (self.q_marginal_initial(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
+    #    return (self.q_marginal_initial(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
 
 
-    def p_final(self,q,p): 
+    #def p_final(self,q,p): 
         
-        return (self.q_marginal_final(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
+    #    return (self.q_marginal_final(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
 
     #generate the initial data
     def generate_samples(self,batch_samples,mode):
@@ -96,9 +163,9 @@ class HalfBridgeLandauer(Boundaries):
             #q_marginal = self.q_marginal_initial
 
         elif mode=="final": 
-            q_marginal = self.q_marginal_final
+            #q_marginal = 
 
-            probs = q_marginal(np.linspace(-8,8,10000))/np.sum(q_marginal(np.linspace(-8,8,10000)))
+            probs = self.q_marginal_final(np.linspace(-8,8,10000))/np.sum(self.q_marginal_final(np.linspace(-8,8,10000)))
             out = np.random.choice(np.linspace(-8,8,10000),
                                 (batch_samples,1),
                                 p=probs)
@@ -198,7 +265,6 @@ class LinearOU(Boundaries):
         ut = self.analytic_sol(time)
         
         return np.ones(q.shape)*ut
-
 
     def gfun(self,q):
 
