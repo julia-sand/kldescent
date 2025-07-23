@@ -38,7 +38,7 @@ def run():
         run_pretrain.run_pretrain(net,metrics_logger.get_results_path(),boundaryconditions)
     
     #intialise sde integration 
-    integrator = langevin.(boundaryconditions,
+    integrator = langevin.SDE(boundaryconditions,
                                         logger=metrics_logger)
 
     #initialise trainer & ref solution computation
