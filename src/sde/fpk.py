@@ -70,7 +70,7 @@ class FokkerPlanck(SDE):
 
         return pdfout
     
-    def pdf_loss(self,rhonet):
+    def loss_fn(self,rhonet):
 
         #initialise x values 
         x0 = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),dtype=torch.float32)#.to_device(device)

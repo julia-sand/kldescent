@@ -1,6 +1,8 @@
-import torch
-from src.model import train as train
 import os
+
+import torch
+
+from src.model import train as train
 
 def run_pretrain(net, newpath, boundary):
     #fetch pretraining path from command line (or use default)
