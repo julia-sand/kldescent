@@ -7,8 +7,8 @@ import numpy as np
 from ..model.nn import NeuralNetwork
 from .plots import PlotFuns
 from ..sde import langevin
-from ..utils.parser import checkpoint_plot_params,overdamped_argparser, fetch_results_folder_from_cmd
-from ..sde import boundary as boundaries 
+from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
+from ..utils.getboundary import *
 
 def load_net(boundary_cond,epoch,param_data,folder=None):
 
@@ -61,21 +61,9 @@ def compute_ref_kl(boundary):
 
 if __name__=="__main__":
 
-    folder = fetch_results_folder_from_cmd()
-        
-    try:
-        # Read YAML file
-        with open(f'{folder}/data.yaml', 'r') as stream:
-            data_loaded = yaml.safe_load(stream)
-        boundary_cond = getattr(boundaries,data_loaded["boundary"])(params=data_loaded)
-    except FileNotFoundError: #if no yaml file is provided, use the defaults
-        print("No parameter file given. The plots will be created using the default values. See -h for values.")
-
-        data_loaded = None
-        
-        run_params = overdamped_argparser()
-        boundary_cond = getattr(boundaries,run_params["boundary"])()
-
+    #get folder and load boundary data and params from file
+    folder = fetch_results_folder_from_cmd()   
+    boundary_cond,data_loaded = init_params_from_file(folder)
 
     params = checkpoint_plot_params() #get checkpoint plot parameters from cmd line
     
