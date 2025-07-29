@@ -149,15 +149,24 @@ class Metrics():
 
 
 
-class TrainBC(Train):
+class TrainRho():
     """
-    Defines the trianing loop for the loss function for learning boundary conditions
+    Defines the training loop for the loss function 
+    for learning boundary conditions
+    
+    overwrite any training params here
+    
+    args
+        rhonet: neural network used to approximate the final distribtuion
+        net: neural network (not trained) used to approximate the drift in integrating the fokker plack
+        integrator: class that holds integration functions for the fokker planck
+    
     """
 
-    def __init__(self, net, integrator):
-        Train.__init__(self,net,integrator)
+    def __init__(self, rhonet, net, integrator):
 
-        #set defaults of training process
+        self.rhonet = rhonet 
+
         self.lr = 0.005 #initial learning rate
         self.integrator = integrator
         self.net = net
@@ -166,12 +175,31 @@ class TrainBC(Train):
 
         self.clip = 0.001 #gradient clipping
 
-        self.optimiser = Adam(self.net.parameters(), lr=self.lr)
+        self.optimiser = Adam(self.rhonet.parameters(), lr=self.lr)
         self.milestone = 100 #how often to decay learning rate
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
-        self.scheduler = CosineAnnealingLR(self.optimiser, 
-                            T_max=100, eta_min=1e-10)
-        #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
+        #self.scheduler = CosineAnnealingLR(self.optimiser, T_max=100, eta_min=1e-10)
+        self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
+        
+    def train_step(self):  
+        
+        self.net.train() #set neural net into train mode
+
+        #reset gradients 
+        self.optimiser.zero_grad()
+        
+        Lhat = self.integrator.pdf_loss(self.rhonet,self.net)
+        clip_grad_norm_(self.rhonet.parameters(), self.clip)
+
+        ##training##
+        Lhat.backward()
+        self.optimiser.step()
+               
+        self.scheduler.step()
+            
+        loss_out = Lhat.detach().numpy().item()
+        return loss_out
+
 
      
