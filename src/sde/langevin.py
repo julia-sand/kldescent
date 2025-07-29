@@ -3,7 +3,6 @@ import torch
 
 import src.sde.kl as kl
 from ..utils.parser import integrator_params
-#from src.utils.parser import integrator_params
 
 
 class SDE():

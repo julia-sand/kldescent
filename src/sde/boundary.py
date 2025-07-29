@@ -419,7 +419,7 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
 
         #takes one step forward in the euler maruyama discretisation
         #go forward one step 
-        xn[...,[0]] = xn[...,[0]] + self.params["epsilon"]*xn[...,[1]]*dt 
+        xn[...,[0]] = xn[...,[0]] - self.params["epsilon"]*xn[...,[1]]*dt 
         xn[...,[1]] = xn[...,[1]] + self.sigma0*du_bar*dt + self.sigma0*dw
 
         return xn
