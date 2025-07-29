@@ -107,10 +107,8 @@ class Metrics():
     """
     Class for finding metrics during the training process 
 
-    Method: update_metrics
-    - logs the metrics at logstep
-    - checks for nan loss
-    - updates the metrics for final distribution, gaussian reference. 
+    Method: 
+        update_metrics
     """
 
     def __init__(self, trainer, logstep):
@@ -121,6 +119,18 @@ class Metrics():
         self.logstep = logstep #how frequently to save results
     
     def update_metrics(self, epoch, loss_out):
+        """
+        Function for computing metrics
+            -logs the metrics at logstep
+            - checks for nan loss
+            TODO (fix logic)- updates the metrics for final distribution, gaussian reference. 
+        args:
+            epoch:
+                pass current epoch to use in logging loss
+            loss_out:
+                value of the loss from the metrics function
+        """
+        
         with torch.no_grad():
             if np.isnan(loss_out):
                 raise ValueError('Loss function is NaN. Terminating training process')

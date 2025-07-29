@@ -20,9 +20,7 @@ class LossLogger():
     Methods
     -------
     __init__()
-        #creates a results folder 
-        #adds a subfolder for checkpoints
-        #initialises a csv to record loss values
+       
     
     write_data_row()
         #writes a row of data to the csv
@@ -43,6 +41,11 @@ class LossLogger():
 
     
     def __init__(self):
+        """
+        creates a timestamped results folder  
+        adds a subfolder for checkpoints
+        initialises a csv to record loss values
+        """
 
         ##make a directory for the results in  the place the file is run
         dirname = os.getcwd()

@@ -92,8 +92,6 @@ class FourierFeatures(nn.Module):
         t = torch.cat((t.sin(), t.cos()), dim=-1)
         return t
 
-# FROM TORCH TUTORIAL
-#create a simple neural network to parametrise the drift. 
 class NeuralNetwork(nn.Module):
     def __init__(self,boundary,nn_params=None,logger=None):
         
@@ -138,11 +136,6 @@ class NeuralNetwork(nn.Module):
             )  
         self.FourierFeatures = FourierFeatures(2*self.params["hiddenlayerneurons"])
         
-        #self.initialize_weights(self.NNx)
-        #self.initialize_weights(self.NN1)
-        #self.initialize_weights(self.NN2)
-        #self.initialize_weights(self.NNt)
-
         try:
             if self.params["checkpointpath"] is not None: #automatically loads a checkpoint from the command line
                 self.load_checkpoint(self.params.checkpointpath)
@@ -179,8 +172,6 @@ class NeuralNetwork(nn.Module):
                     An epoch with a saved checkpoint must be specified. Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch.")
             raise FileNotFoundError
 
-# FROM TORCH TUTORIAL
-#create a simple neural network to parametrise the drift. 
 class MLP(nn.Module):
     def __init__(self,checkpointpath=None):
         self.params = network_params()
@@ -224,5 +215,5 @@ if __name__ == "__main__":
     boundary_cond = UnderdampedHalfGaussian() #getattr(boundaries,run_params["boundary"])()
     
     net = NeuralNetwork(boundary_cond)
-    #net(torch.ones((100,2)))
+
     summary(net, input_size=(1,2))
