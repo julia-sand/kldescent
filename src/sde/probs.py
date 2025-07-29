@@ -10,42 +10,45 @@ import pdb
 from ..sde.langevin import SDE 
 
 class FokkerPlanck(SDE):
+    """
+    Integrator class for integrating the Fokker planck equation
+    Most arguments are the same as the Langevin integrator, except:
+
+    args: 
+        net: 
+            neural net used in the integration
+        
+    """
     
-    def __init__(self,boundary_cond,
+    def __init__(self,net,boundary_cond,
                     sde_params=None,
                     logger=None,
                     device="cpu"):
 
         SDE.__init__(self,boundary_cond,sde_params,logger) #use same intialisation
+        self.net = net 
 
-    def compute_pdf(self,net):
+    def compute_pdf(self,xinit,net):
         """
-        Following 2410.05163 (see proposition 3). 
+        Following 2411.08518 (see Section 3 for example). 
 
         ====
         Parameters
-        - net: neural network
+          net: neural network used to approximate the drift
+          rhonet: neural network used to learn the pdf
         ====
 
         """
         
         net.eval()
-        t_vec = self.generate_time_grid()
-
-        #initialise x values 
-        xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32)#.to_device(device)
-
-        #set up a,abar,c,cbar
-        girs = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
-
+    
         with torch.no_grad():
             t_vec = self.generate_time_grid()
 
-            #initialise x values 
-            xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32)#.to_device(device)
-
+            #xinit = x0.detach().clone()
+            xinit.requires_grad(False)
             #set up a,abar,c,cbar
-            girs = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
+            girs = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32)
 
             for i in range(0,self.sde_params["tsteps"]-1):
                 
@@ -62,12 +65,16 @@ class FokkerPlanck(SDE):
                 xinit = self.boundary.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[i])
             
             pdfout = torch.mean(self.boundary.p_initial(xinit[...,[0]],xinit[...,[1]])*torch.exp(-girs))
-                        
-        
-        return xinit,pdfout
+
+        return pdfout
     
-    def check_mean(self,xinit,pdfout):
-        return np.trapz(np.trapz(pdfout.to_numpy(),np.sort(xinit[...,1].to_numpy())),xinit[...,0].to_numpy())
+    def pdf_loss(self,rhonet,net):
+
+        #initialise x values 
+        x0 = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),dtype=torch.float32)#.to_device(device)
+        pdfout = self.compute_pdf(x0.detach().copy(),net)
+
+        return torch.mse(rhonet(x0),pdfout)
 
 
 if __name__=="__main__":
@@ -80,5 +87,3 @@ if __name__=="__main__":
     net = NeuralNetwork(boundary_cond)
 
     fpk = FokkerPlanck(boundary_cond)
-    x,pdfout = fpk.compute_pdf(net)
-    print(fpk.check_mean(x,pdfout))
