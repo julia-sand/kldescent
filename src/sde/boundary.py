@@ -484,10 +484,13 @@ class UnderdampedNoMomentum(UnderdampedHalfLandauer):
 
 
 class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
-    def __init__(self,params=None,gauss_params=None,logger=None):
+    
+    def __init__(self,params=None,
+                        gauss_params=None,
+                        logger=None):
         Boundaries.__init__(self,params,logger)
         self.sigma0 = np.sqrt(2)
-
+        
         if gauss_params is not None: #read from file if available
             self.gauss_boundary = gauss_params
         else: #fetch from command line
@@ -592,10 +595,11 @@ class UnderdampedQuarterGaussianNoMomentum(UnderdampedQuarterGaussian):
 
 
 class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
-    def __init__(self,params=None,gauss_params=None,logger=None):
+    def __init__(self,rho=None,params=None,gauss_params=None,logger=None):
         UnderdampedQuarterGaussian.__init__(self,params,gauss_params,logger)
         self.mean0 = 0
         self.var0 = 1
+        self.rho = rho
 
     def set_ref_statistics(self,mean0,var0):
         """overwrites the mean and variance of the reference parameters"""
@@ -608,11 +612,14 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
 
         return (q-mean)**2/(var)
 
-    def gfun(self,x):      
-        #print(self.mean0)
+    def set_pdf(self,rhoT):
+        self.pdf = rhoT
 
-        #Terminal cost
-        return (self.params["weight"]/2)*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.gauss_boundary["mufinal"], self.gauss_boundary["sigmafinal"]**2))
+    def gfun(self,x):      
+        if self.rho is not None:
+            np.log(self.p_final(x[...,[0]],x[...,[1]])) - np.log(self.pdf)
+        else:
+            return (self.params["weight"]/2)*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.gauss_boundary["mufinal"], self.gauss_boundary["sigmafinal"]**2))
 
 
 if __name__=="__main__":

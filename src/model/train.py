@@ -163,7 +163,7 @@ class TrainRho():
     
     """
 
-    def __init__(self, rhonet, net, integrator):
+    def __init__(self, rhonet, integrator):
 
         self.rhonet = rhonet 
 
@@ -200,5 +200,45 @@ class TrainRho():
         loss_out = Lhat.detach().numpy().item()
         return loss_out
 
+    def train_loop(self, epochs=1000):
+        """
+        loop for training the rho neural net
+        args:
+            epochs:
+                number of epochs to train the network between updates to the drift net
+        """
+        
+        for _ in range(epochs):
+            self.train_step()
+
+        #update boundary conds
+
+    def update_metrics(self, epoch, loss_out):
+        """
+        Function for computing metrics
+            -logs the metrics at logstep
+            - checks for nan loss
+            TODO (fix logic)- updates the metrics for final distribution, gaussian reference. 
+        args:
+            epoch:
+                pass current epoch to use in logging loss
+            loss_out:
+                value of the loss from the metrics function
+        """
+        with torch.no_grad():
+            self.integrator.update_ref_statistics(self.net)
+
+     
+    def update_boundary(self,boundary):
+        """
+        Function to update values of the boundary condition if
+        args:
+            epoch:
+                pass current epoch to use in logging loss
+            loss_out:
+                value of the loss from the metrics function
+        """
+        with torch.no_grad():
+            self.integrator.update_ref_statistics(self.net)
 
      

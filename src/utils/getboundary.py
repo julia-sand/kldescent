@@ -1,8 +1,10 @@
 import yaml 
 
 from ..sde import boundary as boundaries 
-from parser import *
-"""initialise parameters and boundary conditions from file
+from ..utils.parser import *
+
+"""
+initialise parameters and boundary conditions from file
 """
 
 def init_params_from_file(folder):

@@ -48,14 +48,14 @@ class SDE():
         #generate a step of brownian motion
         return np.sqrt(dt)*torch.randn((size,1),requires_grad=False,dtype=torch.float32)
 
-    def loss_fn(self,net):
-
+    def loss_fn(self,net,rhonet=None):
         """
         Following 2410.05163 (see proposition 3). 
 
         ====
         Parameters
-        - net: neural network
+        - net: neural network for parametrisig the drift
+        - rhonet: net used for evaluating the 
         ====
 
         """
@@ -65,6 +65,10 @@ class SDE():
 
         #initialise x values 
         xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32)#.to_device(device)
+
+        #update the boundary conds
+        if rhonet is not None:
+            self.evaluate_rhonet(rhonet,xinit)
 
         #set up a,abar,c,cbar
         a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
@@ -96,9 +100,6 @@ class SDE():
             xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
 
         #compute value of Lhat
-        #see equation (10) and (11) in ref. 2410.05163
-        #Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + self.boundary.gfun(xinit)) * c))
-        #Lhat = torch.mean(0.5 * a + (((1/4) * abar + bbar + self.boundary.gfun(xinit)) * c))
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + self.boundary.gfun(xinit)) * c))
         
         #free up memory again
@@ -190,8 +191,6 @@ class SDE():
 
     
     def update_ref_statistics(self,net,testing_samples=None,debug=False):
-
-
         """
         computes estimates of the metrics to update the g function 
         This should only run for the Half Bridge classes. 
@@ -202,6 +201,7 @@ class SDE():
         ====
 
         """
+
         if debug:
             pdb.set_trace()
         if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
@@ -238,6 +238,11 @@ class SDE():
 
         return
 
+
+    def evaluate_rhonet(self,rhonet,x0):
+        
+        with torch.nograd():
+            self.boundary.set_pdf(rhonet(x0).detach().numpy())
 
     def get_net_grad(self,net,t):
         dx = 0.01
