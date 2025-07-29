@@ -89,7 +89,7 @@ class Train():
         #reset gradients 
         self.optimiser.zero_grad()
         
-        Lhat = self.integrator.simulation_free(self.net)
+        Lhat = self.integrator.loss_fn(self.net)
         clip_grad_norm_(self.net.parameters(), self.clip)
 
         ##training##
@@ -169,7 +169,6 @@ class TrainRho():
 
         self.lr = 0.005 #initial learning rate
         self.integrator = integrator
-        self.net = net
 
         self.gamma = 0.1 #rate of learning rate decrease.
 
@@ -189,7 +188,7 @@ class TrainRho():
         #reset gradients 
         self.optimiser.zero_grad()
         
-        Lhat = self.integrator.pdf_loss(self.rhonet,self.net)
+        Lhat = self.integrator.pdf_loss(self.rhonet)
         clip_grad_norm_(self.rhonet.parameters(), self.clip)
 
         ##training##

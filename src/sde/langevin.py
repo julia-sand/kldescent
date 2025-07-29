@@ -48,7 +48,7 @@ class SDE():
         #generate a step of brownian motion
         return np.sqrt(dt)*torch.randn((size,1),requires_grad=False,dtype=torch.float32)
 
-    def simulation_free(self,net):
+    def loss_fn(self,net):
 
         """
         Following 2410.05163 (see proposition 3). 

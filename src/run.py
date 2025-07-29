@@ -1,0 +1,79 @@
+import os
+
+import numpy as np
+import torch
+from torch.nn import DataParallel
+
+from src.model import *
+from src.sde import *
+import src.sde.boundary as boundaries
+from src.utils import *
+import src.viz.plots as plots
+from src.viz.checkpoint_plots import *
+
+#@profile
+def run():
+
+    #create a log file and results directory
+    metrics_logger = logger.LossLogger()
+
+    #parse arguments from command line
+    args = parser.overdamped_argparser()
+    metrics_logger.log_dict(args)
+
+    #initialise the model
+    boundaryconditions = getattr(boundaries,args["boundary"])(logger=metrics_logger)
+    if args["boundary"]=="LinearOU":
+        net = nn.MLP().to(args["device"])
+    else:
+        net = nn.NeuralNetwork(boundaryconditions,logger=metrics_logger).to(args["device"])
+
+    net = DataParallel(net)
+    rhonet = nn.RhoNeuralNetwork(boundaryconditions,logger=metrics_logger)
+
+    if args["pretrain"]: #TODO this needs updating
+        import run_pretrain
+        run_pretrain.run_pretrain(net,metrics_logger.get_results_path(),boundaryconditions)
+    
+    #intialise sde integration 
+    integrator = langevin.SDE(boundaryconditions,
+                                        logger=metrics_logger)
+    #initialise integration of fpk
+    fpk_integrator = fpk.FokkerPlanck(boundaryconditions, net,
+                                            logger=metrics_logger)
+
+    #initialise trainer & ref solution computation
+    trainer = train.Train(net,integrator) 
+    metrics = train.Metrics(trainer,args["logstep"])
+    rhotrainer = train.TrainRho(rhonet,fpk_integrator)
+
+    for epoch in range(0,args["epochs"]+1):
+        try:
+            #train the rho nn
+
+            #update the drift nn with the current iteration  
+            loss_out = trainer.train_step()
+
+            #update metrics
+            metrics.update_metrics(epoch,loss_out)
+        except KeyboardInterrupt:
+            print(f"Training interrupted at epoch {epoch}")
+        except ValueError:
+            print("The training has resulted in NaN loss and therefore failed. Please retry.")
+            raise
+        except slurmhandler.TimeLimitException: #TODO not sure if this works?
+            print(f"The training must be stopped because SLURM is about to kill the job. Training ended at epoch {epoch}")
+            metrics_logger.save_checkpoint(net,epoch)
+
+
+    plotter = plots.PlotFuns(boundaryconditions)
+    plotter.setresultsdir(metrics_logger.get_results_path())
+    checkpoint_plots_all(metrics_logger,
+                            boundaryconditions,
+                            net,
+                            plotter,
+                            integrator)
+    plotter.plot_loss_metrics()
+
+if __name__=="__main__":
+    run()

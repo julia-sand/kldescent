@@ -136,12 +136,9 @@ class NeuralNetwork(nn.Module):
             )  
         self.FourierFeatures = FourierFeatures(2*self.params["hiddenlayerneurons"])
         
-        try:
-            if self.params["checkpointpath"] is not None: #automatically loads a checkpoint from the command line
-                self.load_checkpoint(self.params.checkpointpath)
-        except AttributeError:
-            pass
-        #self.initialize_weights(self,net)
+        if self.params["checkpointpath"] is not None: #automatically loads a checkpoint from the command line
+            self.load_checkpoint(self.params.checkpointpath)
+
     def forward(self, input_vec):   #how the model should evaluate
         #pdb.set_trace()
 
@@ -171,6 +168,60 @@ class NeuralNetwork(nn.Module):
             print("The checkpoint file was not found.  \n \
                     An epoch with a saved checkpoint must be specified. Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch.")
             raise FileNotFoundError
+        except AttributeError:
+            print("Checkpoint could not be loaded. Checkpoint format not compatible with initialised network. Continuing with default initialisation-")
+            #raise AttributeError
+            pass
+
+class RhoNeuralNetwork(nn.Module):
+    """
+    Neural Network object for parametrising the form of the probability distribution
+    """
+
+    def __init__(self,boundary,nn_params=None,logger=None):
+        
+        if nn_params is not None:
+            self.params = nn_params    
+        else:
+            self.params = network_params()
+        
+        if logger is not None:
+            logger.log_dict(self.params)
+
+        #params
+        self.boundary = boundary
+
+        super(NeuralNetwork, self).__init__()
+        self.NNx = nn.Sequential(
+            nn.Linear(1, self.params["hiddenlayerneurons"] ),  #input x
+            nn.GELU(),
+            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
+            nn.ReLU(), #enforce positive output since we learn a pdf
+            )  
+
+    def forward(self, x0):   #how the model should evaluate
+        
+        return self.NNx(x0)
+
+
+    def initialize_weights(self,net):   #sets all the weights away from zero.
+        for m in net.modules():
+            if isinstance(m, nn.Linear):
+                torch.nn.init.xavier_normal_(m.weight,gain=2)
+                if m.bias is not None:
+                    torch.nn.init.constant_(m.bias, 0)
+
+    def load_checkpoint(self,checkpointpath):
+        #TODO update this function to look for a separate rho nn checkpoint.
+        try:
+            checkpointpath = os.getcwd() + "/" + checkpointpath
+            self.load_state_dict(torch.load(checkpointpath, weights_only=True))
+            print("Checkpoint loaded successfully.")    
+        except FileNotFoundError:
+            print("The checkpoint file was not found.  \n \
+                    An epoch with a saved checkpoint must be specified. Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch.")
+            raise FileNotFoundError
+
 
 class MLP(nn.Module):
     def __init__(self,checkpointpath=None):

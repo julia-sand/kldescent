@@ -1,4 +1,7 @@
+import yaml 
+
 import argparse
+
 
 """
 handles parameter loading
@@ -110,9 +113,6 @@ def boundary_params():
     boundary_params.add_argument('-g','--g', type=float, default=0,
                         help='constant')
 
-    #boundary_params.add_argument('-ellsq','--ellsq', type=float, default=12.5,
-    #                    help='typical length scale squared')
-    
     args2 = boundary_params.parse_known_args(boundary_params.argfile)
 
     return vars(args2[0])
@@ -140,7 +140,6 @@ def gaussian_params():
 
     return vars(args5[0])
 
-
 #TODO separate the parser into smaller so that we can parse straight into other files
 def network_params():
     #general configs for the training process
@@ -155,10 +154,6 @@ def network_params():
                         help='Number of hidden dimensions in each layer of the Neural network model')
 
     args3 = parser3.parse_known_args(parser3.argfile)
-
-    #add validations?
-    #if args.pos_arg > 10:
-    #    parser.error("pos_arg cannot be larger than 10")
 
     return vars(args3[0])
 
@@ -190,6 +185,7 @@ def checkpoint_plot_params():
     args5 = parser5.parse_known_args()
 
     return vars(args5[0])
+
 
 if __name__=="__main__":
     
