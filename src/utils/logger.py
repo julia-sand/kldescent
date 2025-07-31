@@ -76,11 +76,11 @@ class LossLogger():
             writer.writerow([epoch, Lhat, kl_dyn, klval, lr, refmean, refvar])
 
     def save_checkpoint(self,net,epoch):
-
+        
         if isinstance(net, torch.nn.DataParallel):
             net = net.module
-            
-        torch.save(net.state_dict(),self.newpath+f"/checkpoints/net_checkpoint_{epoch}.pt") 
+        
+        torch.save(net.state_dict(),self.newpath+f"/checkpoints/{net.net_name}_checkpoint_{epoch}.pt") 
 
     def get_epoch_folder(self,epoch):
         os.makedirs(self.newpath+f"/epoch{epoch}", exist_ok = True)

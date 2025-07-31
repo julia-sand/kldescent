@@ -20,11 +20,11 @@ class SDE():
                     boundary_data,
                     rhonet=None,
                     sde_params=None,
-                    logger=None,
+                    #logger=None,
                     device="cpu"):
         self.rhonet = rhonet
         self.boundary = boundary_data
-        self.logger = logger
+        #self.logger = logger
 
         #get params 
         if sde_params is not None:
@@ -32,8 +32,8 @@ class SDE():
         else:
             self.sde_params = integrator_params() #parse command line
 
-        if self.logger is not None:
-            self.logger.log_dict(self.sde_params) #add to log
+        #if self.logger is not None:
+        #    self.logger.log_dict(self.sde_params) #add to log
         
     def generate_time_grid(self):
 
@@ -128,7 +128,7 @@ class SDE():
         return Lhat
     
     #@profile
-    def compute_metrics(self,net,epoch,lout,lr):
+    def compute_metrics(self,net):
 
         """
         Following 2410.05163 (see proposition 3). 
@@ -178,27 +178,13 @@ class SDE():
             kl_static = 0
             print("Value Error exception ignored. This means that the current value of the \n \
             neural network drift produces NaN values. ")
-        
-        
+                
         if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
-            self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]).item(), torch.var(xinit[...,0]).item())
-
-        if self.logger is not None:
-            self.logger.log_epoch_data(net,
-                                        epoch,
-                                        lout,
-                                        torch.mean(kldyn).item(),
-                                        kl_static,
-                                        lr,self.boundary.mean0,self.boundary.var0)
-        
-        #free up the tensors
-        del xinit 
-        del xinit_ref
-        del du_ref
-        del kldyn
+            mean0,var0 = torch.nanmean(xinit[...,0]).item(),torch.var(xinit[...,0]).item()
+            self.boundary.set_ref_statistics(mean0, var0)
 
 
-        return 
+        return torch.mean(kldyn).item(), kl_static, mean0, var0 
 
     
     def update_ref_statistics(self,net,testing_samples=None,debug=False):
