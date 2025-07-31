@@ -104,10 +104,6 @@ class HalfBridgeLandauer(Boundaries):
         
         self.ref_path = new_path + "/refsol.csv"
 
-    #def Uinitial(self,q):
-
-    #    return (q**4)/4
-
     def Ufinal(self,q):
 
         return ((q**2-1)**2)/4

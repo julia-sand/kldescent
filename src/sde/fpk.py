@@ -23,12 +23,14 @@ class FokkerPlanck(SDE):
         
     """
     
-    def __init__(self,net,boundary_cond,
+    def __init__(self,boundary_cond,net,
                     sde_params=None,
                     logger=None,
                     device="cpu"):
 
-        SDE.__init__(self,boundary_cond,sde_params,logger) #use same intialisation
+        SDE.__init__(self,boundary_cond,
+                            sde_params=sde_params,
+                            logger=logger) #use same intialisation
         self.net = net 
 
     def compute_pdf(self,xinit):
@@ -71,12 +73,15 @@ class FokkerPlanck(SDE):
         return pdfout
     
     def loss_fn(self,rhonet):
+        """
+        Computes pdf values and returns l2 error 
+        """
 
         #initialise x values 
         x0 = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),dtype=torch.float32)#.to_device(device)
         pdfout = self.compute_pdf(x0.detach())
 
-        return torch.mse(rhonet(x0),pdfout)
+        return torch.mean((rhonet(x0)-pdfout)**2)
 
 
 if __name__=="__main__":
