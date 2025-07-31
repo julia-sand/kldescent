@@ -50,7 +50,7 @@ def run():
         try:
             #train the rho nn
             rhotrainer.train_loop()
-            metrics_logger.save_checkpoint(self.rhonet,epoch)
+            metrics_logger.save_checkpoint(rhonet,epoch)
   
             #update the drift nn with the current iteration  
             loss_out = trainer.train_step()

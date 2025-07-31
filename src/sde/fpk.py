@@ -25,12 +25,10 @@ class FokkerPlanck(SDE):
     
     def __init__(self,boundary_cond,net,
                     sde_params=None,
-                    logger=None,
                     device="cpu"):
 
         SDE.__init__(self,boundary_cond,
-                            sde_params=sde_params,
-                            logger=logger) #use same intialisation
+                            sde_params=sde_params) #use same intialisation
         self.net = net 
 
     def compute_pdf(self,xinit):
@@ -43,9 +41,9 @@ class FokkerPlanck(SDE):
         Returns: 
             pdfout: estimate of the pdf at final time at locations xinit
         ====
-
         """
         
+        #pdb.set_trace()
         self.net.eval()
     
         with torch.no_grad():
@@ -56,19 +54,18 @@ class FokkerPlanck(SDE):
 
             for i in range(0,self.sde_params["tsteps"]-1):
                 
-                dt = (t_vec[i+1]-t_vec[i])
+                dt = t_vec[i+1]-t_vec[i]
                 
                 dw = self.generate_innovation(dt,self.sde_params["batchsamples"])
             
-                du_bar = self.boundary.du_ref(xinit[...,[1]],t_vec[i])
-                #self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32)
-                        #                                   ,xinit[...,[0]])))
+                du_bar = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32)
+                                                           ,xinit[...,[0]])))
                 
                 girs = girs + (((2*dt)**(-0.5))*(xinit[...,[1]])) + ((dt * (xinit[...,[1]])**2)/4)
 
                 xinit = self.boundary.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[i])
             
-            pdfout = torch.mean(self.boundary.p_initial(xinit[...,[0]],xinit[...,[1]])*torch.exp(-girs))
+            pdfout = self.boundary.p_initial(xinit[...,[0]],xinit[...,[1]])*torch.exp(-girs)
 
         return pdfout
     
@@ -83,7 +80,6 @@ class FokkerPlanck(SDE):
 
         return torch.mean((rhonet(x0)-pdfout)**2)
 
-
 if __name__=="__main__":
     import os 
 
@@ -96,8 +92,7 @@ if __name__=="__main__":
 
     net = NeuralNetwork(boundary_cond,data_loaded)
 
-    fpk = FokkerPlanck(net,boundary_cond)
-    x0 = torch.tensor(fpk.boundary.generate_samples(fpk.sde_params["batchsamples"],"initial"),dtype=torch.float32)#.to_device(device)
+    fpk = FokkerPlanck(boundary_cond,net)
+    x0 = torch.tensor(boundary_cond.generate_samples(fpk.sde_params["batchsamples"],"initial"),dtype=torch.float32)#.to_device(device)
 
     pdfout = fpk.compute_pdf(x0.detach())
-    print(np.mean(pdfout.numpy() - fpk.boundary.p_final(x0[...,[0]],x0[...,[1]]).numpy()))

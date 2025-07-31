@@ -139,7 +139,7 @@ class Metrics():
                     #this also updates the ref. cumulants
                     kl_dynamic, kl_static, mean0, var0 =self.integrator.compute_metrics(self.net)
 
-                    self.logger.write_data_row(epoch,
+                    logger.write_data_row(epoch,
                                                 loss_out,
                                                 kl_dynamic,
                                                 kl_static,
@@ -147,7 +147,7 @@ class Metrics():
                                                 mean0,
                                                 var0)
 
-                    self.logger.save_checkpoint(self.net,epoch)
+                    logger.save_checkpoint(self.net,epoch)
         
             else: 
                 with torch.no_grad():
@@ -202,10 +202,10 @@ class TrainRho():
                
         self.scheduler.step()
             
-        loss_out = Lhat.detach().numpy().item()
-        return loss_out
+        print(Lhat.detach().numpy().item())
+        return #loss_out
 
-    def train_loop(self, epochs=1000):
+    def train_loop(self, epochs=5):
         """
         loop for training the rho neural net
         args:
