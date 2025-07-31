@@ -37,11 +37,9 @@ def run():
         run_pretrain.run_pretrain(net,metrics_logger.get_results_path(),boundaryconditions)
     
     #intialise sde integration 
-    integrator = langevin.SDE(boundaryconditions, rhonet,
-                                        logger=metrics_logger)
+    integrator = langevin.SDE(boundaryconditions, rhonet)
     #initialise integration of fpk
-    fpk_integrator = fpk.FokkerPlanck(boundaryconditions, net,
-                                            logger=metrics_logger)
+    fpk_integrator = fpk.FokkerPlanck(boundaryconditions, net)
 
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
@@ -51,11 +49,13 @@ def run():
     for epoch in range(0,args["epochs"]+1):
         try:
             #train the rho nn
-            rhotrainer.train_loop()  
+            rhotrainer.train_loop()
+            metrics_logger.save_checkpoint(self.rhonet,epoch)
+  
             #update the drift nn with the current iteration  
             loss_out = trainer.train_step()
             #update metrics
-            metrics.update_metrics(epoch,loss_out)
+            metrics.update_metrics(epoch,loss_out,metrics_logger)
         except KeyboardInterrupt:
             print(f"Training interrupted at epoch {epoch}")
         except ValueError:

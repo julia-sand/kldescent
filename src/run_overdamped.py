@@ -38,8 +38,7 @@ def run():
         run_pretrain.run_pretrain(net,metrics_logger.get_results_path(),boundaryconditions)
     
     #intialise sde integration 
-    integrator = langevin.SDE(boundaryconditions,
-                                        logger=metrics_logger)
+    integrator = langevin.SDE(boundaryconditions)
 
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
@@ -48,7 +47,7 @@ def run():
     for epoch in range(0,args["epochs"]+1):
         try:
             loss_out = trainer.train_step()
-            metrics.update_metrics(epoch,loss_out)
+            metrics.update_metrics(epoch,loss_out,metrics_logger)
         except KeyboardInterrupt:
             print(f"Training interrupted at epoch {epoch}")
         except ValueError:

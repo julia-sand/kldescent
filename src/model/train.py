@@ -117,7 +117,7 @@ class Metrics():
         self.scheduler = trainer.scheduler # for testing out different schedules, we record the learning rate 
         self.logstep = logstep #how frequently to save results
     
-    def update_metrics(self, epoch, loss_out):
+    def update_metrics(self, epoch, loss_out, logger):
         """
         Function for computing metrics
             -logs the metrics at logstep
@@ -137,11 +137,18 @@ class Metrics():
             if (epoch % self.logstep == 0): #compute metrics 
                 with torch.no_grad():
                     #this also updates the ref. cumulants
-                    self.integrator.compute_metrics(self.net,
-                                        epoch,
-                                        loss_out,
-                                        self.scheduler.get_last_lr()[0])
+                    kl_dynamic, kl_static, mean0, var0 =self.integrator.compute_metrics(self.net)
 
+                    self.logger.write_data_row(epoch,
+                                                loss_out,
+                                                kl_dynamic,
+                                                kl_static,
+                                                self.scheduler.get_last_lr()[0],
+                                                mean0,
+                                                var0)
+
+                    self.logger.save_checkpoint(self.net,epoch)
+        
             else: 
                 with torch.no_grad():
                     self.integrator.update_ref_statistics(self.net)
@@ -208,35 +215,29 @@ class TrainRho():
         
         for _ in range(epochs):
             self.train_step()
+        
 
         #update boundary conds
-
-    def update_metrics(self, epoch, loss_out):
+   
+    def update_metrics(self, epoch, loss_out, logger):
         """
-        Function for computing metrics
-            -logs the metrics at logstep
-            - checks for nan loss
-            TODO (fix logic)- updates the metrics for final distribution, gaussian reference. 
+        Function for computing metrics and saving checkpoints of the rhonet
         args:
             epoch:
                 pass current epoch to use in logging loss
             loss_out:
                 value of the loss from the metrics function
         """
+        
         with torch.no_grad():
-            self.integrator.update_ref_statistics(self.net)
+            if np.isnan(loss_out):
+                raise ValueError('Loss function is NaN. Terminating training process')
+            
+            if (epoch % self.logstep == 0): #compute metrics 
+                with torch.no_grad():
+                    self.logger.save_checkpoint(self.rhonet,epoch)
+        
+            else: 
+                with torch.no_grad():
+                    self.integrator.update_ref_statistics(self.net)
 
-     
-    def update_boundary(self,boundary):
-        """
-        Function to update values of the boundary condition 
-        args:
-            epoch:
-                pass current epoch to use in logging loss
-            loss_out:
-                value of the loss from the metrics function
-        """
-        with torch.no_grad():
-            self.integrator.update_ref_statistics(self.net)
-
-     

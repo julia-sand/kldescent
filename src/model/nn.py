@@ -95,6 +95,7 @@ class FourierFeatures(nn.Module):
 class NeuralNetwork(nn.Module):
     def __init__(self,boundary,nn_params=None,logger=None):
         
+        self.net_name = "du"
         if nn_params is not None:
             self.params = nn_params    
         else:
@@ -165,8 +166,8 @@ class NeuralNetwork(nn.Module):
             self.load_state_dict(torch.load(checkpointpath, weights_only=True))
             print("Checkpoint loaded successfully.")    
         except FileNotFoundError:
-            print("The checkpoint file was not found.  \n \
-                    An epoch with a saved checkpoint must be specified. Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch.")
+            print("The checkpoint file in the given was not found.  \n \
+                    Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch to load when using a default with --folder. For loading a specific checkpoint file with a different filename, use the --checkpointpath option.")
             raise FileNotFoundError
         except AttributeError:
             print("Checkpoint could not be loaded. Checkpoint format not compatible with initialised network. Continuing with default initialisation-")
@@ -176,10 +177,13 @@ class NeuralNetwork(nn.Module):
 class RhoNeuralNetwork(nn.Module):
     """
     Neural Network object for parametrising the form of the probability distribution
+    args: 
+        boundary: specifies the form 
     """
 
     def __init__(self,boundary,nn_params=None,logger=None):
-        
+        self.net_name = "rho"
+   
         if nn_params is not None:
             self.params = nn_params    
         else:
