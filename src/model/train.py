@@ -82,14 +82,14 @@ class Train():
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
 
         
-    def train_step(self):  
+    def train_step(self,rhonet=None):  
         
         self.net.train() #set neural net into train mode
 
         #reset gradients 
         self.optimiser.zero_grad()
         
-        Lhat = self.integrator.loss_fn(self.net)
+        Lhat = self.integrator.loss_fn(self.net,rhonet)
         clip_grad_norm_(self.net.parameters(), self.clip)
 
         ##training##
@@ -231,7 +231,7 @@ class TrainRho():
      
     def update_boundary(self,boundary):
         """
-        Function to update values of the boundary condition if
+        Function to update values of the boundary condition 
         args:
             epoch:
                 pass current epoch to use in logging loss

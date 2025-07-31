@@ -52,7 +52,7 @@ def run():
             #train the rho nn
             rhotrainer.train_loop()  
             #update the drift nn with the current iteration  
-            loss_out = trainer.train_step()
+            loss_out = trainer.train_step(rhonet)
             #update metrics
             metrics.update_metrics(epoch,loss_out)
         except KeyboardInterrupt:

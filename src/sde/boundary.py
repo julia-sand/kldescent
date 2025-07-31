@@ -44,7 +44,6 @@ class Boundaries():
             self.params = params
         else:
             self.params = boundary_params()
-            
         
         self.Generator = np.random.default_rng(seed=None)
 
@@ -57,7 +56,6 @@ class Boundaries():
         #returns the folder where the reference solution is expected to be
 
         return os.path.dirname(__file__) + f"/../refsolution/{self.__class__.__name__}"
- 
 
 class HalfBridgeLandauer(Boundaries):
     """
@@ -101,7 +99,6 @@ class HalfBridgeLandauer(Boundaries):
         Boundaries.__init__(self,params,logger)
         self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
         self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
-
 
     def overwrite_ref_path(self,new_path):
         
