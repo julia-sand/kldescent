@@ -19,7 +19,7 @@ class FokkerPlanck(SDE):
 
     args: 
         net: 
-            neural net used in the integration
+            neural net used in the integration that approximates the drift
         
     """
     

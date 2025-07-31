@@ -6,11 +6,23 @@ from ..utils.parser import integrator_params
 
 
 class SDE():
+    """
+    Integrator class for integrating the sde forward
+    Most arguments are the same as the Langevin integrator, except:
+
+    args: 
+        rhonet: 
+            neural net used to evaluate the terminal cost (g) 
+        
+    """
+
     def __init__(self,
                     boundary_data,
+                    rhonet=None,
                     sde_params=None,
                     logger=None,
                     device="cpu"):
+        self.rhonet = rhonet
         self.boundary = boundary_data
         self.logger = logger
 
@@ -48,14 +60,13 @@ class SDE():
         #generate a step of brownian motion
         return np.sqrt(dt)*torch.randn((size,1),requires_grad=False,dtype=torch.float32)
 
-    def loss_fn(self,net,rhonet=None):
+    def loss_fn(self,net):
         """
         Following 2410.05163 (see proposition 3). 
 
         ====
         Parameters
         - net: neural network for parametrisig the drift
-        - rhonet: net used for evaluating the 
         ====
 
         """
@@ -67,8 +78,8 @@ class SDE():
         xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32)#.to_device(device)
 
         #update the boundary conds
-        if rhonet is not None:
-            self.evaluate_rhonet(rhonet,xinit)
+        if self.rhonet is not None:
+            self.evaluate_rhonet(self.rhonet,xinit)
 
         #set up a,abar,c,cbar
         a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)

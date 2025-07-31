@@ -191,7 +191,7 @@ class RhoNeuralNetwork(nn.Module):
         #params
         self.boundary = boundary
 
-        super(NeuralNetwork, self).__init__()
+        super(RhoNeuralNetwork, self).__init__()
         self.NNx = nn.Sequential(
             nn.Linear(1, self.params["hiddenlayerneurons"] ),  #input x
             nn.GELU(),
