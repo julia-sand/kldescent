@@ -193,10 +193,10 @@ class RhoNeuralNetwork(nn.Module):
 
         super(RhoNeuralNetwork, self).__init__()
         self.NNx = nn.Sequential(
-            nn.Linear(1, self.params["hiddenlayerneurons"] ),  #input x
+            nn.Linear(2, self.params["hiddenlayerneurons"] ),  #input x
             nn.GELU(),
             nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
-            nn.ReLU(), #enforce positive output since we learn a pdf
+            nn.ReLU(), #enforce positive output since we want to learn a pdf
             )  
 
     def forward(self, x0):   #how the model should evaluate

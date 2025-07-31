@@ -252,7 +252,7 @@ class SDE():
 
     def evaluate_rhonet(self,rhonet,x0):
         
-        with torch.nograd():
+        with torch.no_grad():
             self.boundary.set_pdf(rhonet(x0).detach().numpy())
 
     def get_net_grad(self,net,t):

@@ -4,8 +4,7 @@ import numpy as np
 import torch
 from torch import nn as torchnn
 from torch.optim import Adam
-from torch.optim.lr_scheduler import CosineAnnealingLR
-#from torch.optim.lr_scheduler import ExponentialLR
+from torch.optim.lr_scheduler import CosineAnnealingLR,ExponentialLR
 from torch.nn.utils import clip_grad_norm_
 
 #torch.autograd.set_detect_anomaly(True)
@@ -82,14 +81,14 @@ class Train():
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
 
         
-    def train_step(self,rhonet=None):  
+    def train_step(self):  
         
         self.net.train() #set neural net into train mode
 
         #reset gradients 
         self.optimiser.zero_grad()
         
-        Lhat = self.integrator.loss_fn(self.net,rhonet)
+        Lhat = self.integrator.loss_fn(self.net)
         clip_grad_norm_(self.net.parameters(), self.clip)
 
         ##training##
@@ -158,7 +157,6 @@ class TrainRho():
     
     args
         rhonet: neural network used to approximate the final distribtuion
-        net: neural network (not trained) used to approximate the drift in integrating the fokker plack
         integrator: class that holds integration functions for the fokker planck
     
     """
@@ -183,12 +181,12 @@ class TrainRho():
         
     def train_step(self):  
         
-        self.net.train() #set neural net into train mode
+        self.rhonet.train() #set neural net into train mode
 
         #reset gradients 
         self.optimiser.zero_grad()
         
-        Lhat = self.integrator.pdf_loss(self.rhonet)
+        Lhat = self.integrator.loss_fn(self.rhonet)
         clip_grad_norm_(self.rhonet.parameters(), self.clip)
 
         ##training##

@@ -30,13 +30,14 @@ def run():
 
     net = DataParallel(net)
     rhonet = nn.RhoNeuralNetwork(boundaryconditions,logger=metrics_logger)
+    rhonet = DataParallel(rhonet)
 
     if args["pretrain"]: #TODO this needs updating
         import run_pretrain
         run_pretrain.run_pretrain(net,metrics_logger.get_results_path(),boundaryconditions)
     
     #intialise sde integration 
-    integrator = langevin.SDE(boundaryconditions,
+    integrator = langevin.SDE(boundaryconditions, rhonet,
                                         logger=metrics_logger)
     #initialise integration of fpk
     fpk_integrator = fpk.FokkerPlanck(boundaryconditions, net,
@@ -52,7 +53,7 @@ def run():
             #train the rho nn
             rhotrainer.train_loop()  
             #update the drift nn with the current iteration  
-            loss_out = trainer.train_step(rhonet)
+            loss_out = trainer.train_step()
             #update metrics
             metrics.update_metrics(epoch,loss_out)
         except KeyboardInterrupt:
