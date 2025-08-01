@@ -160,9 +160,10 @@ class NeuralNetwork(nn.Module):
                     torch.nn.init.constant_(m.bias, 0)
 
     def load_checkpoint(self,checkpointpath):
-        
+        checkpointpath = os.getcwd() + "/" + checkpointpath
+        print(checkpointpath)
         try:
-            checkpointpath = os.getcwd() + "/" + checkpointpath
+            #checkpointpath = os.path.dirname(os.path.realpath(__file__)) + "/" + checkpointpath
             self.load_state_dict(torch.load(checkpointpath, weights_only=True))
             print("Checkpoint loaded successfully.")    
         except FileNotFoundError:

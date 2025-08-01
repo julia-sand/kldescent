@@ -216,8 +216,6 @@ class TrainRho():
         for _ in range(epochs):
             self.train_step()
         
-
-        #update boundary conds
    
     def update_metrics(self, epoch, loss_out, logger):
         """

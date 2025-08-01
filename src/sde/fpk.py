@@ -49,19 +49,19 @@ class FokkerPlanck(SDE):
         with torch.no_grad():
             t_vec = self.generate_time_grid()
 
-            #set up a,abar,c,cbar
             girs = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32)
 
-            for i in range(0,self.sde_params["tsteps"]-1):
+            for i in range(1,self.sde_params["tsteps"]):
                 
-                dt = t_vec[i+1]-t_vec[i]
+                dt = np.abs(t_vec[i-1]-t_vec[i])
                 
                 dw = self.generate_innovation(dt,self.sde_params["batchsamples"])
             
-                du_bar = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32)
-                                                           ,xinit[...,[0]])))
+                du_bar = torch.zeros_like(xinit[...,[0]])
+                #self.net(torch.column_stack((t_vec[i-1]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32)
+                #                                           ,xinit[...,[0]])))
                 
-                girs = girs + (((2*dt)**(-0.5))*(xinit[...,[1]])) + ((dt * (xinit[...,[1]])**2)/4)
+                girs = girs + (((2*dw)**(-0.5))*(xinit[...,[1]])) + ((dt * (xinit[...,[1]])**2)/4)
 
                 xinit = self.boundary.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[i])
             

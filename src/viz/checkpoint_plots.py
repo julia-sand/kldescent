@@ -11,26 +11,20 @@ from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
 from ..utils.getboundary import *
 
 def load_net(boundary_cond,epoch,param_data,folder=None):
+    net = NeuralNetwork(boundary_cond,param_data)
+    plotter = PlotFuns(boundary_cond)
 
     if folder == None:
         folder = "tests/"+f"{boundary_cond.__class__.__name__}"
     else: #if a folder path is provided, assume that the reference solution is there and overwrite the default    
         boundary_cond.overwrite_ref_path(folder)
+        net.load_checkpoint(folder+f"/checkpoints/{net.net_name}_checkpoint_{epoch}.pt")
 
-    #print(folder+f"/checkpoints/net_checkpoint_{epoch}.pt")
+        #make new folder for the results
+        os.makedirs(folder+f"/plots_{epoch}", exist_ok = True) 
+        plotter.setresultsdir(folder+f"/plots_{epoch}")
 
-    net = NeuralNetwork(boundary_cond,param_data)
-    #net = DataParallel(net)
-
-    net.load_checkpoint(folder+f"/checkpoints/net_checkpoint_{epoch}.pt")
-
-
-    plotter = PlotFuns(boundary_cond)
-    #make new folder for the results
-    os.makedirs(folder+f"/plots_{epoch}", exist_ok = True) 
-    plotter.setresultsdir(folder+f"/plots_{epoch}")
-
-    integrator = langevin.SDE(boundary_cond,param_data)
+    integrator = langevin.SDE(boundary_cond,sde_params=param_data)
 
     return net, plotter, integrator
 
