@@ -2,7 +2,6 @@ import yaml
 
 import argparse
 
-
 """
 handles parameter loading
 """
@@ -14,6 +13,7 @@ class CustomArgParse(argparse.ArgumentParser):
     defaults. 
 
     """
+
     #overwrites the default behaviour if using results folder to use the parameter file available
     def __init__(self):
         self.loc = fetch_results_folder_from_cmd()
@@ -81,13 +81,13 @@ def integrator_params():
     #subparser = parser.add_subparsers()
 
     integrator_params.add_argument('-batchsamples','--batchsamples', type=int, 
-                        default=100,
+                        default=50,
                         help='Number of sample trajectories to take of the diffusion')
 
     integrator_params.add_argument('-tsteps','--tsteps', type=int, default=10,
                         help='number of timesteps in the integration')
 
-    integrator_params.add_argument('-testsamples','--testsamples', type=int, default=10,
+    integrator_params.add_argument('-testsamples','--testsamples', type=int, default=100,
                         help='number of samples for computing ref metrics')
 
     args1 = integrator_params.parse_known_args(integrator_params.argfile)

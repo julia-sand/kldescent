@@ -112,32 +112,13 @@ class HalfBridgeLandauer(Boundaries):
 
         return -(q**2-1)*q
 
-    #def qinitial(self,q):
-
-    #    return np.exp(-self.Uinitial(q))
-
     def qfinal(self,q):
 
         return np.exp(-self.Ufinal(q)) 
 
-    #def q_marginal_initial(self,q):
-
-    #    return self.qinitial(q)/(self.pi_norm)
-
-
     def q_marginal_final(self,q): 
         
         return self.qfinal(q)/self.pf_norm
-
-
-    #def p_initial(self,q,p):
-
-    #    return (self.q_marginal_initial(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
-
-
-    #def p_final(self,q,p): 
-        
-    #    return (self.q_marginal_final(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
 
     #generate the initial data
     def generate_samples(self,batch_samples,mode):
@@ -412,7 +393,7 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
 
         #takes one step forward in the euler maruyama discretisation
         #go forward one step 
-        xn[...,[0]] = xn[...,[0]] - self.params["epsilon"]*xn[...,[1]]*dt 
+        xn[...,[0]] = xn[...,[0]] + self.params["epsilon"]*xn[...,[1]]*dt 
         xn[...,[1]] = xn[...,[1]] + self.sigma0*du_bar*dt + self.sigma0*dw
 
         return xn

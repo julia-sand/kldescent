@@ -13,7 +13,6 @@ class SDE():
     args: 
         rhonet: 
             neural net used to evaluate the terminal cost (g) 
-        
     """
 
     def __init__(self,
@@ -24,7 +23,6 @@ class SDE():
                     device="cpu"):
         self.rhonet = rhonet
         self.boundary = boundary_data
-        #self.logger = logger
 
         #get params 
         if sde_params is not None:
