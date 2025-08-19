@@ -2,6 +2,8 @@
 Calculates estimate of the joint probability density using method of 2411.08158
 
 """
+import math
+
 import torch
 import numpy as np
 
@@ -61,9 +63,9 @@ class FokkerPlanck(SDE):
                 #self.net(torch.column_stack((t_vec[i-1]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32)
                 #                                           ,xinit[...,[0]])))
                 
-                girs = girs + (((2*dw)**(-0.5))*(xinit[...,[1]])) + ((dt * (xinit[...,[1]])**2)/4)
 
                 xinit = self.boundary.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[i])
+                girs = girs + (dw*xinit[...,[1]])/math.sqrt(2) + (dt * (xinit[...,[1]])**2)/4
             
             pdfout = self.boundary.p_initial(xinit[...,[0]],xinit[...,[1]])*torch.exp(-girs)
 
@@ -81,6 +83,7 @@ class FokkerPlanck(SDE):
         return torch.mean((rhonet(x0)-pdfout)**2)
 
 if __name__=="__main__":
+    
     import os 
 
     from ..model.nn import NeuralNetwork
