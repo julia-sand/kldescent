@@ -9,6 +9,7 @@ from .plots import PlotFuns
 from ..sde import langevin,fpk
 from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
 from ..utils.getboundary import *
+from .contour import *
 
 class PlotUtils():
     """
@@ -50,6 +51,8 @@ class PlotUtils():
         self.plotter.setresultsdir(self.folder+f"/plots_{self.epoch}")
 
         self.integrator = langevin.SDE(self.boundary_cond,sde_params=data_loaded)
+        self.fpk_integrator = fpk.FokkerPlanck(self.boundary_cond,self.net,
+                                                sde_params=data_loaded)
         
     def checkpoint_plots_du(self):
 
@@ -58,6 +61,16 @@ class PlotUtils():
                         self.plotter,
                         self.boundary_cond.params["Tf"])
         self.plotter.plot_drift(times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
+
+    def checkpoint_plots_rho(self):
+        """
+        Specifies plotting functions to run to display results of training the rho network
+        """
+
+        #generate xmesh
+        xinit = torch.tensor(generate_mesh(),requires_grad=False)
+        pdf_out = self.integrator.compute_pdf(xinit)
+
 
 
 def compute_ref_kl(boundary):
@@ -76,4 +89,5 @@ if __name__=="__main__":
 
     plot_utils = PlotUtils()
 
-    plot_utils.checkpoint_plots_du()
+    #plot_utils.checkpoint_plots_du()
+    plot_utils.checkpoint_plots_rho()

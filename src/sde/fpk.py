@@ -14,6 +14,7 @@ from ..utils.parser import fetch_results_folder_from_cmd
 from ..sde import boundary as boundaries 
 from ..utils.getboundary import *
 
+
 class FokkerPlanck(SDE):
     """
     Integrator class for integrating the Fokker planck equation

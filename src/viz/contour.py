@@ -1,15 +1,41 @@
 import numpy as np 
 import matplotlib.pyplot as plt 
 import torch
+
 import pdb
 ##creates the contour plot showing the full joint pdf
 
-def generate_mesh(x_samples,testing_samples):
-    #set up the time grid things
-    P,Q = np.meshgrid(np.linspace(-4,4,x_samples),
-                        np.linspace(-4,4,x_samples))
+def generate_mesh(x_samples):
+    """
+    generates a mesh in two dimensional phase space to evaluate and plot the joint distribution 
+    
+    args:
+        x_samples:
+            number of samples in the space discretisation
+    """
 
-    return np.repeat(np.column_stack((P.reshape(x_samples*x_samples),Q.reshape(x_samples*x_samples)))[np.newaxis, ...], testing_samples, axis=0)
+    pmax,qmax = 4,4
+    p_init = np.linspace(-pmax,pmax,x_samples)
+    q_init = np.linspace(-qmax,qmax,x_samples)
+    
+    Q,P = np.meshgrid(q_init,p_init)
+    return Q,P
+
+def generate_mesh_mc(x_samples,testing_samples):
+    """
+    generates a mesh in two dimensional phase space and copies it to allow computing parallel montecarlo 
+    trajectories from the same starting point
+
+    args:
+        x_samples:
+            number of samples in the space discretisation
+        testing_samples:
+            number of copies of the meshgrid 
+    """
+
+    Q,P = generate_mesh(x_samples)
+
+    return np.repeat(np.column_stack((Q.reshape(x_samples*x_samples),P.reshape(x_samples*x_samples)))[np.newaxis, ...], testing_samples, axis=0)
 
 @torch.no_grad
 def compute_joint(t,net,
@@ -25,7 +51,7 @@ def compute_joint(t,net,
     #start_index = np.where(t_vec==t)[0][0]
 
     #start the trajectories
-    xinit = torch.tensor(generate_mesh(x_samples,testing_samples),
+    xinit = torch.tensor(generate_mesh_mc(x_samples,testing_samples),
                             requires_grad=False,
                             dtype=torch.float32)
     #reset girsanov
