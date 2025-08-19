@@ -42,14 +42,24 @@ def compute_joint(t,net,
                     testing_samples,
                     x_samples,
                     boundary_cond):
+    """
+    computes an estimate of the joint distribution based on the method of 2411.08518
+
+    args:
+        t:
+            time at which to evaluate the distribution
+        testing_samples:
+            number of independent monte carlo trajectories at each point in the mesh
+        x_samples: 
+            number of points in the discretisation of one axis (ie for two dimensional phase space we get x_samples**2 points)
+        boundary_cond:
+            boundary conditions class specifying the problem
+    """
 
     net.eval()
-    #
-    #pdb.set_trace()
+    
     t_vec = np.array(boundary_cond.get_reference_timegrid(t+.0001))
     
-    #start_index = np.where(t_vec==t)[0][0]
-
     #start the trajectories
     xinit = torch.tensor(generate_mesh_mc(x_samples,testing_samples),
                             requires_grad=False,
@@ -78,8 +88,6 @@ def compute_joint(t,net,
         girsanov = girsanov + (np.sqrt(1/boundary_cond.sigma0)*(xinit[...,[1]]*dw) + (dt/(boundary_cond.sigma0**2))*torch.square(xinit[...,[1]]))
 
     return np.nanmean(np.multiply(boundary_cond.p_initial(xinit[...,[0]],xinit[...,[1]]),np.exp(-girsanov)),axis=0)
-
-    
 
 
 @torch.no_grad

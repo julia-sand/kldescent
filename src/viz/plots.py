@@ -107,7 +107,7 @@ class PlotFuns():
   def joint_distributions_scatter_panel(self,
                                   ax,
                                   joint_out,
-                                  x_samples,
+                                  xs,
                                   time=None,vmax=0.5):
     """
     Plots one panel of the joint distribution, where the 
@@ -119,7 +119,7 @@ class PlotFuns():
       joint_out: arr
         joint distribution as a numpy array
       x_samples: arr
-        input data (x,y) as numpy arr
+        2d input data (x,y) as numpy arr
       time: float
         time at which the plot is evaluated- defaults to final time
       vmax: float
