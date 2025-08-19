@@ -255,6 +255,8 @@ class SDE():
         ====
         args:
           net: neural network
+          plotter: object for setting up plots
+          marginal_plot_time: at what time to plot the marginal distributions  
         ====
 
         """

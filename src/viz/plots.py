@@ -64,7 +64,7 @@ class PlotFuns():
                                   plot_index,
                                   joint_out,
                                   x_samples,
-                                  time,vmax=0.5):
+                                  time=None,vmax=0.5):
 
     """
     Function that plots the scatter plot of the monte carlo approximation of the joint distribution
@@ -79,12 +79,6 @@ class PlotFuns():
     - vmax: maximum value for the scatter plots
     """
 
-    pmax,qmax = 4,4
-    p_init = np.linspace(-pmax,pmax,x_samples)
-    q_init = np.linspace(-qmax,qmax,x_samples)
-    
-    Q,P = np.meshgrid(q_init,p_init)
-
     x_ind = int(np.floor(plot_index/3))
     y_ind = plot_index % 3
 
@@ -92,22 +86,66 @@ class PlotFuns():
 
     #get plot location
     ax = fig.add_subplot(gs_joint_distributions[x_ind,y_ind])
+    ax.text(-9,0.4,self.make_plot_label(plot_index),fontsize = self.fontsizetitles,zorder = 200)
+
+    #plotting goes here
+    #self.joint_distributions_scatter_panel(ax,joint_out,x_samples,time,vmax)
+    
+    #add boundary conditions to first plot and format titles
+    if plot_index ==0:
+      ax.set_title(f"$t = 0$", loc = "center", fontsize=self.fontsizetitles)
+      ax_pmarginal.fill_between(q_init,np.exp(-(q_init**2)/2)/np.sqrt(np.pi*2),color=self.c2)
+      ax_qmarginal.fill_between(self.boundary.q_marginal_initial(q_init),q_init,color=self.c2)
+    elif plot_index == 5:
+      ax.set_title(f"$t = t_f$", loc = "center", fontsize=self.fontsizetitles)
+      #ax_pmarginal.fill_between(q_init,np.exp(-self.boundary.beta*(q_init**2)/2)/np.sqrt(np.pi*2/self.boundary.beta),color=self.c2)
+      #ax_qmarginal.fill_between(self.boundary.q_marginal_final(q_init),q_init,color=self.c2)
+    else:
+      ax.set_title(f"$t = {plot_title_value} t_f$", loc = "center", fontsize=self.fontsizetitles)
+
+
+  def joint_distributions_scatter_panel(self,
+                                  ax,
+                                  joint_out,
+                                  x_samples,
+                                  time=None,vmax=0.5):
+    """
+    Plots one panel of the joint distribution, where the 
+    center shows the joint and marginals are estimated
+
+    args:
+      ax: artist
+        axes where to plot. can be a gridspec subplot
+      joint_out: arr
+        joint distribution as a numpy array
+      x_samples: arr
+        input data (x,y) as numpy arr
+      time: float
+        time at which the plot is evaluated- defaults to final time
+      vmax: float
+        maximum value for the scatter plots color scale
+    """
+
+    #set default time
+    if time==None:
+      time = self.boundary["Tf"]
+
+    plot_title_value = round(time/self.boundary["Tf"],2)
 
     ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
     ax_qmarginal = ax.inset_axes([-0.65, 0, 0.6, 1])
-    ax_pmarginal.text(-9,0.4,self.make_plot_label(plot_index),fontsize = self.fontsizetitles,zorder = 200)
 
     #compute joint distribution
     idx = np.argwhere(~np.isnan(joint_out))
     
-    pmarginal = np.nansum(joint_out.reshape((x_samples,x_samples)),axis=1)
+    pmarginal = np.nansum(joint_out,axis=1)
     porder = np.argsort(p_init)
     pnorm = np.trapz(pmarginal[porder],p_init[porder])
     ax_pmarginal.plot(p_init[porder],pmarginal[porder]/pnorm
                       ,color=self.c1,lw=self.lw)
 
 
-    qmarginal = np.nansum(joint_out.reshape((x_samples,x_samples)),axis=0)#[np.nansum(joint_out[i::samples]) for i in range(0,samples)]
+    qmarginal = np.nansum(joint_out,axis=0)#[np.nansum(joint_out[i::samples]) for i in range(0,samples)]
     qorder = np.argsort(q_init)
     qnorm = np.trapz(qmarginal[qorder],q_init[qorder])
 
@@ -121,7 +159,7 @@ class PlotFuns():
     ax_qmarginal.set_xlim((-0.05,0.7))
 
     #plot scatter graphs
-    zout = joint_out[idx]#/max(joint_out[idx])
+    zout = joint_out[idx]
 
     order = np.argsort(zout.flatten())
     pout = P.flatten()[idx].flatten()
@@ -171,17 +209,6 @@ class PlotFuns():
     ax.set_ylabel(r"$q$",fontsize = self.fontsizetitles)
     ax_pmarginal.set_ylabel(r"$\rho_t(p)$",fontsize = self.fontsizetitles)
     ax.yaxis.set_label_position("right")
-    #add boundary conditions to first plot and format titles
-    if plot_index ==0:
-      ax.set_title(f"$t = 0$", loc = "center", fontsize=self.fontsizetitles)
-      ax_pmarginal.fill_between(q_init,np.exp(-(q_init**2)/2)/np.sqrt(np.pi*2),color=self.c2)
-      ax_qmarginal.fill_between(self.boundary.q_marginal_initial(q_init),q_init,color=self.c2)
-    elif plot_index == 5:
-      ax.set_title(f"$t = t_f$", loc = "center", fontsize=self.fontsizetitles)
-      #ax_pmarginal.fill_between(q_init,np.exp(-self.boundary.beta*(q_init**2)/2)/np.sqrt(np.pi*2/self.boundary.beta),color=self.c2)
-      #ax_qmarginal.fill_between(self.boundary.q_marginal_final(q_init),q_init,color=self.c2)
-    else:
-      ax.set_title(f"$t = {plot_title_value} t_f$", loc = "center", fontsize=self.fontsizetitles)
 
     plt.setp(ax_pmarginal.yaxis.get_majorticklabels(), va="bottom")
     plt.setp(ax_qmarginal.xaxis.get_majorticklabels(), ha="right")
