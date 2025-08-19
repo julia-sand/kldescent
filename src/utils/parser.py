@@ -139,8 +139,7 @@ def gaussian_params():
 
     return vars(args5[0])
 
-#TODO separate the parser into smaller so that we can parse straight into other files
-def network_params():
+def du_network_params():
     #general configs for the training process
     # Instantiate the parser
     parser3 = CustomArgParse()
@@ -149,13 +148,28 @@ def network_params():
                         default=None,
                         help='path to a checkpoint for warm-start training. Path should be provided from the current folder.')
          
-    parser3.add_argument('-hiddenlayerneurons','--hiddenlayerneurons', type=int, default=16,
+    parser3.add_argument('-duhiddenlayerneurons','--duhiddenlayerneurons', type=int, default=16,
                         help='Number of hidden dimensions in each layer of the Neural network model')
 
     args3 = parser3.parse_known_args(parser3.argfile)
 
     return vars(args3[0])
 
+def rho_network_params():
+    #general configs for the training process
+    # Instantiate the parser
+    parser3 = CustomArgParse()
+    
+    parser3.add_argument('-checkpointpath','--checkpointpath', type=str,
+                        default=None,
+                        help='path to a checkpoint for warm-start training. Path should be provided from the current folder.')
+         
+    parser3.add_argument('-rhohiddenlayerneurons','--rhohiddenlayerneurons', type=int, default=16,
+                        help='Number of hidden dimensions in each layer of the Neural network model')
+
+    args3 = parser3.parse_known_args(parser3.argfile)
+
+    return vars(args3[0])
 
 def girsanov_plot_params():
 
