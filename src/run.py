@@ -26,10 +26,17 @@ def run():
     if args["boundary"]=="LinearOU":
         net = nn.MLP().to(args["device"])
     else:
-        net = nn.NeuralNetwork(boundaryconditions,logger=metrics_logger).to(args["device"])
+        net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
 
+    rhonet = nn.RhoNeuralNetwork(boundaryconditions)
+    
+
+    #log the params
+    metrics_logger.log_dict(net.params)
+    metrics_logger.log_dict(rhonet.params)
+    
+    #use data paralisation to speed up evaluations
     net = DataParallel(net)
-    rhonet = nn.RhoNeuralNetwork(boundaryconditions,logger=metrics_logger)
     rhonet = DataParallel(rhonet)
 
     if args["pretrain"]: #TODO this needs updating
@@ -40,6 +47,9 @@ def run():
     integrator = langevin.SDE(boundaryconditions, rhonet)
     #initialise integration of fpk
     fpk_integrator = fpk.FokkerPlanck(boundaryconditions, net)
+    
+    #save params
+    metrics_logger.log_dict(integrator.sde_params)
 
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
