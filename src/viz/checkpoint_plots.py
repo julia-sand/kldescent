@@ -4,15 +4,15 @@ import yaml
 import torch
 import numpy as np
 
-from ..model.nn import NeuralNetwork
+from ..model.nn import RhoNeuralNetwork,NeuralNetwork
 from .plots import PlotFuns
-from ..sde import langevin
+from ..sde import langevin,fpk
 from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
 from ..utils.getboundary import *
 
-def load_net(net,boundary_cond,epoch,param_data,folder=None):
+class PlotUtils():
     """
-    Function which prepares the neural net, boundary and plotting variables to
+    Class which prepares the neural net, boundary and plotting variables to
     set up the plots
     Functionality:
     1. load neural network checkpoint based on input folder and epoch
@@ -21,35 +21,44 @@ def load_net(net,boundary_cond,epoch,param_data,folder=None):
     4. creates new plots folder in the folder location
     5. initialises the integrator to use for the the plots
     """
-    
-    plotter = PlotFuns(boundary_cond)
 
-    if folder == None:
-        folder = "tests/"+f"{boundary_cond.__class__.__name__}"
-    else: #if a folder path is provided, assume that the reference solution is there and overwrite the default    
-        boundary_cond.overwrite_ref_path(folder)
-        net.load_checkpoint(folder+f"/checkpoints/{net.net_name}_checkpoint_{epoch}.pt")
+    def __init__(self):
+        
+        #get folder and load boundary data and params from file
+        folder = fetch_results_folder_from_cmd()   
+        boundary_cond,data_loaded = init_params_from_file(folder)
+
+        params = checkpoint_plot_params() #get checkpoint plot parameters from cmd line
+        
+        self.boundary_cond = boundary_cond
+        self.epoch = params["epoch"]
+        self.net = NeuralNetwork(boundary_cond,data_loaded)
+        self.rhonet = RhoNeuralNetwork(boundary_cond,data_loaded)
+        
+        self.plotter = PlotFuns(boundary_cond)
+
+        if folder == None:
+            self.folder = "tests/"+f"{boundary_cond.__class__.__name__}"
+        else: #if a folder path is provided, assume that the reference solution is there and overwrite the default    
+            self.folder = folder
+            boundary_cond.overwrite_ref_path(self.folder)
+            self.net.load_checkpoint(self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
+            self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
 
         #make new folder for the results
-        os.makedirs(folder+f"/plots_{epoch}", exist_ok = True) 
-        plotter.setresultsdir(folder+f"/plots_{epoch}")
+        os.makedirs(self.folder+f"/plots_{self.epoch}", exist_ok = True) 
+        self.plotter.setresultsdir(self.folder+f"/plots_{self.epoch}")
 
-    integrator = langevin.SDE(boundary_cond,sde_params=param_data)
+        self.integrator = langevin.SDE(self.boundary_cond,sde_params=data_loaded)
+        
+    def checkpoint_plots_du(self):
 
-    return plotter, integrator
+        #folder = logger.get_results_path()
+        self.integrator.compute_sde(self.net,
+                        self.plotter,
+                        self.boundary_cond.params["Tf"])
+        self.plotter.plot_drift(times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
 
-
-def checkpoint_plots_all(logger,
-                            boundary_cond,
-                            net,
-                            plotter,
-                            integrator):
-
-    folder = logger.get_results_path()
-    integrator.compute_sde(net,
-                    plotter,
-                    boundary_cond.params["Tf"])
-    plotter.plot_drift(times = [0,boundary_cond.params["Tf"]/2,boundary_cond.params["Tf"]],net=net)
 
 def compute_ref_kl(boundary):
     times = boundary.get_reference_timegrid()
@@ -65,17 +74,6 @@ def compute_ref_kl(boundary):
 
 if __name__=="__main__":
 
-    #get folder and load boundary data and params from file
-    folder = fetch_results_folder_from_cmd()   
-    boundary_cond,data_loaded = init_params_from_file(folder)
+    plot_utils = PlotUtils()
 
-    params = checkpoint_plot_params() #get checkpoint plot parameters from cmd line
-    net = NeuralNetwork(boundary_cond,param_data)
-
-    plotter, integrator = load_net(boundary_cond,params["epoch"],data_loaded,
-                                        folder)    
-    integrator.compute_sde(net,
-                            plotter,
-                            boundary_cond.params["Tf"])
-    plotter.plot_drift(times = [0,boundary_cond.params["Tf"]/2,boundary_cond.params["Tf"]],net=net)
-    #print(compute_ref_kl(boundary_cond))
+    plot_utils.checkpoint_plots_du()

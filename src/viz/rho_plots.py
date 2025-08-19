@@ -15,30 +15,6 @@ from ..sde import langevin
 from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
 from ..utils.getboundary import *
 
-class PlotUtils():
-    """
-    class which controls the 
-    """
-
-    def __init__(self,boundary_cond,epoch,param_data,folder=None):
-        self.net = NeuralNetwork(boundary_cond,param_data)
-        self.rhonet = RhoNeuralNetwork(boundary_cond,param_data)
-        
-        self.plotter = PlotFuns(boundary_cond)
-
-        if folder == None:
-            folder = "tests/"+f"{boundary_cond.__class__.__name__}"
-        else: #if a folder path is provided, assume that the reference solution is there and overwrite the default    
-            boundary_cond.overwrite_ref_path(folder)
-            self.net.load_checkpoint(folder+f"/checkpoints/{self.net.net_name}_checkpoint_{epoch}.pt")
-            self.rhonet.load_checkpoint(folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{epoch}.pt")
-
-        #make new folder for the results
-        os.makedirs(folder+f"/plots_{epoch}", exist_ok = True) 
-        self.plotter.setresultsdir(folder+f"/plots_{epoch}")
-
-        self.integrator = langevin.SDE(boundary_cond,sde_params=param_data)
-
 
 def checkpoint_plots_all(logger,
                             boundary_cond,
@@ -75,8 +51,10 @@ if __name__=="__main__":
     plot_setup = PlotUtils(boundary_cond,params["epoch"],
                                         data_loaded,
                                         folder)
+
     plot_setup.integrator.compute_sde(plot_setup.net,
                             plot_setup.plotter,
                             boundary_cond.params["Tf"])
+    
     plot_setup.plotter.plot_drift(times = [0,boundary_cond.params["Tf"]/2,boundary_cond.params["Tf"]],net=plot_setup.net)
     #print(compute_ref_kl(boundary_cond))
