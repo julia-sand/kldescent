@@ -52,7 +52,6 @@ def overdamped_argparser():
     # Instantiate the parser
     parser = CustomArgParse()
 
-
     parser.add_argument('-epochs','--epochs', type=int, default=1,
                         help='A required integer positional argument')
     

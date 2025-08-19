@@ -180,7 +180,8 @@ class TrainRho():
         self.clip = 0.001 #gradient clipping
 
         self.optimiser = Adam(self.rhonet.parameters(), lr=self.lr)
-        self.milestone = 100 #how often to decay learning rate
+        self.epochs = 100 #total number of training epochs
+        self.milestone = 20 #how often to decay learning rate
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
         #self.scheduler = CosineAnnealingLR(self.optimiser, T_max=100, eta_min=1e-10)
@@ -200,21 +201,28 @@ class TrainRho():
         Lhat.backward()
         self.optimiser.step()
                
-        self.scheduler.step()
+        #self.scheduler.step()
             
         print(Lhat.detach().numpy().item())
         return #loss_out
 
-    def train_loop(self, epochs=5):
+    def train_loop(self, epochs=None):
         """
         loop for training the rho neural net
         args:
             epochs:
                 number of epochs to train the network between updates to the drift net
         """
-        
-        for _ in range(epochs):
-            self.train_step()
+
+        if epochs==None:
+            epochs=self.epochs
+
+
+        for _ in range(int(round(epochs/self.milestone))):    
+            for __ in range(self.milestone):
+                self.train_step() #repeat training step
+            
+            self.scheduler.step() #decrease learning rate
         
    
     def update_metrics(self, epoch, loss_out, logger):

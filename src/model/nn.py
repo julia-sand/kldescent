@@ -65,6 +65,7 @@ class FourierFeatures(nn.Module):
         trainable: bool, default: False
             If True, the linear transformation is trainable by gradient descent.
         """
+
         super().__init__()
         assert out_features % 2 == 0, "number of out_features must be even"
         self.in_features = 1 #in_features
@@ -160,11 +161,12 @@ class NeuralNetwork(nn.Module):
                     torch.nn.init.constant_(m.bias, 0)
 
     def load_checkpoint(self,checkpointpath):
-        checkpointpath = os.getcwd() + "/" + checkpointpath
-        print(checkpointpath)
+        prefix = os.path.relpath(os.curdir, start=os.path.dirname(__file__))
+        #os.getcwd() + "/" + checkpointpath
+        print(prefix+"checkpointpath")
         try:
             #checkpointpath = os.path.dirname(os.path.realpath(__file__)) + "/" + checkpointpath
-            self.load_state_dict(torch.load(checkpointpath, weights_only=True))
+            self.load_state_dict(torch.load(prefix+checkpointpath, weights_only=True))
             print("Checkpoint loaded successfully.")    
         except FileNotFoundError:
             print("The checkpoint file in the given was not found.  \n \
