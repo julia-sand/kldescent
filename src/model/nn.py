@@ -4,7 +4,7 @@ import math
 import torch
 from torch import nn
 
-from ..utils.parser import network_params
+from ..utils.parser import du_network_params,rho_network_params
 
 #import pdb
 
@@ -100,7 +100,7 @@ class NeuralNetwork(nn.Module):
         if nn_params is not None:
             self.params = nn_params    
         else:
-            self.params = network_params()
+            self.params = du_network_params()
         
         #if logger is not None:
         #    logger.log_dict(self.params)
@@ -112,31 +112,31 @@ class NeuralNetwork(nn.Module):
         self.flatten = nn.Flatten()
         #self.tencoding = TimeConder(1,self.hidden_layer_neurons) #fourier positional encoding goes here! 
         self.NNt = nn.Sequential(
-            nn.Linear(2*self.params["hiddenlayerneurons"], self.params["hiddenlayerneurons"] ),  #
+            nn.Linear(2*self.params["duhiddenlayerneurons"], self.params["duhiddenlayerneurons"] ),  #
             nn.GELU(), #MyActivation(),
-            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
+            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
             nn.ReLU(),  #must be positive
             ) 
         self.NNx = nn.Sequential(
-            nn.Linear(1, self.params["hiddenlayerneurons"] ),  #input x
+            nn.Linear(1, self.params["duhiddenlayerneurons"] ),  #input x
             nn.GELU(),
-            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
+            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
             )    
         self.NN1 = nn.Sequential(
-            nn.Linear(2*self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
+            nn.Linear(2*self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
             nn.GELU(),
-            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
+            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
             nn.GELU(),
-            nn.Linear(self.params["hiddenlayerneurons"] , 1))  
+            nn.Linear(self.params["duhiddenlayerneurons"] , 1))  
         self.NN2 = nn.Sequential(
-            nn.Linear(2*self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
+            nn.Linear(2*self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
             nn.GELU(),
-            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
+            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
             nn.GELU(),
-            nn.Linear(self.params["hiddenlayerneurons"] , 1),   #64 outputs
+            nn.Linear(self.params["duhiddenlayerneurons"] , 1),   #64 outputs
             nn.ReLU(), #must be positive
             )  
-        self.FourierFeatures = FourierFeatures(2*self.params["hiddenlayerneurons"])
+        self.FourierFeatures = FourierFeatures(2*self.params["duhiddenlayerneurons"])
         
         if self.params["checkpointpath"] is not None: #automatically loads a checkpoint from the command line
             self.load_checkpoint(self.params.checkpointpath)
@@ -188,7 +188,7 @@ class RhoNeuralNetwork(nn.Module):
         if nn_params is not None:
             self.params = nn_params    
         else:
-            self.params = network_params()
+            self.params = rho_network_params()
         
         #if logger is not None:
         #    logger.log_dict(self.params)
@@ -198,9 +198,9 @@ class RhoNeuralNetwork(nn.Module):
 
         super(RhoNeuralNetwork, self).__init__()
         self.NNx = nn.Sequential(
-            nn.Linear(2, self.params["hiddenlayerneurons"] ),  #input x
+            nn.Linear(2, self.params["rhohiddenlayerneurons"] ),  #input x
             nn.GELU(),
-            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #64 outputs
+            nn.Linear(self.params["rhohiddenlayerneurons"] , self.params["rhohiddenlayerneurons"] ),   #64 outputs
             nn.ReLU(), #enforce positive output since we want to learn a pdf
             )  
 
@@ -230,23 +230,23 @@ class RhoNeuralNetwork(nn.Module):
 
 class MLP(nn.Module):
     def __init__(self,checkpointpath=None):
-        self.params = network_params()
+        self.params = du_network_params()
 
         
         super(MLP, self).__init__()
         self.flatten = nn.Flatten()
         self.linear_stack = nn.Sequential(
-            nn.Linear(2, self.params["hiddenlayerneurons"] ),  #two inputs
+            nn.Linear(2, self.params["duhiddenlayerneurons"] ),  #two inputs
             MyActivation(),
-            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #hidden layer
+            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #hidden layer
             nn.ReLU(),
-            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #hidden layer
+            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #hidden layer
             nn.ReLU(),
-            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #hidden layer
+            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #hidden layer
             nn.ReLU(),
-            nn.Linear(self.params["hiddenlayerneurons"] , self.params["hiddenlayerneurons"] ),   #hidden layer
+            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #hidden layer
             MyActivation(),
-            nn.Linear(self.params["hiddenlayerneurons"] , 1)     #one output
+            nn.Linear(self.params["duhiddenlayerneurons"] , 1)     #one output
         )    
         self.initialize_weights()   
 
