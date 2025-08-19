@@ -94,7 +94,7 @@ class FourierFeatures(nn.Module):
         return t
 
 class NeuralNetwork(nn.Module):
-    def __init__(self,boundary,nn_params=None,logger=None):
+    def __init__(self,boundary,nn_params=None):
         
         self.net_name = "du"
         if nn_params is not None:
@@ -102,8 +102,8 @@ class NeuralNetwork(nn.Module):
         else:
             self.params = network_params()
         
-        if logger is not None:
-            logger.log_dict(self.params)
+        #if logger is not None:
+        #    logger.log_dict(self.params)
 
         #params
         self.boundary = boundary
@@ -182,7 +182,7 @@ class RhoNeuralNetwork(nn.Module):
         boundary: specifies the form 
     """
 
-    def __init__(self,boundary,nn_params=None,logger=None):
+    def __init__(self,boundary,nn_params=None):
         self.net_name = "rho"
    
         if nn_params is not None:
@@ -190,8 +190,8 @@ class RhoNeuralNetwork(nn.Module):
         else:
             self.params = network_params()
         
-        if logger is not None:
-            logger.log_dict(self.params)
+        #if logger is not None:
+        #    logger.log_dict(self.params)
 
         #params
         self.boundary = boundary
