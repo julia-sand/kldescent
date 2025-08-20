@@ -170,7 +170,9 @@ class NeuralNetwork(nn.Module):
         except FileNotFoundError:
             print("The checkpoint file in the given was not found.  \n \
                     Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch to load when using a default with --folder. For loading a specific checkpoint file with a different filename, use the --checkpointpath option.")
-            raise FileNotFoundError
+            print("Continuing with default initialisation")
+            pass
+            #raise FileNotFoundError
         except AttributeError:
             print("Checkpoint could not be loaded. Checkpoint format not compatible with initialised network. Continuing with default initialisation-")
             #raise AttributeError
@@ -179,8 +181,10 @@ class NeuralNetwork(nn.Module):
 class RhoNeuralNetwork(nn.Module):
     """
     Neural Network object for parametrising the form of the probability distribution
+    
     args: 
-        boundary: specifies the form 
+        boundary: 
+            specifies the problem 
     """
 
     def __init__(self,boundary,nn_params=None):
@@ -191,9 +195,6 @@ class RhoNeuralNetwork(nn.Module):
         else:
             self.params = rho_network_params()
         
-        #if logger is not None:
-        #    logger.log_dict(self.params)
-
         #params
         self.boundary = boundary
 
@@ -209,7 +210,6 @@ class RhoNeuralNetwork(nn.Module):
         
         return self.NNx(x0)
 
-
     def initialize_weights(self,net):   #sets all the weights away from zero.
         for m in net.modules():
             if isinstance(m, nn.Linear):
@@ -218,16 +218,19 @@ class RhoNeuralNetwork(nn.Module):
                     torch.nn.init.constant_(m.bias, 0)
 
     def load_checkpoint(self,checkpointpath):
-        #TODO update this function to look for a separate rho nn checkpoint.
         try:
-            checkpointpath = os.getcwd() + "/" + checkpointpath
             self.load_state_dict(torch.load(checkpointpath, weights_only=True))
             print("Checkpoint loaded successfully.")    
         except FileNotFoundError:
-            print("The checkpoint file was not found.  \n \
-                    An epoch with a saved checkpoint must be specified. Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch.")
-            raise FileNotFoundError
-
+            print("The checkpoint file in the given was not found.  \n \
+                    Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch to load when using a default with --folder. For loading a specific checkpoint file with a different filename, use the --checkpointpath option.")
+            print("Continuing with default initialisation")
+            pass
+            #raise FileNotFoundError
+        except AttributeError:
+            print("Checkpoint could not be loaded. Checkpoint format not compatible with initialised network. Continuing with default initialisation-")
+            #raise AttributeError
+            pass
 
 class MLP(nn.Module):
     def __init__(self,checkpointpath=None):

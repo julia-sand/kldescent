@@ -48,17 +48,18 @@ class FokkerPlanck(SDE):
         
         #pdb.set_trace()
         self.net.eval()
+        num_samples = xinit.shape[0]
     
         with torch.no_grad():
             t_vec = self.generate_time_grid()
 
-            girs = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32)
+            girs = torch.zeros((num_samples,1),requires_grad=False,dtype=torch.float32)
 
             for i in range(1,self.sde_params["tsteps"]):
                 
                 dt = np.abs(t_vec[i-1]-t_vec[i])
                 
-                dw = self.generate_innovation(dt,self.sde_params["batchsamples"])
+                dw = self.generate_innovation(dt,num_samples)
             
                 du_bar = torch.zeros_like(xinit[...,[0]])
                 #self.net(torch.column_stack((t_vec[i-1]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32)

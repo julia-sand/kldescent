@@ -165,7 +165,6 @@ class TrainRho():
     args
         rhonet: neural network used to approximate the final distribtuion
         integrator: class that holds integration functions for the fokker planck
-    
     """
 
     def __init__(self, rhonet, integrator):
@@ -180,7 +179,7 @@ class TrainRho():
         self.clip = 0.001 #gradient clipping
 
         self.optimiser = Adam(self.rhonet.parameters(), lr=self.lr)
-        self.epochs = 100 #total number of training epochs
+        self.rho_epochs = 100 #total number of training epochs
         self.milestone = 20 #how often to decay learning rate
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
