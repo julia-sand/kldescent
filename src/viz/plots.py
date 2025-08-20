@@ -1,6 +1,8 @@
 import os
 import string
 
+import pdb
+
 import numpy as np 
 from sklearn.neighbors import KernelDensity
 import torch
@@ -109,8 +111,8 @@ class PlotFuns():
     xorder = np.argsort(x0_init)
     xnorm = np.trapz(x0_marginal[xorder],x0_init[xorder])
 
-    ax.plot(x0_marginal[xorder]/xnorm
-                      ,x0_init[xorder],color=self.c1,lw=self.lw)
+    ax.plot(x0_init[xorder],x0_marginal[xorder]/xnorm
+                      ,color=self.c1,lw=self.lw)
 
 
   def joint_distributions_scatter_panel(self,
@@ -135,6 +137,7 @@ class PlotFuns():
         maximum value for the scatter plots color scale
     """
 
+    #pdb.set_trace()
     #set default time
     if time==None:
       time = self.boundary.params["Tf"]
@@ -147,7 +150,7 @@ class PlotFuns():
     joint_out_temp = joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n))))
     Q = xs[...,[0]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
     P = xs[...,[1]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
-    p_init = P[0,:].flatten()
+    p_init = Q[[0],:].flatten()
     
     #plot and format marginals
     self.plot_marginal_joint(ax_qmarginal,np.nansum(joint_out_temp,axis=1),p_init)
@@ -216,7 +219,7 @@ class PlotFuns():
     plt.setp(ax_pmarginal.yaxis.get_majorticklabels(), va="bottom")
     plt.setp(ax_qmarginal.xaxis.get_majorticklabels(), ha="right")
     ax.set_aspect('equal', adjustable='box')
-    ax_qmarginal.invert_xaxis()
+    ax_pmarginal.invert_xaxis()
     ax.set_xticks([-2.5,0,2.5])
 
   def make_colourbar(self,fig,vmax):

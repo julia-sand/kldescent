@@ -166,7 +166,7 @@ class NeuralNetwork(nn.Module):
         #os.getcwd() + "/" + checkpointpath
         try:
             self.load_state_dict(torch.load(checkpointpath, weights_only=True))
-            print("Checkpoint loaded successfully.")    
+            print("DU: Checkpoint loaded successfully.")    
         except FileNotFoundError:
             print("The checkpoint file in the given was not found.  \n \
                     Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch to load when using a default with --folder. For loading a specific checkpoint file with a different filename, use the --checkpointpath option.")
@@ -220,7 +220,7 @@ class RhoNeuralNetwork(nn.Module):
     def load_checkpoint(self,checkpointpath):
         try:
             self.load_state_dict(torch.load(checkpointpath, weights_only=True))
-            print("Checkpoint loaded successfully.")    
+            print("RHO: Checkpoint loaded successfully.")    
         except FileNotFoundError:
             print("The checkpoint file in the given was not found.  \n \
                     Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch to load when using a default with --folder. For loading a specific checkpoint file with a different filename, use the --checkpointpath option.")
