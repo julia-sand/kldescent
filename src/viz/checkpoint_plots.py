@@ -1,6 +1,8 @@
 import os
 import yaml 
 
+import pdb
+
 import torch
 import numpy as np
 
@@ -44,7 +46,7 @@ class PlotUtils():
             self.folder = folder
             boundary_cond.overwrite_ref_path(self.folder)
             self.net.load_checkpoint(self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
-            self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
+            
 
         #make new folder for the results
         os.makedirs(self.folder+f"/plots_{self.epoch}", exist_ok = True) 
@@ -55,6 +57,10 @@ class PlotUtils():
                                                 sde_params=data_loaded)
         
     def checkpoint_plots_du(self):
+        """
+        Runs the functions to make plots to show the results of the 
+        drift learning
+        """
 
         #folder = logger.get_results_path()
         self.integrator.compute_sde(self.net,
@@ -62,16 +68,40 @@ class PlotUtils():
                         self.boundary_cond.params["Tf"])
         self.plotter.plot_drift(times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
 
+    def load_rho_checkpoint(self):
+        
+        self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
+            
     def checkpoint_plots_rho(self):
+        self.load_rho_checkpoint()
+        self.make_contour_plot()
+        
+    def compute_rho_data(self,x_samples=100):
         """
         Specifies plotting functions to run to display results of training the rho network
+        
+        args:
+            x_samples:
+                number of space discretisation steps
         """
 
         #generate xmesh
-        xinit = torch.tensor(generate_mesh(),requires_grad=False)
-        pdf_out = self.integrator.compute_pdf(xinit)
+        Q,P = generate_mesh(x_samples)
+        xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
+        
+        #want shape = (x,2)
+        pdf_out = self.fpk_integrator.compute_pdf(xinit.clone())
 
+        return xinit.detach(),pdf_out.detach()
 
+    def make_contour_plot(self):
+        xout,jointout = self.compute_rho_data(x_samples=100)
+        fig,ax = plt.subplots()
+
+        self.plotter.joint_distributions_scatter_panel(ax,
+                                                    jointout,
+                                                    xout,
+                                                    time=None,vmax=0.5)
 
 def compute_ref_kl(boundary):
     times = boundary.get_reference_timegrid()

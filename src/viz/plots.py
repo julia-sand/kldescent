@@ -82,7 +82,7 @@ class PlotFuns():
     x_ind = int(np.floor(plot_index/3))
     y_ind = plot_index % 3
 
-    plot_title_value = round(time/self.boundary["Tf"],2)
+    plot_title_value = round(time/self.boundary.params["Tf"],2)
 
     #get plot location
     ax = fig.add_subplot(gs_joint_distributions[x_ind,y_ind])
@@ -103,12 +103,21 @@ class PlotFuns():
     else:
       ax.set_title(f"$t = {plot_title_value} t_f$", loc = "center", fontsize=self.fontsizetitles)
 
+  def plot_marginal_joint(self,ax,x0_marginal,x0_init):
+
+    #qmarginal = np.nansum(joint_out_temp,axis=0)#[np.nansum(joint_out[i::samples]) for i in range(0,samples)]
+    xorder = np.argsort(x0_init)
+    xnorm = np.trapz(x0_marginal[xorder],x0_init[xorder])
+
+    ax.plot(x0_marginal[xorder]/xnorm
+                      ,x0_init[xorder],color=self.c1,lw=self.lw)
+
 
   def joint_distributions_scatter_panel(self,
-                                  ax,
-                                  joint_out,
-                                  xs,
-                                  time=None,vmax=0.5):
+                                        ax,
+                                        joint_out,
+                                        xs,
+                                        time=None,vmax=0.5):
     """
     Plots one panel of the joint distribution, where the 
     center shows the joint and marginals are estimated
@@ -117,9 +126,9 @@ class PlotFuns():
       ax: artist
         axes where to plot. can be a gridspec subplot
       joint_out: arr
-        joint distribution as a numpy array
-      x_samples: arr
-        2d input data (x,y) as numpy arr
+        joint distribution (n**2,1) as a numpy array
+      xs: arr
+        2d input data shaped (n**2,2) as numpy arr
       time: float
         time at which the plot is evaluated- defaults to final time
       vmax: float
@@ -128,45 +137,39 @@ class PlotFuns():
 
     #set default time
     if time==None:
-      time = self.boundary["Tf"]
-
-    plot_title_value = round(time/self.boundary["Tf"],2)
+      time = self.boundary.params["Tf"]
 
     ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
     ax_qmarginal = ax.inset_axes([-0.65, 0, 0.6, 1])
 
-    #compute joint distribution
-    idx = np.argwhere(~np.isnan(joint_out))
+    n = joint_out.shape[0]
     
-    pmarginal = np.nansum(joint_out,axis=1)
-    porder = np.argsort(p_init)
-    pnorm = np.trapz(pmarginal[porder],p_init[porder])
-    ax_pmarginal.plot(p_init[porder],pmarginal[porder]/pnorm
-                      ,color=self.c1,lw=self.lw)
+    joint_out_temp = joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n))))
+    Q = xs[...,[0]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
+    P = xs[...,[1]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
+    p_init = P[0,:].flatten()
+    
+    #plot and format marginals
+    self.plot_marginal_joint(ax_qmarginal,np.nansum(joint_out_temp,axis=1),p_init)
+    self.plot_marginal_joint(ax_pmarginal,np.nansum(joint_out_temp,axis=0),p_init)
 
-
-    qmarginal = np.nansum(joint_out,axis=0)#[np.nansum(joint_out[i::samples]) for i in range(0,samples)]
-    qorder = np.argsort(q_init)
-    qnorm = np.trapz(qmarginal[qorder],q_init[qorder])
-
-    ax_qmarginal.plot(qmarginal[qorder]/qnorm
-                      ,q_init[qorder],color=self.c1,lw=self.lw)
-
-    ax_pmarginal.set_xlim((-pmax,pmax))
+    ax_pmarginal.set_xlim((-self.qmax,self.qmax))
     ax_pmarginal.set_ylim((-0.05,0.7))
 
-    ax_qmarginal.set_ylim((-qmax,qmax))
+    ax_qmarginal.set_ylim((-self.qmax,self.qmax))
     ax_qmarginal.set_xlim((-0.05,0.7))
 
-    #plot scatter graphs
-    zout = joint_out[idx]
+    #plot joint distribution
+    #idx = np.argwhere(~np.isnan(joint_out_temp))
+    zout = joint_out_temp#[idx]
 
     order = np.argsort(zout.flatten())
-    pout = P.flatten()[idx].flatten()
-    qout = Q.flatten()[idx].flatten()
-    ax.scatter(pout[order],qout[order],c=zout.flatten()[order]
+    pout = P.flatten()#[idx].flatten()
+    qout = Q.flatten()#[idx].flatten()
+    #ax.scatter(pout[order],qout[order],c=zout.flatten()[order]
+    #          ,cmap="Blues",norm="log",vmin=0.001,vmax=vmax)
+    ax.scatter(pout,qout,c=zout.flatten()
               ,cmap="Blues",norm="log",vmin=0.001,vmax=vmax)
-
     ###ticks formatting and labelling
     ax_pmarginal.yaxis.tick_right()
     ax.yaxis.tick_right()
@@ -196,8 +199,8 @@ class PlotFuns():
         left=False,
         labelleft=False)
 
-    ax.set_xlim((-pmax,pmax))
-    ax.set_ylim((-qmax,qmax))
+    ax.set_xlim((-self.qmax,self.qmax))
+    ax.set_ylim((-self.qmax,self.qmax))
 
     ax.tick_params(axis='both', 
                     labelsize=self.fontsizeticks)
