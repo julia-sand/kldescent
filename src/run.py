@@ -11,7 +11,6 @@ from src.utils import *
 import src.viz.plots as plots
 from src.viz.checkpoint_plots import *
 
-#@profile
 def run():
 
     #create a log file and results directory

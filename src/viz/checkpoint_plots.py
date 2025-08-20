@@ -18,8 +18,9 @@ class PlotUtils():
     Class which prepares the neural net, boundary and plotting variables to
     set up the plots
     Functionality:
-    1. load neural network checkpoint based on input folder and epoch
-    2. initialises plotter based on boundary conditions
+    1. init neural networks
+    1a. load checkpoint based on input folder and epoch
+    2. initialises plotter based on boundary conditions either from cmd or parameter file
     3. sets the location of the reference solution based on input folder
     4. creates new plots folder in the folder location
     5. initialises the integrator to use for the the plots
@@ -34,9 +35,9 @@ class PlotUtils():
         params = checkpoint_plot_params() #get checkpoint plot parameters from cmd line
         
         self.boundary_cond = boundary_cond
+        self.data_loaded = data_loaded
         self.epoch = params["epoch"]
         self.net = NeuralNetwork(boundary_cond,data_loaded)
-        self.rhonet = RhoNeuralNetwork(boundary_cond,data_loaded)
         
         self.plotter = PlotFuns(boundary_cond)
 
@@ -53,8 +54,7 @@ class PlotUtils():
         self.plotter.setresultsdir(self.folder+f"/plots_{self.epoch}")
 
         self.integrator = langevin.SDE(self.boundary_cond,sde_params=data_loaded)
-        self.fpk_integrator = fpk.FokkerPlanck(self.boundary_cond,self.net,
-                                                sde_params=data_loaded)
+        
         
     def checkpoint_plots_du(self):
         """
@@ -69,7 +69,9 @@ class PlotUtils():
         self.plotter.plot_drift(times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
 
     def load_rho_checkpoint(self):
-        
+        self.rhonet = RhoNeuralNetwork(self.boundary_cond,self.data_loaded)
+        self.fpk_integrator = fpk.FokkerPlanck(self.boundary_cond,self.net,
+                                                sde_params=self.data_loaded)
         self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
             
     def checkpoint_plots_rho(self):
@@ -91,8 +93,11 @@ class PlotUtils():
         
         #want shape = (x,2)
         pdf_out = self.fpk_integrator.compute_pdf(xinit.clone())
+        
+        #pdb.set_trace()
+        xout,jointout = xinit.detach().numpy(),pdf_out.detach().numpy()
 
-        return xinit.detach(),pdf_out.detach()
+        return xout,jointout
 
     def make_contour_plot(self):
         xout,jointout = self.compute_rho_data(x_samples=100)
@@ -102,6 +107,7 @@ class PlotUtils():
                                                     jointout,
                                                     xout,
                                                     time=None,vmax=0.5)
+        fig.savefig("test.png",bbox_inches="tight")        
 
 def compute_ref_kl(boundary):
     times = boundary.get_reference_timegrid()
