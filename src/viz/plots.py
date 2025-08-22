@@ -219,8 +219,8 @@ class PlotFuns():
     plt.setp(ax_pmarginal.yaxis.get_majorticklabels(), va="bottom")
     plt.setp(ax_qmarginal.xaxis.get_majorticklabels(), ha="right")
     ax.set_aspect('equal', adjustable='box')
-    ax_pmarginal.invert_xaxis()
     ax.set_xticks([-2.5,0,2.5])
+    
 
   def make_colourbar(self,fig,vmax):
     #adds a colour
