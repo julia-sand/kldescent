@@ -214,7 +214,7 @@ class TrainRho():
         """
 
         if epochs==None:
-            epochs=self.epochs
+            epochs=self.rho_epochs
 
 
         for _ in range(int(round(epochs/self.milestone))):    

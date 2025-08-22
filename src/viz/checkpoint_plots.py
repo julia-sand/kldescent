@@ -37,7 +37,6 @@ class PlotUtils():
         self.boundary_cond = boundary_cond
         self.data_loaded = data_loaded
         self.epoch = params["epoch"]
-        self.net = NeuralNetwork(boundary_cond,data_loaded)
         
         self.plotter = PlotFuns(boundary_cond)
 
@@ -46,14 +45,12 @@ class PlotUtils():
         else: #if a folder path is provided, assume that the reference solution is there and overwrite the default    
             self.folder = folder
             boundary_cond.overwrite_ref_path(self.folder)
-            self.net.load_checkpoint(self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
             
 
         #make new folder for the results
         os.makedirs(self.folder+f"/plots_{self.epoch}", exist_ok = True) 
         self.plotter.setresultsdir(self.folder+f"/plots_{self.epoch}")
 
-        self.integrator = langevin.SDE(self.boundary_cond,sde_params=data_loaded)
         
         
     def checkpoint_plots_du(self):
@@ -62,18 +59,26 @@ class PlotUtils():
         drift learning
         """
 
-        #folder = logger.get_results_path()
+        self.load_du_checkpoint()
+
         self.integrator.compute_sde(self.net,
                         self.plotter,
                         self.boundary_cond.params["Tf"])
         self.plotter.plot_drift(times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
 
+    def load_du_checkpoint(self):
+        self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
+        self.net.load_checkpoint(self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
+        self.integrator = langevin.SDE(self.boundary_cond,sde_params=data_loaded)
+
     def load_rho_checkpoint(self):
         self.rhonet = RhoNeuralNetwork(self.boundary_cond,self.data_loaded)
-        self.fpk_integrator = fpk.FokkerPlanck(self.boundary_cond,self.net,
-                                                sde_params=self.data_loaded)
         self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
-            
+
+    def load_fpk_integrator(self,net):
+        self.fpk_integrator = fpk.FokkerPlanck(self.boundary_cond,net,
+                                                sde_params=self.data_loaded)
+              
     def checkpoint_plots_rho(self):
         self.load_rho_checkpoint()
         self.make_contour_plot()
@@ -92,7 +97,9 @@ class PlotUtils():
         xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
         
         #want shape = (x,2)
-        pdf_out = self.fpk_integrator.compute_pdf(xinit.clone())
+        with torch.no_grad():
+            pdf_out = self.rhonet(xinit)
+        #self.fpk_integrator.compute_pdf(xinit.clone())
         
         #pdb.set_trace()
         xout,jointout = xinit.detach().numpy(),pdf_out.detach().numpy()
@@ -125,5 +132,5 @@ if __name__=="__main__":
 
     plot_utils = PlotUtils()
 
-    #plot_utils.checkpoint_plots_du()
-    plot_utils.checkpoint_plots_rho()
+    plot_utils.checkpoint_plots_du()
+    #plot_utils.checkpoint_plots_rho()
