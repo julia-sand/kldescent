@@ -75,14 +75,14 @@ def run():
             metrics_logger.save_checkpoint(net,epoch)
 
 
-    plotter = plots.PlotFuns(boundaryconditions)
-    plotter.setresultsdir(metrics_logger.get_results_path())
-    checkpoint_plots_all(metrics_logger,
-                            boundaryconditions,
-                            net,
-                            plotter,
-                            integrator)
-    plotter.plot_loss_metrics()
+    #plotter = plots.PlotFuns(boundaryconditions)
+    #plotter.setresultsdir(metrics_logger.get_results_path())
+    #checkpoint_plots_all(metrics_logger,
+    #                        boundaryconditions,
+    #                        net,
+    #                        plotter,
+    #                        integrator)
+    #plotter.plot_loss_metrics()
 
 if __name__=="__main__":
     run()
