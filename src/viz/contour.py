@@ -56,7 +56,7 @@ def compute_joint(t,net,
             boundary conditions class specifying the problem
     """
 
-    net.eval()
+    #net.eval()
     
     t_vec = np.array(boundary_cond.get_reference_timegrid(t+.0001))
     
@@ -72,10 +72,13 @@ def compute_joint(t,net,
         dt = np.abs(t_vec[-i-1]-t_vec[-i])
         
         dw = np.sqrt(dt)*torch.randn((testing_samples,x_samples*x_samples,1))
-        nn_input = torch.dstack((t_vec[-i]*torch.ones((testing_samples,x_samples**2,1),dtype=torch.float32),
-                                    xinit[...,[0]]))
-        du = torch.hstack([net(nn_input[:,i,:]) for i in range(x_samples**2)])[...,np.newaxis]
+        #nn_input = 
+        #torch.dstack((t_vec[-i]*torch.ones((testing_samples,x_samples**2,1),dtype=torch.float32),
+                   #                 xinit[...,[0]]))
+        #du = torch.hstack([net(nn_input[:,i,:]) for i in range(x_samples**2)])[...,np.newaxis]
 
+        du = np.zeros_like(xinit[...,[0]])
+        
         #underdamped dynamics
         #backward (T-t0) evolution in t0
         xinit = boundary_cond.girsanov_scheme(xinit,du,-dt,-dw,t_vec[i])
@@ -119,8 +122,6 @@ def plot_contour(fig_joint_distributions_meshgrid,
                                                 t,
                                                 vmax=vmax)
         plot_index += 1
-    ####
-
 
 
 def format_plot(net,
@@ -163,19 +164,16 @@ if __name__=="__main__":
     from ..utils.parser import girsanov_plot_params
     
     girs_params = girsanov_plot_params()
-    testing_samples = girs_params.mcsamples
-    x_samples = girs_params.xsamples
+    testing_samples = girs_params["mcsamples"]
+    x_samples = girs_params["xsamples"]
     vmax = 0.5
 
-    new_folder = "tests/20250523-174017"
-
     boundary_cond = UnderdampedNoMomentum()
-    net = NeuralNetwork(boundary_cond)
-    net.load_checkpoint(new_folder+"/checkpoints/net_checkpoint_2000.pt")
-
+    #net = NeuralNetwork(boundary_cond)
+    
     plotter = PlotFuns(boundary_cond)
-    plotter.setresultsdir(new_folder)
-    format_plot(net,
+
+    format_plot(None,
                     testing_samples,
                     x_samples,
                     boundary_cond,

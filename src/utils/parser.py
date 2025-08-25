@@ -177,10 +177,10 @@ def girsanov_plot_params():
     parser4 = CustomArgParse()
     
     parser4.add_argument('-xsamples','--xsamples', type=int,
-                        default=80,
+                        default=20,
                         help='how many coordinates per axis. Total number of coordinates is xsamples**2')
 
-    parser4.add_argument('-mcsamples','--mcsamples', type=int, default=10000,
+    parser4.add_argument('-mcsamples','--mcsamples', type=int, default=1000,
                         help='Number of monte carlo trajectories to use per coordinate.')
                       
     args4 = parser4.parse_known_args(parser4.argfile)

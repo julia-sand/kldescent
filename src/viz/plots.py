@@ -171,6 +171,16 @@ class PlotFuns():
     p_init = Q[[0],:].flatten()
     
 
+    qmean = np.trapz(np.nansum(joint_out_temp,axis=1)*p_init,p_init)
+    qvar = np.trapz(np.nansum(joint_out_temp,axis=1)*(p_init**2),p_init)
+    pmean = np.trapz(np.nansum(joint_out_temp,axis=0)*p_init,p_init)
+    pvar = np.trapz(np.nansum(joint_out_temp,axis=0)*(p_init**2),p_init)
+    
+    print("Q mean ",qmean)
+    print("P mean ",pmean)
+    print("Q var ",np.sqrt(qvar))
+    print("P var ",pvar)
+
     #plot and format marginals
     self.plot_marginal_joint(ax_qmarginal,p_init,np.nansum(joint_out_temp,axis=1))
     self.plot_marginal_joint(ax_pmarginal,np.nansum(joint_out_temp,axis=0),p_init)
@@ -622,4 +632,5 @@ class PlotFuns():
 
   
 if __name__=="__main__":
-  pass
+  
+  update_mpl()

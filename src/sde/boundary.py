@@ -401,7 +401,7 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
 
 class UnderdampedNoMomentum(UnderdampedHalfLandauer):
     def __init__(self,params=None,logger=None):
-        super().__init__(self,params,logger)
+        UnderdampedHalfLandauer.__init__(self,params,logger)
 
     def gfun(self,x):
         #overwrite the terminal cost function 
