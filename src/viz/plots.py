@@ -168,13 +168,15 @@ class PlotFuns():
     joint_out_temp = joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n))))
     Q = xs[...,[0]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
     P = xs[...,[1]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
-    p_init = Q[[0],:].flatten()
-    
+    p_init = Q[[0],:].flatten() #one axis 
+    dx = np.abs(p_init[1]-p_init[0])
+    #q_dist = np.trapz(joint_out_temp[0,:],p_init)
 
-    qmean = np.trapz(np.nansum(joint_out_temp,axis=1)*p_init,p_init)
-    qvar = np.trapz(np.nansum(joint_out_temp,axis=1)*(p_init**2),p_init)
-    pmean = np.trapz(np.nansum(joint_out_temp,axis=0)*p_init,p_init)
-    pvar = np.trapz(np.nansum(joint_out_temp,axis=0)*(p_init**2),p_init)
+
+    qmean = np.trapz(dx*np.nansum(joint_out_temp,axis=1)*p_init,p_init)
+    qvar = np.trapz(dx*np.nansum(joint_out_temp,axis=1)*(p_init**2),p_init)
+    pmean = np.trapz(dx*np.nansum(joint_out_temp,axis=0)*p_init,p_init)
+    pvar = np.trapz(dx*np.nansum(joint_out_temp,axis=0)*(p_init**2),p_init)
     
     print("Q mean ",qmean)
     print("P mean ",pmean)
@@ -182,8 +184,8 @@ class PlotFuns():
     print("P var ",pvar)
 
     #plot and format marginals
-    self.plot_marginal_joint(ax_qmarginal,p_init,np.nansum(joint_out_temp,axis=1))
-    self.plot_marginal_joint(ax_pmarginal,np.nansum(joint_out_temp,axis=0),p_init)
+    self.plot_marginal_joint(ax_qmarginal,p_init,dx*np.nansum(joint_out_temp,axis=1))
+    self.plot_marginal_joint(ax_pmarginal,dx*np.nansum(joint_out_temp,axis=0),p_init)
 
     ax_pmarginal.set_xlim((-self.qmax,self.qmax))
     #ax_pmarginal.set_ylim((-0.05,0.7))
