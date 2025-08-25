@@ -54,9 +54,14 @@ def run():
     trainer = train.Train(net,integrator) 
     metrics = train.Metrics(trainer,args["logstep"])
     rhotrainer = train.TrainRho(rhonet,fpk_integrator)
+    
+    #save zero metrics 
+    metrics_logger.save_checkpoint(rhonet,0)
+    metrics.update_metrics(0,0,metrics_logger) #write 
 
-    for epoch in range(0,args["epochs"]+1):
+    for epoch in range(1,args["epochs"]+1):
         try:
+
             #train the rho nn
             rhotrainer.train_loop()
             metrics_logger.save_checkpoint(rhonet,epoch)

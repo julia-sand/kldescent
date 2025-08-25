@@ -117,6 +117,7 @@ class Metrics():
         self.scheduler = trainer.scheduler # for testing out different schedules, we record the learning rate 
         self.logstep = logstep #how frequently to save results
     
+
     def update_metrics(self, epoch, loss_out, logger):
         """
         Function for computing metrics
@@ -179,7 +180,7 @@ class TrainRho():
         self.clip = 0.001 #gradient clipping
 
         self.optimiser = Adam(self.rhonet.parameters(), lr=self.lr)
-        self.rho_epochs = 1000 #total number of training epochs
+        self.rho_epochs = 5000 #total number of training epochs
         self.milestone = 200 #how often to decay learning rate
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
