@@ -7,8 +7,7 @@ import numpy as np
 from sklearn.neighbors import KernelDensity
 import torch
 
-import matplotlib
-matplotlib.use('Agg')  # Use the 'Agg' backend for non-GUI rendering
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.cm import ScalarMappable
 import matplotlib.patches as mpatches
@@ -20,8 +19,26 @@ This file holds all the functions used in plotting.
 
 '''
 
+def update_mpl():
+  """
+  Sets default parameters for any matplotlib plotting formatting
+  """
+
+  mpl.use('Agg')  # Use the 'Agg' backend for non-GUI rendering
+
+  #update matplotlib config
+  mpl.rcParams['lines.linewidth'] = 3
+  mpl.rcParams['xtick.labelsize'] = 18
+  mpl.rcParams['ytick.labelsize'] = 18
+  mpl.rcParams['font.size'] = 22
+  mpl.rcParams['axes.labelsize'] = 22
+
+
+
 class PlotFuns():
   def __init__(self,boundary_data=None):
+
+    update_mpl()
 
     #self.subdir = self.folder #add default value to put plots into main folder if subdir has not been set
     self.boundary = boundary_data
@@ -108,11 +125,14 @@ class PlotFuns():
   def plot_marginal_joint(self,ax,x0_marginal,x0_init):
 
     #qmarginal = np.nansum(joint_out_temp,axis=0)#[np.nansum(joint_out[i::samples]) for i in range(0,samples)]
-    xorder = np.argsort(x0_init)
-    xnorm = np.trapz(x0_marginal[xorder],x0_init[xorder])
+    #xorder = np.argsort(x0_init)
+    #xnorm = np.trapz(x0_marginal[xorder],x0_init[xorder])
+    xnorm = np.trapz(x0_marginal,x0_init)
 
-    ax.plot(x0_init[xorder],x0_marginal[xorder]/xnorm
-                      ,color=self.c1,lw=self.lw)
+    #ax.plot(x0_init[xorder],x0_marginal[xorder]/xnorm
+    #                  ,color=self.c1,lw=self.lw)
+    ax.plot(x0_init,x0_marginal#/xnorm
+                      ,color=self.c1)
 
 
   def joint_distributions_scatter_panel(self,
@@ -152,15 +172,17 @@ class PlotFuns():
     P = xs[...,[1]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
     p_init = Q[[0],:].flatten()
     
+
     #plot and format marginals
-    self.plot_marginal_joint(ax_qmarginal,np.nansum(joint_out_temp,axis=1),p_init)
+    self.plot_marginal_joint(ax_qmarginal,p_init,np.nansum(joint_out_temp,axis=1))
     self.plot_marginal_joint(ax_pmarginal,np.nansum(joint_out_temp,axis=0),p_init)
 
     ax_pmarginal.set_xlim((-self.qmax,self.qmax))
-    ax_pmarginal.set_ylim((-0.05,0.7))
+    #ax_pmarginal.set_ylim((-0.05,0.7))
 
     ax_qmarginal.set_ylim((-self.qmax,self.qmax))
-    ax_qmarginal.set_xlim((-0.05,0.7))
+    #ax_qmarginal.set_xlim((-0.05,0.7))
+    ax_qmarginal.invert_xaxis()
 
     #plot joint distribution
     #idx = np.argwhere(~np.isnan(joint_out_temp))
@@ -173,6 +195,7 @@ class PlotFuns():
     #          ,cmap="Blues",norm="log",vmin=0.001,vmax=vmax)
     ax.scatter(pout,qout,c=zout.flatten()
               ,cmap="Blues",norm="log",vmin=0.001,vmax=vmax)
+    
     ###ticks formatting and labelling
     ax_pmarginal.yaxis.tick_right()
     ax.yaxis.tick_right()
