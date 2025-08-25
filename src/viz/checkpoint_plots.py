@@ -85,26 +85,58 @@ class PlotUtils():
         
     def compute_rho_data(self,x_samples=100):
         """
-        Specifies plotting functions to run to display results of training the rho network
-        
+        Generates a statespace grid and evaluates the neural network estimate of the 
+        joint probability distribution at final time 
+
         args:
             x_samples:
                 number of space discretisation steps
+        returns:
+            xout,jointout
+            -2d mesh of points of the statespace
+            -evaluated neural network joint distribution
         """
-
+        
         #generate xmesh
-        Q,P = generate_mesh(x_samples)
+        Q,P = generate_mesh(x_samples,qmax=6)
         xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
         
         #want shape = (x,2)
         with torch.no_grad():
-            pdf_out = self.rhonet(xinit)
-        #self.fpk_integrator.compute_pdf(xinit.clone())
+            pdf_out = self.rhonet(xinit.clone())
         
         #pdb.set_trace()
-        xout,jointout = xinit.detach().numpy(),pdf_out.detach().numpy()
 
-        return xout,jointout
+        return xinit.detach().numpy(),pdf_out.detach().numpy()
+
+    def compute_rho_girsanov(self,x_samples=100):
+        """
+        Convenience function that returns an estimate of the final joint distribution using girsanov theorem
+
+        args:
+            x_samples:
+                number of space discretisation steps
+        returns:
+            xout,jointout
+            -2d mesh of points of the statespace
+            -estimated joint distribution using girsanov theorem
+        """
+        
+        self.load_du_checkpoint()
+        fpk_integrator = self.load_fpk_integrator(self.net)
+
+        #generate xmesh
+        Q,P = generate_mesh(x_samples,qmax=6)
+        xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
+        
+        #want shape = (x,2)
+        with torch.no_grad():
+            pdf_out = self.rhonet(xinit.clone())
+            #pdf_out = self.fpk_integrator.compute_pdf(xinit.clone())
+        
+        #pdb.set_trace()
+
+        return xinit.detach().numpy(),pdf_out.detach().numpy()
 
     def make_contour_plot(self):
         xout,jointout = self.compute_rho_data(x_samples=100)
@@ -114,7 +146,7 @@ class PlotUtils():
                                                     jointout,
                                                     xout,
                                                     time=None,vmax=0.5)
-        fig.savefig("test.png",bbox_inches="tight")        
+        fig.savefig(self.folder+f"/plots_{self.epoch}"+"/test2.png",bbox_inches="tight")        
 
 def compute_ref_kl(boundary):
     times = boundary.get_reference_timegrid()
@@ -124,8 +156,8 @@ def compute_ref_kl(boundary):
     for t in enumerate(times):
         xref,duref = boundary.get_reference_data(t[1])
         ptx = plotter.normal_distribution(xref,0,var_t[t[0]])
-        #np.exp(-(xref-mean_t[t[0]])**2/(2*var_t[t[0]]))/(np.sqrt(2*np.pi*var_t[t[0]]))
         klout[t[0]] = np.trapz(duref*ptx,xref)
+
     return np.trapz(klout,times)
 
 if __name__=="__main__":
