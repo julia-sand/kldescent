@@ -67,7 +67,7 @@ class FokkerPlanck(SDE):
                 
 
                 xinit = self.boundary.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[i])
-                girs = girs + (dw*xinit[...,[1]])/math.sqrt(2) + (dt * (xinit[...,[1]])**2)/4
+                girs = girs + (dw*xinit[...,[1]])/math.sqrt(self.boundary.sigma0) + (dt * (xinit[...,[1]])**2)/(self.boundary.sigma0**2)
             
             pdfout = self.boundary.p_initial(xinit[...,[0]],xinit[...,[1]])*torch.exp(-girs)
 
@@ -80,7 +80,8 @@ class FokkerPlanck(SDE):
 
         #initialise x values 
         x0 = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),dtype=torch.float32)#.to_device(device)
-        pdfout = self.compute_pdf(x0.detach())
+        with torch.no_grad():
+            pdfout = self.compute_pdf(x0.detach())
 
         return torch.mean((rhonet(x0)-pdfout)**2)
 

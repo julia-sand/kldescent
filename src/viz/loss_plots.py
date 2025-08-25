@@ -22,10 +22,4 @@ if __name__=="__main__":
   from ..utils.parser import fetch_results_folder_from_cmd
 
   plot_loss(fetch_results_folder_from_cmd())
-  #from ..sde.boundary import *
-  #boundary_cond = UnderdampedHalfGaussian()
-  #fileloc=f"tests/{boundary_cond.__class__.__name__}"
-  #filename = fileloc+"/loss.csv" #add filename of loss.csv to plot
-  #plotter = PlotFuns(boundary_cond)
-  #plotter.setresultsdir(fileloc)
-  #plotter.plot_loss_metrics(filename)
+  
