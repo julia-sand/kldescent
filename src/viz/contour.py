@@ -5,7 +5,7 @@ import torch
 import pdb
 ##creates the contour plot showing the full joint pdf
 
-def generate_mesh(x_samples):
+def generate_mesh(x_samples,qmax=6):
     """
     generates a mesh in two dimensional phase space to evaluate and plot the joint distribution 
     
@@ -14,8 +14,8 @@ def generate_mesh(x_samples):
             number of samples in the space discretisation
     """
 
-    pmax,qmax = 4,4
-    p_init = np.linspace(-pmax,pmax,x_samples)
+    #pmax,qmax = 4,4
+    p_init = np.linspace(-qmax,qmax,x_samples)
     q_init = np.linspace(-qmax,qmax,x_samples)
     
     Q,P = np.meshgrid(q_init,p_init)
@@ -154,7 +154,6 @@ def format_plot(net,
     plt.close(fig_joint_distributions_meshgrid)
 
 
-
 if __name__=="__main__":
     import os 
 
@@ -162,6 +161,7 @@ if __name__=="__main__":
     from ..sde.boundary import UnderdampedNoMomentum
     from .plots import PlotFuns
     from ..utils.parser import girsanov_plot_params
+    
     girs_params = girsanov_plot_params()
     testing_samples = girs_params.mcsamples
     x_samples = girs_params.xsamples

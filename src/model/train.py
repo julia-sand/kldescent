@@ -179,8 +179,8 @@ class TrainRho():
         self.clip = 0.001 #gradient clipping
 
         self.optimiser = Adam(self.rhonet.parameters(), lr=self.lr)
-        self.rho_epochs = 100 #total number of training epochs
-        self.milestone = 20 #how often to decay learning rate
+        self.rho_epochs = 1000 #total number of training epochs
+        self.milestone = 200 #how often to decay learning rate
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
         #self.scheduler = CosineAnnealingLR(self.optimiser, T_max=100, eta_min=1e-10)
@@ -202,7 +202,6 @@ class TrainRho():
                
         #self.scheduler.step()
             
-        print(Lhat.detach().numpy().item())
         return #loss_out
 
     def train_loop(self, epochs=None):

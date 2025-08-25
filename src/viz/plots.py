@@ -33,8 +33,6 @@ def update_mpl():
   mpl.rcParams['font.size'] = 22
   mpl.rcParams['axes.labelsize'] = 22
 
-
-
 class PlotFuns():
   def __init__(self,boundary_data=None):
 
