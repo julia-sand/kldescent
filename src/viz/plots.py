@@ -252,8 +252,8 @@ class PlotFuns():
 
     cbar_ax = fig.add_axes([0.2, -0.15, 0.55, 0.05])
     cb = fig.colorbar(sm,
-                                            cax=cbar_ax,
-                                            orientation="horizontal")
+                      cax=cbar_ax,
+                      orientation="horizontal")
 
     cb.ax.set_xlabel("Joint Distribution")
 

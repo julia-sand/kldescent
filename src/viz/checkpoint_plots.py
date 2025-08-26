@@ -74,6 +74,7 @@ class PlotUtils():
     def load_rho_checkpoint(self):
         self.rhonet = RhoNeuralNetwork(self.boundary_cond,self.data_loaded)
         self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
+        print(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
 
     def load_fpk_integrator(self,net):
         self.fpk_integrator = fpk.FokkerPlanck(self.boundary_cond,net,
