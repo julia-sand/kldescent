@@ -55,7 +55,9 @@ def run():
     metrics = train.Metrics(rhonet, net, integrator, args["logstep"])   
     rhotrainer = train.TrainRho(rhonet,fpk_integrator)
     
-    for epoch in range(1,args["epochs"]+1):
+    metrics.update_metrics(0,None,metrics_logger)
+
+    for epoch in range(0,args["epochs"]):
         try:
 
             #train the rho nn
@@ -65,7 +67,8 @@ def run():
             loss_out = trainer.train_step()
             
             #update metrics
-            metrics.update_metrics(epoch,loss_out,metrics_logger)
+            metrics.update_metrics(epoch+1,loss_out,metrics_logger)
+            print(f"Epoch {epoch+1} complete")
         
         except KeyboardInterrupt:
             print(f"Training interrupted at epoch {epoch}")
@@ -76,16 +79,8 @@ def run():
             print(f"The training must be stopped because SLURM is about to kill the job. Training ended at epoch {epoch}")
             metrics_logger.save_checkpoint(net,epoch)
 
-    metrics_logger.save_checkpoint(rhonet,epoch)
+    #metrics_logger.save_checkpoint(rhonet,epoch)
 
-    #plotter = plots.PlotFuns(boundaryconditions)
-    #plotter.setresultsdir(metrics_logger.get_results_path())
-    #checkpoint_plots_all(metrics_logger,
-    #                        boundaryconditions,
-    #                        net,
-    #                        plotter,
-    #                        integrator)
-    #plotter.plot_loss_metrics()
 
 if __name__=="__main__":
     run()
