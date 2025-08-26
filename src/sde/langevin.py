@@ -199,6 +199,7 @@ class SDE():
 
         if debug:
             pdb.set_trace()
+        
         if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
             if testing_samples == None: #default to the integrator 
                 testing_samples = self.sde_params["testsamples"] 
