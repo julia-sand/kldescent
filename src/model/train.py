@@ -192,30 +192,23 @@ class TrainRho():
 
         self.clip = 0.001 #gradient clipping
 
-        self.optimiser = Adam(self.rhonet.parameters(), lr=self.lr)
         self.rho_epochs = 100 #total number of training epochs
         self.milestone = 20 #how often to decay learning rate
 
-        #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
-        #self.scheduler = CosineAnnealingLR(self.optimiser, T_max=100, eta_min=1e-10)
-        self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
-        
-    def train_step(self):  
+    def train_step(self,optimiser):  
         
         self.rhonet.train() #set neural net into train mode
 
         #reset gradients 
-        self.optimiser.zero_grad()
+        optimiser.zero_grad()
         
         Lhat = self.integrator.loss_fn(self.rhonet)
         clip_grad_norm_(self.rhonet.parameters(), self.clip)
 
         ##training##
         Lhat.backward()
-        self.optimiser.step()
-               
-        #self.scheduler.step()
-            
+        optimiser.step()
+                          
         return #loss_out
 
     def train_loop(self, epochs=None):
@@ -229,11 +222,12 @@ class TrainRho():
         if epochs==None:
             epochs=self.rho_epochs
 
+        #reset optimiser and scheduler for each train loop
+        optimiser = Adam(self.rhonet.parameters(), lr=self.lr)
+        scheduler = ExponentialLR(optimiser, gamma=self.gamma)
 
         for _ in range(int(round(epochs/self.milestone))):    
             for __ in range(self.milestone):
-                self.train_step() #repeat training step
+                self.train_step(optimiser) #repeat training step
             
-            self.scheduler.step() #decrease learning rate
-        
-   
+            scheduler.step() #decrease learning rate
