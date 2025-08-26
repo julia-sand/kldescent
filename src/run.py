@@ -64,12 +64,13 @@ def run():
 
             #train the rho nn
             rhotrainer.train_loop()
-            metrics_logger.save_checkpoint(rhonet,epoch)
   
             #update the drift nn with the current iteration  
             loss_out = trainer.train_step()
+            
             #update metrics
             metrics.update_metrics(epoch,loss_out,metrics_logger)
+        
         except KeyboardInterrupt:
             print(f"Training interrupted at epoch {epoch}")
         except ValueError:
@@ -79,6 +80,7 @@ def run():
             print(f"The training must be stopped because SLURM is about to kill the job. Training ended at epoch {epoch}")
             metrics_logger.save_checkpoint(net,epoch)
 
+    metrics_logger.save_checkpoint(rhonet,epoch)
 
     #plotter = plots.PlotFuns(boundaryconditions)
     #plotter.setresultsdir(metrics_logger.get_results_path())

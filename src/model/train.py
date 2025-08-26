@@ -110,14 +110,14 @@ class Metrics():
         update_metrics
     """
 
-    def __init__(self, trainer, logstep):
-        #use trainer class to initialise 
-        self.integrator = trainer.integrator
-        self.net = trainer.net
-        self.scheduler = trainer.scheduler # for testing out different schedules, we record the learning rate 
+    def __init__(self, rhonet, net, integrator, logstep):
+        self.integrator = integrator
+        self.net = net
+        self.rhonet = rhonet
+        #self.scheduler = trainer.scheduler # for testing out different schedules, we record the learning rate 
+        
         self.logstep = logstep #how frequently to save results
     
-
     def update_metrics(self, epoch, loss_out, logger):
         """
         Function for computing metrics
@@ -144,15 +144,17 @@ class Metrics():
                                                 loss_out,
                                                 kl_dynamic,
                                                 kl_static,
-                                                self.scheduler.get_last_lr()[0],
+                                                0.01, #self.scheduler.get_last_lr()[0],
                                                 mean0,
                                                 var0)
 
                     logger.save_checkpoint(self.net,epoch)
+                    logger.save_checkpoint(self.rhonet,epoch)
         
             else: 
                 with torch.no_grad():
                     self.integrator.update_ref_statistics(self.net)
+                    #pass
 
 
 
@@ -180,8 +182,8 @@ class TrainRho():
         self.clip = 0.001 #gradient clipping
 
         self.optimiser = Adam(self.rhonet.parameters(), lr=self.lr)
-        self.rho_epochs = 5000 #total number of training epochs
-        self.milestone = 200 #how often to decay learning rate
+        self.rho_epochs = 100 #total number of training epochs
+        self.milestone = 20 #how often to decay learning rate
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
         #self.scheduler = CosineAnnealingLR(self.optimiser, T_max=100, eta_min=1e-10)
