@@ -26,17 +26,24 @@ class PlotUtils():
     5. initialises the integrator to use for the the plots
     """
 
-    def __init__(self):
+    def __init__(self,folder=None,epoch=None):
         
         #get folder and load boundary data and params from file
-        folder = fetch_results_folder_from_cmd()   
+        if folder is None:
+            folder = fetch_results_folder_from_cmd()
+        else:
+            folder = folder   
         boundary_cond,data_loaded = init_params_from_file(folder)
 
         params = checkpoint_plot_params() #get checkpoint plot parameters from cmd line
         
         self.boundary_cond = boundary_cond
         self.data_loaded = data_loaded
-        self.epoch = params["epoch"]
+        
+        if epoch is None:
+            self.epoch = params["epoch"]
+        else:
+            self.epoch=epoch
         
         self.plotter = PlotFuns(boundary_cond)
 
@@ -50,9 +57,7 @@ class PlotUtils():
         #make new folder for the results
         os.makedirs(self.folder+f"/plots_{self.epoch}", exist_ok = True) 
         self.plotter.setresultsdir(self.folder+f"/plots_{self.epoch}")
-
-        
-        
+       
     def checkpoint_plots_du(self):
         """
         Runs the functions to make plots to show the results of the 
@@ -64,6 +69,7 @@ class PlotUtils():
         self.integrator.compute_sde(self.net,
                         self.plotter,
                         self.boundary_cond.params["Tf"])
+        
         self.plotter.plot_drift(times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
 
     def load_du_checkpoint(self):
@@ -84,7 +90,7 @@ class PlotUtils():
         self.load_rho_checkpoint()
         self.make_contour_plot()
         
-    def compute_rho_nn(self,x_samples=100):
+    def compute_rho_nn(self,x_samples=10000):
         """
         Generates a statespace grid and evaluates the neural network estimate of the 
         joint probability distribution at final time 
