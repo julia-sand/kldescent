@@ -192,8 +192,8 @@ class TrainRho():
 
         self.clip = 0.001 #gradient clipping
 
-        self.rho_epochs = 100 #total number of training epochs
-        self.milestone = 20 #how often to decay learning rate
+        self.rho_epochs = 1000 #total number of training epochs
+        self.milestone = 200 #how often to decay learning rate
 
     def train_step(self,optimiser):  
         

@@ -81,6 +81,11 @@ def run():
 
     #metrics_logger.save_checkpoint(rhonet,epoch)
 
+    plot_utils = PlotUtils(metrics_logger.get_results_path(),epoch=args["epochs"])
+
+    plot_utils.checkpoint_plots_rho()
+    plot_utils.checkpoint_plots_du()
+
 
 if __name__=="__main__":
     run()

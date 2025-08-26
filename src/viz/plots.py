@@ -180,9 +180,13 @@ class PlotFuns():
     self.plot_marginal_joint(ax_pmarginal,dx*np.nansum(joint_out_temp,axis=0),p_init)
 
     ax_pmarginal.set_xlim((-self.qmax,self.qmax))
+    ax_pmarginal.plot(np.linspace(-self.qmax,self.qmax,),
+              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=0,sigmasq=1),)
     #ax_pmarginal.set_ylim((-0.05,0.7))
 
     ax_qmarginal.set_ylim((-self.qmax,self.qmax))
+    ax_qmarginal.plot(
+              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=0,sigmasq=1.3),np.linspace(-self.qmax,self.qmax,))
     #ax_qmarginal.set_xlim((-0.05,0.7))
     ax_qmarginal.invert_xaxis()
 
@@ -208,9 +212,7 @@ class PlotFuns():
         length=5,
         rotation=-20,
         pad = -3)
-    ax_pmarginal.tick_params(
-        axis='x',
-        which='both')
+
     ax_qmarginal.tick_params(
         axis='x',          # changes apply to the x-axis
         which='both',
@@ -236,8 +238,6 @@ class PlotFuns():
     ax_pmarginal.set_ylabel(r"$\rho_t(p)$")
     ax.yaxis.set_label_position("right")
 
-    plt.setp(ax_pmarginal.yaxis.get_majorticklabels(), va="bottom")
-    plt.setp(ax_qmarginal.xaxis.get_majorticklabels(), ha="right")
     ax.set_aspect('equal', adjustable='box')
     ax.set_xticks([-2.5,0,2.5])
     
