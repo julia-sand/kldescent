@@ -583,7 +583,6 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
 
     def Utemp(self,q,mean,var):
 
-
         return (q-mean)**2/(var)
 
     def set_pdf(self,rhoT):

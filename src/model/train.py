@@ -132,9 +132,15 @@ class Metrics():
         """
         
         with torch.no_grad():
+
+            if loss_out is not None:
+                loss_out = loss_out
+            else:
+                loss_out = 0 #compute the loss independently here
+
             if np.isnan(loss_out):
                 raise ValueError('Loss function is NaN. Terminating training process')
-            
+        
             if (epoch % self.logstep == 0): #compute metrics 
                 with torch.no_grad():
                     #this also updates the ref. cumulants
@@ -231,25 +237,3 @@ class TrainRho():
             self.scheduler.step() #decrease learning rate
         
    
-    def update_metrics(self, epoch, loss_out, logger):
-        """
-        Function for computing metrics and saving checkpoints of the rhonet
-        args:
-            epoch:
-                pass current epoch to use in logging loss
-            loss_out:
-                value of the loss from the metrics function
-        """
-        
-        with torch.no_grad():
-            if np.isnan(loss_out):
-                raise ValueError('Loss function is NaN. Terminating training process')
-            
-            if (epoch % self.logstep == 0): #compute metrics 
-                with torch.no_grad():
-                    self.logger.save_checkpoint(self.rhonet,epoch)
-        
-            else: 
-                with torch.no_grad():
-                    self.integrator.update_ref_statistics(self.net)
-
