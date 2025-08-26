@@ -46,14 +46,6 @@ class PlotFuns():
     #borders of xaxis
     self.qmax = 6
     
-    #fontsizes
-    self.fontsize = 22
-    self.fontsizeticks = 18
-    self.fontsizetitles = 22
-
-    #linewidth
-    self.lw = 3
-
     #colors
     self.c1 = "#1f78b4" #darkblue
     self.c2 = "#a6cee3" #lightblue
@@ -103,22 +95,22 @@ class PlotFuns():
 
     #get plot location
     ax = fig.add_subplot(gs_joint_distributions[x_ind,y_ind])
-    ax.text(-9,0.4,self.make_plot_label(plot_index),fontsize = self.fontsizetitles,zorder = 200)
+    ax.text(-9,0.4,self.make_plot_label(plot_index),zorder = 200)
 
     #plotting goes here
     #self.joint_distributions_scatter_panel(ax,joint_out,x_samples,time,vmax)
     
     #add boundary conditions to first plot and format titles
     if plot_index ==0:
-      ax.set_title(f"$t = 0$", loc = "center", fontsize=self.fontsizetitles)
+      ax.set_title(f"$t = 0$", loc = "center")
       ax_pmarginal.fill_between(q_init,np.exp(-(q_init**2)/2)/np.sqrt(np.pi*2),color=self.c2)
       ax_qmarginal.fill_between(self.boundary.q_marginal_initial(q_init),q_init,color=self.c2)
     elif plot_index == 5:
-      ax.set_title(f"$t = t_f$", loc = "center", fontsize=self.fontsizetitles)
+      ax.set_title(f"$t = t_f$", loc = "center")
       #ax_pmarginal.fill_between(q_init,np.exp(-self.boundary.beta*(q_init**2)/2)/np.sqrt(np.pi*2/self.boundary.beta),color=self.c2)
       #ax_qmarginal.fill_between(self.boundary.q_marginal_final(q_init),q_init,color=self.c2)
     else:
-      ax.set_title(f"$t = {plot_title_value} t_f$", loc = "center", fontsize=self.fontsizetitles)
+      ax.set_title(f"$t = {plot_title_value} t_f$", loc = "center")
 
   def plot_marginal_joint(self,ax,x0_marginal,x0_init):
 
@@ -215,17 +207,14 @@ class PlotFuns():
         which='both',
         length=5,
         rotation=-20,
-        pad = -3,
-        labelsize = self.fontsizeticks)
+        pad = -3)
     ax_pmarginal.tick_params(
         axis='x',
-        which='both',
-        labelsize = self.fontsizeticks)
+        which='both')
     ax_qmarginal.tick_params(
         axis='x',          # changes apply to the x-axis
         which='both',
         rotation=70,
-        labelsize = self.fontsizeticks,
         length =5,
         pad = -3,
         labelleft=False)
@@ -238,15 +227,13 @@ class PlotFuns():
     ax.set_xlim((-self.qmax,self.qmax))
     ax.set_ylim((-self.qmax,self.qmax))
 
-    ax.tick_params(axis='both', 
-                    labelsize=self.fontsizeticks)
     ax_pmarginal.set_xticklabels([])
    
-    ax.set_xlabel(r"$p$",fontsize = self.fontsizetitles)
-    ax_qmarginal.set_xlabel(r"$\rho_t(q)$",fontsize = self.fontsizetitles)
+    ax.set_xlabel(r"$p$")
+    ax_qmarginal.set_xlabel(r"$\rho_t(q)$")
 
-    ax.set_ylabel(r"$q$",fontsize = self.fontsizetitles)
-    ax_pmarginal.set_ylabel(r"$\rho_t(p)$",fontsize = self.fontsizetitles)
+    ax.set_ylabel(r"$q$")
+    ax_pmarginal.set_ylabel(r"$\rho_t(p)$")
     ax.yaxis.set_label_position("right")
 
     plt.setp(ax_pmarginal.yaxis.get_majorticklabels(), va="bottom")
@@ -268,12 +255,11 @@ class PlotFuns():
                                             cax=cbar_ax,
                                             orientation="horizontal")
 
-    cb.ax.tick_params(labelsize=self.fontsizeticks)
-    cb.ax.set_xlabel("Joint Distribution",fontsize=self.fontsizetitles)
+    cb.ax.set_xlabel("Joint Distribution")
 
   def make_legend(self,fig):
     #create the legend 
-    blue_line = mlines.Line2D([], [],color=self.c1,lw=self.lw)
+    blue_line = mlines.Line2D([], [],color=self.c1)
     #orange_line = mlines.Line2D([], [],color="orange",lw=self.lw)
     #green_line = mlines.Line2D([], [],color="green",lw=self.lw,linestyle="dashed")
     blue_patch = mpatches.Patch(color = self.c2, alpha=1)
@@ -286,7 +272,6 @@ class PlotFuns():
                                   #"Perturbative Prediction",
                                   #"Gaussian Prediction",
                                   "Assigned Boundary Conditions"],
-            fontsize = self.fontsizetitles,
             frameon = False,
             handlelength = 2,
             ncols = 2,
@@ -297,9 +282,9 @@ class PlotFuns():
 
   def make_legend_marginals(self,fig):
     #create the legend 
-    blue_line = mlines.Line2D([], [],color=self.c1,lw=self.lw)
-    orange_line = mlines.Line2D([], [],color="orange",lw=self.lw)
-    green_line = mlines.Line2D([], [],color="green",lw=self.lw)
+    blue_line = mlines.Line2D([], [],color=self.c1)
+    orange_line = mlines.Line2D([], [],color="orange")
+    green_line = mlines.Line2D([], [],color="green")
     
     legend = fig.legend(handles=[blue_line,
                                   orange_line,
@@ -307,7 +292,6 @@ class PlotFuns():
                         labels = ["Reference",
                                   "Controlled by NN.",
                                   "Free Diffusion"],
-            fontsize = self.fontsizeticks,
             frameon = False,
             handlelength = 1,
             ncols = 3,bbox_to_anchor=(0.5, 0.1),
@@ -324,7 +308,7 @@ class PlotFuns():
     #ax1.set_ylim((-1.8,1.8))
 
   def format_ticks(self,ax):
-    ax.tick_params(which="both",axis="both",labelsize=self.fontsizeticks)
+    pass
 
   def normal_distribution(self,x,mu=0,sigmasq=1):
     return np.exp(-((x-mu)**2)/(2*sigmasq))/np.sqrt(2*sigmasq*np.pi)
@@ -333,7 +317,6 @@ class PlotFuns():
     ax1.set_xlim((-self.qmax,self.qmax))
     #ax1.set_xlabel("q")
     ax1.set_ylim((-0.01,0.65))
-    ax1.tick_params(which="both",axis="both",labelsize=self.fontsizeticks)
 
   def plot_reference(self,ax1,x,du):
 
@@ -401,8 +384,8 @@ class PlotFuns():
               self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=0,sigmasq=1),)
               #np.exp(-np.linspace(-self.qmax,self.qmax,)**2)/np.sqrt(np.pi))
 
-    ax_pos.set_title("Position",fontsize=self.fontsizetitles)
-    ax_mom.set_title("Momentum",fontsize=self.fontsizetitles)
+    ax_pos.set_title("Position")
+    ax_mom.set_title("Momentum")
     colors = ["orange",self.c1]
     labels = ["Controlled by NN.","Free Diffusion"]
     for x in enumerate(xs):
@@ -412,7 +395,7 @@ class PlotFuns():
       
       ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000),
           self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=np.nanmean(x[1][:,0]),sigmasq=np.nanvar(x[1][:,0])),
-          color="gray",lw=self.lw,linestyle="dashed",alpha=0.5)
+          color="gray",linestyle="dashed",alpha=0.5)
       
       ax_mom.set_xlim((-self.qmax,self.qmax))
       ax_pos.set_xlim((-self.qmax,self.qmax))
@@ -420,11 +403,11 @@ class PlotFuns():
     self.format_distribution_ax(ax_mom)
     self.format_distribution_ax(ax_pos)
 
-    plt.suptitle(f"t = {plottime}",fontsize=self.fontsizetitles)
+    plt.suptitle(f"t = {plottime}")
 
     fig.subplots_adjust(bottom=0.3, wspace=0.33)
 
-    plt.legend(fontsize=self.fontsizetitles)
+    plt.legend()
     #self.make_legend_marginals(fig)
     plt.savefig(self.subdir+"/marginals.png",bbox_inches="tight")
     plt.close()
@@ -533,7 +516,7 @@ class PlotFuns():
       return (self.boundary.params["epsilon"]**2)*np.exp(-t_vec)*(1-np.exp(-t_vec))*mom_var0 + self.boundary.params["epsilon"]*(1-2*np.exp(-t_vec)+np.exp(-2*t_vec))
 
   def plot_free_diffusion_sol(self,ax,t_vec,cumulant):
-      ax.plot(t_vec,cumulant,lw=self.lw,
+      ax.plot(t_vec,cumulant,
                             linestyle="dashed",
                             zorder=0,
                             alpha=0.5,
@@ -572,18 +555,17 @@ class PlotFuns():
       self.plot_free_diffusion_sol(ax,t_vec,self.cross_correlation_free_diffusion(t_vec,cumulants_ref_plot[0,2],cumulants_ref_plot[0,3]))
       ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr=np.sqrt((1-cumulants_nn_plot[:,index]**2)/(test_samples-2)),alpha=0.5)
 
-    ax.plot(t_vec, cumulants_nn_plot[:,index], lw=self.lw,color="orange")
-    ax.plot(t_vec, cumulants_ref_plot[:,index], lw=self.lw,color=self.c1)
+    ax.plot(t_vec, cumulants_nn_plot[:,index], color="orange")
+    ax.plot(t_vec, cumulants_ref_plot[:,index], color=self.c1)
 
     try:
-      ax.plot(t_vec,self.boundary.get_known_solution_cumulants(ylabel_text),lw=self.lw,color="green")
+      ax.plot(t_vec,self.boundary.get_known_solution_cumulants(ylabel_text),color="green")
     except (ValueError,TypeError,FileExistsError,FileNotFoundError):
       pass
 
-    ax.set_title(self.make_plot_label(index),fontsize = self.fontsizetitles,pad = self.titlepad,x = self.titlex, y = self.titley,zorder = 1000000)
-    ax.set_ylabel(ylabel_text,fontsize = self.fontsizetitles)
+    ax.set_title(self.make_plot_label(index),pad = self.titlepad,x = self.titlex, y = self.titley,zorder = 1000000)
+    ax.set_ylabel(ylabel_text)
     ax.set_xlim((-0.1,t_vec[-1]+0.1))
-    self.format_ticks(ax)    
 
   def plot_cumulants(self,t_vec,cumulants_nn_plot,cumulants_ref_plot,test_samples):
 
@@ -603,13 +585,12 @@ class PlotFuns():
     plt.tight_layout()
 
     #get legend
-    orange_line = mlines.Line2D([], [],color="orange",lw=self.lw)
-    blue_line = mlines.Line2D([], [],color=self.c1,lw=self.lw)
-    green_line = mlines.Line2D([], [],color="green",lw=self.lw)
+    orange_line = mlines.Line2D([], [],color="orange")
+    blue_line = mlines.Line2D([], [],color=self.c1)
+    green_line = mlines.Line2D([], [],color="green")
 
     legend = fig1.legend(handles=[blue_line,orange_line,green_line],#,green_line],
               labels = ["Free Diffusion","Controlled","Known Reference Solution"],
-              fontsize = self.fontsizetitles,
               frameon = False,
               handlelength = 1,
               ncols = 3)
