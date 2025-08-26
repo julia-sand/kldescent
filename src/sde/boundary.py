@@ -591,8 +591,10 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
 
     def gfun(self,x):      
         if self.rho is not None:
-            np.log(self.p_final(x[...,[0]],x[...,[1]])) - np.log(self.pdf)
+            #use the neural network values
+            return np.log(self.p_final(x[...,[0]],x[...,[1]])) - np.log(self.pdf)
         else:
+            #use the neural network values
             return (self.params["weight"]/2)*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.gauss_boundary["mufinal"], self.gauss_boundary["sigmafinal"]**2))
 
 

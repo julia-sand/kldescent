@@ -118,7 +118,7 @@ class Metrics():
         
         self.logstep = logstep #how frequently to save results
     
-    def update_metrics(self, epoch, loss_out, logger):
+    def update_metrics(self, epoch, loss_out, logger, trainer=None):
         """
         Function for computing metrics
             -logs the metrics at logstep
@@ -140,11 +140,16 @@ class Metrics():
                     #this also updates the ref. cumulants
                     kl_dynamic, kl_static, mean0, var0 =self.integrator.compute_metrics(self.net)
 
+                    if trainer is not None:
+                        lr_rate = trainer.scheduler.get_last_lr()[0]
+                    else:
+                        lr_rate = 0
+
                     logger.write_data_row(epoch,
                                                 loss_out,
                                                 kl_dynamic,
                                                 kl_static,
-                                                0.01, #self.scheduler.get_last_lr()[0],
+                                                lr_rate, #,
                                                 mean0,
                                                 var0)
 
