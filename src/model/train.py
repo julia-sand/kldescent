@@ -190,8 +190,8 @@ class TrainRho():
 
         self.clip = 0.001 #gradient clipping
 
-        self.rho_epochs = 1000 #total number of training epochs
-        self.milestone = 200 #how often to decay learning rate
+        self.rho_epochs = 10000 #total number of training epochs
+        self.milestone = 2000 #how often to decay learning rate
 
     def train_step(self,optimiser):  
 
@@ -220,12 +220,11 @@ class TrainRho():
 
         #reset optimiser and scheduler for each train loop
         optimiser = Adam(self.rhonet.parameters(), lr=self.lr)
-        scheduler = scheduler = CosineAnnealingLR(optimiser, 
-                            T_max=100, eta_min=1e-10)#ExponentialLR(optimiser, gamma=self.gamma)
+        scheduler = ExponentialLR(optimiser, gamma=self.gamma)
         self.rhonet.train() #set neural net into train mode
 
         for _ in range(int(round(epochs/self.milestone))):    
             for __ in range(self.milestone):
                 self.train_step(optimiser) #repeat training step
             
-                scheduler.step() #decrease learning rate
+            scheduler.step() #decrease learning rate
