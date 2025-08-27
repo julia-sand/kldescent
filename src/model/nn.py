@@ -180,14 +180,10 @@ class NeuralNetwork(nn.Module):
 
 class RhoNeuralNetwork(nn.Module):
     """
-    Neural Network object for parametrising the form of the probability distribution
-    
-    args: 
-        boundary: 
-            specifies the problem 
+    Neural Network object for parametrising the form of the probability distribution 
     """
 
-    def __init__(self,boundary,nn_params=None):
+    def __init__(self,nn_params=None):
         self.net_name = "rho"
    
         if nn_params is not None:
@@ -195,9 +191,6 @@ class RhoNeuralNetwork(nn.Module):
         else:
             self.params = rho_network_params()
         
-        #params
-        self.boundary = boundary
-
         super(RhoNeuralNetwork, self).__init__()
         self.NNx = nn.Sequential(
             nn.Linear(2, self.params["rhohiddenlayerneurons"] ),  #input x

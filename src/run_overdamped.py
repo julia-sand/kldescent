@@ -29,8 +29,9 @@ def run():
     if args["boundary"]=="LinearOU":
         net = nn.MLP().to(args["device"])
     else:
-        net = nn.NeuralNetwork(boundaryconditions,logger=metrics_logger).to(args["device"])
+        net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
 
+    metrics_logger.log_dict(net.params)
     net = DataParallel(net)
 
     if args["pretrain"]: #TODO this needs updating
@@ -39,15 +40,16 @@ def run():
     
     #intialise sde integration 
     integrator = langevin.SDE(boundaryconditions)
+    metrics_logger.log_dict(integrator.sde_params)
 
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
-    metrics = train.Metrics(trainer,args["logstep"])
+    metrics = train.Metrics(None, net, integrator, args["logstep"])
 
     for epoch in range(0,args["epochs"]+1):
         try:
             loss_out = trainer.train_step()
-            metrics.update_metrics(epoch,loss_out,metrics_logger)
+            metrics.update_metrics(epoch, loss_out, metrics_logger)
         except KeyboardInterrupt:
             print(f"Training interrupted at epoch {epoch}")
         except ValueError:
@@ -58,14 +60,9 @@ def run():
             metrics_logger.save_checkpoint(net,epoch)
 
 
-    plotter = plots.PlotFuns(boundaryconditions)
-    plotter.setresultsdir(metrics_logger.get_results_path())
-    checkpoint_plots_all(metrics_logger,
-                            boundaryconditions,
-                            net,
-                            plotter,
-                            integrator)
-    plotter.plot_loss_metrics()
+    plot_utils = PlotUtils(metrics_logger.get_results_path(),epoch=args["epochs"])
+
+    plot_utils.checkpoint_plots_du()
 
 if __name__=="__main__":
     run()

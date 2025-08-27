@@ -19,16 +19,14 @@ def run():
     #parse arguments from command line
     args = parser.overdamped_argparser()
     metrics_logger.log_dict(args)
+    rhonet = nn.RhoNeuralNetwork()
 
     #initialise the model
-    boundaryconditions = getattr(boundaries,args["boundary"])(logger=metrics_logger)
+    boundaryconditions = getattr(boundaries,args["boundary"])(rhonet,logger=metrics_logger)
     if args["boundary"]=="LinearOU":
         net = nn.MLP().to(args["device"])
     else:
         net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
-
-    rhonet = nn.RhoNeuralNetwork(boundaryconditions)
-    
 
     #log the params
     metrics_logger.log_dict(net.params)
