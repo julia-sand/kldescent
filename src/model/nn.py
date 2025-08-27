@@ -202,6 +202,8 @@ class RhoNeuralNetwork(nn.Module):
         self.NNx = nn.Sequential(
             nn.Linear(2, self.params["rhohiddenlayerneurons"] ),  #input x
             nn.GELU(),
+            nn.Linear(self.params["rhohiddenlayerneurons"] ,self.params["rhohiddenlayerneurons"] ),   #64 outputs
+            nn.GELU(),
             nn.Linear(self.params["rhohiddenlayerneurons"] , 1),   #64 outputs
             nn.ReLU(), #enforce positive output since we want to learn a pdf
             )  
