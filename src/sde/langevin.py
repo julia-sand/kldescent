@@ -177,13 +177,12 @@ class SDE():
             print("Value Error exception ignored. This means that the current value of the \n \
             neural network drift produces NaN values. ")
                 
+        mean0,var0 = torch.nanmean(xinit[...,0]).item(),torch.var(xinit[...,0]).item()
+        
         if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
-            mean0,var0 = torch.nanmean(xinit[...,0]).item(),torch.var(xinit[...,0]).item()
             self.boundary.set_ref_statistics(mean0, var0)
 
-
         return torch.mean(kldyn).item(), kl_static, mean0, var0 
-
     
     def update_ref_statistics(self,net,testing_samples=None,debug=False):
         """
@@ -249,7 +248,6 @@ class SDE():
     def compute_sde(self,net,
                         plotter,
                         marginal_plot_time):
-
         """
         Computes the SDE, saves cumulants and plots 
 
@@ -259,7 +257,6 @@ class SDE():
           plotter: object for setting up plots
           marginal_plot_time: at what time to plot the marginal distributions  
         ====
-
         """
             
         #pdb.set_trace()

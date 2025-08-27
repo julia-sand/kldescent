@@ -11,7 +11,6 @@ class CustomArgParse(argparse.ArgumentParser):
     Custom argument parser. 
     Sets the parser to read from a file if one is provided, otherwise returns the 
     defaults. 
-
     """
 
     #overwrites the default behaviour if using results folder to use the parameter file available
