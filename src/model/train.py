@@ -98,8 +98,7 @@ class Train():
         self.scheduler.step()
         #if (epoch % self.milestone == 0) and (epoch>0):
             
-        loss_out = Lhat.detach().numpy().item()
-        return loss_out
+        return Lhat.detach().numpy().item()
 
 
 class Metrics():
@@ -160,7 +159,8 @@ class Metrics():
                                                 var0)
 
                     logger.save_checkpoint(self.net,epoch)
-                    logger.save_checkpoint(self.rhonet,epoch)
+                    if self.rhonet is not None:
+                        logger.save_checkpoint(self.rhonet,epoch)
         
             else: 
                 with torch.no_grad():

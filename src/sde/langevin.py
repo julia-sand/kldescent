@@ -77,7 +77,7 @@ class SDE():
 
         #update the boundary conds
         if self.rhonet is not None:
-            self.evaluate_rhonet(self.rhonet,xinit)
+            self.evaluate_rhonet(self.rhonet,xinit.clone().detach())
 
         #set up a,abar,c,cbar
         a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
@@ -188,7 +188,7 @@ class SDE():
     def update_ref_statistics(self,net,testing_samples=None,debug=False):
         """
         computes estimates of the metrics to update the g function 
-        This should only run for the Half Bridge classes. 
+        This should only run for the Half Bridge Gaussian classes. 
 
         ====
         Parameters

@@ -569,11 +569,11 @@ class UnderdampedQuarterGaussianNoMomentum(UnderdampedQuarterGaussian):
 
 
 class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
-    def __init__(self,rho=None,params=None,gauss_params=None,logger=None):
+    def __init__(self,params=None,gauss_params=None,logger=None):
         UnderdampedQuarterGaussian.__init__(self,params,gauss_params,logger)
         self.mean0 = 0
         self.var0 = 1
-        self.rho = rho
+        #self.rho = rho
 
     def set_ref_statistics(self,mean0,var0):
         """overwrites the mean and variance of the reference parameters"""
@@ -585,16 +585,33 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
 
         return (q-mean)**2/(var)
 
+    def gfun(self,x):      
+        return (self.params["weight"]/2)*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.gauss_boundary["mufinal"], self.gauss_boundary["sigmafinal"]**2))
+
+class UnderdampedHalfNet(UnderdampedHalfGaussian):
+    """
+    Class for when the distribution is learned by a neural network (not using cumulants)
+    Inherits from UnderdampedHalfGaussian
+    """
+    
+    def __init__(self,rho,params=None,gauss_params=None,logger=None):
+        """
+        args:
+            rho: mandatory neural network returning an estimate of the probability distirbution
+        """
+
+        UnderdampedQuarterGaussian.__init__(self,params,gauss_params,logger)
+        self.mean0 = 0
+        self.var0 = 1
+        self.rho = rho
+
     def set_pdf(self,rhoT):
         self.pdf = rhoT
 
     def gfun(self,x):      
-        if self.rho is not None:
-            #use the neural network values
-            return np.log(self.p_final(x[...,[0]],x[...,[1]])) - np.log(self.pdf)
-        else:
-            #use the neural network values
-            return (self.params["weight"]/2)*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.gauss_boundary["mufinal"], self.gauss_boundary["sigmafinal"]**2))
+        return np.log(self.p_final(x[...,[0]],x[...,[1]])) - np.log(self.pdf)
+        
+
 
 
 if __name__=="__main__":

@@ -47,8 +47,6 @@ class FokkerPlanck(SDE):
         """
         #xinit = x0.clone()
 
-        #pdb.set_trace()
-        #self.net.eval()
         num_samples = xinit.shape[0]
     
         with torch.no_grad():

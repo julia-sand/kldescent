@@ -1,4 +1,4 @@
-import src.run as od
+import src.run_overdamped as od
 
 od.run()
 
