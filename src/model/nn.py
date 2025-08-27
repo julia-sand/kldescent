@@ -194,12 +194,15 @@ class RhoNeuralNetwork(nn.Module):
         super(RhoNeuralNetwork, self).__init__()
         self.NNx = nn.Sequential(
             nn.Linear(2, self.params["rhohiddenlayerneurons"] ),  #input x
-            nn.Sigmoid(),
+            nn.Tanh(),
             nn.Linear(self.params["rhohiddenlayerneurons"] ,self.params["rhohiddenlayerneurons"] ),   #64 outputs
-            nn.Sigmoid(),
+            nn.Tanh(),
+            nn.Linear(self.params["rhohiddenlayerneurons"] ,self.params["rhohiddenlayerneurons"] ),   #64 outputs
+            nn.Tanh(),
             nn.Linear(self.params["rhohiddenlayerneurons"] , 1),   #64 outputs
+            nn.ReLU(),
             )  
-
+            
     def forward(self, x0):   #how the model should evaluate
         
         return self.NNx(x0)

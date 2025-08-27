@@ -66,7 +66,7 @@ class FokkerPlanck(SDE):
                 
 
                 xinit = self.boundary.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[i])
-                girs = girs + (dw*xinit[...,[1]])/math.sqrt(self.boundary.sigma0) + (dt * (xinit[...,[1]])**2)/(self.boundary.sigma0**2)
+                girs = girs + (dw*xinit[...,[1]])/(self.boundary.sigma0) + (dt * (xinit[...,[1]])**2)/4
             
             pdfout = self.boundary.p_initial(xinit[...,[0]],xinit[...,[1]])*torch.exp(-girs)
 
@@ -83,14 +83,18 @@ class FokkerPlanck(SDE):
 
         #pdb.set_trace()
         #initialise x values 
-        x0 = (-4 - 4)*torch.ones(self.sde_params["batchsamples"], 2, dtype=torch.float32,requires_grad=True) + 4
-        x0_clone = x0.detach().clone()
+        x0 = (-6 - 6)*torch.ones(self.sde_params["batchsamples"], 2, dtype=torch.float32,requires_grad=False) + 6
+        #torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32)
+        #
+        x0_clone = x0.clone().detach()
 
         #x0 = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"))#.to_device(device)
         with torch.no_grad():
             pdfout = self.compute_pdf(x0_clone)
+        
+        xgrad = x0.clone().requires_grad_(True)
 
-        return torch.mean((rhonet(x0)-pdfout)**2)
+        return torch.mean((rhonet(xgrad)-pdfout)**2)
 
 if __name__=="__main__":
     

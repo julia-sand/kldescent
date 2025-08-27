@@ -144,10 +144,12 @@ class PlotFuns():
     """
 
     #pdb.set_trace()
+    
     #set default time
     if time==None:
       time = self.boundary.params["Tf"]
-    pdb.set_trace()
+    
+    #make inset axes to show marginal distributions
     ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
     ax_qmarginal = ax.inset_axes([-0.65, 0, 0.6, 1])
 
@@ -185,9 +187,7 @@ class PlotFuns():
     ax_qmarginal.invert_xaxis()
 
     #plot joint distribution
-    zout = joint_out_temp#[idx]
-
-    ax.scatter(xs[...,0],xs[...,1],c=zout.flatten()
+    ax.scatter(xs[...,0],xs[...,1],c=joint_out_temp.flatten()
               ,cmap="Blues",norm="log",vmin=0.001,vmax=vmax)
     
     ###ticks formatting and labelling
