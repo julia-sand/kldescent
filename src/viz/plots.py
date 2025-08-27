@@ -113,13 +113,6 @@ class PlotFuns():
 
   def plot_marginal_joint(self,ax,x0_marginal,x0_init):
 
-    #qmarginal = np.nansum(joint_out_temp,axis=0)#[np.nansum(joint_out[i::samples]) for i in range(0,samples)]
-    #xorder = np.argsort(x0_init)
-    #xnorm = np.trapz(x0_marginal[xorder],x0_init[xorder])
-    xnorm = np.trapz(x0_marginal,x0_init)
-
-    #ax.plot(x0_init[xorder],x0_marginal[xorder]/xnorm
-    #                  ,color=self.c1,lw=self.lw)
     ax.plot(x0_init,x0_marginal#/xnorm
                       ,color=self.c1)
 
@@ -154,7 +147,7 @@ class PlotFuns():
     #set default time
     if time==None:
       time = self.boundary.params["Tf"]
-
+    pdb.set_trace()
     ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
     ax_qmarginal = ax.inset_axes([-0.65, 0, 0.6, 1])
 
@@ -162,10 +155,9 @@ class PlotFuns():
     
     joint_out_temp = joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n))))
     Q = xs[...,[0]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
-    P = xs[...,[1]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
+    #P = xs[...,[1]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
     p_init = Q[[0],:].flatten() #one axis 
     dx = np.abs(p_init[1]-p_init[0])
-    #q_dist = np.trapz(joint_out_temp[0,:],p_init)
 
     qmean = np.trapz(dx*np.nansum(joint_out_temp,axis=1)*p_init,p_init)
     qvar = np.trapz(dx*np.nansum(joint_out_temp,axis=1)*(p_init**2),p_init)
@@ -174,7 +166,7 @@ class PlotFuns():
     
     print("Q mean ",qmean)
     print("P mean ",pmean)
-    print("Q var ",np.sqrt(qvar))
+    print("Q var ",qvar)
     print("P var ",pvar)
 
     #plot and format marginals
@@ -193,15 +185,9 @@ class PlotFuns():
     ax_qmarginal.invert_xaxis()
 
     #plot joint distribution
-    #idx = np.argwhere(~np.isnan(joint_out_temp))
     zout = joint_out_temp#[idx]
 
-    order = np.argsort(zout.flatten())
-    pout = P.flatten()#[idx].flatten()
-    qout = Q.flatten()#[idx].flatten()
-    #ax.scatter(pout[order],qout[order],c=zout.flatten()[order]
-    #          ,cmap="Blues",norm="log",vmin=0.001,vmax=vmax)
-    ax.scatter(pout,qout,c=zout.flatten()
+    ax.scatter(xs[...,0],xs[...,1],c=zout.flatten()
               ,cmap="Blues",norm="log",vmin=0.001,vmax=vmax)
     
     ###ticks formatting and labelling
@@ -561,7 +547,7 @@ class PlotFuns():
 
     try:
       ax.plot(t_vec,self.boundary.get_known_solution_cumulants(ylabel_text),color="green")
-    except (ValueError,TypeError,FileExistsError,FileNotFoundError):
+    except (AttributeError,ValueError,TypeError,FileExistsError,FileNotFoundError): #if the known solution is somehow unavailable
       pass
 
     ax.set_title(self.make_plot_label(index),pad = self.titlepad,x = self.titlex, y = self.titley,zorder = 1000000)

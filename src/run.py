@@ -19,19 +19,17 @@ def run():
     #parse arguments from command line
     args = parser.overdamped_argparser()
     metrics_logger.log_dict(args)
-    rhonet = nn.RhoNeuralNetwork()
 
     #initialise the model
-    boundaryconditions = getattr(boundaries,args["boundary"])(rhonet,logger=metrics_logger)
-    if args["boundary"]=="LinearOU":
-        net = nn.MLP().to(args["device"])
-    else:
-        net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
+    boundaryconditions = getattr(boundaries,args["boundary"])(logger=metrics_logger)
+    net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
+    rhonet = nn.RhoNeuralNetwork()
 
     #log the params
     metrics_logger.log_dict(net.params)
     metrics_logger.log_dict(rhonet.params)
     
+ 
     #use data paralisation to speed up evaluations
     net = DataParallel(net)
     rhonet = DataParallel(rhonet)
@@ -60,10 +58,12 @@ def run():
 
             #train the rho nn
             rhotrainer.train_loop()
-  
+
+            #UNCOMMENT TO TRAIN         
             #update the drift nn with the current iteration  
-            loss_out = trainer.train_step()
-            
+            #loss_out = trainer.train_step()
+            loss_out=0
+
             #update metrics
             metrics.update_metrics(epoch+1,loss_out,metrics_logger)
             print(f"Epoch {epoch+1} complete")
@@ -79,11 +79,11 @@ def run():
 
     #metrics_logger.save_checkpoint(rhonet,epoch)
 
+
     plot_utils = PlotUtils(metrics_logger.get_results_path(),epoch=args["epochs"])
 
     plot_utils.checkpoint_plots_rho()
-    plot_utils.checkpoint_plots_du()
-
+    #plot_utils.checkpoint_plots_du()
 
 if __name__=="__main__":
     run()

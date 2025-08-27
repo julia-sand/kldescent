@@ -32,7 +32,8 @@ class PlotUtils():
         if folder is None:
             folder = fetch_results_folder_from_cmd()
         else:
-            folder = folder   
+            folder = folder 
+
         boundary_cond,data_loaded = init_params_from_file(folder)
 
         params = checkpoint_plot_params() #get checkpoint plot parameters from cmd line
@@ -78,7 +79,7 @@ class PlotUtils():
         self.integrator = langevin.SDE(self.boundary_cond,sde_params=self.data_loaded)
 
     def load_rho_checkpoint(self):
-        self.rhonet = RhoNeuralNetwork(self.boundary_cond,self.data_loaded)
+        self.rhonet = RhoNeuralNetwork(self.data_loaded)
         self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
         print(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
 
