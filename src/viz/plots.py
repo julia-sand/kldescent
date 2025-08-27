@@ -74,7 +74,6 @@ class PlotFuns():
                                   joint_out,
                                   x_samples,
                                   time=None,vmax=0.5):
-
     """
     Function that plots the scatter plot of the monte carlo approximation of the joint distribution
 
@@ -124,6 +123,10 @@ class PlotFuns():
     ax.plot(x0_init,x0_marginal#/xnorm
                       ,color=self.c1)
 
+  def normalise(self,x,y):
+    idx = np.argsort(x)
+
+    return y/np.trapz(y[idx],x[idx])
 
   def joint_distributions_scatter_panel(self,
                                         ax,
@@ -164,7 +167,6 @@ class PlotFuns():
     dx = np.abs(p_init[1]-p_init[0])
     #q_dist = np.trapz(joint_out_temp[0,:],p_init)
 
-
     qmean = np.trapz(dx*np.nansum(joint_out_temp,axis=1)*p_init,p_init)
     qvar = np.trapz(dx*np.nansum(joint_out_temp,axis=1)*(p_init**2),p_init)
     pmean = np.trapz(dx*np.nansum(joint_out_temp,axis=0)*p_init,p_init)
@@ -176,17 +178,17 @@ class PlotFuns():
     print("P var ",pvar)
 
     #plot and format marginals
-    self.plot_marginal_joint(ax_qmarginal,p_init,dx*np.nansum(joint_out_temp,axis=1))
-    self.plot_marginal_joint(ax_pmarginal,dx*np.nansum(joint_out_temp,axis=0),p_init)
+    self.plot_marginal_joint(ax_qmarginal,p_init,self.normalise(p_init,np.nansum(joint_out_temp,axis=1)))
+    self.plot_marginal_joint(ax_pmarginal,self.normalise(p_init,np.nansum(joint_out_temp,axis=0)),p_init)
 
     ax_pmarginal.set_xlim((-self.qmax,self.qmax))
     ax_pmarginal.plot(np.linspace(-self.qmax,self.qmax,),
-              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=0,sigmasq=1),)
+              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=0,sigmasq=1),color="orange")
     #ax_pmarginal.set_ylim((-0.05,0.7))
 
     ax_qmarginal.set_ylim((-self.qmax,self.qmax))
     ax_qmarginal.plot(
-              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=0,sigmasq=1.3),np.linspace(-self.qmax,self.qmax,))
+              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=0,sigmasq=1.3),np.linspace(-self.qmax,self.qmax,),color="orange")
     #ax_qmarginal.set_xlim((-0.05,0.7))
     ax_qmarginal.invert_xaxis()
 
@@ -248,7 +250,6 @@ class PlotFuns():
     sm =  ScalarMappable(norm="log",cmap=plt.get_cmap("Blues"))
     sm.set_array([])
     sm.set_clim(vmin=0.001, vmax=vmax)
-
 
     cbar_ax = fig.add_axes([0.2, -0.15, 0.55, 0.05])
     cb = fig.colorbar(sm,

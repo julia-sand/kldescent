@@ -34,7 +34,7 @@ class FokkerPlanck(SDE):
                             sde_params=sde_params) #use same intialisation
         self.net = net 
 
-    def compute_pdf(self,x0):
+    def compute_pdf(self,xinit):
         """
         Following 2411.08518 (see Section 3 for example). 
 
@@ -45,10 +45,10 @@ class FokkerPlanck(SDE):
             pdfout: estimate of the pdf at final time at locations xinit
         ====
         """
-        xinit = x0.clone()
+        #xinit = x0.clone()
 
         #pdb.set_trace()
-        self.net.eval()
+        #self.net.eval()
         num_samples = xinit.shape[0]
     
         with torch.no_grad():
@@ -85,11 +85,12 @@ class FokkerPlanck(SDE):
 
         #pdb.set_trace()
         #initialise x values 
-        x0 = (-4 - 4) * torch.ones(self.sde_params["batchsamples"], 2, dtype=torch.float32) + 4
+        x0 = (-4 - 4)*torch.ones(self.sde_params["batchsamples"], 2, dtype=torch.float32,requires_grad=True) + 4
+        x0_clone = x0.detach().clone()
 
-        #x0 = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),dtype=torch.float32)#.to_device(device)
+        #x0 = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"))#.to_device(device)
         with torch.no_grad():
-            pdfout = self.compute_pdf(x0)
+            pdfout = self.compute_pdf(x0_clone)
 
         return torch.mean((rhonet(x0)-pdfout)**2)
 

@@ -90,7 +90,7 @@ class PlotUtils():
         self.load_rho_checkpoint()
         self.make_contour_plot()
         
-    def compute_rho_nn(self,x_samples=10000):
+    def compute_rho_nn(self,x_samples=100):
         """
         Generates a statespace grid and evaluates the neural network estimate of the 
         joint probability distribution at final time 
@@ -117,9 +117,10 @@ class PlotUtils():
         return xinit.detach().numpy(),pdf_out.detach().numpy()
 
 
-    def compute_rho_girsanov(self,x_samples=1000):
+    def compute_rho_girsanov(self,x_samples=30,mc_samples=4000):
         """
         Convenience function that returns an estimate of the final joint distribution using girsanov theorem
+        Used for testing
 
         args:
             x_samples:
@@ -136,23 +137,24 @@ class PlotUtils():
         #generate xmesh
         Q,P = generate_mesh(x_samples,qmax=6)
         xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
-        
+            
+        pdf_out = 0*xinit[...,[0]]
         #want shape = (x,2)
         with torch.no_grad():
-            #pdf_out = self.rhonet(xinit.clone())
-            pdf_out = self.fpk_integrator.compute_pdf(xinit.clone())
-        
-        return xinit.detach().numpy(),pdf_out.detach().numpy()
+            for _ in range(mc_samples):
+                pdf_out += self.fpk_integrator.compute_pdf(xinit.clone())
+            
+        return xinit.detach().numpy(),pdf_out.detach().numpy()/mc_samples
 
     def make_contour_plot(self):
-        xout,jointout = self.compute_rho_nn(x_samples=100)
+        xout,jointout = self.compute_rho_nn(x_samples=20)
         fig,ax = plt.subplots()
 
         self.plotter.joint_distributions_scatter_panel(ax,
                                                     jointout,
                                                     xout,
                                                     time=None,vmax=0.5)
-        fig.savefig(self.folder+f"/plots_{self.epoch}"+"/test4.png",bbox_inches="tight")        
+        fig.savefig(self.folder+f"/plots_{self.epoch}"+"/test6.png",bbox_inches="tight")        
 
 def compute_ref_kl(boundary):
     times = boundary.get_reference_timegrid()
