@@ -8,7 +8,7 @@ from src.model import *
 from src.sde import *
 import src.sde.boundary as boundaries
 from src.utils import *
-import src.viz.plots as plots
+#import src.viz.plots as plots
 from src.viz.checkpoint_plots import *
 
 def run():
@@ -61,8 +61,8 @@ def run():
 
             #UNCOMMENT TO TRAIN         
             #update the drift nn with the current iteration  
-            #loss_out = trainer.train_step()
-            loss_out=0
+            loss_out = trainer.train_step()
+            #loss_out=0
 
             #update metrics
             metrics.update_metrics(epoch+1,loss_out,metrics_logger)
