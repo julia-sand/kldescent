@@ -30,9 +30,6 @@ class SDE():
         else:
             self.sde_params = integrator_params() #parse command line
 
-        #if self.logger is not None:
-        #    self.logger.log_dict(self.sde_params) #add to log
-        
     def generate_time_grid(self):
 
         #samples the interval [0,Tf] and returns sorted set of values to be used in integration
@@ -74,10 +71,11 @@ class SDE():
 
         #initialise x values 
         xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32)#.to_device(device)
-
+        xclone = xinit.clone().detach()
         #update the boundary conds
-        if (self.rhonet is not None and {self.boundary.__class__.__name__}=="UnderdampedHalfNet"):
-            self.evaluate_rhonet(self.rhonet,xinit.clone().detach())
+        if (self.rhonet is not None):
+            self.evaluate_rhonet(self.rhonet,xclone)
+            print("setting new pdf val.")
 
         #set up a,abar,c,cbar
         a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
@@ -108,8 +106,14 @@ class SDE():
                 
             xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
 
+        with torch.no_grad():
+            if (self.rhonet is not None):
+                gvals = self.boundary.gfun(xinit,self.rhonet(xclone))
+            else:
+                gvals = self.boundary.gfun(xinit)
+                
         #compute value of Lhat
-        Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + self.boundary.gfun(xinit)) * c))
+        Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
         
         #free up memory again
         del xinit 

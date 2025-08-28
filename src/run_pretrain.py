@@ -2,11 +2,15 @@ import os
 
 import torch
 
-from src.model import train as train
+from src.model.train import Pretrain
 
-def run_pretrain(net, newpath, boundary):
+def run_pretrain(net, 
+                path_to_pretrain,
+                boundary,
+                ):
+    
     #fetch pretraining path from command line (or use default)
-    #path_to_pretrain = newpath+"/../../src/refsolution/value.csv" #fetches current location 
+    #path should be given from cwd
     path_to_pretrain = boundary.get_ref_path()
 
     #make a folder for pretraining results
@@ -17,6 +21,8 @@ def run_pretrain(net, newpath, boundary):
 
     print("Starting pre-training")
     
+    pretrainer = train.Pretrain(path_to_pretrain)
+
     try:
         train.Pretrain(path_to_pretrain).pretraining_perturb(net)
         print("Pretraining completed successfully.")

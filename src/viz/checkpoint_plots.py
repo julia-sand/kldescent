@@ -148,7 +148,7 @@ class PlotUtils():
         return xinit.detach().numpy(),pdf_out.detach().numpy()/mc_samples
 
     def make_contour_plot(self):
-        xout,jointout = self.compute_rho_girsanov(x_samples=100)
+        xout,jointout = self.compute_rho_nn(x_samples=100)
         fig,ax = plt.subplots()
 
         self.plotter.joint_distributions_scatter_panel(ax,

@@ -64,8 +64,8 @@ def overdamped_argparser():
                         help='which set of boundary conditions to use. See Sde.Boundary for more details')
     
     #TODO... move into model module
-    parser.add_argument('-pretrain','--pretrain', default=False,
-                        help='whether or not to pretrain the network. Requires a csv containing a reference solution to be uploaded into the ref-solution module. See model/train for parameters of the training process.')
+    parser.add_argument('-pretrain','--pretrain', type=str, default="",
+                        help='Path to CSV containing a set of values to fit to the neural network before training. See model/train for parameters of the training process.')
              
     args = parser.parse_known_args(parser.argfile)
 

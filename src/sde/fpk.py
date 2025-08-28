@@ -60,7 +60,7 @@ class FokkerPlanck(SDE):
                 
                 dw = self.generate_innovation(dt,num_samples)
             
-                du_bar = self.net(torch.column_stack((t_vec[i-1]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32)
+                du_bar = self.net(torch.column_stack((t_vec[i-1]*torch.ones((num_samples,1),dtype=torch.float32)
                                                            ,xinit[...,[0]])))
                 
 
@@ -88,6 +88,7 @@ class FokkerPlanck(SDE):
         #torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32)
         #
         x0_clone = x0.clone().detach()
+
 
         #x0 = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"))#.to_device(device)
         with torch.no_grad():

@@ -35,7 +35,7 @@ class Pretrain():
         y = torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
         return X,y 
 
-    def pretraining_perturb(self,net):   
+    def pretraining(self,net):   
         
         #set up training parameters
         loss_fn = torchnn.MSELoss()  
@@ -53,8 +53,7 @@ class Pretrain():
             if epoch % self.step_size == 0:
                 scheduler.step()
                 print(f'Finished epoch {epoch}, loss {loss}')
-    
-    
+        
 class Train():
     """
     Defines the parameters of the training process and 
