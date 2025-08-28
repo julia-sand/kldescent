@@ -17,8 +17,8 @@ class Pretrain():
         #set defaults of training process
         self.lr = 0.001 #initial learning rate
         self.gamma = 0.1 #decay rate of learning rate
-        self.step_size = 1 #frequency of learning rate decay (in epochs)
-        self.n_epochs = 1000 #total number of epochs
+        self.step_size = 1000 #frequency of learning rate decay (in epochs)
+        self.n_epochs = 5000 #total number of epochs
 
         self.clip = 0.1
 
@@ -34,7 +34,7 @@ class Pretrain():
         
         #pdb.set_trace()
         X = torch.tensor(arr[:,0:2], dtype=torch.float32)
-        y = torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
+        y = -torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)/(2**0.5)
         
         return X,y 
 
@@ -49,10 +49,11 @@ class Pretrain():
 
         for epoch in range(1,self.n_epochs+1):
             
+            #pdb.set_trace()
             optimizer.zero_grad()
             y_pred = net(X)
             loss = loss_fn(y_pred, y)
-            clip_grad_norm_(net.parameters(), self.clip)
+            #clip_grad_norm_(net.parameters(), self.clip)
             loss.backward()
             optimizer.step()       
 
