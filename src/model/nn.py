@@ -138,7 +138,7 @@ class NeuralNetwork(nn.Module):
             )  
         self.FourierFeatures = FourierFeatures(2*self.params["duhiddenlayerneurons"])
 
-        self.initialise_weights()
+        #self.initialise_weights()
         
         if self.params["checkpointpath"] is not None: #automatically loads a checkpoint from the command line
             self.load_checkpoint(self.params.checkpointpath)
@@ -205,7 +205,7 @@ class RhoNeuralNetwork(nn.Module):
             nn.ReLU(),
             )  
 
-        self.initialise_weights()
+        #self.initialise_weights()
 
     def forward(self, x0):   #how the model should evaluate
         

@@ -606,11 +606,12 @@ class UnderdampedHalfNet(UnderdampedHalfLandauer):
         self.mean0 = 0
         self.var0 = 1
 
-    def set_pdf(self,rhoT):
-        self.pdf = rhoT
+    def set_pdf(self,rhoval):
+        self.pdf = rhoval
 
-    def gfun(self,x):      
-        return np.log(self.p_final(x[...,[0]],x[...,[1]])) - np.log(self.pdf)
+    def gfun(self,x,pdf): 
+     
+        return np.log(self.p_final(x[...,[0]],x[...,[1]])) - np.log(pdf)
         
 
 

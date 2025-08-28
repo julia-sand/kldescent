@@ -10,6 +10,7 @@ import src.sde.boundary as boundaries
 from src.utils import *
 #import src.viz.plots as plots
 from src.viz.checkpoint_plots import *
+import src.run_pretrain as pretrain
 
 def run():
 
@@ -22,6 +23,7 @@ def run():
 
     #initialise the model
     boundaryconditions = getattr(boundaries,args["boundary"])(logger=metrics_logger)
+    
     net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
     rhonet = nn.RhoNeuralNetwork()
 
@@ -34,9 +36,11 @@ def run():
     net = DataParallel(net)
     rhonet = DataParallel(rhonet)
 
-    if args["pretrain"]: #TODO this needs updating
-        import run_pretrain
-        run_pretrain.run_pretrain(net,metrics_logger.get_results_path(),boundaryconditions)
+    if args["pretrain"]: #if a path is provided 
+        pretrain.run_pretrain(net,
+                            args["pretrain"],
+                            metrics_logger.get_results_path(),
+                            boundaryconditions)
     
     #intialise sde integration 
     integrator = langevin.SDE(boundaryconditions, rhonet)
@@ -53,6 +57,11 @@ def run():
     
     metrics.update_metrics(0,None,metrics_logger)
 
+    plot_utils = PlotUtils(metrics_logger.get_results_path(),0)
+
+    plot_utils.checkpoint_plots_rho()
+    plot_utils.checkpoint_plots_du()
+
     for epoch in range(0,args["epochs"]):
         try:
 
@@ -67,7 +76,7 @@ def run():
             #update metrics
             metrics.update_metrics(epoch+1,loss_out,metrics_logger)
             print(f"Epoch {epoch+1} complete")
-        
+            
         except KeyboardInterrupt:
             print(f"Training interrupted at epoch {epoch}")
         except ValueError:
@@ -79,11 +88,11 @@ def run():
 
     #metrics_logger.save_checkpoint(rhonet,epoch)
 
-
-    plot_utils = PlotUtils(metrics_logger.get_results_path(),epoch=args["epochs"])
+    plot_utils = PlotUtils(metrics_logger.get_results_path(),epoch)
 
     plot_utils.checkpoint_plots_rho()
-    #plot_utils.checkpoint_plots_du()
+    plot_utils.checkpoint_plots_du()
+
 
 if __name__=="__main__":
     run()
