@@ -15,3 +15,4 @@ klenv
 *.bash
 *.jl
 timeprofile.py
+*.pdf
