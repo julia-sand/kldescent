@@ -36,31 +36,32 @@ def run():
     net = DataParallel(net)
     rhonet = DataParallel(rhonet)
 
-    if args["pretrain"]: #if a path is provided 
-        pretrain.run_pretrain(net,
-                            args["pretrain"],
-                            metrics_logger.get_results_path(),
-                            boundaryconditions)
-    
     #intialise sde integration 
     integrator = langevin.SDE(boundaryconditions, rhonet)
     #initialise integration of fpk
     fpk_integrator = fpk.FokkerPlanck(boundaryconditions, net)
     
-    #save params
-    metrics_logger.log_dict(integrator.sde_params)
-
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
     metrics = train.Metrics(rhonet, net, integrator, args["logstep"])   
     rhotrainer = train.TrainRho(rhonet,fpk_integrator)
     
+    #save initialisations 
+    metrics_logger.log_dict(integrator.sde_params)
+
+
+    if args["pretrain"]: #if a path is provided 
+        pretrain.run_pretrain(net,
+                            args["pretrain"])
+    
     metrics.update_metrics(0,None,metrics_logger)
 
+    #========= for testing REMOVE =========
     plot_utils = PlotUtils(metrics_logger.get_results_path(),0)
 
     plot_utils.checkpoint_plots_rho()
     plot_utils.checkpoint_plots_du()
+    #======================================
 
     for epoch in range(0,args["epochs"]):
         try:

@@ -5,32 +5,28 @@ import torch
 from src.model.train import Pretrain
 
 def run_pretrain(net, 
-                path_to_pretrain,
-                boundary,
-                ):
-    
-    #fetch pretraining path from command line (or use default)
-    #path should be given from cwd
-    path_to_pretrain = boundary.get_ref_path()
+                    path_to_pretrain
+                    ):
+    """
+    Trains a neural network to approximate a numerical function given by values in a csv
 
-    #make a folder for pretraining results
-    os.makedirs(newpath+"/pretraining", exist_ok = True) #add checkpoints folder
-
-    #save checkpoint so we have a record of the intialised params (or resaved checkpoint)
-    torch.save(net.state_dict(),newpath+"/pretraining/initialisation.pt") 
+    args:
+        net:
+            neural network to be trained
+        path_to_pretrain:
+            path from current working directory to a CSV containing data to be used in the pretraining. The data should have a csv format 
+            where the first two entries are the input and the last column should contian the trained values. See RefSolution folder for some examples.  
+    returns:
+        none
+    """
 
     print("Starting pre-training")
     
-    pretrainer = train.Pretrain(path_to_pretrain)
+    pretrainer = Pretrain(path_to_pretrain)
+    pretrainer.pretraining(net)
+    
+    print("Pretraining completed successfully.")
 
-    try:
-        train.Pretrain(path_to_pretrain).pretraining_perturb(net)
-        print("Pretraining completed successfully.")
-
-    # save if job is manually interrupted
-    except KeyboardInterrupt:
-        torch.save(net.state_dict(),newpath+"/pretraining/interrupted.pt") 
-        print("Pretraining interrupted. Current parameters saved.")
 
 if __name__=="__main__":
     run_pretrain()
