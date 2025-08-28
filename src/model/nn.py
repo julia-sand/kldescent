@@ -137,6 +137,8 @@ class NeuralNetwork(nn.Module):
             nn.ReLU(), #must be positive
             )  
         self.FourierFeatures = FourierFeatures(2*self.params["duhiddenlayerneurons"])
+
+        self.initialise_weights()
         
         if self.params["checkpointpath"] is not None: #automatically loads a checkpoint from the command line
             self.load_checkpoint(self.params.checkpointpath)
@@ -154,12 +156,12 @@ class NeuralNetwork(nn.Module):
         
         return out
 
-    def initialize_weights(self,net):   #sets all the weights away from zero.
-        for m in net.modules():
+    def initialise_weights(self):   #sets all the weights away from zero.
+        for m in self.modules():
             if isinstance(m, nn.Linear):
-                torch.nn.init.xavier_normal_(m.weight,gain=2)
-                if m.bias is not None:
-                    torch.nn.init.constant_(m.bias, 0)
+                torch.nn.init.xavier_uniform_(m.weight,gain=2)
+                #if m.bias is not None:
+                #    torch.nn.init.xavier_uniform_(m.bias, gain=1)
 
     def load_checkpoint(self,checkpointpath):
         #prefix = os.path.relpath(os.curdir, start=os.path.dirname(__file__))
@@ -202,15 +204,17 @@ class RhoNeuralNetwork(nn.Module):
             nn.Linear(self.params["rhohiddenlayerneurons"] , 1),   #64 outputs
             nn.ReLU(),
             )  
-            
+
+        self.initialise_weights()
+
     def forward(self, x0):   #how the model should evaluate
         
         return self.NNx(x0)
 
-    def initialize_weights(self,net):   #sets all the weights away from zero.
-        for m in net.modules():
+    def initialise_weights(self):   #sets all the weights away from zero.
+        for m in self.modules():
             if isinstance(m, nn.Linear):
-                torch.nn.init.xavier_normal_(m.weight,gain=2)
+                torch.nn.init.constant_(m.weight,0)
                 if m.bias is not None:
                     torch.nn.init.constant_(m.bias, 0)
 
@@ -232,7 +236,6 @@ class RhoNeuralNetwork(nn.Module):
 class MLP(nn.Module):
     def __init__(self,checkpointpath=None):
         self.params = du_network_params()
-
         
         super(MLP, self).__init__()
         self.flatten = nn.Flatten()
