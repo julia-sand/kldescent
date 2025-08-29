@@ -157,7 +157,6 @@ class PlotFuns():
     
     joint_out_temp = joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n))))
     Q = xs[...,[0]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
-    #P = xs[...,[1]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
     p_init = Q[[0],:].flatten() #one axis 
     dx = np.abs(p_init[1]-p_init[0])
 
