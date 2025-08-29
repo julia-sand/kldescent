@@ -612,7 +612,12 @@ class UnderdampedHalfNet(UnderdampedHalfLandauer):
     def gfun(self,x,pdf): 
      
         return np.log(self.p_final(x[...,[0]],x[...,[1]])) - np.log(pdf)
-        
+      
+    def get_ref_path(self):
+        #returns the folder where the reference solution is expected to be
+
+        return os.path.dirname(__file__) + f"/../refsolution/{self.__class__.__name__}"
+  
 
 
 

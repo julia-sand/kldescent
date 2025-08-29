@@ -34,7 +34,7 @@ class Pretrain():
         
         #pdb.set_trace()
         X = torch.tensor(arr[:,0:2], dtype=torch.float32)
-        y = -torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)/(2**0.5)
+        y = -0.2*torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)/(2**0.5)
         
         return X,y 
 
