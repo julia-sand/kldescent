@@ -342,10 +342,10 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
             time = self.params["Tf"]
         return np.linspace(0,time)
 
-    def get_reference_data(self,time):
+    #def get_reference_data(self,time):
 
         #RETURNS X, DU for plotting
-        return np.zeros(1000),np.zeros(1000)
+    #    return np.zeros(1000),np.zeros(1000)
 
     def du_ref(self,q,time):
 
@@ -619,6 +619,20 @@ class UnderdampedHalfNet(UnderdampedHalfLandauer):
         return os.path.dirname(__file__) + f"/../refsolution/{self.__class__.__name__}"
   
 
+    def get_reference_data(self,time):
+
+        #time is the time you want the data
+
+        ##fetch the reference data for halfbridge
+        arr = np.loadtxt(self.ref_path,
+                        delimiter=",",skiprows=1)  
+       
+        ##fetch the reference data approximation data
+        arrtemp = arr[np.where(arr[:,0]==np.round(time,8))] 
+        arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
+
+        #RETURNS X, DU
+        return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,-1])
 
 
 if __name__=="__main__":

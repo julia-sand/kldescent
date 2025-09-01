@@ -60,7 +60,7 @@ class FokkerPlanck(SDE):
                 
                 dw = self.generate_innovation(dt,num_samples)
             
-                du_bar = self.net(torch.column_stack((t_vec[i-1]*torch.ones((num_samples,1),dtype=torch.float32)
+                du_bar = self.net(torch.column_stack((t_vec[i]*torch.ones((num_samples,1),dtype=torch.float32)
                                                            ,xinit[...,[0]])))
                 
 

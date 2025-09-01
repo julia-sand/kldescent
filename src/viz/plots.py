@@ -119,7 +119,7 @@ class PlotFuns():
   def normalise(self,x,y):
     idx = np.argsort(x)
 
-    return y/np.trapz(y[idx],x[idx])
+    return y#y/np.trapz(y[idx],x[idx])
 
   def joint_distributions_scatter_panel(self,
                                         ax,
@@ -312,7 +312,8 @@ class PlotFuns():
   #@profile
   def plot_drift(self,times,net):
 
-    fig,ax = plt.subplots(1,len(times))
+    fig = plt.figure(figsize=(10,8))
+    ax = fig.subplots(1,len(times))
   
     for t in range(len(times)):  
       
