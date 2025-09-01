@@ -4,7 +4,6 @@ import torch
 import src.sde.kl as kl
 from ..utils.parser import integrator_params
 
-
 class SDE():
     """
     Integrator class for integrating the sde forward
@@ -289,6 +288,7 @@ class SDE():
                 cumulants_nn = plotter.save_cumulants(cumulants_nn,xinit.numpy())
                 cumulants_ref = plotter.save_cumulants(cumulants_ref,xref.numpy())
                 
+        plotter.save_final_cumulants(cumulants_nn[-1,:])
         plotter.marginal_distribution([xinit.numpy(),xref.numpy()],marginal_plot_time)
         plotter.plot_cumulants(t_vec,cumulants_nn,cumulants_ref,self.sde_params["testsamples"])
         
