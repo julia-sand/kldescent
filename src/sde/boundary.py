@@ -395,6 +395,7 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
         #go forward one step 
         xn[...,[0]] = xn[...,[0]] + self.params["epsilon"]*xn[...,[1]]*dt 
         xn[...,[1]] = xn[...,[1]] + self.sigma0*du_bar*dt + self.sigma0*dw
+        #xn[...,[1]] = xn[...,[1]] + self.sigma0*du_bar*dt + self.sigma0*dw
 
         return xn
         
@@ -605,6 +606,7 @@ class UnderdampedHalfNet(UnderdampedHalfLandauer):
         UnderdampedHalfLandauer.__init__(self,params,logger)
         self.mean0 = 0
         self.var0 = 1
+        self.sigma0 = 2**0.5
 
     def set_pdf(self,rhoval):
         self.pdf = rhoval

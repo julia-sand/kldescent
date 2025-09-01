@@ -143,12 +143,12 @@ class PlotUtils():
         #want shape = (x,2)
         with torch.no_grad():
             for _ in range(mc_samples):
-                pdf_out += self.fpk_integrator.compute_pdf(x2)
+                pdf_out += self.fpk_integrator.compute_pdf(x2.detach().clone())
             
         return xinit.detach().numpy(),pdf_out.detach().numpy()/mc_samples
 
     def make_contour_plot(self):
-        xout,jointout = self.compute_rho_nn(x_samples=100)
+        xout,jointout = self.compute_rho_girsanov(x_samples=100)
         fig,ax = plt.subplots()
 
         self.plotter.joint_distributions_scatter_panel(ax,
@@ -173,5 +173,5 @@ if __name__=="__main__":
 
     plot_utils = PlotUtils()
 
-    plot_utils.checkpoint_plots_du()
-    #plot_utils.checkpoint_plots_rho()
+    #plot_utils.checkpoint_plots_du()
+    plot_utils.checkpoint_plots_rho()
