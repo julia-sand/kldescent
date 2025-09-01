@@ -4,7 +4,7 @@ import math
 import torch
 from torch import nn
 
-from ..utils.parser import du_network_params,rho_network_params
+from ..utils.parser import du_network_params,rho_network_params,fetch_checkpoint_path
 
 #import pdb
 
@@ -138,9 +138,10 @@ class NeuralNetwork(nn.Module):
             )  
         self.FourierFeatures = FourierFeatures(2*self.params["duhiddenlayerneurons"])
 
-        
-        if self.params["checkpointpath"] is not None: #automatically loads a checkpoint from the command line
-            self.load_checkpoint(self.params.checkpointpath)
+        self.checkpoint_path = fetch_checkpoint_path()
+        if self.checkpoint_path is not None: #automatically loads a checkpoint from the command line
+            self.load_checkpoint(self.checkpoint_path)
+            print(f"Checkpoint at {self.checkpoint_path} loaded successfully.")
 
     def forward(self, input_vec):   #how the model should evaluate
         #pdb.set_trace()

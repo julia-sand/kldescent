@@ -46,6 +46,18 @@ def fetch_results_folder_from_cmd():
 
     return args6[0].folder
 
+
+def fetch_checkpoint_path():
+    # Instantiate the parser
+    parser6 = argparse.ArgumentParser()
+    
+    parser6.add_argument('-checkpointpath','--checkpointpath', type=str, default=None,
+                        help='Path for initialisation checkpointcheckpoint to pick up immediately from training loop. Path should be provided from the current folder..')
+
+    args6 = parser6.parse_known_args()
+
+    return args6[0].checkpointpath
+
 def overdamped_argparser():
     #general configs for the training process
     # Instantiate the parser
@@ -143,9 +155,9 @@ def du_network_params():
     # Instantiate the parser
     parser3 = CustomArgParse()
     
-    parser3.add_argument('-checkpointpath','--checkpointpath', type=str,
-                        default=None,
-                        help='path to a checkpoint for warm-start training. Path should be provided from the current folder.')
+    #parser3.add_argument('-checkpointpath','--checkpointpath', type=str,
+    #                    default=None,
+    #                    help='path to a checkpoint for warm-start training. Path should be provided from the current folder.')
          
     parser3.add_argument('-duhiddenlayerneurons','--duhiddenlayerneurons', type=int, default=16,
                         help='Number of hidden dimensions in each layer of the Neural network model')
@@ -159,9 +171,9 @@ def rho_network_params():
     # Instantiate the parser
     parser3 = CustomArgParse()
     
-    parser3.add_argument('-checkpointpath','--checkpointpath', type=str,
-                        default=None,
-                        help='path to a checkpoint for warm-start training. Path should be provided from the current folder.')
+    #parser3.add_argument('-checkpointpath','--checkpointpath', type=str,
+    #                    default=None,
+    #                    help='path to a checkpoint for warm-start training. Path should be provided from the current folder.')
          
     parser3.add_argument('-rhohiddenlayerneurons','--rhohiddenlayerneurons', type=int, default=16,
                         help='Number of hidden dimensions in each layer of the Neural network model')

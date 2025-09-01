@@ -118,7 +118,7 @@ class PlotUtils():
         return xinit.detach().numpy(),pdf_out.detach().numpy()
 
 
-    def compute_rho_girsanov(self,x_samples=30,mc_samples=1000):
+    def compute_rho_girsanov(self,x_samples=30,mc_samples=400):
         """
         Convenience function that returns an estimate of the final joint distribution using girsanov theorem
         Used for testing
@@ -148,14 +148,14 @@ class PlotUtils():
         return xinit.detach().numpy(),pdf_out.detach().numpy()/mc_samples
 
     def make_contour_plot(self):
-        xout,jointout = self.compute_rho_girsanov(x_samples=100)
+        xout,jointout = self.compute_rho_nn(x_samples=100)
         fig,ax = plt.subplots()
 
         self.plotter.joint_distributions_scatter_panel(ax,
                                                     jointout,
                                                     xout,
                                                     time=None,vmax=0.5)
-        fig.savefig(self.folder+f"/plots_{self.epoch}"+"/test7.png",bbox_inches="tight")        
+        fig.savefig(self.folder+f"/plots_{self.epoch}"+"/test8.png",bbox_inches="tight")        
 
 def compute_ref_kl(boundary):
     times = boundary.get_reference_timegrid()

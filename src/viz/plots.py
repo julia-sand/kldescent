@@ -55,7 +55,13 @@ class PlotFuns():
     self.titlepad = 5
     self.titlex = 0.07
     self.titley = 0.88
-
+    
+    self.mut_p = 0
+    self.sigsqt_p = 1
+    self.mut_q = 0
+    self.sigsqt_q = 1
+  
+  
   def setresultsdir(self,folder):
     #set output location 
     self.folder = folder
@@ -160,33 +166,36 @@ class PlotFuns():
     p_init = Q[[0],:].flatten() #one axis 
     dx = np.abs(p_init[1]-p_init[0])
 
-    qmean = np.trapz(dx*np.nansum(joint_out_temp,axis=1)*p_init,p_init)
-    qvar = np.trapz(dx*np.nansum(joint_out_temp,axis=1)*(p_init**2),p_init)
-    pmean = np.trapz(dx*np.nansum(joint_out_temp,axis=0)*p_init,p_init)
-    pvar = np.trapz(dx*np.nansum(joint_out_temp,axis=0)*(p_init**2),p_init)
+    #compute marginals
+    qmarg = dx*np.sum(joint_out_temp,axis=0) 
+    pmarg = dx*np.sum(joint_out_temp,axis=1) 
+
+    #qmean = np.trapz(qmarg*p_init,p_init)
+    #qvar = np.trapz(qmarg*(p_init**2),p_init)
+    #pmean = np.trapz(pmarg*p_init,p_init)
+    #pvar = np.trapz(pmarg*(p_init**2),p_init)
     
-    print("Q mean ",qmean)
-    print("P mean ",pmean)
-    print("Q var ",qvar)
-    print("P var ",pvar)
+    #print("Q mean ",qmean)
+    #print("P mean ",pmean)
+    #print("Q var ",qvar)
+    #print("P var ",pvar)
 
     #plot and format marginals
-    self.plot_marginal_joint(ax_qmarginal,p_init,self.normalise(p_init,np.nansum(joint_out_temp,axis=1)))
-    self.plot_marginal_joint(ax_pmarginal,self.normalise(p_init,np.nansum(joint_out_temp,axis=0)),p_init)
+    self.plot_marginal_joint(ax_qmarginal,p_init,self.normalise(p_init,qmarg))
+    self.plot_marginal_joint(ax_pmarginal,self.normalise(p_init,pmarg),p_init)
 
     ax_pmarginal.set_xlim((-self.qmax,self.qmax))
     ax_pmarginal.plot(np.linspace(-self.qmax,self.qmax,),
-              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=0,sigmasq=1),color="orange")
-    #ax_pmarginal.set_ylim((-0.05,0.7))
-
+              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=self.mut_p,sigmasq=self.sigsqt_p),color="orange")
+    
     ax_qmarginal.set_ylim((-self.qmax,self.qmax))
     ax_qmarginal.plot(
-              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=0,sigmasq=1.3),np.linspace(-self.qmax,self.qmax,),color="orange")
+              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=self.mut_q,sigmasq=self.sigsqt_q),np.linspace(-self.qmax,self.qmax,),color="orange")
     #ax_qmarginal.set_xlim((-0.05,0.7))
     ax_qmarginal.invert_xaxis()
 
     #plot joint distribution
-    ax.scatter(xs[...,0],xs[...,1],c=joint_out_temp.flatten()
+    ax.scatter(xs[...,0],xs[...,1],c=joint_out_temp.T.flatten()
               ,cmap="Blues",norm="log",vmin=0.001,vmax=vmax)
     
     ###ticks formatting and labelling
@@ -596,6 +605,12 @@ class PlotFuns():
                                               np.nanvar(temp[...,1],ddof=1),
                                               np.correlate(temp[...,0],temp[...,1])[0]/(len(temp[...,0]))]]),axis=0)#cross corr
 
+  def save_final_cumulants(self,cumulants_nn):
+    self.mut_p = cumulants_nn[1]
+    self.sigsqt_p = cumulants_nn[3]
+    self.mut_q = cumulants_nn[0]
+    self.sigsqt_q = cumulants_nn[2]
+     
   def movingaverage(self, data, window_size):
       data_means = np.convolve(data, np.ones(int(window_size))/float(window_size), 'same')
       return data_means[window_size:-window_size]

@@ -619,7 +619,6 @@ class UnderdampedHalfNet(UnderdampedHalfLandauer):
         #returns the folder where the reference solution is expected to be
 
         return os.path.dirname(__file__) + f"/../refsolution/{self.__class__.__name__}"
-  
 
     def get_reference_data(self,time):
 
