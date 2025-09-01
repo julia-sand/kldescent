@@ -119,7 +119,7 @@ class PlotFuns():
   def normalise(self,x,y):
     idx = np.argsort(x)
 
-    return y#y/np.trapz(y[idx],x[idx])
+    return y/np.trapz(y[idx],x[idx])
 
   def joint_distributions_scatter_panel(self,
                                         ax,
@@ -321,7 +321,7 @@ class PlotFuns():
         xref,duref = self.boundary.get_reference_data(times[t])
         self.plot_reference(ax[t],xref,duref)
 
-      except FileNotFoundError: 
+      except (ValueError,FileNotFoundError): 
         print("The reference solution file was not found. \n \
                     Please make sure that it has been created by running the scripts in valueref.py or that it has not been moved")
 

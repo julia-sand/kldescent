@@ -54,17 +54,22 @@ class FokkerPlanck(SDE):
 
             girs = torch.zeros((num_samples,1),requires_grad=False,dtype=torch.float32)
 
-            for i in range(1,self.sde_params["tsteps"]):
+            for i in range(1,self.sde_params["tsteps"]+1):
+                #print(t_vec[-i])
+                #print(t_vec[-i-1])
+                #print("====")
                 
-                dt = np.abs(t_vec[i-1]-t_vec[i])
+                dt = np.abs(t_vec[-i-1]-t_vec[-i])
                 
                 dw = self.generate_innovation(dt,num_samples)
             
-                du_bar = self.net(torch.column_stack((t_vec[i]*torch.ones((num_samples,1),dtype=torch.float32)
+                du_bar = -self.net(torch.column_stack((t_vec[-i]*torch.ones((num_samples,1),dtype=torch.float32)
                                                            ,xinit[...,[0]])))
+                #(0.2/(2**0.5))*self.net(torch.column_stack((t_vec[i]*torch.ones((num_samples,1),dtype=torch.float32)
+                #                                           ,xinit[...,[0]])))
                 
 
-                xinit = self.boundary.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[i])
+                xinit = self.boundary.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[-i])
                 girs = girs + (dw*xinit[...,[1]])/(2**0.5) + (dt * (xinit[...,[1]])**2)/4
                
                 #girs + (dw*xinit[...,[1]])/(self.boundary.sigma0) + (dt * (xinit[...,[1]])**2)/4
