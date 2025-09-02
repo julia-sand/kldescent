@@ -189,28 +189,36 @@ class TrainRho():
 
         self.rhonet = rhonet 
 
-        self.lr = 0.005 #initial learning rate
+        self.lr = 0.0005 #initial learning rate
         self.integrator = integrator
 
         self.gamma = 0.1 #rate of learning rate decrease.
 
-        self.clip = 0.001 #gradient clipping
+        self.clip = 0.01 #gradient clipping
 
-        self.rho_epochs = 10000 #total number of training epochs
-        self.milestone = 2000 #how often to decay learning rate
+        self.rho_epochs = 1000 #total number of training epochs
+        self.milestone = 200 #how often to decay learning rate
 
-    def train_step(self,optimiser):  
+    def train_step(self,optimiser,loss):  
 
         #reset gradients 
         optimiser.zero_grad()
         
-        Lhat = self.integrator.loss_fn(self.rhonet)
+        #initialise x values 
+        x0 = (-4 - 4)*torch.ones(500, 2, dtype=torch.float32,requires_grad=False) + 4
+        x0_clone = x0.clone().detach()
+
+        output = self.integrator.loss_fn(self.rhonet,x0_clone)
+        #Lhat = self.integrator.loss_fn(self.rhonet)
         #clip_grad_norm_(self.rhonet.parameters(), self.clip)
+        in_x = x0.clone().requires_grad_(True)
+        Lhat = loss(in_x,output)
 
         ##training##
         Lhat.backward()
         optimiser.step()
-                          
+        
+        print(Lhat.item())
         return #loss_out
 
     def train_loop(self, epochs=None):
@@ -223,6 +231,8 @@ class TrainRho():
 
         if epochs==None:
             epochs=self.rho_epochs
+        
+        loss = torch.nn.MSELoss()
 
         #reset optimiser and scheduler for each train loop
         optimiser = Adam(self.rhonet.parameters(), lr=self.lr)
@@ -231,7 +241,7 @@ class TrainRho():
 
         for _ in range(int(round(epochs/self.milestone))):    
             for __ in range(self.milestone):
-                self.train_step(optimiser) #repeat training step
+                self.train_step(optimiser,loss) #repeat training step
             
             scheduler.step() #decrease learning rate
 

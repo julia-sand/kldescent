@@ -90,6 +90,7 @@ class PlotUtils():
     def checkpoint_plots_rho(self):
         self.load_rho_checkpoint()
         self.make_contour_plot()
+        self.make_contour_plot2()
         
     def compute_rho_nn(self,x_samples=100):
         """
@@ -136,26 +137,37 @@ class PlotUtils():
         fpk_integrator = self.load_fpk_integrator(self.net)
 
         #generate xmesh
-        Q,P = generate_mesh(x_samples,qmax=6)
+        Q,P = generate_mesh(x_samples,qmax=4)
         xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
         x2 = xinit.detach().clone() 
         pdf_out = 0*xinit[...,[0]]
         #want shape = (x,2)
         with torch.no_grad():
             for _ in range(mc_samples):
+                #temp = self.fpk_integrator.compute_pdf(x2.detach().clone())
                 pdf_out += self.fpk_integrator.compute_pdf(x2.detach().clone())
-            
+                #print(torch.max(temp))
         return xinit.detach().numpy(),pdf_out.detach().numpy()/mc_samples
 
-    def make_contour_plot(self):
-        xout,jointout = self.compute_rho_nn(x_samples=100)
+    def make_contour_plot2(self):
+        xout,jointout = self.compute_rho_girsanov(x_samples=50)
         fig,ax = plt.subplots()
 
         self.plotter.joint_distributions_scatter_panel(ax,
                                                     jointout,
                                                     xout,
                                                     time=None,vmax=0.5)
-        fig.savefig(self.folder+f"/plots_{self.epoch}"+"/test8.png",bbox_inches="tight")        
+        fig.savefig(self.folder+f"/plots_{self.epoch}"+"/test8_girs.png",bbox_inches="tight")        
+
+    def make_contour_plot(self):
+        xout,jointout = self.compute_rho_nn(x_samples=50)
+        fig,ax = plt.subplots()
+
+        self.plotter.joint_distributions_scatter_panel(ax,
+                                                    jointout,
+                                                    xout,
+                                                    time=None,vmax=0.5)
+        fig.savefig(self.folder+f"/plots_{self.epoch}"+"/test8_nn.png",bbox_inches="tight")        
 
 def compute_ref_kl(boundary):
     times = boundary.get_reference_timegrid()
@@ -173,5 +185,5 @@ if __name__=="__main__":
 
     plot_utils = PlotUtils()
 
-    #plot_utils.checkpoint_plots_du()
+    plot_utils.checkpoint_plots_du()
     plot_utils.checkpoint_plots_rho()

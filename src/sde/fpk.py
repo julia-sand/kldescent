@@ -14,6 +14,8 @@ from ..utils.parser import fetch_results_folder_from_cmd
 from ..sde import boundary as boundaries 
 from ..utils.getboundary import *
 
+from ..viz.contour import *
+
 
 class FokkerPlanck(SDE):
     """
@@ -78,7 +80,7 @@ class FokkerPlanck(SDE):
 
         return pdfout
     
-    def loss_fn(self,rhonet):
+    def loss_fn(self,rhonet,x0_clone):
         """
         Computes pdf values and returns l2 error loss function 
         
@@ -87,22 +89,12 @@ class FokkerPlanck(SDE):
                 neural network to be trained
         """
 
-        #pdb.set_trace()
-        #initialise x values 
-        x0 = (-6 - 6)*torch.ones(self.sde_params["batchsamples"], 2, dtype=torch.float32,requires_grad=False) + 6
-        #torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32)
-        #
-        x0_clone = x0.clone().detach()
-
-
         #x0 = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"))#.to_device(device)
         with torch.no_grad():
             pdfout = self.compute_pdf(x0_clone)
         
-        xgrad = x0.clone().requires_grad_(True)
-
-        return torch.mean((rhonet(xgrad)-pdfout)**2)
-
+        return pdfout
+        
 if __name__=="__main__":
     
     import os 
