@@ -589,7 +589,7 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
     def gfun(self,x):      
         return (self.params["weight"]/2)*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.gauss_boundary["mufinal"], self.gauss_boundary["sigmafinal"]**2))
 
-class UnderdampedHalfNet(UnderdampedHalfLandauer):
+class UnderdampedHalfNet(UnderdampedHalfGaussian):
     """
     Class for when the distribution is learned by a neural network (not using cumulants)
     Inherits from UnderdampedHalfGaussian
@@ -598,7 +598,6 @@ class UnderdampedHalfNet(UnderdampedHalfLandauer):
     def __init__(self,params=None,logger=None):
         """
         args:
-            params: mandatory neural network returning an estimate of the probability distirbution
             params: defines intial and final distributions in the gaussian case
             logger: class used for writing and saving files
         """
