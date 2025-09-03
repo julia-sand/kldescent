@@ -47,8 +47,11 @@ class Boundaries():
         
         self.Generator = np.random.default_rng(seed=None)
 
-        self.ref_path = self.get_ref_path()+"/refsol.csv"
-
+        try:
+            self.ref_path =  self.params["refsolution"]
+        except KeyError:
+            self.ref_path = self.get_ref_path()+"/refsol.csv"
+        
         if logger is not None:
             logger.log_dict(self.params) #add to log
         
@@ -555,7 +558,7 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
             else:
                 return np.zeros_like(np.squeeze(arr[:,0]))
         except IndexError:
-            return    
+            return np.zeros_like(np.squeeze(arr[:,0]))
  
 
 class UnderdampedQuarterGaussianNoMomentum(UnderdampedQuarterGaussian):

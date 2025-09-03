@@ -75,7 +75,7 @@ def overdamped_argparser():
     parser.add_argument('-boundary','--boundary', type=str, default="UnderdampedHalfGaussian",
                         help='which set of boundary conditions to use. See Sde.Boundary for more details')
     
-    #TODO... move into model module
+    #TODO... move into model module?
     parser.add_argument('-pretrain','--pretrain', type=str, default="",
                         help='Path to CSV containing a set of values to fit to the neural network before training. See model/train for parameters of the training process.')
              
@@ -122,6 +122,9 @@ def boundary_params():
 
     boundary_params.add_argument('-g','--g', type=float, default=0,
                         help='constant')
+
+    boundary_params.add_argument('-refsolution','--refsolution', type=str, default="",
+                        help='filepath to csv with reference solution')
 
     args2 = boundary_params.parse_known_args(boundary_params.argfile)
 
