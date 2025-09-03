@@ -170,15 +170,9 @@ class PlotFuns():
     qmarg = dx*np.sum(joint_out_temp,axis=0) 
     pmarg = dx*np.sum(joint_out_temp,axis=1) 
 
-    #qmean = np.trapz(qmarg*p_init,p_init)
-    #qvar = np.trapz(qmarg*(p_init**2),p_init)
-    #pmean = np.trapz(pmarg*p_init,p_init)
-    #pvar = np.trapz(pmarg*(p_init**2),p_init)
-    
-    #print("Q mean ",qmean)
-    #print("P mean ",pmean)
-    #print("Q var ",qvar)
-    #print("P var ",pvar)
+    print("jointmax",np.max(joint_out_temp))
+    print("qmax",np.max(qmarg))
+    print("pmax",np.max(pmarg))
 
     #plot and format marginals
     self.plot_marginal_joint(ax_qmarginal,p_init,self.normalise(p_init,qmarg))
@@ -222,8 +216,8 @@ class PlotFuns():
         left=False,
         labelleft=False)
 
-    ax.set_xlim((-self.qmax,self.qmax))
-    ax.set_ylim((-self.qmax,self.qmax))
+    #ax.set_xlim((-self.qmax,self.qmax))
+    #ax.set_ylim((-self.qmax,self.qmax))
 
     ax_pmarginal.set_xticklabels([])
    

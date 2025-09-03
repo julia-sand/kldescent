@@ -94,10 +94,10 @@ def integrator_params():
                         default=50,
                         help='Number of sample trajectories to take of the diffusion')
 
-    integrator_params.add_argument('-tsteps','--tsteps', type=int, default=10,
+    integrator_params.add_argument('-tsteps','--tsteps', type=int, default=20,
                         help='number of timesteps in the integration')
 
-    integrator_params.add_argument('-testsamples','--testsamples', type=int, default=100,
+    integrator_params.add_argument('-testsamples','--testsamples', type=int, default=1000,
                         help='number of samples for computing ref metrics')
 
     args1 = integrator_params.parse_known_args(integrator_params.argfile)
