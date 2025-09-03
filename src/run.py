@@ -54,35 +54,36 @@ def run():
         pretrain.run_pretrain(net,
                             args["pretrain"])
     
+    #get baseline metrics and saves initialisation checkpoint
     metrics.update_metrics(0,None,metrics_logger)
 
     for epoch in range(0,args["epochs"]):
         try:
 
             #train the rho nn
-            rhotrainer.train_loop()
+            rhotrainer.train_loop(metrics_logger)
 
             #UNCOMMENT TO TRAIN         
             #update the drift nn with the current iteration  
-            #loss_out = trainer.train_step()
+            loss_out = trainer.train_step()
             #loss_out=0
 
             #update metrics
-            metrics.update_metrics(epoch+1,0,metrics_logger)
+            metrics.update_metrics(epoch+1,loss_out,metrics_logger)
             print(f"Epoch {epoch+1} complete")
             
-        except KeyboardInterrupt:
-            print(f"Training interrupted at epoch {epoch}")
+        #except KeyboardInterrupt:
+        #    print(f"Training interrupted at epoch {epoch}")
         except ValueError:
             print("The training has resulted in NaN loss and therefore failed. Please retry.")
             raise
-        except slurmhandler.TimeLimitException: #TODO not sure if this works?
-            print(f"The training must be stopped because SLURM is about to kill the job. Training ended at epoch {epoch}")
-            metrics_logger.save_checkpoint(net,epoch)
+        #except slurmhandler.TimeLimitException: #TODO not sure if this works?
+        #    print(f"The training must be stopped because SLURM is about to kill the job. Training ended at epoch {epoch}")
+        #    metrics_logger.save_checkpoint(net,epoch)
 
     #metrics_logger.save_checkpoint(rhonet,epoch)
 
-    plot_utils = PlotUtils(metrics_logger.get_results_path(),epoch)
+    plot_utils = PlotUtils(metrics_logger.get_results_path(),4)
 
     plot_utils.checkpoint_plots_rho()
     plot_utils.checkpoint_plots_du()

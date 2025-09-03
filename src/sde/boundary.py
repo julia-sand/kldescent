@@ -595,14 +595,14 @@ class UnderdampedHalfNet(UnderdampedHalfGaussian):
     Inherits from UnderdampedHalfGaussian
     """
     
-    def __init__(self,params=None,logger=None):
+    def __init__(self,params=None,gauss_params=None,logger=None):
         """
         args:
             params: defines intial and final distributions in the gaussian case
             logger: class used for writing and saving files
         """
 
-        UnderdampedHalfLandauer.__init__(self,params,logger)
+        UnderdampedHalfGaussian.__init__(self,params,gauss_params,logger)
         self.mean0 = 0
         self.var0 = 1
         self.sigma0 = 2**0.5
@@ -612,7 +612,7 @@ class UnderdampedHalfNet(UnderdampedHalfGaussian):
 
     def gfun(self,x,pdf): 
      
-        return np.log(self.p_final(x[...,[0]],x[...,[1]])) - np.log(pdf)
+        return np.log(self.p_final(x[...,[0]],x[...,[1]])) - np.nan_to_num(np.log(pdf))
       
     def get_ref_path(self):
         #returns the folder where the reference solution is expected to be

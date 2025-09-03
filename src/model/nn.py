@@ -196,27 +196,19 @@ class RhoNeuralNetwork(nn.Module):
         super(RhoNeuralNetwork, self).__init__()
         self.NNx = nn.Sequential(
             nn.Linear(2, self.params["rhohiddenlayerneurons"] ),  #input x
-            nn.Tanh(),
+            nn.GELU(),
             nn.Linear(self.params["rhohiddenlayerneurons"] ,self.params["rhohiddenlayerneurons"] ),   #64 outputs
-            nn.Tanh(),
+            nn.GELU(),
             nn.Linear(self.params["rhohiddenlayerneurons"] ,self.params["rhohiddenlayerneurons"] ),   #64 outputs
-            nn.Tanh(),
+            nn.GELU(),
             nn.Linear(self.params["rhohiddenlayerneurons"] , 1),   #64 outputs
-            nn.ReLU(),
+            nn.GELU(),
             )  
 
-        #self.initialise_weights()
 
     def forward(self, x0):   #how the model should evaluate
         
         return self.NNx(x0)
-
-    def initialise_weights(self):   #sets all the weights away from zero.
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                torch.nn.init.constant_(m.weight,0)
-                if m.bias is not None:
-                    torch.nn.init.constant_(m.bias, 0)
 
     def load_checkpoint(self,checkpointpath):
         try:

@@ -189,7 +189,7 @@ class TrainRho():
 
         self.rhonet = rhonet 
 
-        self.lr = 0.0005 #initial learning rate
+        self.lr = 0.001 #initial learning rate
         self.integrator = integrator
 
         self.gamma = 0.1 #rate of learning rate decrease.
@@ -199,29 +199,39 @@ class TrainRho():
         self.rho_epochs = 1000 #total number of training epochs
         self.milestone = 200 #how often to decay learning rate
 
+    def generate_training_data(self,x0):
+        with torch.no_grad():
+
+            #copy x values 
+            x0_clone = x0.clone().detach()
+
+            yhat = self.integrator.loss_fn(self.rhonet,x0_clone)
+
+        return yhat
+
+
     def train_step(self,optimiser,loss):  
 
         #reset gradients 
         optimiser.zero_grad()
         
         #initialise x values 
-        x0 = (-4 - 4)*torch.ones(500, 2, dtype=torch.float32,requires_grad=False) + 4
-        x0_clone = x0.clone().detach()
+        x0 = (-4 - 4)*torch.rand(500, 2, dtype=torch.float32,requires_grad=True) + 4
 
-        output = self.integrator.loss_fn(self.rhonet,x0_clone)
-        #Lhat = self.integrator.loss_fn(self.rhonet)
+        yhat = self.generate_training_data(x0)
+
+        ypred = self.rhonet(x0)
+        Lhat = loss(ypred,yhat)
         #clip_grad_norm_(self.rhonet.parameters(), self.clip)
-        in_x = x0.clone().requires_grad_(True)
-        Lhat = loss(in_x,output)
 
         ##training##
         Lhat.backward()
         optimiser.step()
         
-        print(Lhat.item())
         return #loss_out
 
-    def train_loop(self, epochs=None):
+
+    def train_loop(self, logger, epochs=None):
         """
         loop for training the rho neural net
         args:
@@ -239,11 +249,25 @@ class TrainRho():
         scheduler = ExponentialLR(optimiser, gamma=self.gamma)
         self.rhonet.train() #set neural net into train mode
 
-        for _ in range(int(round(epochs/self.milestone))):    
+        for rho_epoch in range(int(round(epochs/self.milestone))):    
+            
+            #========TESTING
+            with torch.no_grad():
+                x0_temp = (-4 - 4)*torch.rand(500, 2, dtype=torch.float32,requires_grad=False) + 4
+                yhat = self.generate_training_data(x0_temp)
+                ypred = self.rhonet(x0_temp)
+                loss_temp = loss(yhat,ypred)
+                print(f"Finished epoch {rho_epoch}, loss {loss_temp}")
+                print("sum",ypred.sum())
+                print("max",ypred.max())
+                print("min",ypred.min())
+                #logger.save_checkpoint(self.rhonet,rho_epoch+1)
+            #======
             for __ in range(self.milestone):
                 self.train_step(optimiser,loss) #repeat training step
-            
+        
             scheduler.step() #decrease learning rate
+        
 
 if __name__=="__main__":
     Pretrain("src/refsolution/UnderdampedHalfNet/refsol.csv").get_pretraining_data()

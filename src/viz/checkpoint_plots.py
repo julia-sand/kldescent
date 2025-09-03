@@ -90,7 +90,7 @@ class PlotUtils():
     def checkpoint_plots_rho(self):
         self.load_rho_checkpoint()
         self.make_contour_plot()
-        self.make_contour_plot2()
+        #self.make_contour_plot2()
         
     def compute_rho_nn(self,x_samples=100):
         """
@@ -112,7 +112,7 @@ class PlotUtils():
         
         #want shape = (x,2)
         with torch.no_grad():
-            pdf_out = self.rhonet(xinit.clone())
+            pdf_out = self.rhonet(xinit.detach().clone())
         
         #pdb.set_trace()
 
