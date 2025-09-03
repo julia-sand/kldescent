@@ -13,7 +13,6 @@ src/model/tempnn.py
 klenv
 *.out
 *.bash
-*.jl
 timeprofile.py
 *.pdf
 src/refsolution/UnderdampedHalfNet/temp.py
