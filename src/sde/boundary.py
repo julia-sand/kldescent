@@ -107,6 +107,7 @@ class HalfBridgeLandauer(Boundaries):
         
         self.ref_path = new_path + "/refsol.csv"
 
+
     def Ufinal(self,q):
 
         return ((q**2-1)**2)/4
@@ -477,6 +478,13 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
         if logger is not None:
             logger.log_dict(self.gauss_boundary) #add to log
         
+        self.cumulants_path = self.get_ref_path()+"/cumulants.csv"
+
+    def overwrite_ref_path(self,new_path):
+        
+        self.ref_path = new_path + "/refsol.csv"
+        self.cumulants_path = new_path + "/cumulants.csv"
+        
     def Uinitial(self,q):
 
         return (q-self.gauss_boundary["muinitial"])**2/(2*(self.gauss_boundary["sigmainitial"]**2))
@@ -521,6 +529,12 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
                         delimiter=",",skiprows=1) 
         return arr 
 
+    def get_ref_cumulants(self):
+        #returns the folder where the reference solution is expected to be
+        arr = np.loadtxt(open(self.cumulants_path),
+                        delimiter=",",skiprows=1) 
+        return arr 
+
     def get_reference_timegrid(self,time=None):
         if time is None:
             time = self.params["Tf"] + 0.00001
@@ -542,7 +556,7 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
         return np.zeros_like(q)
 
     def get_known_solution_cumulants(self,cumulant_type):
-        arr = self.get_ref_data()#np.loadtxt(open(self.ref_path),
+        arr = self.get_ref_cumulants()#np.loadtxt(open(self.ref_path),
               #          delimiter=",",skiprows=1) 
         try:  
             if cumulant_type == "Position Variance": 
@@ -592,7 +606,7 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
     def gfun(self,x):      
         return (self.params["weight"]/2)*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.gauss_boundary["mufinal"], self.gauss_boundary["sigmafinal"]**2))
 
-class UnderdampedHalfNet(UnderdampedHalfGaussian):
+class UnderdampedHalfNet(UnderdampedQuarterGaussian):
     """
     Class for when the distribution is learned by a neural network (not using cumulants)
     Inherits from UnderdampedHalfGaussian
@@ -605,7 +619,7 @@ class UnderdampedHalfNet(UnderdampedHalfGaussian):
             logger: class used for writing and saving files
         """
 
-        UnderdampedHalfGaussian.__init__(self,params,gauss_params,logger)
+        UnderdampedQuarterGaussian.__init__(self,params,gauss_params,logger)
         self.mean0 = 0
         self.var0 = 1
         self.sigma0 = 2**0.5
@@ -617,26 +631,6 @@ class UnderdampedHalfNet(UnderdampedHalfGaussian):
      
         return np.log(self.p_final(x[...,[0]],x[...,[1]])) - np.nan_to_num(np.log(pdf))
       
-    def get_ref_path(self):
-        #returns the folder where the reference solution is expected to be
-
-        return os.path.dirname(__file__) + f"/../refsolution/{self.__class__.__name__}"
-
-    def get_reference_data(self,time):
-
-        #time is the time you want the data
-
-        ##fetch the reference data for halfbridge
-        arr = np.loadtxt(self.ref_path,
-                        delimiter=",",skiprows=1)  
-       
-        ##fetch the reference data approximation data
-        arrtemp = arr[np.where(arr[:,0]==np.round(time,8))] 
-        arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
-
-        #RETURNS X, DU
-        return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,-1])
-
 
 if __name__=="__main__":
 
