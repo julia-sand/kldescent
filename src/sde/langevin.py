@@ -6,12 +6,12 @@ from ..utils.parser import integrator_params
 
 class SDE():
     """
-    Integrator class for integrating the sde forward
+    Class for integrating the sde forward
     Most arguments are the same as the Langevin integrator, except:
 
     args: 
         rhonet: 
-            neural net used to evaluate the terminal cost (g) 
+            neural net used to evaluate the terminal pdf 
     """
 
     def __init__(self,
@@ -60,7 +60,7 @@ class SDE():
 
         ====
         Parameters
-        - net: neural network for parametrisig the drift
+        - net: neural network for parametrising the drift
         ====
 
         """
@@ -248,30 +248,39 @@ class SDE():
 
         return grad_temp/dx
 
+    def save_cumulants(self,save_array,temp):
+      """
+      appends the computed cumulants to a new array
+      """
+      
+      return np.append(save_array,np.array([[np.nanmean(temp[...,0]),
+                                              np.nanmean(temp[...,1]),
+                                              np.nanvar(temp[...,0],ddof=1),
+                                              np.nanvar(temp[...,1],ddof=1),
+                                              np.correlate(temp[...,0],temp[...,1])[0]/(len(temp[...,0]))]]),axis=0)#cross corr
+
     def compute_sde(self,net,
-                        plotter,
-                        marginal_plot_time):
+                        final_time):
         """
         Computes the SDE, saves cumulants and plots 
 
         ====
         args:
           net: neural network
-          plotter: object for setting up plots
-          marginal_plot_time: at what time to plot the marginal distributions  
+          final_time: when to stop the integration for intermediate time plots
         ====
         """
             
         #pdb.set_trace()
-        t_vec = self.boundary.get_reference_timegrid(marginal_plot_time)
+        t_vec = self.boundary.get_reference_timegrid(final_time)
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["testsamples"],"initial"),requires_grad=False,dtype=torch.float32)
         xref = torch.clone(xinit)
 
         #save the cumulants of the evolutions
-        cumulants_nn = plotter.save_cumulants(np.empty((0,5)),xinit.numpy())
-        cumulants_ref = plotter.save_cumulants(np.empty((0,5)),xref.numpy())
+        cumulants_nn = self.save_cumulants(np.empty((0,5)),xinit.numpy())
+        cumulants_ref = self.save_cumulants(np.empty((0,5)),xref.numpy())
 
         with torch.no_grad():
 
@@ -285,18 +294,11 @@ class SDE():
                 
                 xinit = self.boundary.euler_maruyama_step(xinit,du,dt,dw,t_vec[i])
                 xref = self.boundary.euler_maruyama_step(xref,self.boundary.du_ref(xref[:,[0]],t_vec[i]),dt,dw,t_vec[i])
-                cumulants_nn = plotter.save_cumulants(cumulants_nn,xinit.numpy())
-                cumulants_ref = plotter.save_cumulants(cumulants_ref,xref.numpy())
-                
-        plotter.save_final_cumulants(cumulants_nn[-1,:])
-        plotter.marginal_distribution([xinit.numpy(),xref.numpy()],marginal_plot_time)
-        plotter.plot_cumulants(t_vec,cumulants_nn,cumulants_ref,self.sde_params["testsamples"])
+                cumulants_nn = self.save_cumulants(cumulants_nn,xinit.numpy())
+                cumulants_ref = self.save_cumulants(cumulants_ref,xref.numpy())
         
-        #free up the tensors
-        del xinit 
-        del du
 
-        return 
+        return t_vec, xinit.numpy(), xref.numpy(), cumulants_nn, cumulants_ref
 
 if __name__=="__main__":
     from src.model import nn

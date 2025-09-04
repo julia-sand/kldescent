@@ -47,10 +47,7 @@ class Boundaries():
         
         self.Generator = np.random.default_rng(seed=None)
 
-        try:
-            self.ref_path =  self.params["refsolution"]
-        except KeyError:
-            self.ref_path = self.get_ref_path()+"/refsol.csv"
+        self.ref_path = self.get_ref_path()+"/refsol.csv"
         
         if logger is not None:
             logger.log_dict(self.params) #add to log
@@ -484,7 +481,7 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
         
         self.ref_path = new_path + "/refsol.csv"
         self.cumulants_path = new_path + "/cumulants.csv"
-        
+
     def Uinitial(self,q):
 
         return (q-self.gauss_boundary["muinitial"])**2/(2*(self.gauss_boundary["sigmainitial"]**2))
@@ -560,20 +557,21 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
               #          delimiter=",",skiprows=1) 
         try:  
             if cumulant_type == "Position Variance": 
-                return np.squeeze(arr[:,4])
+                temp = np.squeeze(arr[:,4])
             elif cumulant_type == "Momentum Variance":
-                return np.squeeze(arr[:,6])
+                temp = np.squeeze(arr[:,6])
             elif cumulant_type == "Cross Correlation":
-                return np.squeeze(arr[:,5])
+                temp = np.squeeze(arr[:,5])
             elif cumulant_type == "Momentum Mean":
-                return np.squeeze(arr[:,8])
+                temp = np.squeeze(arr[:,8])
             elif cumulant_type == "Position Mean":
-                return np.squeeze(arr[:,7])
+                temp = np.squeeze(arr[:,7])
             else:
-                return np.zeros_like(np.squeeze(arr[:,0]))
+                temp = np.zeros_like(np.squeeze(arr[:,0]))
         except IndexError:
-            return np.zeros_like(np.squeeze(arr[:,0]))
- 
+            return np.zeros_like(np.squeeze(arr[:,0])),np.zeros_like(np.squeeze(arr[:,0]))
+
+        return np.squeeze(arr[:,0]),temp
 
 class UnderdampedQuarterGaussianNoMomentum(UnderdampedQuarterGaussian):
     def __init__(self,params=None,gauss_params=None,logger=None):
@@ -631,7 +629,25 @@ class UnderdampedHalfNet(UnderdampedQuarterGaussian):
      
         return np.log(self.p_final(x[...,[0]],x[...,[1]])) - np.nan_to_num(np.log(pdf))
       
+    def get_reference_data(self,time):
+        arr = self.get_ref_data()
 
+
+        
+        return np.squeeze(arr[np.where(arr[:,0]==np.round(time,8)),1]),np.squeeze(arr[np.where(arr[:,0]==np.round(time,8)),-1])
+
+    def get_ref_data(self):
+        #returns the folder where the reference solution is expected to be
+        arr = np.loadtxt(open(self.ref_path),
+                        delimiter=",",skiprows=1) 
+        return arr 
+
+    def get_ref_cumulants(self):
+        #returns the folder where the reference solution is expected to be
+        arr = np.loadtxt(open(self.cumulants_path),
+                        delimiter=",",skiprows=1) 
+        return arr 
+        
 if __name__=="__main__":
 
     boundary = UnderdampedQuarterGaussian()
