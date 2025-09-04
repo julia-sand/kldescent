@@ -36,6 +36,7 @@ class PlotUtils():
 
         boundary_cond,data_loaded = init_params_from_file(folder)
 
+
         params = checkpoint_plot_params() #get checkpoint plot parameters from cmd line
         
         self.boundary_cond = boundary_cond
@@ -48,13 +49,13 @@ class PlotUtils():
         
         self.plotter = PlotFuns(boundary_cond)
 
-        if folder == None:
-            self.folder = "tests/"+f"{boundary_cond.__class__.__name__}"
-        else: #if a folder path is provided, assume that the reference solution is there and overwrite the default    
-            self.folder = folder
-            boundary_cond.overwrite_ref_path(self.folder)
+        #if folder == None:
+        #    self.folder = "tests/"+f"{boundary_cond.__class__.__name__}"
+        #else: #if a folder path is provided, assume that the reference solution is there and overwrite the default    
+        #    self.folder = folder
+        self.folder = folder
+        self.boundary_cond.overwrite_ref_path(self.folder)
             
-
         #make new folder for the results
         os.makedirs(self.folder+f"/plots_{self.epoch}", exist_ok = True) 
         self.plotter.setresultsdir(self.folder+f"/plots_{self.epoch}")
@@ -67,12 +68,19 @@ class PlotUtils():
 
         self.load_du_checkpoint()
 
-        self.integrator.compute_sde(self.net,
-                        self.plotter,
-                        self.boundary_cond.params["Tf"])
-        
         self.plotter.plot_drift(times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
+        self.make_sde_plots()
 
+    def make_sde_plots(self):
+            
+        final_plot_time = self.boundary_cond.params["Tf"]
+        
+        t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(self.net,final_plot_time)
+        
+        self.plotter.update_final_cumulants(cumulants_nn[-1,:])
+        self.plotter.marginal_distribution([xinit,xref],final_plot_time)
+        self.plotter.plot_cumulants(t_vec,cumulants_nn,cumulants_ref,self.data_loaded["testsamples"])
+        
     def load_du_checkpoint(self):
         self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
         self.net.load_checkpoint(self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")

@@ -3,7 +3,7 @@ import numpy as np
 
 import pdb
 #script to prepare some test training data 
-df = pd.DataFrame(pd.read_csv("src/refsolution/UnderdampedHalfNet/refsol_temp.csv",header=0))
+df = pd.DataFrame(pd.read_csv("src/refsolution/UnderdampedHalfNet/refsol_gauss_integrated.csv",header=0))
 
 N=2000
 x_ax = np.linspace(-6,6,num=N)

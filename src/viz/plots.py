@@ -324,7 +324,7 @@ class PlotFuns():
         xref,duref = self.boundary.get_reference_data(times[t])
         self.plot_reference(ax[t],xref,duref)
 
-      except (ValueError,FileNotFoundError): 
+      except (FileNotFoundError): 
         print("The reference solution file was not found. \n \
                     Please make sure that it has been created by running the scripts in valueref.py or that it has not been moved")
 
@@ -549,8 +549,9 @@ class PlotFuns():
     ax.plot(t_vec, cumulants_ref_plot[:,index], color=self.c1)
 
     try:
-      ax.plot(t_vec,self.boundary.get_known_solution_cumulants(ylabel_text),color="green")
-    except (AttributeError,ValueError,TypeError,FileExistsError,FileNotFoundError): #if the known solution is somehow unavailable
+      t,cumulant_vals = self.boundary.get_known_solution_cumulants(ylabel_text)
+      ax.plot(t,cumulant_vals,color="green")
+    except (FileExistsError,FileNotFoundError): #if the known solution is somehow unavailable
       pass
 
     ax.set_title(self.make_plot_label(index),pad = self.titlepad,x = self.titlex, y = self.titley,zorder = 1000000)
@@ -590,16 +591,7 @@ class PlotFuns():
     plt.savefig(self.subdir+f"/cumulants.png", bbox_inches='tight')
     plt.close()
 
-  def save_cumulants(self,save_array,temp):
-      #pdb.set_trace()
-      
-      return np.append(save_array,np.array([[np.nanmean(temp[...,0]),
-                                              np.nanmean(temp[...,1]),
-                                              np.nanvar(temp[...,0],ddof=1),
-                                              np.nanvar(temp[...,1],ddof=1),
-                                              np.correlate(temp[...,0],temp[...,1])[0]/(len(temp[...,0]))]]),axis=0)#cross corr
-
-  def save_final_cumulants(self,cumulants_nn):
+  def update_final_cumulants(self,cumulants_nn):
     self.mut_p = cumulants_nn[1]
     self.sigsqt_p = cumulants_nn[3]
     self.mut_q = cumulants_nn[0]
