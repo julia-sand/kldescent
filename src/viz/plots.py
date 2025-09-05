@@ -127,8 +127,19 @@ class PlotFuns():
 
     return y/np.trapz(y[idx],x[idx])
 
+  def scatter_panel_layout(self,ax):
+
+    #make inset axes to show marginal distributions
+    ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
+    ax_qmarginal = ax.inset_axes([-0.65, 0, 0.6, 1])
+
+    return ax, ax_pmarginal,ax_qmarginal
+
+
   def joint_distributions_scatter_panel(self,
                                         ax,
+                                        ax_pmarginal,
+                                        ax_qmarginal,
                                         joint_out,
                                         xs,
                                         time=None,vmax=0.5):
@@ -155,10 +166,6 @@ class PlotFuns():
     if time==None:
       time = self.boundary.params["Tf"]
     
-    #make inset axes to show marginal distributions
-    ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
-    ax_qmarginal = ax.inset_axes([-0.65, 0, 0.6, 1])
-
     n = joint_out.shape[0]
     
     joint_out_temp = joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n))))
@@ -170,7 +177,7 @@ class PlotFuns():
     qmarg = dx*np.sum(joint_out_temp,axis=0) 
     pmarg = dx*np.sum(joint_out_temp,axis=1) 
 
-    print("jointmax",np.max(joint_out_temp))
+    print("jointmax",np.sum(joint_out_temp)*(dx**2))
     print("qmax",np.max(qmarg))
     print("pmax",np.max(pmarg))
 
@@ -322,7 +329,7 @@ class PlotFuns():
       
       try:
         xref,duref = self.boundary.get_reference_data(times[t])
-        self.plot_reference(ax[t],xref,duref)
+        self.plot_reference(ax[t],xref,0.2/(2**0.5)*duref)
 
       except (FileNotFoundError): 
         print("The reference solution file was not found. \n \
