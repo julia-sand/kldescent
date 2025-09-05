@@ -36,7 +36,7 @@ class Pretrain():
         X = torch.tensor(arr[:,0:2], dtype=torch.float32)
         y = torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
         
-        return X,y 
+        return X,-y/(2**0.5)
 
     def pretraining(self,net):   
         
@@ -261,7 +261,7 @@ class TrainRho():
                 print("sum",ypred.sum())
                 print("max",ypred.max())
                 print("min",ypred.min())
-                #logger.save_checkpoint(self.rhonet,rho_epoch+1)
+                logger.save_checkpoint(self.rhonet,rho_epoch+100)
             #======
             for __ in range(self.milestone):
                 self.train_step(optimiser,loss) #repeat training step

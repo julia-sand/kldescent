@@ -66,24 +66,18 @@ def run():
             #UNCOMMENT TO TRAIN         
             #update the drift nn with the current iteration  
             loss_out = trainer.train_step()
-            #loss_out=0
 
             #update metrics
             metrics.update_metrics(epoch+1,loss_out,metrics_logger)
             print(f"Epoch {epoch+1} complete")
             
-        #except KeyboardInterrupt:
-        #    print(f"Training interrupted at epoch {epoch}")
         except ValueError:
             print("The training has resulted in NaN loss and therefore failed. Please retry.")
             raise
-        #except slurmhandler.TimeLimitException: #TODO not sure if this works?
-        #    print(f"The training must be stopped because SLURM is about to kill the job. Training ended at epoch {epoch}")
-        #    metrics_logger.save_checkpoint(net,epoch)
-
+        
     #metrics_logger.save_checkpoint(rhonet,epoch)
 
-    plot_utils = PlotUtils(metrics_logger.get_results_path(),4)
+    plot_utils = PlotUtils(metrics_logger.get_results_path(),0)
 
     plot_utils.checkpoint_plots_rho()
     plot_utils.checkpoint_plots_du()

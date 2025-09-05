@@ -297,7 +297,6 @@ class SDE():
                 cumulants_nn = self.save_cumulants(cumulants_nn,xinit.numpy())
                 cumulants_ref = self.save_cumulants(cumulants_ref,xref.numpy())
         
-
         return t_vec, xinit.numpy(), xref.numpy(), cumulants_nn, cumulants_ref
 
 if __name__=="__main__":
