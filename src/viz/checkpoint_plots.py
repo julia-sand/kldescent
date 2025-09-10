@@ -2,6 +2,7 @@ import os
 import yaml 
 
 import pdb
+from mpl_toolkits import mplot3d
 
 import torch
 import numpy as np
@@ -98,7 +99,7 @@ class PlotUtils():
     def checkpoint_plots_rho(self):
         self.load_rho_checkpoint()
         self.make_contour_plot()
-        #self.make_contour_plot2()
+        #self.plot_pdf_3d()
         
     def compute_rho_nn(self,x_samples=100):
         """
@@ -145,7 +146,7 @@ class PlotUtils():
         fpk_integrator = self.load_fpk_integrator(self.net)
 
         #generate xmesh
-        Q,P = generate_mesh(x_samples,qmax=4)
+        Q,P = generate_mesh(x_samples,qmax=6)
         xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
         x2 = xinit.detach().clone() 
         pdf_out = 0*xinit[...,[0]]
@@ -160,12 +161,32 @@ class PlotUtils():
     def make_contour_plot2(self):
         xout,jointout = self.compute_rho_girsanov(x_samples=50)
         fig,ax = plt.subplots()
+        ax, ax_pmarginal,ax_qmarginal = self.plotter.scatter_panel_layout(ax)
 
         self.plotter.joint_distributions_scatter_panel(ax,
+                                                    ax_pmarginal,
+                                                    ax_qmarginal,
                                                     jointout,
                                                     xout,
                                                     time=None,vmax=0.5)
         fig.savefig(self.folder+f"/plots_{self.epoch}"+"/test8_girs.png",bbox_inches="tight")        
+
+        plt.close()
+
+    def plot_pdf_3d(self):
+        xs,jointout = self.compute_rho_nn(x_samples=50)
+        
+        fig = plt.figure()
+        ax = plt.axes(projection='3d')
+
+        z = jointout.flatten()
+        x = xs[...,0]
+        y = xs[...,1]
+
+        ax.plot3D(x, y, z, 'green')
+        ax.set_title('3D Line Plot')
+        plt.savefig(self.folder+f"/plots_{self.epoch}"+"/test_3d.png",bbox_inches="tight")        
+
 
     def make_contour_plot(self):
         xout,jointout = self.compute_rho_nn(x_samples=50)
@@ -187,6 +208,8 @@ class PlotUtils():
                                                     time=None,vmax=0.5)
         fig.savefig(self.folder+f"/plots_{self.epoch}"+"/test8_nn.png",bbox_inches="tight")        
 
+        plt.close()
+
 def compute_ref_kl(boundary):
     times = boundary.get_reference_timegrid()
     klout = np.empty(len(times))
@@ -203,5 +226,5 @@ if __name__=="__main__":
 
     plot_utils = PlotUtils()
 
-    plot_utils.checkpoint_plots_du()
+    #plot_utils.checkpoint_plots_du()
     plot_utils.checkpoint_plots_rho()

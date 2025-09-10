@@ -50,7 +50,7 @@ class FokkerPlanck(SDE):
         #xinit = x0.clone()
 
         num_samples = xinit.shape[0]
-    
+        #pdb.set_trace()
         with torch.no_grad():
             t_vec = self.generate_time_grid()
 

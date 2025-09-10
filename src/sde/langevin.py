@@ -107,9 +107,10 @@ class SDE():
 
         with torch.no_grad():
             if (self.rhonet is not None):
-                gvals = self.boundary.gfun(xinit,self.rhonet(xclone))
+                xtemp = xinit.detach().clone()
+                gvals = self.boundary.gfun(xtemp,self.rhonet(xtemp)) #self.rhonet(xclone))
             else:
-                gvals = self.boundary.gfun(xinit)
+                gvals = self.boundary.gfun(xtemp)
                 
         #compute value of Lhat
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
