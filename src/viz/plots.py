@@ -125,14 +125,63 @@ class PlotFuns():
   def normalise(self,x,y):
     idx = np.argsort(x)
 
-    return y/np.trapz(y[idx],x[idx])
+    return y#/np.trapz(y[idx],x[idx])
 
   def scatter_panel_layout(self,ax):
 
     #make inset axes to show marginal distributions
     ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
     ax_qmarginal = ax.inset_axes([-0.65, 0, 0.6, 1])
+    ax_qmarginal.invert_xaxis()
+    ax_qmarginal.set_ylim((-self.qmax,self.qmax))
 
+    ax_pmarginal.set_xlim((-self.qmax,self.qmax))
+    ax_pmarginal.plot(np.linspace(-self.qmax,self.qmax,),
+              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=self.mut_p,sigmasq=self.sigsqt_p),color="orange")
+    
+    ax_qmarginal.plot(
+              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=self.mut_q,sigmasq=self.sigsqt_q),np.linspace(-self.qmax,self.qmax,),color="orange")
+    #ax_qmarginal.set_xlim((-0.05,0.7))
+
+    ###ticks formatting and labelling
+    ax_pmarginal.yaxis.tick_right()
+    ax.yaxis.tick_right()
+    
+    ax_pmarginal.tick_params(
+        axis='y',
+        which='both',
+        length=5,
+        rotation=-20,
+        pad = -3)
+
+    ax_qmarginal.tick_params(
+        axis='x',          # changes apply to the x-axis
+        which='both',
+        rotation=70,
+        length =5,
+        pad = -3,
+        labelleft=False)
+    ax_qmarginal.tick_params(
+        axis='y',          # changes apply to the y-axis
+        which='both',      #both major and minor ticks
+        left=False,
+        labelleft=False)
+
+    #ax.set_xlim((-self.qmax,self.qmax))
+    #ax.set_ylim((-self.qmax,self.qmax))
+
+    ax_pmarginal.set_xticklabels([])
+   
+    ax.set_xlabel(r"$p$")
+    ax_qmarginal.set_xlabel(r"$\rho_t(q)$")
+
+    ax.set_ylabel(r"$q$")
+    ax_pmarginal.set_ylabel(r"$\rho_t(p)$")
+    ax.yaxis.set_label_position("right")
+
+    ax.set_aspect('equal', adjustable='box')
+    ax.set_xticks([-2.5,0,2.5])
+    
     return ax, ax_pmarginal,ax_qmarginal
 
 
@@ -177,7 +226,7 @@ class PlotFuns():
     qmarg = dx*np.sum(joint_out_temp,axis=0) 
     pmarg = dx*np.sum(joint_out_temp,axis=1) 
 
-    print("jointmax",np.sum(joint_out_temp)*(dx**2))
+    print("jointmax",np.sum(joint_out.flatten())*(dx**2))
     print("qmax",np.max(qmarg))
     print("pmax",np.max(pmarg))
 
@@ -185,60 +234,10 @@ class PlotFuns():
     self.plot_marginal_joint(ax_qmarginal,p_init,self.normalise(p_init,qmarg))
     self.plot_marginal_joint(ax_pmarginal,self.normalise(p_init,pmarg),p_init)
 
-    ax_pmarginal.set_xlim((-self.qmax,self.qmax))
-    ax_pmarginal.plot(np.linspace(-self.qmax,self.qmax,),
-              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=self.mut_p,sigmasq=self.sigsqt_p),color="orange")
-    
-    ax_qmarginal.set_ylim((-self.qmax,self.qmax))
-    ax_qmarginal.plot(
-              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=self.mut_q,sigmasq=self.sigsqt_q),np.linspace(-self.qmax,self.qmax,),color="orange")
-    #ax_qmarginal.set_xlim((-0.05,0.7))
-    ax_qmarginal.invert_xaxis()
-
     #plot joint distribution
     ax.scatter(xs[...,0],xs[...,1],c=joint_out_temp.T.flatten()
               ,cmap="Blues",norm="log",vmin=0.001,vmax=vmax)
     
-    ###ticks formatting and labelling
-    ax_pmarginal.yaxis.tick_right()
-    ax.yaxis.tick_right()
-    
-    ax_pmarginal.tick_params(
-        axis='y',
-        which='both',
-        length=5,
-        rotation=-20,
-        pad = -3)
-
-    ax_qmarginal.tick_params(
-        axis='x',          # changes apply to the x-axis
-        which='both',
-        rotation=70,
-        length =5,
-        pad = -3,
-        labelleft=False)
-    ax_qmarginal.tick_params(
-        axis='y',          # changes apply to the y-axis
-        which='both',      #both major and minor ticks
-        left=False,
-        labelleft=False)
-
-    #ax.set_xlim((-self.qmax,self.qmax))
-    #ax.set_ylim((-self.qmax,self.qmax))
-
-    ax_pmarginal.set_xticklabels([])
-   
-    ax.set_xlabel(r"$p$")
-    ax_qmarginal.set_xlabel(r"$\rho_t(q)$")
-
-    ax.set_ylabel(r"$q$")
-    ax_pmarginal.set_ylabel(r"$\rho_t(p)$")
-    ax.yaxis.set_label_position("right")
-
-    ax.set_aspect('equal', adjustable='box')
-    ax.set_xticks([-2.5,0,2.5])
-    
-
   def make_colourbar(self,fig,vmax):
     #adds a colour
 

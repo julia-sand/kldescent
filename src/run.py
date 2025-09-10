@@ -60,12 +60,12 @@ def run():
     for epoch in range(0,args["epochs"]):
         try:
 
-            #train the rho nn
+            #train the rho neural network
             rhotrainer.train_loop(metrics_logger)
 
             #UNCOMMENT TO TRAIN         
             #update the drift nn with the current iteration  
-            loss_out = trainer.train_step()
+            #loss_out = trainer.train_step()
 
             #update metrics
             metrics.update_metrics(epoch+1,loss_out,metrics_logger)
