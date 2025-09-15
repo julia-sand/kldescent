@@ -68,7 +68,7 @@ def run():
             #loss_out = trainer.train_step()
 
             #update metrics
-            metrics.update_metrics(epoch+1,loss_out,metrics_logger)
+            metrics.update_metrics(epoch+1,0,metrics_logger)
             print(f"Epoch {epoch+1} complete")
             
         except ValueError:

@@ -51,7 +51,7 @@ class Boundaries():
         
         if logger is not None:
             logger.log_dict(self.params) #add to log
-        
+    
     def get_ref_path(self):
         #returns the folder where the reference solution is expected to be
 
@@ -199,7 +199,6 @@ class LinearOU(Boundaries):
     def q_marginal_final(self,q): 
         
         return np.exp(-(q**2)/2)/np.sqrt(2*np.pi)
-        #qfinal(q)/self.pf_norm
 
     #generate the initial data
     def generate_samples(self,batch_samples,mode):
@@ -648,6 +647,10 @@ class UnderdampedHalfNet(UnderdampedQuarterGaussian):
                         delimiter=",",skiprows=1) 
         return arr 
         
+    def Uinitial(self,q):
+
+        return ((q**2-1)**2)/4
+
 if __name__=="__main__":
 
     boundary = UnderdampedQuarterGaussian()
