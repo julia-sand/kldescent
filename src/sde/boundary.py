@@ -497,12 +497,12 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
 
     def q_marginal_initial(self,q):
 
-        return self.qinitial(q)/np.sqrt(2*(self.gauss_boundary["sigmainitial"]**2))
+        return self.qinitial(q)/np.sqrt(2*np.pi*(self.gauss_boundary["sigmainitial"]**2))
 
 
     def q_marginal_final(self,q): 
         
-        return self.qfinal(q)/np.sqrt(2*(self.gauss_boundary["sigmafinal"]**2))
+        return self.qfinal(q)/np.sqrt(2*np.pi*(self.gauss_boundary["sigmafinal"]**2))
 
 
     #generate the initial data

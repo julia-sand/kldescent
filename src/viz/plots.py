@@ -124,8 +124,8 @@ class PlotFuns():
 
   def normalise(self,x,y):
     idx = np.argsort(x)
-
-    return y#/np.trapz(y[idx],x[idx])
+    print(np.trapz(y[idx],x[idx]))
+    return y/np.trapz(y[idx],x[idx])
 
   def scatter_panel_layout(self,ax):
 
@@ -221,6 +221,10 @@ class PlotFuns():
     Q = xs[...,[0]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
     p_init = Q[[0],:].flatten() #one axis 
     dx = np.abs(p_init[1]-p_init[0])
+
+    #fix normalisation
+    #joint_out_temp *= (np.pi*2*(self.sigsqt_p*self.sigsqt_q)**0.5)
+    #joint_out_temp /= 12 #(np.pi*2*self.sigsqt_p*self.sigsqt_q)
 
     #compute marginals
     qmarg = dx*np.sum(joint_out_temp,axis=0) 

@@ -54,6 +54,7 @@ class PlotUtils():
         #    self.folder = "tests/"+f"{boundary_cond.__class__.__name__}"
         #else: #if a folder path is provided, assume that the reference solution is there and overwrite the default    
         #    self.folder = folder
+
         self.folder = folder
         self.boundary_cond.overwrite_ref_path(self.folder)
             
@@ -101,7 +102,7 @@ class PlotUtils():
         self.make_contour_plot()
         #self.plot_pdf_3d()
         
-    def compute_rho_nn(self,x_samples=100):
+    def compute_rho_nn(self,x_samples=None):
         """
         Generates a statespace grid and evaluates the neural network estimate of the 
         joint probability distribution at final time 
@@ -115,10 +116,14 @@ class PlotUtils():
             -evaluated neural network joint distribution
         """
         
+        if x_samples==None:
+            self.data_loaded["testsamples"]
         #generate xmesh
         Q,P = generate_mesh(x_samples,qmax=6)
         xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
         
+        #torch.tensor(self.boundary_cond.generate_samples(x_samples,"initial"),dtype=torch.float32,requires_grad=False)
+        #
         #want shape = (x,2)
         with torch.no_grad():
             pdf_out = self.rhonet(xinit.detach().clone())
@@ -128,7 +133,7 @@ class PlotUtils():
         return xinit.detach().numpy(),pdf_out.detach().numpy()
 
 
-    def compute_rho_girsanov(self,x_samples=30,mc_samples=400):
+    def compute_rho_girsanov(self,x_samples=None,mc_samples=400):
         """
         Convenience function that returns an estimate of the final joint distribution using girsanov theorem
         Used for testing
@@ -145,11 +150,18 @@ class PlotUtils():
         self.load_du_checkpoint()
         fpk_integrator = self.load_fpk_integrator(self.net)
 
+        if x_samples==None:
+            x_samples = self.data_loaded["testsamples"]
         #generate xmesh
         Q,P = generate_mesh(x_samples,qmax=6)
         xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
+        
+        #torch.tensor(self.boundary_cond.generate_samples(x_samples,"initial"),dtype=torch.float32,requires_grad=False)
         x2 = xinit.detach().clone() 
-        pdf_out = 0*xinit[...,[0]]
+
+        pdf_out = torch.zeros_like(x2[...,[0]],requires_grad=False,dtype=torch.float32)
+        #0*xinit[...,[0]]
+
         #want shape = (x,2)
         with torch.no_grad():
             for _ in range(mc_samples):
@@ -226,5 +238,5 @@ if __name__=="__main__":
 
     plot_utils = PlotUtils()
 
-    #plot_utils.checkpoint_plots_du()
+    plot_utils.checkpoint_plots_du()
     plot_utils.checkpoint_plots_rho()
