@@ -5,7 +5,7 @@ using CSV;
 function integrate_half_gaussian()
     
     #parameters
-    T = 5
+    T = 0.1#T = 5
     epsilon = 0.2
     
     p = epsilon #[epsilon]
@@ -79,7 +79,7 @@ function integrate_half_gaussian()
     #df = df_var
     df[!, "U2"] = u2.(df[!,"Vpp"], df[!,"Vqp"], df[!,"Ct"], df[!,"Qt"])
     df[!, "u1"] = u1.(0,0,0, df[!,"Vpp"], df[!,"Ct"], df[!,"Qt"])
-    CSV.write(string("src/refsolution/UnderdampedHalfNet/refsol_gauss_integrated_2.csv"),df)
+    CSV.write(string("src/refsolution/UnderdampedHalfNet/refsol_gauss_integrated_3.csv"),df)
     println("completed.")
         
 end

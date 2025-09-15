@@ -107,7 +107,7 @@ class SDE():
 
         with torch.no_grad():
             if (self.rhonet is not None):
-                xtemp = xinit.detach().clone()
+                xtemp = xinit.clone().detach()
                 gvals = self.boundary.gfun(xtemp,self.rhonet(xtemp)) #self.rhonet(xclone))
             else:
                 gvals = self.boundary.gfun(xtemp)

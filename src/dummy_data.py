@@ -2,26 +2,34 @@
 #emulates the perturbative drift csv. 
 
 import pandas as pd 
-import numpy as np 
+import numpy as np
+ 
+N = 1
 
-Tf = 1
-
-ts = np.linspace(0,0.2,11)
-xs = np.linspace(-3,3,10)
-
-T,X = np.meshgrid(ts,xs)
+times_t = np.linspace(0,5,N)
+xs = np.linspace(-8,8,N)
 
 def dutest(t,x):
-    return (t/Tf)*((x-1)**3) + ((Tf-t)/Tf)*(2*x*(x-1)**2)
+    return -x**3
 
-DU = dutest(T,X)
 
-#make new df with these
-data= [np.hstack(T),np.hstack(X),np.hstack(DU)]
-cols=["t","x","du"]
+#init new df
+times_all = np.ones(N*len(times_t))
+x_all = np.ones(N*len(times_t))
+du_all = np.ones(N*len(times_t))
+
+#pdb.set_trace()
+for i in range(len(ts)):
+    times_all[N*i:N*(i+1)] = np.ones(N)*times_t[i]
+    x_all[N*i:N*(i+1)] = xs
+    du_all[N*i:N*(i+1)] = dutest(times_t[i],xs)
+    #new_data = [t*np.ones(N),x_ax,du]
+
+df_out = pd.DataFrame(list(zip(times_all,x_all,du_all)),
+                    columns=["t","x","du"])
 
 #append new
 df = pd.DataFrame(dict(zip(cols, data)))
 
 
-df.to_csv("kldescent/results1.csv",index=False)
+df.to_csv("src/refsolution/UnderdampedHalfNet/test_result.csv",index=False)
