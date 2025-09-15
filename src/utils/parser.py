@@ -91,13 +91,13 @@ def integrator_params():
     #subparser = parser.add_subparsers()
 
     integrator_params.add_argument('-batchsamples','--batchsamples', type=int, 
-                        default=50,
+                        default=64,
                         help='Number of sample trajectories to take of the diffusion')
 
     integrator_params.add_argument('-tsteps','--tsteps', type=int, default=20,
                         help='number of timesteps in the integration')
 
-    integrator_params.add_argument('-testsamples','--testsamples', type=int, default=1000,
+    integrator_params.add_argument('-testsamples','--testsamples', type=int, default=2048,
                         help='number of samples for computing ref metrics')
 
     args1 = integrator_params.parse_known_args(integrator_params.argfile)
