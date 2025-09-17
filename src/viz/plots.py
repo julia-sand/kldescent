@@ -123,9 +123,8 @@ class PlotFuns():
                       ,color=self.c1)
 
   def normalise(self,x,y):
-    idx = np.argsort(x)
-    print(np.trapz(y[idx],x[idx]))
-    return y/np.trapz(y[idx],x[idx])
+    #idx = np.argsort(x)
+    return y #/np.trapz(y[idx],x[idx])
 
   def scatter_panel_layout(self,ax):
 
@@ -222,18 +221,11 @@ class PlotFuns():
     p_init = Q[[0],:].flatten() #one axis 
     dx = np.abs(p_init[1]-p_init[0])
 
-    #fix normalisation
-    #joint_out_temp *= (np.pi*2*(self.sigsqt_p*self.sigsqt_q)**0.5)
-    #joint_out_temp /= 12 #(np.pi*2*self.sigsqt_p*self.sigsqt_q)
-
     #compute marginals
     qmarg = dx*np.sum(joint_out_temp,axis=0) 
     pmarg = dx*np.sum(joint_out_temp,axis=1) 
 
-    print("jointmax",np.sum(joint_out.flatten())*(dx**2))
-    print("qmax",np.max(qmarg))
-    print("pmax",np.max(pmarg))
-
+    
     #plot and format marginals
     self.plot_marginal_joint(ax_qmarginal,p_init,self.normalise(p_init,qmarg))
     self.plot_marginal_joint(ax_pmarginal,self.normalise(p_init,pmarg),p_init)

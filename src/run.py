@@ -65,10 +65,10 @@ def run():
 
             #UNCOMMENT TO TRAIN         
             #update the drift nn with the current iteration  
-            #loss_out = trainer.train_step()
+            loss_out = trainer.train_step()
 
             #update metrics
-            metrics.update_metrics(epoch+1,0,metrics_logger)
+            metrics.update_metrics(epoch+1,loss_out,metrics_logger)
             print(f"Epoch {epoch+1} complete")
             
         except ValueError:
@@ -77,7 +77,7 @@ def run():
         
     #metrics_logger.save_checkpoint(rhonet,epoch)
 
-    plot_utils = PlotUtils(metrics_logger.get_results_path(),0)
+    plot_utils = PlotUtils(metrics_logger.get_results_path(),args["epochs"]-1)
 
     plot_utils.checkpoint_plots_rho()
     plot_utils.checkpoint_plots_du()

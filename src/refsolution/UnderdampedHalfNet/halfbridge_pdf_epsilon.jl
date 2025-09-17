@@ -5,7 +5,7 @@ using CSV;
 function integrate_half_gaussian()
     
     #parameters
-    T = 0.1#T = 5
+    T = 5
     epsilon = 0.2
     
     p = epsilon #[epsilon]

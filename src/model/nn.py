@@ -202,13 +202,13 @@ class RhoNeuralNetwork(nn.Module):
             nn.Linear(self.params["rhohiddenlayerneurons"] ,self.params["rhohiddenlayerneurons"] ),   #64 outputs
             nn.GELU(),
             nn.Linear(self.params["rhohiddenlayerneurons"] , 1),   #64 outputs
-            nn.GELU(),
+            #nn.ReLU(),
             )  
 
 
     def forward(self, x0):   #how the model should evaluate
         
-        return self.NNx(x0)
+        return torch.exp(self.NNx(x0))
 
     def load_checkpoint(self,checkpointpath):
         try:
