@@ -6,7 +6,8 @@ from .plots import PlotFuns
 class RefSol(PlotFuns):
 
     def __init__(self,boundary):
-        super().__init__(boundary) #fetches the general plotting params from plotfuns
+        #fetches the general plotting params from plotfuns
+        super().__init__(boundary) 
     
     def plot_value(self,times):
 

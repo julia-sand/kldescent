@@ -631,13 +631,11 @@ class UnderdampedHalfNet(UnderdampedQuarterGaussian):
 
     def gfun(self,x,pdf): 
      
-        return np.log(self.p_final(x[...,[0]],x[...,[1]])) - np.nan_to_num(np.log(pdf))
+        return  np.nan_to_num(np.log(pdf)) - np.log(self.p_final(x[...,[0]],x[...,[1]]))
       
     def get_reference_data(self,time):
         arr = self.get_ref_data()
-
-
-        
+      
         return np.squeeze(arr[np.where(arr[:,0]==np.round(time,8)),1]),np.squeeze(arr[np.where(arr[:,0]==np.round(time,8)),-1])
 
     def get_ref_data(self):
@@ -652,9 +650,9 @@ class UnderdampedHalfNet(UnderdampedQuarterGaussian):
                         delimiter=",",skiprows=1) 
         return arr 
         
-    def Uinitial(self,q):
-
-        return ((q**2-1)**2)/4
+    #def Uinitial(self,q):
+    #
+    #    return ((q**2-1)**2)/4
 
 if __name__=="__main__":
 
