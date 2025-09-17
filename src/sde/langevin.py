@@ -127,7 +127,6 @@ class SDE():
     
     #@profile
     def compute_metrics(self,net):
-
         """
         Following 2410.05163 (see proposition 3). 
 
@@ -135,7 +134,6 @@ class SDE():
         Parameters
         - net: neural network
         ====
-
         """
 
         net.eval()
@@ -146,9 +144,9 @@ class SDE():
         xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
         xinit_ref = torch.clone(xinit)
 
+        #preallocate storing kl divergence 
         kldyn = torch.zeros((testing_samples,1),requires_grad=False,dtype=torch.float32)
-        #
-        #self.generate_time_grid()
+
         for i in range(0,len(t_vec)-1):
             dt = (t_vec[i+1]-t_vec[i])
             

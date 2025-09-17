@@ -130,7 +130,7 @@ class PlotUtils():
             return xinit.detach().numpy(),pdf_out.detach().numpy()
 
 
-    def compute_rho_girsanov(self,x_samples=None,mc_samples=400):
+    def compute_rho_girsanov(self,x_samples=None,mc_samples=4000):
         """
         Convenience function that returns an estimate of the final joint distribution using girsanov theorem
         Used for testing
@@ -144,11 +144,14 @@ class PlotUtils():
             -estimated joint distribution using girsanov theorem
         """
         
+        #initialise drift network from checkpoint and set up integrator
         self.load_du_checkpoint()
         fpk_integrator = self.load_fpk_integrator(self.net)
 
+        #default number of samples from parameter file
         if x_samples==None:
             x_samples = self.data_loaded["testsamples"]
+        
         #generate xmesh
         Q,P = generate_mesh(x_samples,qmax=6)
         xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
@@ -199,7 +202,7 @@ class PlotUtils():
 
     def make_contour_plot(self):
         xout,jointout = self.compute_rho_nn(x_samples=50)
-        xout2,jointout2 = self.compute_rho_girsanov(x_samples=50)
+        xout2,jointout2 = self.compute_rho_girsanov(x_samples=20)
         fig,ax = plt.subplots()
         ax, ax_pmarginal,ax_qmarginal = self.plotter.scatter_panel_layout(ax)
 
@@ -209,12 +212,12 @@ class PlotUtils():
                                                     jointout,
                                                     xout,
                                                     time=None,vmax=0.5)
-        #self.plotter.joint_distributions_scatter_panel(ax,
-        #                                            ax_pmarginal,
-        #                                            ax_qmarginal,
-        #                                            jointout2,
-        #                                            xout2,
-        #                                            time=None,vmax=0.5)
+        self.plotter.joint_distributions_scatter_panel(ax,
+                                                    ax_pmarginal,
+                                                    ax_qmarginal,
+                                                    jointout2,
+                                                    xout2,
+                                                    time=None,vmax=0.5)
         fig.savefig(self.folder+f"/plots_{self.epoch}"+"/test8_nn.png",bbox_inches="tight")        
 
         plt.close()

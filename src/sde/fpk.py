@@ -50,32 +50,32 @@ class FokkerPlanck(SDE):
         #xinit = x0.clone()
 
         num_samples = xinit.shape[0]
-        #pdb.set_trace()
+
+
         with torch.no_grad():
+
             t_vec = self.generate_time_grid()
 
+            #preallocate girsanov integrals
             girs = torch.zeros((num_samples,1),requires_grad=False,dtype=torch.float32)
 
             for i in range(1,self.sde_params["tsteps"]+1):
-                #print(t_vec[-i])
-                #print(t_vec[-i-1])
-                #print("====")
-                
+                                
+                #get timestep
                 dt = np.abs(t_vec[-i-1]-t_vec[-i])
                 
                 dw = self.generate_innovation(dt,num_samples)
             
+                #evaluate neural network approximated drift 
                 du_bar = self.net(torch.column_stack((t_vec[-i]*torch.ones((num_samples,1),dtype=torch.float32)
                                                            ,xinit[...,[0]])))
-                #(0.2/(2**0.5))*self.net(torch.column_stack((t_vec[i]*torch.ones((num_samples,1),dtype=torch.float32)
-                #                                           ,xinit[...,[0]])))
                 
-
+                #one backward step of euler maruyama scheme of stochastic evolution
                 xinit = self.boundary.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[-i])#-dt,-dw,t_vec[-i])
+                
+                #add step to stochastic integral
                 girs = girs + (dw*xinit[...,[1]])/(2**0.5) + (dt * (xinit[...,[1]])**2)/4
-               
-                #girs + (dw*xinit[...,[1]])/(self.boundary.sigma0) + (dt * (xinit[...,[1]])**2)/4
-            
+                          
             pdfout = self.boundary.p_initial(xinit[...,[0]],xinit[...,[1]])*torch.exp(-girs)
 
         return pdfout
