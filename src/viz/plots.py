@@ -227,8 +227,8 @@ class PlotFuns():
 
     
     #plot and format marginals
-    self.plot_marginal_joint(ax_qmarginal,p_init,self.normalise(p_init,qmarg))
-    self.plot_marginal_joint(ax_pmarginal,self.normalise(p_init,pmarg),p_init)
+    self.plot_marginal_joint(ax_qmarginal,p_init,qmarg)
+    self.plot_marginal_joint(ax_pmarginal,pmarg,p_init)
 
     #plot joint distribution
     ax.scatter(xs[...,0],xs[...,1],c=joint_out_temp.T.flatten()
