@@ -66,12 +66,8 @@ class SDE():
 
         #initialise x values 
         xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32)#.to_device(device)
-        xclone = xinit.clone().detach()
-        #update the boundary conds
-        #if (self.rhonet is not None):
-        #    self.evaluate_rhonet(self.rhonet,xclone)
-        #    print("setting new pdf val.")
-
+        #xclone = xinit.clone().detach()
+        
         #set up a,abar,c,cbar
         a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
         abar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32)
@@ -104,25 +100,13 @@ class SDE():
         with torch.no_grad():
             if (self.rhonet is not None):
                 xtemp = xinit.clone().detach()
-                gvals = self.boundary.gfun(xtemp,self.rhonet(xclone)) #self.rhonet(xclone))
+                gvals = self.boundary.gfun(xtemp.numpy(),self.rhonet(xtemp).numpy()) #self.rhonet(xclone))
             else:
                 gvals = self.boundary.gfun(xinit)
                 
         #compute value of Lhat
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
         
-        #free up memory again
-        del xinit 
-        del du
-        del du_bar
-        del t_vec
-        del dw
-
-        a = None
-        abar = None
-        bbar = None
-        c = None
-
         return Lhat
     
     #@profile
@@ -140,7 +124,7 @@ class SDE():
         t_vec = self.testing_time_grid()
         testing_samples = self.sde_params["testsamples"] #4000 #reduced number of samples in computing the loss metrics
 
-        #initialise x values at \delta_0 (i.e. x=0)
+        #initialise x values as samples from assigned initial distribution
         xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
         xinit_ref = torch.clone(xinit)
 
