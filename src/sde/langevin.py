@@ -7,11 +7,6 @@ from ..utils.parser import integrator_params
 class SDE():
     """
     Class for integrating the sde forward
-    Most arguments are the same as the Langevin integrator, except:
-
-    args: 
-        rhonet: 
-            neural net used to evaluate the terminal pdf 
     """
 
     def __init__(self,
@@ -30,8 +25,9 @@ class SDE():
             self.sde_params = integrator_params() #parse command line
 
     def generate_time_grid(self):
-
-        #samples the interval [0,Tf] and returns sorted set of values to be used in integration
+        """
+        Samples the interval [0,Tf] and returns sorted set of values to be used in integration
+        """
 
         return np.concatenate([[0],
                                 np.sort(np.random.uniform(0, self.boundary.params["Tf"], self.sde_params["tsteps"]-1)),
@@ -108,9 +104,9 @@ class SDE():
         with torch.no_grad():
             if (self.rhonet is not None):
                 xtemp = xinit.clone().detach()
-                gvals = self.boundary.gfun(xtemp,self.rhonet(xtemp)) #self.rhonet(xclone))
+                gvals = self.boundary.gfun(xtemp,self.rhonet(xclone)) #self.rhonet(xclone))
             else:
-                gvals = self.boundary.gfun(xtemp)
+                gvals = self.boundary.gfun(xinit)
                 
         #compute value of Lhat
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))

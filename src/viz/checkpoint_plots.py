@@ -101,7 +101,7 @@ class PlotUtils():
         self.load_rho_checkpoint()
         self.make_contour_plot()
         #self.plot_pdf_3d()
-        
+    
     def compute_rho_nn(self,x_samples=None):
         """
         Generates a statespace grid and evaluates the neural network estimate of the 
@@ -115,22 +115,19 @@ class PlotUtils():
             -2d mesh of points of the statespace
             -evaluated neural network joint distribution
         """
-        
-        if x_samples==None:
-            self.data_loaded["testsamples"]
-        #generate xmesh
-        Q,P = generate_mesh(x_samples,qmax=6)
-        xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
-        
-        #torch.tensor(self.boundary_cond.generate_samples(x_samples,"initial"),dtype=torch.float32,requires_grad=False)
-        #
-        #want shape = (x,2)
+
         with torch.no_grad():
+        
+            if x_samples==None:
+                self.data_loaded["testsamples"]
+            #generate xmesh
+            Q,P = generate_mesh(x_samples,qmax=6)
+            xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
+            
+            #torch.tensor(self.boundary_cond.generate_samples(x_samples,"initial"),dtype=torch.float32,requires_grad=False)
             pdf_out = self.rhonet(xinit.detach().clone())
         
-        #pdb.set_trace()
-
-        return xinit.detach().numpy(),pdf_out.detach().numpy()
+            return xinit.detach().numpy(),pdf_out.detach().numpy()
 
 
     def compute_rho_girsanov(self,x_samples=None,mc_samples=400):
@@ -212,12 +209,12 @@ class PlotUtils():
                                                     jointout,
                                                     xout,
                                                     time=None,vmax=0.5)
-        self.plotter.joint_distributions_scatter_panel(ax,
-                                                    ax_pmarginal,
-                                                    ax_qmarginal,
-                                                    jointout2,
-                                                    xout2,
-                                                    time=None,vmax=0.5)
+        #self.plotter.joint_distributions_scatter_panel(ax,
+        #                                            ax_pmarginal,
+        #                                            ax_qmarginal,
+        #                                            jointout2,
+        #                                            xout2,
+        #                                            time=None,vmax=0.5)
         fig.savefig(self.folder+f"/plots_{self.epoch}"+"/test8_nn.png",bbox_inches="tight")        
 
         plt.close()

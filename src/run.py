@@ -63,8 +63,7 @@ def run():
             #train the rho neural network
             rhotrainer.train_loop(metrics_logger)
 
-            #UNCOMMENT TO TRAIN         
-            #update the drift nn with the current iteration  
+            #update the drift nn with the current learned final distribution  
             loss_out = trainer.train_step()
 
             #update metrics
@@ -75,8 +74,6 @@ def run():
             print("The training has resulted in NaN loss and therefore failed. Please retry.")
             raise
         
-    #metrics_logger.save_checkpoint(rhonet,epoch)
-
     plot_utils = PlotUtils(metrics_logger.get_results_path(),args["epochs"]-1)
 
     plot_utils.checkpoint_plots_rho()
