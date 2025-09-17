@@ -72,9 +72,9 @@ class SDE():
         xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32)#.to_device(device)
         xclone = xinit.clone().detach()
         #update the boundary conds
-        if (self.rhonet is not None):
-            self.evaluate_rhonet(self.rhonet,xclone)
-            print("setting new pdf val.")
+        #if (self.rhonet is not None):
+        #    self.evaluate_rhonet(self.rhonet,xclone)
+        #    print("setting new pdf val.")
 
         #set up a,abar,c,cbar
         a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
