@@ -71,7 +71,7 @@ class FokkerPlanck(SDE):
                 #                                           ,xinit[...,[0]])))
                 
 
-                xinit = self.boundary.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[-i])
+                xinit = self.boundary.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[-i])#-dt,-dw,t_vec[-i])
                 girs = girs + (dw*xinit[...,[1]])/(2**0.5) + (dt * (xinit[...,[1]])**2)/4
                
                 #girs + (dw*xinit[...,[1]])/(self.boundary.sigma0) + (dt * (xinit[...,[1]])**2)/4
