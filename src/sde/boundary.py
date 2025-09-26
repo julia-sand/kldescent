@@ -252,7 +252,23 @@ class LinearOU(Boundaries):
         return None
 
     def euler_maruyama_step(self,xn,du_bar,dt,dw,t):
-        #takes one step forward in the euler maruyama discretisation
+        """
+        One step forward in the euler maruyama discretisation
+        args:
+            xn: 
+                current positions
+            du_bar: 
+                drift
+            dt:
+                size of timestep
+            dw:
+                innovation
+            t:
+                current time
+        returns
+            x(n+1):
+                positions at the next timestep according to the evolution
+        """
         
         return xn + (self.b(xn,t) \
                      + self.sigma0*du_bar)*dt + self.sigma0*dw
@@ -341,11 +357,6 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
         if time is None:
             time = self.params["Tf"]
         return np.linspace(0,time)
-
-    #def get_reference_data(self,time):
-
-        #RETURNS X, DU for plotting
-    #    return np.zeros(1000),np.zeros(1000)
 
     def du_ref(self,q,time):
 
@@ -631,7 +642,10 @@ class UnderdampedHalfNet(UnderdampedQuarterGaussian):
 
     def gfun(self,x,pdf): 
      
-        return  np.nan_to_num(np.log(pdf)) - np.log(self.p_final(x[...,[0]],x[...,[1]]))
+        return np.nan_to_num(np.log(pdf)) + (self.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+        #np.nan_to_num(np.log(pdf)) - np.log(self.p_final(x[...,[0]],x[...,[1]]))
+        #log_pdf - np.log(self.p_final(x[...,[0]],x[...,[1]]))
+        #np.nan_to_num(np.log(pdf)) - np.log(self.p_final(x[...,[0]],x[...,[1]]))
       
     def get_reference_data(self,time):
         arr = self.get_ref_data()

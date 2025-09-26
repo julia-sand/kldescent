@@ -183,7 +183,6 @@ class PlotFuns():
     
     return ax, ax_pmarginal,ax_qmarginal
 
-
   def joint_distributions_scatter_panel(self,
                                         ax,
                                         ax_pmarginal,
@@ -216,16 +215,16 @@ class PlotFuns():
     
     n = joint_out.shape[0]
     
+    #pdb.set_trace()
     joint_out_temp = joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n))))
     Q = xs[...,[0]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
-    p_init = Q[[0],:].flatten() #one axis 
+    p_init = np.sort(Q[[0],:].flatten()) #one axis 
     dx = np.abs(p_init[1]-p_init[0])
 
     #compute marginals
-    qmarg = dx*np.sum(joint_out_temp,axis=0) 
-    pmarg = dx*np.sum(joint_out_temp,axis=1) 
-
-    
+    qmarg = np.sum(joint_out_temp,axis=0) #np.trapz(joint_out_temp,x = p_init,axis=0)
+    pmarg = np.trapz(joint_out_temp,x = p_init,axis=1)
+       
     #plot and format marginals
     self.plot_marginal_joint(ax_qmarginal,p_init,qmarg)
     self.plot_marginal_joint(ax_pmarginal,pmarg,p_init)
@@ -506,6 +505,12 @@ class PlotFuns():
 
   def cross_correlation_free_diffusion(self,t_vec,pos_var0,mom_var0):
       return (self.boundary.params["epsilon"]**2)*np.exp(-t_vec)*(1-np.exp(-t_vec))*mom_var0 + self.boundary.params["epsilon"]*(1-2*np.exp(-t_vec)+np.exp(-2*t_vec))
+
+  def save_cumulants_csv(t_vec,cumulants_nn):
+
+    a = np.concatenate((t_vec,cumulants_nn),axis=0)
+    np.savetxt(self.subdir+"/cumulants.csv", a, delimiter=",")
+    return 
 
   def plot_free_diffusion_sol(self,ax,t_vec,cumulant):
       ax.plot(t_vec,cumulant,

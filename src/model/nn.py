@@ -210,6 +210,10 @@ class RhoNeuralNetwork(nn.Module):
         
         return torch.exp(self.NNx(x0))
 
+    def log_forward(self, x0):   #evaluate without exp activation on final layer
+        
+        return self.NNx(x0)
+
     def load_checkpoint(self,checkpointpath):
         try:
             self.load_state_dict(torch.load(checkpointpath, weights_only=True))

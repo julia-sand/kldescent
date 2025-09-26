@@ -17,8 +17,8 @@ class Pretrain():
         #set defaults of training process
         self.lr = 0.001 #initial learning rate
         self.gamma = 0.1 #decay rate of learning rate
-        self.step_size = 1000 #frequency of learning rate decay (in epochs)
-        self.n_epochs = 5000 #total number of epochs
+        self.step_size = 500 #frequency of learning rate decay (in epochs)
+        self.n_epochs = 1000 #total number of epochs
 
         self.clip = 0.1
 
@@ -36,7 +36,7 @@ class Pretrain():
         X = torch.tensor(arr[:,0:2], dtype=torch.float32)
         y = torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
         
-        return X,-y/(2**0.5)
+        return X,y/(2**0.5)
 
     def pretraining(self,net):   
         
