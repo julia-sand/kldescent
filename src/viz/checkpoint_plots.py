@@ -82,7 +82,7 @@ class PlotUtils():
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
         self.plotter.marginal_distribution([xinit,xref],final_plot_time)
         self.plotter.plot_cumulants(t_vec,cumulants_nn,cumulants_ref,self.data_loaded["testsamples"])
-        self.plotter.save_cumulants_csv(t_vec,cumulants_nn,cumulants_ref)
+        self.plotter.save_cumulants_csv(t_vec,cumulants_nn)
 
     def load_du_checkpoint(self):
         self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
@@ -170,12 +170,10 @@ class PlotUtils():
                 pdf_out += self.fpk_integrator.compute_pdf(x2.detach().clone())
                 #print(torch.max(temp))
         
-        print(np.sum(pdf_out.numpy()))
-        print("dx= ", np.abs(Q[0]-Q[1]))
         return xinit.detach().numpy(),pdf_out.detach().numpy()/mc_samples
 
     def make_contour_plot2(self):
-        xout,jointout = self.compute_rho_girsanov(x_samples=50)
+        xout,jointout = self.compute_rho_girsanov(x_samples=20)
         fig,ax = plt.subplots()
         ax, ax_pmarginal,ax_qmarginal = self.plotter.scatter_panel_layout(ax)
 
@@ -205,8 +203,8 @@ class PlotUtils():
 
 
     def make_contour_plot(self):
-        xout,jointout = self.compute_rho_nn(x_samples=30)
-        xout2,jointout2 = self.compute_rho_girsanov(x_samples=30)
+        xout,jointout = self.compute_rho_nn(x_samples=20)
+        xout2,jointout2 = self.compute_rho_girsanov(x_samples=20)
         
         fig,ax = plt.subplots()
         ax, ax_pmarginal,ax_qmarginal = self.plotter.scatter_panel_layout(ax)

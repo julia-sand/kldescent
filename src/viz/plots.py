@@ -222,7 +222,7 @@ class PlotFuns():
     dx = np.abs(p_init[1]-p_init[0])
 
     #compute marginals
-    qmarg = np.sum(joint_out_temp,axis=0) #np.trapz(joint_out_temp,x = p_init,axis=0)
+    qmarg = np.trapz(joint_out_temp,x = p_init,axis=0)#np.sum(joint_out_temp,axis=0) #np.trapz(joint_out_temp,x = p_init,axis=0)
     pmarg = np.trapz(joint_out_temp,x = p_init,axis=1)
        
     #plot and format marginals
@@ -506,9 +506,9 @@ class PlotFuns():
   def cross_correlation_free_diffusion(self,t_vec,pos_var0,mom_var0):
       return (self.boundary.params["epsilon"]**2)*np.exp(-t_vec)*(1-np.exp(-t_vec))*mom_var0 + self.boundary.params["epsilon"]*(1-2*np.exp(-t_vec)+np.exp(-2*t_vec))
 
-  def save_cumulants_csv(t_vec,cumulants_nn):
+  def save_cumulants_csv(self,t_vec,cumulants_nn):
 
-    a = np.concatenate((t_vec,cumulants_nn),axis=0)
+    a = np.concatenate((t_vec[...,np.newaxis],cumulants_nn),axis=1)
     np.savetxt(self.subdir+"/cumulants.csv", a, delimiter=",")
     return 
 
