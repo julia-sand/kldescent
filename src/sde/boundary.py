@@ -668,6 +668,23 @@ class UnderdampedHalfNet(UnderdampedQuarterGaussian):
     #
     #    return ((q**2-1)**2)/4
 
+class UnderdampedHalfGaussBridge(UnderdampedHalfGaussian):
+    """Underdamped half gaussian class with the full half bridge
+    (ie on the full distribution not just the marginals)
+    """
+
+    def log_multivariate_gauss(self,p,q,pmean,qmean,rho,pstd,qstd):
+        return -(1/(2*(1-rho)))*(((p-pmean)/pstd)**2 -2*np.sqrt(rho)*((q-qmean)*(p-pmean)/(qstd*pstd)) +((q-qmean)/qstd)**2 )
+
+    def gfun(self,x):
+        #estimate p moments
+        pmean = np.mean(x[...,[1]].numpy())
+        pstd = np.std(x[...,[1]].numpy())
+        #cov 
+        rho = np.cov(x[...,1].numpy(),x[...,0].numpy())[0]
+
+        return self.log_multivariate_gauss(x[...,[1]].numpy(),x[...,[0]].numpy(),pmean,self.mean0,rho,pstd,np.sqrt(self.var0)) - self.log_multivariate_gauss(x[...,[1]].numpy(),x[...,[0]].numpy(),0,self.gauss_boundary["mufinal"],0,1,self.gauss_boundary["sigmafinal"])
+
 if __name__=="__main__":
 
     boundary = UnderdampedQuarterGaussian()
