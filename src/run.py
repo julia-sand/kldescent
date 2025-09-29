@@ -22,7 +22,8 @@ def run():
     metrics_logger.log_dict(args)
 
     #initialise the model
-    boundaryconditions = getattr(boundaries,args["boundary"])(logger=metrics_logger)
+    boundaryconditions = UnderdampedHalfNet()
+    #getattr(boundaries,args["boundary"])(logger=metrics_logger)
     
     net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
     rhonet = nn.RhoNeuralNetwork()
