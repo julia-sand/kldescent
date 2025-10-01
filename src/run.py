@@ -19,10 +19,12 @@ def run():
 
     #parse arguments from command line
     args = parser.overdamped_argparser()
+    #overwrite the boundary conditions
+    args["boundary"] = "UnderdampedHalfNet"
     metrics_logger.log_dict(args)
 
     #initialise the model
-    boundaryconditions = UnderdampedHalfNet()
+    boundaryconditions = boundaries.UnderdampedHalfNet(logger=metrics_logger)
     #getattr(boundaries,args["boundary"])(logger=metrics_logger)
     
     net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
@@ -35,7 +37,8 @@ def run():
  
     #use data paralisation to speed up evaluations
     net = DataParallel(net)
-    rhonet = DataParallel(rhonet)
+    #rhonet = DataParallel(rhonet)
+
 
     #intialise sde integration 
     integrator = langevin.SDE(boundaryconditions, rhonet)
