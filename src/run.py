@@ -37,7 +37,7 @@ def run():
  
     #use data paralisation to speed up evaluations
     net = DataParallel(net)
-    #rhonet = DataParallel(rhonet)
+    rhonet = DataParallel(rhonet)
 
 
     #intialise sde integration 
@@ -78,7 +78,7 @@ def run():
             print("The training has resulted in NaN loss and therefore failed. Please retry.")
             raise
         
-    plot_utils = PlotUtils(metrics_logger.get_results_path(),args["epochs"]-1)
+    plot_utils = PlotUtils(metrics_logger.get_results_path(),args["epochs"])
 
     plot_utils.checkpoint_plots_rho()
     plot_utils.checkpoint_plots_du()
