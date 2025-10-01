@@ -622,7 +622,7 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
 class UnderdampedHalfNet(UnderdampedQuarterGaussian):
     """
     Class for when the distribution is learned by a neural network (not using cumulants)
-    Inherits from UnderdampedHalfGaussian
+    Inherits from UnderdampedQuarterGaussian
     """
     
     def __init__(self,params=None,gauss_params=None,logger=None):
