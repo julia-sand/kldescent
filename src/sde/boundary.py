@@ -696,7 +696,7 @@ class UnderdampedHalfGaussBridge(UnderdampedHalfGaussian):
 
     def save_histogram(self,x):
 
-        H, yedges, xedges = np.histogram2d(x[...,0], x[...,1], 
+        H, yedges, xedges = np.histogram2d(x[...,1], x[...,0], 
                                             bins=40,
                                             range=[[-5, 5], [-5, 5]],
                                             density=True)
@@ -719,12 +719,13 @@ class UnderdampedHalfGaussBridge(UnderdampedHalfGaussian):
         y = datapoint[1]
 
         #compare datapoint with bin edges
-        indx = np.nonzero(self.xedges<x and self.xedges>x )[0][0]# and x < self.xedges))
-        indy = np.nonzero(self.yedges<y and self.yedges<y )[0][0]# and y < self.yedges))
-        
-        print(self.H[indx,indy])
+        indx = np.nonzero(self.xedges<x)[0][-1]# and x < self.xedges))
+        indy = np.nonzero(self.yedges<y)[0][-1]# and y < self.yedges))
+        #print(f"{x}",f"{y}")
+
+        #print("pdf=",self.H[indx,indy])
         #step 2: return the correct histogram value
-        return self.H[indx,indy]
+        return self.H[indy-1,indx-1]
 
     def gfun(self,x):
         #estimate p moments
@@ -734,7 +735,7 @@ class UnderdampedHalfGaussBridge(UnderdampedHalfGaussian):
         #rho = np.cov(x[...,1].numpy(),x[...,0].numpy())[0]
         # 
         pdf = np.array([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))])
-        return np.nan_to_num(np.log(pdf)) + (self.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+        return np.nan_to_num(np.log(pdf+1e-10)) + (self.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
         
         #self.log_multivariate_gauss(x[...,[1]].numpy(),x[...,[0]].numpy(),pmean,self.mean0,rho,pstd,np.sqrt(self.var0)) - self.log_multivariate_gauss(x[...,[1]].numpy(),x[...,[0]].numpy(),0,self.gauss_boundary["mufinal"],0,1,self.gauss_boundary["sigmafinal"])
 

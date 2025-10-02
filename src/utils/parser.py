@@ -146,7 +146,7 @@ def gaussian_params():
     params1.add_argument('-sigmainitial','--sigmainitial', type=float, default=1,
                         help='Initial value of the standard deviation when using Gaussian boundary conditions')
 
-    params1.add_argument('-sigmafinal','--sigmafinal', type=float, default=2,
+    params1.add_argument('-sigmafinal','--sigmafinal', type=float, default=0.25,
                         help='Final value of the scale in the assigned final value function')
 
     args5 = params1.parse_known_args(params1.argfile)
