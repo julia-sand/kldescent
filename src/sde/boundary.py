@@ -621,7 +621,7 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
 
 class UnderdampedHalfNet(UnderdampedQuarterGaussian):
     """
-    Class for when the distribution is learned by a neural network (not using cumulants)
+    Class for when the distribution is learned by a neural network model, eg Rhonet or by a normalising flow
     Inherits from UnderdampedHalfGaussian
     """
     
@@ -633,8 +633,8 @@ class UnderdampedHalfNet(UnderdampedQuarterGaussian):
         """
 
         UnderdampedQuarterGaussian.__init__(self,params,gauss_params,logger)
-        self.mean0 = 0
-        self.var0 = 1
+        #self.mean0 = 0
+        #self.var0 = 1
         self.sigma0 = 2**0.5
 
     def set_pdf(self,rhoval):
@@ -684,6 +684,7 @@ class UnderdampedHalfGaussBridge(UnderdampedHalfGaussian):
         rho = np.cov(x[...,1].numpy(),x[...,0].numpy())[0]
 
         return self.log_multivariate_gauss(x[...,[1]].numpy(),x[...,[0]].numpy(),pmean,self.mean0,rho,pstd,np.sqrt(self.var0)) - self.log_multivariate_gauss(x[...,[1]].numpy(),x[...,[0]].numpy(),0,self.gauss_boundary["mufinal"],0,1,self.gauss_boundary["sigmafinal"])
+
 
 if __name__=="__main__":
 
