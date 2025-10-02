@@ -606,11 +606,13 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
         self.var0 = 1
         #self.rho = rho
 
+
     def set_ref_statistics(self,mean0,var0):
         """overwrites the mean and variance of the reference parameters"""
 
         self.mean0 = mean0
         self.var0 = var0
+
 
     def Utemp(self,q,mean,var):
 
@@ -672,19 +674,69 @@ class UnderdampedHalfNet(UnderdampedQuarterGaussian):
 class UnderdampedHalfGaussBridge(UnderdampedHalfGaussian):
     """Underdamped half gaussian class with the full half bridge
     (ie on the full distribution not just the marginals)
+    using histograms to estimate the density 
     """
+
+    def __init__(self,params=None,gauss_params=None,logger=None):
+        """
+        args:
+            params: defines intial and final distributions in the gaussian case
+            logger: class used for writing and saving files
+        """
+
+        UnderdampedHalfGaussian.__init__(self,params,gauss_params,logger)
+
+        #initialise blank histogram values
+        self.H = None
+        self.yedges = None
+        self.xedges = None 
 
     def log_multivariate_gauss(self,p,q,pmean,qmean,rho,pstd,qstd):
         return -(1/(2*(1-rho)))*(((p-pmean)/pstd)**2 -2*np.sqrt(rho)*((q-qmean)*(p-pmean)/(qstd*pstd)) +((q-qmean)/qstd)**2 )
 
+    def save_histogram(self,x):
+
+        H, yedges, xedges = np.histogram2d(x[...,0], x[...,1], 
+                                            bins=40,
+                                            range=[[-5, 5], [-5, 5]],
+                                            density=True)
+        self.H = H
+        self.yedges = yedges
+        self.xedges = xedges
+        return 
+
+    def evaluate_density(self, datapoint):
+        """
+        args:
+            datapoint: data point or array of points in the shape (2,)
+        returns: 
+            p1: crude estimate of probability density from histogram
+        """
+
+        #step 1: check which bin for x and y the point is in
+        #get x,y coordinate
+        x = datapoint[0]
+        y = datapoint[1]
+
+        #compare datapoint with bin edges
+        indx = np.nonzero(self.xedges<x and self.xedges>x )[0][0]# and x < self.xedges))
+        indy = np.nonzero(self.yedges<y and self.yedges<y )[0][0]# and y < self.yedges))
+        
+        print(self.H[indx,indy])
+        #step 2: return the correct histogram value
+        return self.H[indx,indy]
+
     def gfun(self,x):
         #estimate p moments
-        pmean = np.mean(x[...,[1]].numpy())
-        pstd = np.std(x[...,[1]].numpy())
+        #pmean = np.mean(x[...,[1]].numpy())
+        #pstd = np.std(x[...,[1]].numpy())
         #cov 
-        rho = np.cov(x[...,1].numpy(),x[...,0].numpy())[0]
-
-        return self.log_multivariate_gauss(x[...,[1]].numpy(),x[...,[0]].numpy(),pmean,self.mean0,rho,pstd,np.sqrt(self.var0)) - self.log_multivariate_gauss(x[...,[1]].numpy(),x[...,[0]].numpy(),0,self.gauss_boundary["mufinal"],0,1,self.gauss_boundary["sigmafinal"])
+        #rho = np.cov(x[...,1].numpy(),x[...,0].numpy())[0]
+        # 
+        pdf = np.array([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))])
+        return np.nan_to_num(np.log(pdf)) + (self.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+        
+        #self.log_multivariate_gauss(x[...,[1]].numpy(),x[...,[0]].numpy(),pmean,self.mean0,rho,pstd,np.sqrt(self.var0)) - self.log_multivariate_gauss(x[...,[1]].numpy(),x[...,[0]].numpy(),0,self.gauss_boundary["mufinal"],0,1,self.gauss_boundary["sigmafinal"])
 
 if __name__=="__main__":
 
