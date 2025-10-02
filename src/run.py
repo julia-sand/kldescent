@@ -3,6 +3,7 @@ import os
 import numpy as np
 import torch
 from torch.nn import DataParallel
+from tqdm import tqdm
 
 from src.model import *
 from src.sde import *
@@ -61,7 +62,7 @@ def run():
     #get baseline metrics and saves initialisation checkpoint
     metrics.update_metrics(0,None,metrics_logger)
 
-    for epoch in range(0,args["epochs"]):
+    for epoch in tqdm(range(args["epochs"])):#range(0,args["epochs"]):
         try:
 
             #train the rho neural network
@@ -72,7 +73,7 @@ def run():
 
             #update metrics
             metrics.update_metrics(epoch+1,loss_out,metrics_logger)
-            print(f"Epoch {epoch+1} complete")
+            #print(f"Epoch {epoch+1} complete")
             
         except ValueError:
             print("The training has resulted in NaN loss and therefore failed. Please retry.")
