@@ -7,7 +7,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR,ExponentialLR
 from torch.nn.utils import clip_grad_norm_
 
-import pdb
+from tqdm import tqdm#import pdb
 
 class Pretrain():
     #define the training parameters and loop for any pretraining. 
@@ -248,26 +248,18 @@ class TrainRho():
         optimiser = Adam(self.rhonet.parameters(), lr=self.lr)
         scheduler = ExponentialLR(optimiser, gamma=self.gamma)
         self.rhonet.train() #set neural net into train mode
-
-        for rho_epoch in range(int(round(epochs/self.milestone))):    
+        
+        with tqdm(total=int(round(epochs/self.milestone)), bar_format="{postfix[0]} {postfix[1][value]:>8.2g}",
+                postfix=["Batch", {"value": 0}]) as t:
+            for rho_epoch in range(int(round(epochs/self.milestone))):    
             
-            #========TESTING
-            with torch.no_grad():
-                x0_temp = (-4 - 4)*torch.rand(500, 2, dtype=torch.float32,requires_grad=False) + 4
-                yhat = self.generate_training_data(x0_temp)
-                ypred = self.rhonet(x0_temp)
-                loss_temp = loss(yhat,ypred)
-                print(f"Finished epoch {rho_epoch}, loss {loss_temp}")
-                print("sum",ypred.sum())
-                print("max",ypred.max())
-                print("min",ypred.min())
-                logger.save_checkpoint(self.rhonet,rho_epoch+100)
-            #======
-            for __ in range(self.milestone):
-                self.train_step(optimiser,loss) #repeat training step
-        
-            scheduler.step() #decrease learning rate
-        
+                for __ in range(self.milestone):
+                    self.train_step(optimiser,loss) #repeat training step
+            
+                scheduler.step() #decrease learning rate
+                
+                t.postfix[1]["value"] = rho_epoch
+                t.update()
 
 if __name__=="__main__":
     Pretrain("src/refsolution/UnderdampedHalfNet/refsol.csv").get_pretraining_data()
