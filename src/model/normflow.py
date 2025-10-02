@@ -35,7 +35,6 @@ target = nf.distributions.TwoMoons()
 def log_pfinal(p,q):
     return -(p**2)/2 - ((q-1)**2)/4
 
-
 # Plot target distribution
 grid_size = 200
 xx, yy = torch.meshgrid(torch.linspace(-3, 3, grid_size), torch.linspace(-3, 3, grid_size))
@@ -46,11 +45,11 @@ log_prob = log_pfinal(xx,yy)
 prob = torch.exp(log_prob)
 prob[torch.isnan(prob)] = 0
 
-def plot_final_prob(prob,xx,yy):
+def plot_prob(prob,xx,yy,fig_name="test"):
     plt.figure(figsize=(15, 15))
     plt.pcolormesh(xx, yy, prob.data.numpy(), cmap='coolwarm')
     plt.gca().set_aspect('equal', 'box')
-    plt.savefig("test.png")
+    plt.savefig(f"{fig_name}.png")
     return
 
 # Plot initial flow distribution
@@ -59,7 +58,7 @@ log_prob_orig = model.log_prob(zz).to('cpu').view(*xx.shape)
 model.train()
 prob_orig = torch.exp(log_prob_orig)
 prob_orig[torch.isnan(prob_orig)] = 0
-plot_final_prob(prob_orig,xx,yy)
+plot_prob(prob_orig,xx,yy,"test_initial")
 
 ##training
 
@@ -67,7 +66,6 @@ plot_final_prob(prob_orig,xx,yy)
 max_iter = 4000
 num_samples = 2 ** 9
 show_iter = 500
-
 
 loss_hist = np.array([])
 
@@ -77,7 +75,7 @@ for it in tqdm(range(max_iter)):
     optimizer.zero_grad()
     
     # Get training samples
-    x = target.sample(num_samples)
+    x = target.sample(num_samples)#update with samples from boundary
     
     # Compute loss
     loss = model.forward_kld(x)
@@ -98,10 +96,7 @@ for it in tqdm(range(max_iter)):
         prob = torch.exp(log_prob.to('cpu').view(*xx.shape))
         prob[torch.isnan(prob)] = 0
 
-        plt.figure(figsize=(15, 15))
-        plt.pcolormesh(xx, yy, prob.data.numpy(), cmap='coolwarm')
-        plt.gca().set_aspect('equal', 'box')
-        plt.show()
+        plot_prob(prob,xx,yy,f"train_it{it}")
 
 # Plot loss
 plt.figure(figsize=(10, 10))
