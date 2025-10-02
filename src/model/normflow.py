@@ -10,96 +10,93 @@ from matplotlib import pyplot as plt
 
 from tqdm import tqdm
 
-# Set up model
+from ..sde.boundary import UnderdampedHalfNet
+
+#initialise initial and final conditions
+boundaryconditions = UnderdampedHalfNet()
 
 # Define 2D Gaussian base distribution
 base = nf.distributions.base.DiagGaussian(2)
 
 # Define list of flows
-num_layers = 4
-flows = []
-for i in range(num_layers):
-    # Neural network with two hidden layers having 64 units each
-    # Last layer is initialized by zeros making training more stable
-    param_map = nf.nets.MLP([1, 16, 16, 2], init_zeros=True)
-    # Add flow layer
-    flows.append(nf.flows.AffineCouplingBlock(param_map))
-    # Swap dimensions
-    flows.append(nf.flows.Permute(2, mode='swap'))
-    
+def make_flows(num_layers=4):
+    flows = []
+    for i in range(num_layers):
+        # Neural network with two hidden layers having 64 units each
+        # Last layer is initialized by zeros making training more stable
+        param_map = nf.nets.MLP([1, 16, 16, 2], init_zeros=True)
+        # Add flow layer
+        flows.append(nf.flows.AffineCouplingBlock(param_map))
+        # Swap dimensions
+        flows.append(nf.flows.Permute(2, mode='swap'))
+    return flows
+        
 # Construct flow model
+#check how to use a custom function for base?
+flows = make_flows(num_layers=4)
 model = nf.NormalizingFlow(base, flows)
-
-# Define target distribution
-target = nf.distributions.TwoMoons()
-def log_pfinal(p,q):
-    return -(p**2)/2 - ((q-1)**2)/4
 
 # Plot target distribution
 grid_size = 200
 xx, yy = torch.meshgrid(torch.linspace(-3, 3, grid_size), torch.linspace(-3, 3, grid_size))
-zz = torch.cat([xx.unsqueeze(2), yy.unsqueeze(2)], 2).view(-1, 2)
-
-log_prob = log_pfinal(xx,yy)
-#target.log_prob(zz).to('cpu').view(*xx.shape)
-prob = torch.exp(log_prob)
-prob[torch.isnan(prob)] = 0
 
 def plot_prob(prob,xx,yy,fig_name="test"):
     plt.figure(figsize=(15, 15))
     plt.pcolormesh(xx, yy, prob.data.numpy(), cmap='coolwarm')
     plt.gca().set_aspect('equal', 'box')
     plt.savefig(f"{fig_name}.png")
+    plt.close()
     return
 
-# Plot initial flow distribution
-model.eval()
-log_prob_orig = model.log_prob(zz).to('cpu').view(*xx.shape)
-model.train()
-prob_orig = torch.exp(log_prob_orig)
-prob_orig[torch.isnan(prob_orig)] = 0
-plot_prob(prob_orig,xx,yy,"test_initial")
 
 ##training
+class Train_normflow():
+    """
+    Class to store training loop and parameters for training a normalising flow
+    """
 
-# Train model
-max_iter = 4000
-num_samples = 2 ** 9
-show_iter = 500
+    def __init__(self,model):
+        """
+        Initialise training parameters for trainign a normalising flow
+        args:   
+            model: 
+                normalising flow model (neural net with planar layers)
+        """
 
-loss_hist = np.array([])
+        self.model = model
 
-optimizer = torch.optim.Adam(model.parameters(), lr=5e-4, weight_decay=1e-5)
+        self.max_iter = 400 #maximum number of iterations /training steps
+        self.num_samples = 2000 #how many samples of final distribution to take for each training iteration
+        self.show_iter = 20 #at which iteration to plot intermediate results
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=5e-4, weight_decay=1e-5)
 
-for it in tqdm(range(max_iter)):
-    optimizer.zero_grad()
-    
-    # Get training samples
-    x = target.sample(num_samples)#update with samples from boundary
-    
-    # Compute loss
-    loss = model.forward_kld(x)
-    
-    # Do backprop and optimizer step
-    if ~(torch.isnan(loss) | torch.isinf(loss)):
-        loss.backward()
-        optimizer.step()
-    
-    # Log loss
-    loss_hist = np.append(loss_hist, loss.to('cpu').data.numpy())
-    
-    # Plot learned distribution
-    if (it + 1) % show_iter == 0:
-        model.eval()
-        log_prob = model.log_prob(zz)
-        model.train()
-        prob = torch.exp(log_prob.to('cpu').view(*xx.shape))
-        prob[torch.isnan(prob)] = 0
+    def train_loop(self,):
+        
+        loss_hist = np.array([])
 
-        plot_prob(prob,xx,yy,f"train_it{it}")
+        for it in tqdm(range(max_iter)):
+            #get data here!!
+            x = torch.tensor(boundaryconditions.generate_samples(num_samples,mode="final"),dtype=torch.float32)
+            self.train_step(x,it,loss_hist)
 
-# Plot loss
-plt.figure(figsize=(10, 10))
-plt.plot(loss_hist, label='loss')
-plt.legend()
-plt.savefig("train_example.png")
+        # Plot loss
+        plt.figure(figsize=(10, 10))
+        plt.plot(loss_hist, label='loss')
+        plt.savefig("loss_training_example.png")
+        plt.close()
+
+    def train_step(self,x,it,loss_hist):
+        
+        optimizer.zero_grad()
+           
+        # Compute loss
+        loss = model.forward_kld(x)
+        
+        # Do backprop and optimizer step
+        if ~(torch.isnan(loss) | torch.isinf(loss)):
+            loss.backward()
+            optimizer.step()
+            
+            # Log loss
+            loss_hist = np.append(loss_hist, loss.to('cpu').data.numpy())
+

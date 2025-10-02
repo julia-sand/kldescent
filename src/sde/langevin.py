@@ -166,6 +166,40 @@ class SDE():
 
         return torch.mean(kldyn).item(), kl_static, mean0, var0 
     
+    def compute_final_samples(self,testing_samples,net):
+        """
+        Makes stochastic evolutions of the dynamics from the initial conditions without saving cumulants 
+        
+        args:
+            testing_samples:
+                size of samples to generate
+            net:
+                neural network approximating the drift
+        returns:
+            xout:
+                tensor of shape (testing_samples,2) of samples from the final evolved distribution
+        """ 
+
+        net.eval()
+        
+        with torch.no_grad():
+
+            t_vec = torch.linspace(0,self.boundary.params["Tf"],self.sde_params["tsteps"])#self.testing_time_grid()
+
+            xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
+
+            for i in range(0,len(t_vec)-1):
+                dt = (t_vec[i+1]-t_vec[i])
+                
+                dw = self.generate_innovation(dt,testing_samples)
+                #xdata = torch.column_stack(())
+                du_bar = net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
+                                                        ,xinit[...,[0]])))
+                
+                xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
+        
+            return xinit
+
     def update_ref_statistics(self,net,testing_samples=None,debug=False):
         """
         computes estimates of the metrics to update the g function 
@@ -182,30 +216,15 @@ class SDE():
             pdb.set_trace()
         
         if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
+            
             if testing_samples == None: #default to the integrator 
                 testing_samples = self.sde_params["testsamples"] 
 
-            net.eval()
-            
-            with torch.no_grad():
+            xinit = self.compute_final_samples(testing_samples,net)
 
-                t_vec = torch.linspace(0,self.boundary.params["Tf"],self.sde_params["tsteps"])#self.testing_time_grid()
-
-                xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
-
-                for i in range(0,len(t_vec)-1):
-                    dt = (t_vec[i+1]-t_vec[i])
-                    
-                    dw = self.generate_innovation(dt,testing_samples)
-                    #xdata = torch.column_stack(())
-                    du_bar = net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
-                                                            ,xinit[...,[0]])))
-                    
-                    xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
+            self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]).item(), torch.var(xinit[...,0]).item())
             
 
-                self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]).item(), torch.var(xinit[...,0]).item())
-            
             #free up the tensors
             del xinit 
             del du_bar
@@ -241,7 +260,7 @@ class SDE():
     def compute_sde(self,net,
                         final_time):
         """
-        Computes the SDE, saves cumulants and plots 
+        Computes the SDE while saving cumulants 
 
         ====
         args:
