@@ -102,7 +102,7 @@ class SDE():
                 xtemp = xinit.clone().detach()
                 gvals = self.boundary.gfun(xtemp.numpy(),self.rhonet(xtemp,condition=1).numpy()) #self.rhonet(xclone))
             else:
-                gvals = self.boundary.gfun(xinit)
+                gvals = self.boundary.gfun(xinit.numpy())
                 
         #compute value of Lhat
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
@@ -163,7 +163,9 @@ class SDE():
         
         if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
             self.boundary.set_ref_statistics(mean0, var0)
-
+        if self.boundary.__class__.__name__== "UnderdampedHalfGaussBridge":
+            self.boundary.save_histogram(xinit.detach().numpy())
+        
         return torch.mean(kldyn).item(), kl_static, mean0, var0 
     
     def update_ref_statistics(self,net,testing_samples=None,debug=False):
@@ -181,7 +183,7 @@ class SDE():
         if debug:
             pdb.set_trace()
         
-        if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
+        if self.boundary.__class__.__name__ in ["UnderdampedHalfGaussian","UnderdampedHalfGaussBridge"]:
             if testing_samples == None: #default to the integrator 
                 testing_samples = self.sde_params["testsamples"] 
 
@@ -205,7 +207,9 @@ class SDE():
             
 
                 self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]).item(), torch.var(xinit[...,0]).item())
-            
+                if self.boundary.__class__.__name__== "UnderdampedHalfGaussBridge":
+                    self.boundary.save_histogram(xinit.detach().numpy())
+
             #free up the tensors
             del xinit 
             del du_bar

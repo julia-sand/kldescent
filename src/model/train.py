@@ -115,15 +115,17 @@ class Metrics():
         update_metrics
     """
 
-    def __init__(self, rhonet, net, integrator, logstep):
+    def __init__(self, rhonet, net, integrator, logstep, logger):
         self.integrator = integrator
         self.net = net
         self.rhonet = rhonet
         #self.scheduler = trainer.scheduler # for testing out different schedules, we record the learning rate 
         
         self.logstep = logstep #how frequently to save results
-    
-    def update_metrics(self, epoch, loss_out, logger, trainer=None):
+        self.logger = logger
+        self.update_metrics(0, 0)
+
+    def update_metrics(self, epoch, loss_out, trainer=None):
         """
         Function for computing metrics
             -logs the metrics at logstep
@@ -156,7 +158,7 @@ class Metrics():
                     else:
                         lr_rate = 0
 
-                    logger.write_data_row(epoch,
+                    self.logger.write_data_row(epoch,
                                                 loss_out,
                                                 kl_dynamic,
                                                 kl_static,
@@ -164,9 +166,9 @@ class Metrics():
                                                 mean0,
                                                 var0)
 
-                    logger.save_checkpoint(self.net,epoch)
+                    self.logger.save_checkpoint(self.net,epoch)
                     if self.rhonet is not None:
-                        logger.save_checkpoint(self.rhonet,epoch)
+                        self.logger.save_checkpoint(self.rhonet,epoch)
         
             else: 
                 with torch.no_grad():

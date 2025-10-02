@@ -44,12 +44,12 @@ def run():
 
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
-    metrics = train.Metrics(None, net, integrator, args["logstep"])
+    metrics = train.Metrics(None, net, integrator, args["logstep"],metrics_logger)
 
-    for epoch in range(0,args["epochs"]+1):
+    for epoch in range(1,args["epochs"]+1):
         try:
             loss_out = trainer.train_step()
-            metrics.update_metrics(epoch, loss_out, metrics_logger)
+            metrics.update_metrics(epoch, loss_out)
         except KeyboardInterrupt:
             print(f"Training interrupted at epoch {epoch}")
         except ValueError:
