@@ -642,7 +642,7 @@ class UnderdampedHalfNet(UnderdampedQuarterGaussian):
 
     def gfun(self,x,pdf): 
      
-        return np.nan_to_num(np.log(pdf)) + (self.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+        return np.nan_to_num(pdf) + (self.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
         #np.nan_to_num(np.log(pdf)) - np.log(self.p_final(x[...,[0]],x[...,[1]]))
         #log_pdf - np.log(self.p_final(x[...,[0]],x[...,[1]]))
         #np.nan_to_num(np.log(pdf)) - np.log(self.p_final(x[...,[0]],x[...,[1]]))
