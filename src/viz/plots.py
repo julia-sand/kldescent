@@ -379,18 +379,20 @@ class PlotFuns():
     ax_mom.set_title("Momentum")
     colors = ["orange",self.c1]
     labels = ["Controlled by NN.","Free Diffusion"]
-    for x in enumerate(xs):
-    
-      ax_mom.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,1])), color=colors[x[0]],label=labels[x[0]])
-      ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,0])), color=colors[x[0]],label=labels[x[0]])
+    try:
+      for x in enumerate(xs):
       
-      ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000),
-          self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=np.nanmean(x[1][:,0]),sigmasq=np.nanvar(x[1][:,0])),
-          color="gray",linestyle="dashed",alpha=0.5)
-      
-      ax_mom.set_xlim((-self.qmax,self.qmax))
-      ax_pos.set_xlim((-self.qmax,self.qmax))
-    
+        ax_mom.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,1])), color=colors[x[0]],label=labels[x[0]])
+        ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,0])), color=colors[x[0]],label=labels[x[0]])
+        
+        ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000),
+            self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=np.nanmean(x[1][:,0]),sigmasq=np.nanvar(x[1][:,0])),
+            color="gray",linestyle="dashed",alpha=0.5)
+        
+        ax_mom.set_xlim((-self.qmax,self.qmax))
+        ax_pos.set_xlim((-self.qmax,self.qmax))
+    except:
+      pass
     self.format_distribution_ax(ax_mom)
     self.format_distribution_ax(ax_pos)
 
