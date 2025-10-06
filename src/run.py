@@ -40,11 +40,11 @@ def run():
     rhonet = DataParallel(rhonet)
 
     #initialise terminal cost calculation methods
-    terminal_cost = getattr(boundaries,args["boundary"])(boundaryconditions,rhonet)
+    terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions)
     #terminalcost.GirsanovNet(boundaryconditions,rhonet)
 
     #intialise sde integration 
-    integrator = langevin.SDE(boundaryconditions, terminal_cost=terminal_cost)
+    integrator = langevin.SDE(boundaryconditions, net=net, terminal_cost=terminal_cost)
     
     #initialise integration of fpk
     fpk_integrator = fpk.FokkerPlanck(boundaryconditions, net)

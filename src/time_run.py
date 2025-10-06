@@ -23,7 +23,7 @@ def run(testing_samples):
     #TODO add these arguments so they get read directly from the command line already in the sde file
     integrator = langevin.SDE(boundaryconditions)
 
-    integrator.update_ref_statistics(net,testing_samples)
+    integrator.update_ref_statistics(testing_samples)
 
 if __name__=="__main__":
     run(testing_samples)
