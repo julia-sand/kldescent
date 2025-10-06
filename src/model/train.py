@@ -22,10 +22,6 @@ class Pretrain():
 
         self.clip = 0.1
 
-    def save_epoch_trained_data(self,epoch):
-        
-        return
-
     def get_pretraining_data(self):
         #load csv and return data 
 
@@ -169,10 +165,11 @@ class Metrics():
                     self.logger.save_checkpoint(self.net,epoch)
                     if self.rhonet is not None:
                         self.logger.save_checkpoint(self.rhonet,epoch)
-        
-            else: 
-                with torch.no_grad():
-                    self.integrator.update_ref_statistics()
+            else:
+                pass
+            #else: 
+            #    with torch.no_grad():
+            #        self.integrator.update_ref_statistics()
                     #pass
 
 class TrainRho():
@@ -233,7 +230,7 @@ class TrainRho():
         return #loss_out
 
 
-    def train_loop(self, logger, epochs=None):
+    def train_loop(self, epochs=None):
         """
         loop for training the rho neural net
         args:

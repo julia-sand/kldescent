@@ -1,14 +1,18 @@
 """This file contains methods for estimating the final value function 
 in the half bridge. 
-Including 
-norm-flow:
-parametric: When we know the final distribution is Gaussian, we can use a parametric method of distirbution estimation, namely estimate first and second moments by MLE. 
-rho-net: Use girsanov theorem to evaluate 
-hist: Use a histogram to estimate the final value function
+
+Methods 
+
+    normflow: Use a neural network to learn the final distribution
+    MLE: When we know the final distribution is Gaussian, we can use a parametric method of distirbution estimation, namely estimate first and second moments by MLE. 
+    GirsanovNet: Use a neural network to learn the final distribution 
+    histogram: Use a histogram to estimate the final value function
 """
 
 import numpy as np 
 import torch
+
+from ..model.train import TrainRho 
 
 class TerminalCost():
     """Class for methods for estimating the final value function 
@@ -50,19 +54,30 @@ class GirsanovNet(TerminalCost):
     Estimate the final cost with a neural network trained on the final distribution
     """
 
-    def __init__(self,boundaryconditions,rhonet=None):
+    def __init__(self,boundaryconditions,rhonet):
         """
         args:
             rhonet: class
                 Neural network that can be used to estimate the final disitrbution
+            net: class
+                Neural network used to estimate the drift 
         """
 
         TerminalCost.__init__(self,boundaryconditions)
         self.rhonet=rhonet
 
+    def update_cost_params(self,integrator,epoch):
+
+        #TODO update trainer parameters based on epoch
+        rhotrainer = TrainRho(self.rhonet,integrator)
+
+        #train the rho neural network
+        rhotrainer.train_loop()
+
     def gfun(self,x):
         pdf = self.rhonet(x,condition="log")
         return torch.nan_to_num(pdf) + (self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+
 
 class MLE(TerminalCost):
     """
@@ -76,10 +91,12 @@ class MLE(TerminalCost):
         """
 
         TerminalCost.__init__(self,boundaryconditions)
+        #self.integrator = integrator
         self.mean0 = 0 
         self.var0 = 1
 
-    def update_cost_params(self,x):
+    def update_cost_params(self,integrator,*_):
+        x = integrator.update_ref_statistics()
         self.mean0 =torch.nanmean(xinit[...,0]).item()
         self.var0 = torch.var(xinit[...,0]).item()
     
@@ -100,13 +117,14 @@ class Histogram(TerminalCost):
 
         TerminalCost.__init__(self,boundaryconditions,*_)
         
+        #self.integrator = integrator
         #initialise blank histogram values
         self.H = None
         self.yedges = None
         self.xedges = None 
 
-    def update_cost_params(self,x):
-        
+    def update_cost_params(self,integrator,*_):
+        x = integrator.update_ref_statistics()
         H, yedges, xedges = np.histogram2d(x[...,1], x[...,0], 
                                             bins=40,
                                             range=[[-5, 5], [-5, 5]],

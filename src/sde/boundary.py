@@ -2,11 +2,14 @@
 Includes classes defining the initial and reference distributions
 
 Boundaries: top level
+
 FullLandauer: Overdamped with Initial at 0 and reference as in final 2403.
+
 OverdampedLandauer: Overdamped with both Initial and reference as in final 2403.
+
 UnderdampedLandauer: Underdamped dynamics with Initial and reference are as in 2403.
 
-UnderdampedGaussian: Initial and reference are given by Gaussians
+UnderdampedGaussian: Initial and reference are given by Gaussians, with moments can be parsed as arguments
 
 LinearOU: Linear Ornstein Uhlenbeck process in the overdamped dynamics with inital condition a delta peak defining a full bridge
 """
