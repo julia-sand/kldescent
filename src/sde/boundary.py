@@ -17,7 +17,7 @@ class Boundaries():
     ref_path : str
         the file name of the default reference solution. 
     sigma0 : float
-        sets the value of the 
+        sets the value of the volatility
 
     Methods
     -------
@@ -606,7 +606,6 @@ class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
         self.var0 = 1
         #self.rho = rho
 
-
     def set_ref_statistics(self,mean0,var0):
         """overwrites the mean and variance of the reference parameters"""
 
@@ -639,17 +638,13 @@ class UnderdampedHalfNet(UnderdampedQuarterGaussian):
         self.var0 = 1
         self.sigma0 = 2**0.5
 
-    def set_pdf(self,rhoval):
-        self.pdf = rhoval
+    #def set_pdf(self,rhoval):
+    #    self.pdf = rhoval
 
     def gfun(self,x,pdf): 
      
         return np.nan_to_num(pdf) + (self.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
-        #np.nan_to_num(np.log(pdf)) + (self.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
-        #np.nan_to_num(np.log(pdf)) - np.log(self.p_final(x[...,[0]],x[...,[1]]))
-        #log_pdf - np.log(self.p_final(x[...,[0]],x[...,[1]]))
-        #np.nan_to_num(np.log(pdf)) - np.log(self.p_final(x[...,[0]],x[...,[1]]))
-      
+        
     def get_reference_data(self,time):
         arr = self.get_ref_data()
       
@@ -666,10 +661,6 @@ class UnderdampedHalfNet(UnderdampedQuarterGaussian):
         arr = np.loadtxt(open(self.cumulants_path),
                         delimiter=",",skiprows=1) 
         return arr 
-        
-    #def Uinitial(self,q):
-    #
-    #    return ((q**2-1)**2)/4
 
 class UnderdampedHalfGaussBridge(UnderdampedHalfGaussian):
     """Underdamped half gaussian class with the full half bridge

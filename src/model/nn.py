@@ -206,8 +206,8 @@ class RhoNeuralNetwork(nn.Module):
             )  
 
 
-    def forward(self, x0, condition=0):   #how the model should evaluate
-        if condition==1: 
+    def forward(self, x0, condition=""):   #how the model should evaluate
+        if condition=="log": 
             return self.NNx(x0)
         else:
             return torch.exp(self.NNx(x0))
