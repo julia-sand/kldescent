@@ -8,6 +8,7 @@ from tqdm import tqdm
 from src.model import *
 from src.sde import *
 import src.sde.boundary as boundaries
+import src.sde.terminalcost as terminalcosts
 from src.utils import *
 #import src.viz.plots as plots
 from src.viz.checkpoint_plots import *
@@ -21,12 +22,11 @@ def run():
     #parse arguments from command line
     args = parser.overdamped_argparser()
     #overwrite the boundary conditions
-    args["boundary"] = "UnderdampedHalfNet"
+    #args["boundary"] = "UnderdampedHalfNet"
     metrics_logger.log_dict(args)
 
-    #initialise the model
-    boundaryconditions = boundaries.UnderdampedHalfNet(logger=metrics_logger)
-    #getattr(boundaries,args["boundary"])(logger=metrics_logger)
+    #initialise the model using parsed boundary conditions
+    boundaryconditions = getattr(boundaries,args["boundary"])(logger=metrics_logger)
     
     net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
     rhonet = nn.RhoNeuralNetwork()
@@ -34,19 +34,21 @@ def run():
     #log the params
     metrics_logger.log_dict(net.params)
     metrics_logger.log_dict(rhonet.params)
-    
  
     #use data paralisation to speed up evaluations
     net = DataParallel(net)
     rhonet = DataParallel(rhonet)
 
     #initialise terminal cost calculation methods
-    terminal_cost = terminalcost.GirsanovNet(boundaryconditions,rhonet)
+    terminal_cost = getattr(boundaries,args["boundary"])(boundaryconditions,rhonet)
+    #terminalcost.GirsanovNet(boundaryconditions,rhonet)
 
     #intialise sde integration 
     integrator = langevin.SDE(boundaryconditions, terminal_cost=terminal_cost)
+    
     #initialise integration of fpk
     fpk_integrator = fpk.FokkerPlanck(boundaryconditions, net)
+    metrics_logger.log_dict(integrator.sde_params)
     
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 

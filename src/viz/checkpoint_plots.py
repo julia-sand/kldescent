@@ -140,9 +140,10 @@ class PlotUtils():
             x_samples:
                 number of space discretisation steps
         returns:
-            xout,jointout
-            -2d mesh of points of the statespace
-            -estimated joint distribution using girsanov theorem
+            xout: 
+                2d mesh of points of the statespace
+            jointout:
+                estimated joint distribution using girsanov theorem
         """
         
         #initialise drift network from checkpoint and set up integrator

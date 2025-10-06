@@ -66,10 +66,11 @@ class GirsanovNet(TerminalCost):
 
 class MLE(TerminalCost):
     """
-    Estimate the final value function using an estimate of the distribution
+    Finds the final value function using a parametric estimate of the distribution as a gaussian and MLE 
+    estimates for the mean and variance
     """
 
-    def __init__(self):
+    def __init__(self,boundaryconditions):
         """
         args:
             rhonet: class
@@ -77,6 +78,70 @@ class MLE(TerminalCost):
         """
 
         TerminalCost.__init__(self,boundaryconditions)
+        self.mean0 = 0 
+        self.var0 = 1
+
+    def update_cost_params(self,x):
+        self.mean0 =torch.nanmean(xinit[...,0]).item()
+        self.var0 = torch.var(xinit[...,0]).item()
+    
+    def Utemp(self,q,mean,var):
+
+        return (q-mean)**2/(var)
 
     def gfun(self,x):
+
+        return (self.boundary.params["weight"]/2)*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.boundary.gauss_boundary["mufinal"], self.boundary.gauss_boundary["sigmafinal"]**2))
+
+class Histogram(TerminalCost):
+    """
+    Find the final probabilities from an estimated histogram
+    """
+
+    def __init__(self,boundaryconditions):
+
+        TerminalCost.__init__(self,boundaryconditions)
+        
+        #initialise blank histogram values
+        self.H = None
+        self.yedges = None
+        self.xedges = None 
+
+    def update_cost_params(self,x):
+        
+        H, yedges, xedges = np.histogram2d(x[...,1], x[...,0], 
+                                            bins=40,
+                                            range=[[-5, 5], [-5, 5]],
+                                            density=True)
+        self.H = H
+        self.yedges = yedges
+        self.xedges = xedges
         return 
+
+    def evaluate_density(self, datapoint):
+        """
+        args:
+            datapoint: data point or array of points in the shape (2,)
+        returns: 
+            p1: estimate of probability density from histogram
+        """
+
+        #step 1: check which bin for x and y the point is in
+        #get x,y coordinate
+        x = datapoint[0]
+        y = datapoint[1]
+
+        #compare datapoint with bin edges
+        indx = np.nonzero(self.xedges<x)[0][-1]# and x < self.xedges))
+        indy = np.nonzero(self.yedges<y)[0][-1]# and y < self.yedges))
+        #print(f"{x}",f"{y}")
+
+        #print("pdf=",self.H[indx,indy])
+        #step 2: return the correct histogram value
+        return self.H[indy-1,indx-1]
+
+    def gfun(self,x):
+        
+        pdf = np.array([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))])
+        return np.nan_to_num(np.log(pdf+1e-10)) + (self.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+        
