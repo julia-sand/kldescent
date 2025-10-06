@@ -1,17 +1,17 @@
 """
 Includes classes defining the initial and reference distributions
 
-Boundaries: top level
+    Boundaries: top level 
 
-FullLandauer: Overdamped with Initial at 0 and reference as in final 2403.
+    FullLandauer: Overdamped with Initial at 0 and reference as in final 2403.
 
-OverdampedLandauer: Overdamped with both Initial and reference as in final 2403.
+    OverdampedLandauer: Overdamped with both Initial and reference as in final 2403.
 
-UnderdampedLandauer: Underdamped dynamics with Initial and reference are as in 2403.
+    UnderdampedLandauer: Underdamped dynamics with Initial and reference are as in 2403.
 
-UnderdampedGaussian: Initial and reference are given by Gaussians, with moments can be parsed as arguments
+    UnderdampedGaussian: Initial and reference are given by Gaussians, with moments can be parsed as arguments
 
-LinearOU: Linear Ornstein Uhlenbeck process in the overdamped dynamics with inital condition a delta peak defining a full bridge
+    LinearOU: Linear Ornstein Uhlenbeck process in the overdamped dynamics with inital condition a delta peak defining a full bridge
 """
 
 import os
@@ -123,14 +123,16 @@ class FullLandauer(Boundaries):
         return ((q**2-1)**2)/4
 
     def scorefinal(self,q):
-
+        #negative log-gradient of the final distribution 
         return -(q**2-1)*q
 
     def qfinal(self,q):
+        #unnormalised final reference marginal distribution
 
         return np.exp(-self.Ufinal(q)) 
 
     def q_marginal_final(self,q): 
+        #normalised final reference distribution of the configuration
         
         return self.qfinal(q)/self.pf_norm
 
@@ -138,7 +140,6 @@ class FullLandauer(Boundaries):
     def generate_samples(self,batch_samples,mode):
         
         ##sample points from the intial distribution for q 
-        #output as a tensor
 
         #from where to sample the q marginals
         if mode=="initial":
