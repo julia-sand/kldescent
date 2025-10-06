@@ -94,7 +94,7 @@ class Train():
         #reset gradients 
         self.optimiser.zero_grad()
         
-        Lhat = self.integrator.loss_fn(self.net)
+        Lhat = self.integrator.loss_fn()
         clip_grad_norm_(self.net.parameters(), self.clip)
 
         ##training##
@@ -151,7 +151,7 @@ class Metrics():
             if (epoch % self.logstep == 0): #compute metrics 
                 with torch.no_grad():
                     #this also updates the ref. cumulants
-                    kl_dynamic, kl_static, mean0, var0 =self.integrator.compute_metrics(self.net)
+                    kl_dynamic, kl_static, mean0, var0 =self.integrator.compute_metrics()
 
                     if trainer is not None:
                         lr_rate = trainer.scheduler.get_last_lr()[0]
@@ -172,7 +172,7 @@ class Metrics():
         
             else: 
                 with torch.no_grad():
-                    self.integrator.update_ref_statistics(self.net)
+                    self.integrator.update_ref_statistics()
                     #pass
 
 class TrainRho():

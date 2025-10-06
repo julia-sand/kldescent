@@ -61,6 +61,7 @@ class SDE(SDEBase):
 
         self.TerminalCost = terminal_cost
         self.net = net 
+        
     def loss_fn(self):
         """
         Following 2410.05163 (see proposition 3). 
@@ -307,5 +308,5 @@ if __name__=="__main__":
     #intialise sde integration 
     integrator = SDE(boundaryconditions)
 
-    integrator.update_ref_statistics(net,10,debug=True)
+    integrator.update_ref_statistics(10,debug=True)
 

@@ -50,7 +50,7 @@ class GirsanovNet(TerminalCost):
     Estimate the final cost with a neural network trained on the final distribution
     """
 
-    def __init__(self,boundaryconditions,rhonet):
+    def __init__(self,boundaryconditions,rhonet=None):
         """
         args:
             rhonet: class
@@ -70,11 +70,9 @@ class MLE(TerminalCost):
     estimates for the mean and variance
     """
 
-    def __init__(self,boundaryconditions):
+    def __init__(self,boundaryconditions,*_):
         """
         args:
-            rhonet: class
-                Neural network that can be used to estimate the final disitrbution
         """
 
         TerminalCost.__init__(self,boundaryconditions)
@@ -100,7 +98,7 @@ class Histogram(TerminalCost):
 
     def __init__(self,boundaryconditions):
 
-        TerminalCost.__init__(self,boundaryconditions)
+        TerminalCost.__init__(self,boundaryconditions,*_)
         
         #initialise blank histogram values
         self.H = None

@@ -77,7 +77,7 @@ class PlotUtils():
             
         final_plot_time = self.boundary_cond.params["Tf"]
         
-        t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(self.net,final_plot_time)
+        t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(final_plot_time)
         
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
         self.plotter.marginal_distribution([xinit,xref],final_plot_time)
@@ -87,7 +87,7 @@ class PlotUtils():
     def load_du_checkpoint(self):
         self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
         self.net.load_checkpoint(self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
-        self.integrator = langevin.SDE(self.boundary_cond,sde_params=self.data_loaded)
+        self.integrator = langevin.SDE(self.boundary_cond,net=self.net,sde_params=self.data_loaded)
 
     def load_rho_checkpoint(self):
         self.rhonet = RhoNeuralNetwork(self.data_loaded)
