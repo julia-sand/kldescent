@@ -11,11 +11,11 @@ class SDE():
 
     def __init__(self,
                     boundary_data,
-                    rhonet=None,
+                    rhonet=None, #to be replaced with Terminal cost class
                     sde_params=None,
                     #logger=None,
                     device="cpu"):
-        self.rhonet = rhonet
+        self.rhonet = rhonet #to be replaced with Terminal cost class
         self.boundary = boundary_data
 
         #get params 
@@ -58,7 +58,6 @@ class SDE():
         Parameters
         - net: neural network for parametrising the drift
         ====
-
         """
         
         net.train()
@@ -103,6 +102,8 @@ class SDE():
                 gvals = self.boundary.gfun(xtemp.numpy(),self.rhonet(xtemp,condition=1).numpy()) #self.rhonet(xclone))
             else:
                 gvals = self.boundary.gfun(xinit.numpy())
+            #TODO update class structure so that we have
+            #gvals = TerminalCost.gfun(xtemp.numpy())
                 
         #compute value of Lhat
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
