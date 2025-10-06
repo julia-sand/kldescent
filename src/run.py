@@ -29,47 +29,53 @@ def run():
     boundaryconditions = getattr(boundaries,args["boundary"])(logger=metrics_logger)
     
     net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
-    rhonet = nn.RhoNeuralNetwork()
 
     #log the params
     metrics_logger.log_dict(net.params)
-    metrics_logger.log_dict(rhonet.params)
- 
+
     #use data paralisation to speed up evaluations
     net = DataParallel(net)
-    rhonet = DataParallel(rhonet)
 
-    #initialise terminal cost calculation methods
-    terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions)
-    #terminalcost.GirsanovNet(boundaryconditions,rhonet)
+    if args["terminalcost"]=="GirsanovNet":
+        rhonet = nn.RhoNeuralNetwork()
+        metrics_logger.log_dict(rhonet.params)
+        rhonet = DataParallel(rhonet)
+
+    #TODO: elif args["terminalcost"]=="NormFlow": add here
+    else:
+        rhonet=None
+        
+    terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,rhonet)
 
     #intialise sde integration 
     integrator = langevin.SDE(boundaryconditions, net=net, terminal_cost=terminal_cost)
-    
+    fpk_integrator = fpk.FokkerPlanck(boundaryconditions,net)
+
     #initialise integration of fpk
-    fpk_integrator = fpk.FokkerPlanck(boundaryconditions, net)
     metrics_logger.log_dict(integrator.sde_params)
     
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
-    metrics = train.Metrics(rhonet, net, integrator, args["logstep"],metrics_logger) #(rhonet, net, integrator, args["logstep"])   
-    rhotrainer = train.TrainRho(rhonet,fpk_integrator)
-    
-    #save initialisations 
-    #metrics_logger.log_dict(integrator.sde_params)
 
+    metrics = train.Metrics(rhonet, net, integrator, args["logstep"],metrics_logger) #(rhonet, net, integrator, args["logstep"])   
+        
     if args["pretrain"]: #if a path is provided 
         pretrain.run_pretrain(net,
                             args["pretrain"])
     
     #get baseline metrics and saves initialisation checkpoint
     metrics.update_metrics(0, 0)
+    
+    #compute reference metrics for final value function calculation
+    #integrator.update_ref_statistics()
 
     for epoch in tqdm(range(args["epochs"])):#range(0,args["epochs"]):
         try:
-
-            #train the rho neural network
-            rhotrainer.train_loop(metrics_logger)
+            if rhonet is not None:      
+                #estimate the final distirbution using a terminal cost method
+                terminal_cost.update_cost_params(fpk_integrator,epoch)
+            else:
+                terminal_cost.update_cost_params(integrator)
 
             #update the drift nn with the current learned final distribution  
             loss_out = trainer.train_step()
@@ -77,6 +83,7 @@ def run():
             #update metrics
             metrics.update_metrics(epoch+1, loss_out)
             #print(f"Epoch {epoch+1} complete")
+
             
         except ValueError:
             print("The training has resulted in NaN loss and therefore failed. Please retry.")

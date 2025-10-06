@@ -176,14 +176,8 @@ class SDE(SDEBase):
             kl_static = 0
             print("Value Error exception ignored. This means that the current value of the \n \
             neural network drift produces NaN values. ")
-                
-        mean0,var0 = torch.nanmean(xinit[...,0]).item(),torch.var(xinit[...,0]).item()
-        
-        #if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
-        #    self.boundary.set_ref_statistics(mean0, var0)
-        #if self.boundary.__class__.__name__== "UnderdampedHalfGaussBridge":
-        #    self.boundary.save_histogram(xinit.detach().numpy())
-        
+        mean0,var0 = torch.mean(xinit[...,0]).item(),torch.var(xinit[...,1]).item()
+
         return torch.mean(kldyn).item(), kl_static, mean0, var0 
     
     def update_ref_statistics(self,testing_samples=None,debug=False):
@@ -194,56 +188,43 @@ class SDE(SDEBase):
         Parameters
         - net: neural network
         Returns
-            none
+            xinit
         ====
 
         """
 
-        if debug:
-            pdb.set_trace()
+        #if debug:
+        #    pdb.set_trace()
         
-        if self.boundary.__class__.__name__ in ["UnderdampedHalfGaussian","UnderdampedHalfGaussBridge"]:
-            if testing_samples == None: #default to the integrator 
-                testing_samples = self.sde_params["testsamples"] 
+        #if self.boundary.__class__.__name__ in ["UnderdampedHalfGaussian","UnderdampedHalfGaussBridge"]:
+        #    if testing_samples == None: #default to the integrator 
+        #        testing_samples = self.sde_params["testsamples"] 
 
-            self.net.eval()
-            
-            with torch.no_grad():
+        self.net.eval()
+        
+        with torch.no_grad():
 
-                t_vec = torch.linspace(0,self.boundary.params["Tf"],self.sde_params["tsteps"])#self.testing_time_grid()
+            t_vec = torch.linspace(0,self.boundary.params["Tf"],self.sde_params["tsteps"])#self.testing_time_grid()
 
-                xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
+            xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
 
-                for i in range(0,len(t_vec)-1):
-                    dt = (t_vec[i+1]-t_vec[i])
-                    
-                    dw = self.generate_innovation(dt,testing_samples)
-                    #xdata = torch.column_stack(())
-                    du_bar = net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
-                                                            ,xinit[...,[0]])))
-                    
-                    xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
-            
+            for i in range(0,len(t_vec)-1):
+                dt = (t_vec[i+1]-t_vec[i])
+                
+                dw = self.generate_innovation(dt,testing_samples)
+                #xdata = torch.column_stack(())
+                du_bar = net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
+                                                        ,xinit[...,[0]])))
+                
+                xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
+        
 
-                #self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]).item(), torch.var(xinit[...,0]).item())
-                #if self.boundary.__class__.__name__== "UnderdampedHalfGaussBridge":
-                #    self.boundary.save_histogram(xinit.detach().numpy())
-                self.TerminalCost.update_cost_params(xinit.detach().numpy())
-            
-            #free up the tensors
-            del xinit 
-            del du_bar
-
-        else:
-            pass
-
-        return
-
-    def get_net_grad(self,net,t):
-        dx = 0.01
-        grad_temp = (net(torch.column_stack((t*torch.ones(1),dt*torch.ones(1)))) - net(torch.column_stack((t*torch.ones(1),0*torch.ones(1)))))
-
-        return grad_temp/dx
+            #self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]).item(), torch.var(xinit[...,0]).item())
+            #if self.boundary.__class__.__name__== "UnderdampedHalfGaussBridge":
+            #    self.boundary.save_histogram(xinit.detach().numpy())
+            #self.TerminalCost.update_cost_params(xinit.detach().numpy())
+        
+        return xinit
 
     def save_cumulants(self,save_array,temp):
       """
@@ -256,14 +237,13 @@ class SDE(SDEBase):
                                               np.nanvar(temp[...,1],ddof=1),
                                               np.correlate(temp[...,0],temp[...,1])[0]/(len(temp[...,0]))]]),axis=0)#cross corr
 
-    def compute_sde(self,net,
+    def compute_sde(self,
                         final_time):
         """
         Computes the SDE, saves cumulants and plots 
 
         ====
         args:
-          net: neural network
           final_time: when to stop the integration for intermediate time plots
         ====
         """
@@ -286,7 +266,7 @@ class SDE(SDEBase):
                 dt = (t_vec[i+1]-t_vec[i])
                 
                 dw = self.generate_innovation(dt,self.sde_params["testsamples"])
-                du = net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["testsamples"],1),dtype=torch.float32)
+                du = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["testsamples"],1),dtype=torch.float32)
                                                         ,xinit[...,[0]])))
                 
                 xinit = self.boundary.euler_maruyama_step(xinit,du,dt,dw,t_vec[i])
