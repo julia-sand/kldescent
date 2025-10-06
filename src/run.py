@@ -22,7 +22,6 @@ def run():
     #parse arguments from command line
     args = parser.overdamped_argparser()
     #overwrite the boundary conditions
-    #args["boundary"] = "UnderdampedHalfNet"
     metrics_logger.log_dict(args)
 
     #initialise the model using parsed boundary conditions
@@ -35,29 +34,20 @@ def run():
 
     #use data paralisation to speed up evaluations
     net = DataParallel(net)
-
-    if args["terminalcost"]=="GirsanovNet":
-        rhonet = nn.RhoNeuralNetwork()
-        metrics_logger.log_dict(rhonet.params)
-        rhonet = DataParallel(rhonet)
-
-    #TODO: elif args["terminalcost"]=="NormFlow": add here
-    else:
-        rhonet=None
-        
-    terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,rhonet)
-
+   
+    terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions)
+    
     #intialise sde integration 
     integrator = langevin.SDE(boundaryconditions, net=net, terminal_cost=terminal_cost)
-    fpk_integrator = fpk.FokkerPlanck(boundaryconditions,net)
-
+    
     #initialise integration of fpk
     metrics_logger.log_dict(integrator.sde_params)
+    metrics_logger.log_dict(terminal_cost.rhonet.module.params)
     
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
 
-    metrics = train.Metrics(rhonet, net, integrator, args["logstep"],metrics_logger) #(rhonet, net, integrator, args["logstep"])   
+    metrics = train.Metrics(terminal_cost.rhonet, net, integrator, args["logstep"],metrics_logger)    
         
     if args["pretrain"]: #if a path is provided 
         pretrain.run_pretrain(net,
@@ -71,19 +61,14 @@ def run():
 
     for epoch in tqdm(range(args["epochs"])):#range(0,args["epochs"]):
         try:
-            if rhonet is not None:      
-                #estimate the final distirbution using a terminal cost method
-                terminal_cost.update_cost_params(fpk_integrator,epoch)
-            else:
-                terminal_cost.update_cost_params(integrator)
+            #update the terminal cost calculation
+            terminal_cost.update_cost_params(integrator)
 
             #update the drift nn with the current learned final distribution  
             loss_out = trainer.train_step()
 
             #update metrics
             metrics.update_metrics(epoch+1, loss_out)
-            #print(f"Epoch {epoch+1} complete")
-
             
         except ValueError:
             print("The training has resulted in NaN loss and therefore failed. Please retry.")

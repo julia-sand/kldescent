@@ -51,7 +51,6 @@ class FokkerPlanck(SDEBase):
 
         num_samples = xinit.shape[0]
 
-
         with torch.no_grad():
 
             t_vec = self.generate_time_grid()
@@ -87,9 +86,10 @@ class FokkerPlanck(SDEBase):
         args: 
             rhonet:
                 neural network to be trained
+            x0_clone: tensor
+                tensor on which to evaluate girsanov theorem. does not need to have gradients
         """
 
-        #x0 = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"))#.to_device(device)
         with torch.no_grad():
             pdfout = self.compute_pdf(x0_clone)
         

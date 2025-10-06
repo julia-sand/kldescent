@@ -1,4 +1,5 @@
-"""This file contains methods for estimating the final value function 
+"""
+This file contains methods for estimating the final value function 
 in the half bridge. 
 
 Methods 
@@ -11,11 +12,16 @@ Methods
 
 import numpy as np 
 import torch
+from torch.nn import DataParallel
+#from torch import nn
 
+from ..model.nn import RhoNeuralNetwork
 from ..model.train import TrainRho 
+from .fpk import FokkerPlanck
 
 class TerminalCost():
-    """Class for methods for estimating the final value function 
+    """
+    Top-level Class for methods for estimating the final value function 
     """
 
     def __init__(self,boundaryconditions):
@@ -54,22 +60,25 @@ class GirsanovNet(TerminalCost):
     Estimate the final cost with a neural network trained on the final distribution
     """
 
-    def __init__(self,boundaryconditions,rhonet):
+    def __init__(self,boundaryconditions,*_):
         """
         args:
+            boundaryconditions: class
             rhonet: class
                 Neural network that can be used to estimate the final disitrbution
-            net: class
-                Neural network used to estimate the drift 
         """
 
         TerminalCost.__init__(self,boundaryconditions)
-        self.rhonet=rhonet
+        
+        rhonet = RhoNeuralNetwork()
+        
+        self.rhonet = DataParallel(rhonet) 
 
-    def update_cost_params(self,integrator,epoch):
-
+    def update_cost_params(self,integrator):
+        fpk_integrator = FokkerPlanck(integrator.boundary,integrator.net)
+        
         #TODO update trainer parameters based on epoch
-        rhotrainer = TrainRho(self.rhonet,integrator)
+        rhotrainer = TrainRho(self.rhonet,fpk_integrator)
 
         #train the rho neural network
         rhotrainer.train_loop()
@@ -77,7 +86,6 @@ class GirsanovNet(TerminalCost):
     def gfun(self,x):
         pdf = self.rhonet(x,condition="log")
         return torch.nan_to_num(pdf) + (self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
-
 
 class MLE(TerminalCost):
     """
@@ -160,4 +168,21 @@ class Histogram(TerminalCost):
         
         pdf = np.array([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))])
         return np.nan_to_num(np.log(pdf+1e-10)) + (self.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
-        
+
+class NormFlow(TerminalCost):
+
+    def __init__(self,boundaryconditions):
+
+        TerminalCost.__init__(self,boundaryconditions,*_)
+
+    def update_cost_params(self,integrator):
+
+        #TODO update trainer parameters based on epoch
+        rhotrainer = TrainRho(self.rhonet,integrator)
+
+        #train the rho neural network
+        rhotrainer.train_loop()
+
+    def gfun(self,x):
+        pdf = self.rhonet(x,condition="log")
+        return torch.nan_to_num(pdf) + (self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
