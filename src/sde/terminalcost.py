@@ -8,7 +8,7 @@ hist: Use a histogram to estimate the final value function
 """
 
 import numpy as np 
-
+import torch
 
 class TerminalCost():
     """Class for methods for estimating the final value function 
@@ -57,27 +57,26 @@ class GirsanovNet(TerminalCost):
                 Neural network that can be used to estimate the final disitrbution
         """
 
-        TerminalCost().__init__(boundaryconditions)
+        TerminalCost.__init__(self,boundaryconditions)
         self.rhonet=rhonet
 
     def gfun(self,x):
         pdf = self.rhonet(x,condition="log")
-        return np.nan_to_num(pdf) + (self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+        return torch.nan_to_num(pdf) + (self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
 
 class MLE(TerminalCost):
     """
     Estimate the final value function using an estimate of the distribution
     """
 
-    def __init__(self,rhonet):
+    def __init__(self):
         """
         args:
             rhonet: class
                 Neural network that can be used to estimate the final disitrbution
         """
 
-        TerminalCost().__init__()
-        self.rhonet=rhonet
+        TerminalCost.__init__(self,boundaryconditions)
 
     def gfun(self,x):
-        return np.nan_to_num(pdf) + (self.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+        return 

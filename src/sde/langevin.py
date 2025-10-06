@@ -4,18 +4,15 @@ import torch
 import src.sde.kl as kl
 from ..utils.parser import integrator_params
 
-class SDE():
+class SDEBase():
     """
-    Class for integrating the sde forward
+    Class for integrating the sde forward and computing the loss function 
     """
 
-    def __init__(self,
-                    boundary_data,
-                    rhonet=None, #to be replaced with Terminal cost class
-                    sde_params=None,
-                    #logger=None,
-                    device="cpu"):
-        self.rhonet = rhonet #to be replaced with Terminal cost class
+    def __init__(self,boundary_data,
+                    sde_params=None):
+
+        #self.rhonet = rhonet #to be replaced with Terminal cost class
         self.boundary = boundary_data
 
         #get params 
@@ -33,7 +30,24 @@ class SDE():
                                 np.sort(np.random.uniform(0, self.boundary.params["Tf"], self.sde_params["tsteps"]-1)),
                                 [self.boundary.params["Tf"]]])
 
+    def generate_innovation(self,dt,size):
+        #generate a step of brownian motion
+        return np.sqrt(dt)*torch.randn((size,1),requires_grad=False,dtype=torch.float32)
 
+
+class SDE(SDEBase):
+
+    def __init__(self,
+                    boundary_data,
+                    #sde_params=None,
+                    terminal_cost=None, #to be replaced with Terminal cost class
+                    #logger=None,
+                    device="cpu"):
+        
+        SDEBase.__init__(self,sde_params)
+
+        self.TerminalCost = terminal_cost
+        
     def testing_time_grid(self,final_time=None):
 
         if final_time==None:
@@ -45,10 +59,6 @@ class SDE():
             return time_grid
         else:
             return np.linspace(0,final_time,self.sde_params["tsteps"])
-
-    def generate_innovation(self,dt,size):
-        #generate a step of brownian motion
-        return np.sqrt(dt)*torch.randn((size,1),requires_grad=False,dtype=torch.float32)
 
     def loss_fn(self,net):
         """
@@ -97,13 +107,13 @@ class SDE():
             xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
 
         with torch.no_grad():
-            if (self.rhonet is not None):
-                xtemp = xinit.clone().detach()
-                gvals = self.boundary.gfun(xtemp.numpy(),self.rhonet(xtemp,condition=1).numpy()) #self.rhonet(xclone))
-            else:
-                gvals = self.boundary.gfun(xinit.numpy())
+            #if (self.rhonet is not None):
+            #    xtemp = xinit.clone().detach()
+            #    gvals = self.boundary.gfun(xtemp.numpy(),self.rhonet(xtemp,condition=1).numpy()) #self.rhonet(xclone))
+            #else:
+            #    gvals = self.boundary.gfun(xinit.numpy())
             #TODO update class structure so that we have
-            #gvals = TerminalCost.gfun(xtemp.numpy())
+            gvals = self.TerminalCost.gfun(xinit.clone().detach())
                 
         #compute value of Lhat
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
@@ -219,12 +229,6 @@ class SDE():
             pass
 
         return
-
-
-    def evaluate_rhonet(self,rhonet,x0):
-        
-        with torch.no_grad():
-            self.boundary.set_pdf(rhonet(x0).detach().numpy())
 
     def get_net_grad(self,net,t):
         dx = 0.01

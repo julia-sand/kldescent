@@ -1,4 +1,5 @@
 __all__ = ["boundary",
             "kl",
             "langevin",
-            "fpk"]
+            "fpk",
+            "terminalcost"]

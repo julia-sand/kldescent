@@ -1,4 +1,4 @@
-import src.run_overdamped as bridge
+import src.run as bridge
 
 bridge.run()
 

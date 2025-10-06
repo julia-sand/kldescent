@@ -40,27 +40,28 @@ def run():
     net = DataParallel(net)
     rhonet = DataParallel(rhonet)
 
+    #initialise terminal cost calculation methods
+    terminal_cost = terminalcost.GirsanovNet(boundaryconditions,rhonet)
 
     #intialise sde integration 
-    integrator = langevin.SDE(boundaryconditions, rhonet)
+    integrator = langevin.SDE(boundaryconditions, terminal_cost=terminal_cost)
     #initialise integration of fpk
     fpk_integrator = fpk.FokkerPlanck(boundaryconditions, net)
     
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
-    metrics = train.Metrics(rhonet, net, integrator, args["logstep"])   
+    metrics = train.Metrics(rhonet, net, integrator, args["logstep"],metrics_logger) #(rhonet, net, integrator, args["logstep"])   
     rhotrainer = train.TrainRho(rhonet,fpk_integrator)
     
     #save initialisations 
-    metrics_logger.log_dict(integrator.sde_params)
-
+    #metrics_logger.log_dict(integrator.sde_params)
 
     if args["pretrain"]: #if a path is provided 
         pretrain.run_pretrain(net,
                             args["pretrain"])
     
     #get baseline metrics and saves initialisation checkpoint
-    metrics.update_metrics(0,None,metrics_logger)
+    metrics.update_metrics(0, 0)
 
     for epoch in tqdm(range(args["epochs"])):#range(0,args["epochs"]):
         try:
@@ -72,7 +73,7 @@ def run():
             loss_out = trainer.train_step()
 
             #update metrics
-            metrics.update_metrics(epoch+1,loss_out,metrics_logger)
+            metrics.update_metrics(epoch+1, loss_out)
             #print(f"Epoch {epoch+1} complete")
             
         except ValueError:
