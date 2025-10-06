@@ -72,8 +72,11 @@ def overdamped_argparser():
     parser.add_argument('-logstep','--logstep', type=int, default=1,
                         help='A required integer positional argument')
     
-    parser.add_argument('-boundary','--boundary', type=str, default="UnderdampedHalfGaussian",
+    parser.add_argument('-boundary','--boundary', type=str, default="UnderdampedGaussian",
                         help='which set of boundary conditions to use. See Sde.Boundary for more details')
+    
+    parser.add_argument('-terminalcost','--terminalcost', type=str, default="MLE",
+                        help='How the terminal cost should be evaluated')
     
     #TODO... move into model module?
     parser.add_argument('-pretrain','--pretrain', type=str, default="",

@@ -9,7 +9,7 @@ import numpy as np
 
 import pdb
 
-from ..sde.langevin import SDE 
+from ..sde.langevin import SDEBase
 from ..utils.parser import fetch_results_folder_from_cmd
 from ..sde import boundary as boundaries 
 from ..utils.getboundary import *
@@ -17,7 +17,7 @@ from ..utils.getboundary import *
 from ..viz.contour import *
 
 
-class FokkerPlanck(SDE):
+class FokkerPlanck(SDEBase):
     """
     Integrator class for integrating the Fokker planck equation
     Most arguments are the same as the Langevin integrator, except:
@@ -32,7 +32,7 @@ class FokkerPlanck(SDE):
                     sde_params=None,
                     device="cpu"):
 
-        SDE.__init__(self,boundary_cond,
+        SDEBase.__init__(self,boundary_cond,
                             sde_params=sde_params) #use same intialisation
         self.net = net 
 

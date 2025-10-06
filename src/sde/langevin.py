@@ -34,20 +34,6 @@ class SDEBase():
         #generate a step of brownian motion
         return np.sqrt(dt)*torch.randn((size,1),requires_grad=False,dtype=torch.float32)
 
-
-class SDE(SDEBase):
-
-    def __init__(self,
-                    boundary_data,
-                    #sde_params=None,
-                    terminal_cost=None, #to be replaced with Terminal cost class
-                    #logger=None,
-                    device="cpu"):
-        
-        SDEBase.__init__(self,sde_params)
-
-        self.TerminalCost = terminal_cost
-        
     def testing_time_grid(self,final_time=None):
 
         if final_time==None:
@@ -60,7 +46,22 @@ class SDE(SDEBase):
         else:
             return np.linspace(0,final_time,self.sde_params["tsteps"])
 
-    def loss_fn(self,net):
+
+class SDE(SDEBase):
+
+    def __init__(self,
+                    boundary_data,
+                    terminal_cost=None, 
+                    net=None,
+                    sde_params=None,
+                    #logger=None,
+                    device="cpu"):
+        
+        SDEBase.__init__(self,boundary_data=boundary_data,sde_params=sde_params)
+
+        self.TerminalCost = terminal_cost
+        self.net = net 
+    def loss_fn(self):
         """
         Following 2410.05163 (see proposition 3). 
 
@@ -70,7 +71,7 @@ class SDE(SDEBase):
         ====
         """
         
-        net.train()
+        #self.net.train()
         t_vec = self.generate_time_grid()
 
         #initialise x values 
@@ -91,7 +92,7 @@ class SDE(SDEBase):
             
             dw = self.generate_innovation(dt,self.sde_params["batchsamples"])
            
-            du = net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32)
+            du = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32)
                                                     ,xinit[...,[0]])))
                     
             a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True) ** 2) 
@@ -121,17 +122,22 @@ class SDE(SDEBase):
         return Lhat
     
     #@profile
-    def compute_metrics(self,net):
+    def compute_metrics(self):
         """
-        Following 2410.05163 (see proposition 3). 
+        Computes sample evolutions of the dynamics and saves the metrics for 
+        recording the training process
 
         ====
         Parameters
-        - net: neural network
+            net: class
+                neural network for estimating the 
+
+        Returns:
+
         ====
         """
 
-        net.eval()
+        self.net.eval()
         t_vec = self.testing_time_grid()
         testing_samples = self.sde_params["testsamples"] #4000 #reduced number of samples in computing the loss metrics
 
@@ -153,7 +159,7 @@ class SDE(SDEBase):
 
             with torch.no_grad():
 
-                du_bar = net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
+                du_bar = self.net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
                                                         ,xinit[...,[0]]))).detach()
                 kldyn = kldyn + dt*(torch.linalg.norm(torch.sub(du_bar, du_ref), axis=1,keepdim=True)) 
                 #torch.randn((testing_samples,1),requires_grad=False,dtype=torch.float32)
@@ -172,21 +178,22 @@ class SDE(SDEBase):
                 
         mean0,var0 = torch.nanmean(xinit[...,0]).item(),torch.var(xinit[...,0]).item()
         
-        if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
-            self.boundary.set_ref_statistics(mean0, var0)
-        if self.boundary.__class__.__name__== "UnderdampedHalfGaussBridge":
-            self.boundary.save_histogram(xinit.detach().numpy())
+        #if self.boundary.__class__.__name__== "UnderdampedHalfGaussian":
+        #    self.boundary.set_ref_statistics(mean0, var0)
+        #if self.boundary.__class__.__name__== "UnderdampedHalfGaussBridge":
+        #    self.boundary.save_histogram(xinit.detach().numpy())
         
         return torch.mean(kldyn).item(), kl_static, mean0, var0 
     
-    def update_ref_statistics(self,net,testing_samples=None,debug=False):
+    def update_ref_statistics(self,testing_samples=None,debug=False):
         """
         computes estimates of the metrics to update the g function 
-        This should only run for the Half Bridge Gaussian classes. 
 
         ====
         Parameters
         - net: neural network
+        Returns
+            none
         ====
 
         """
@@ -198,7 +205,7 @@ class SDE(SDEBase):
             if testing_samples == None: #default to the integrator 
                 testing_samples = self.sde_params["testsamples"] 
 
-            net.eval()
+            self.net.eval()
             
             with torch.no_grad():
 
@@ -217,10 +224,11 @@ class SDE(SDEBase):
                     xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
             
 
-                self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]).item(), torch.var(xinit[...,0]).item())
-                if self.boundary.__class__.__name__== "UnderdampedHalfGaussBridge":
-                    self.boundary.save_histogram(xinit.detach().numpy())
-
+                #self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]).item(), torch.var(xinit[...,0]).item())
+                #if self.boundary.__class__.__name__== "UnderdampedHalfGaussBridge":
+                #    self.boundary.save_histogram(xinit.detach().numpy())
+                self.TerminalCost.update_cost_params(xinit.detach().numpy())
+            
             #free up the tensors
             del xinit 
             del du_bar
