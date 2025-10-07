@@ -61,7 +61,7 @@ def run():
 
     for epoch in tqdm(range(args["epochs"])):#range(0,args["epochs"]):
         try:
-            #update the terminal cost calculation
+            #update the terminal cost with current final distribution
             terminal_cost.update_cost_params(integrator)
 
             #update the drift nn with the current learned final distribution  
