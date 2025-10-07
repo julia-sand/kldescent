@@ -9,7 +9,7 @@ import numpy as np
 
 import pdb
 
-from ..sde.langevin import SDE 
+from ..sde.langevin import SDEBase
 from ..utils.parser import fetch_results_folder_from_cmd
 from ..sde import boundary as boundaries 
 from ..utils.getboundary import *
@@ -17,7 +17,7 @@ from ..utils.getboundary import *
 from ..viz.contour import *
 
 
-class FokkerPlanck(SDE):
+class FokkerPlanck(SDEBase):
     """
     Integrator class for integrating the Fokker planck equation
     Most arguments are the same as the Langevin integrator, except:
@@ -32,7 +32,7 @@ class FokkerPlanck(SDE):
                     sde_params=None,
                     device="cpu"):
 
-        SDE.__init__(self,boundary_cond,
+        SDEBase.__init__(self,boundary_cond,
                             sde_params=sde_params) #use same intialisation
         self.net = net 
 
@@ -50,7 +50,6 @@ class FokkerPlanck(SDE):
         #xinit = x0.clone()
 
         num_samples = xinit.shape[0]
-
 
         with torch.no_grad():
 
@@ -87,9 +86,10 @@ class FokkerPlanck(SDE):
         args: 
             rhonet:
                 neural network to be trained
+            x0_clone: tensor
+                tensor on which to evaluate girsanov theorem. does not need to have gradients
         """
 
-        #x0 = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"))#.to_device(device)
         with torch.no_grad():
             pdfout = self.compute_pdf(x0_clone)
         
