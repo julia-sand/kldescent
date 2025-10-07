@@ -206,13 +206,11 @@ class RhoNeuralNetwork(nn.Module):
             )  
 
 
-    def forward(self, x0):   #how the model should evaluate
-        
-        return torch.exp(self.NNx(x0))
-
-    def log_forward(self, x0):   #evaluate without exp activation on final layer
-        
-        return self.NNx(x0)
+    def forward(self, x0, condition=""):   #how the model should evaluate
+        if condition=="log": 
+            return self.NNx(x0)
+        else:
+            return torch.exp(self.NNx(x0))
 
     def load_checkpoint(self,checkpointpath):
         try:

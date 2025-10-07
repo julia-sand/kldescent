@@ -7,7 +7,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR,ExponentialLR
 from torch.nn.utils import clip_grad_norm_
 
-import pdb
+from tqdm import tqdm#import pdb
 
 class Pretrain():
     #define the training parameters and loop for any pretraining. 
@@ -21,10 +21,6 @@ class Pretrain():
         self.n_epochs = 1000 #total number of epochs
 
         self.clip = 0.1
-
-    def save_epoch_trained_data(self,epoch):
-        
-        return
 
     def get_pretraining_data(self):
         #load csv and return data 
@@ -94,7 +90,7 @@ class Train():
         #reset gradients 
         self.optimiser.zero_grad()
         
-        Lhat = self.integrator.loss_fn(self.net)
+        Lhat = self.integrator.loss_fn()
         clip_grad_norm_(self.net.parameters(), self.clip)
 
         ##training##
@@ -115,15 +111,17 @@ class Metrics():
         update_metrics
     """
 
-    def __init__(self, rhonet, net, integrator, logstep):
+    def __init__(self, net, integrator, logstep, logger):
         self.integrator = integrator
         self.net = net
-        self.rhonet = rhonet
+        #self.rhonet = rhonet
         #self.scheduler = trainer.scheduler # for testing out different schedules, we record the learning rate 
         
         self.logstep = logstep #how frequently to save results
-    
-    def update_metrics(self, epoch, loss_out, logger, trainer=None):
+        self.logger = logger
+        self.update_metrics(0, 0)
+
+    def update_metrics(self, epoch, loss_out, trainer=None):
         """
         Function for computing metrics
             -logs the metrics at logstep
@@ -141,7 +139,7 @@ class Metrics():
             if loss_out is not None:
                 loss_out = loss_out
             else:
-                loss_out = 0 #compute the loss independently here
+                loss_out = 0 #TODO: compute the loss independently here
 
             if np.isnan(loss_out):
                 raise ValueError('Loss function is NaN. Terminating training process')
@@ -149,14 +147,14 @@ class Metrics():
             if (epoch % self.logstep == 0): #compute metrics 
                 with torch.no_grad():
                     #this also updates the ref. cumulants
-                    kl_dynamic, kl_static, mean0, var0 =self.integrator.compute_metrics(self.net)
+                    kl_dynamic, kl_static, mean0, var0 =self.integrator.compute_metrics()
 
                     if trainer is not None:
                         lr_rate = trainer.scheduler.get_last_lr()[0]
                     else:
                         lr_rate = 0
 
-                    logger.write_data_row(epoch,
+                    self.logger.write_data_row(epoch,
                                                 loss_out,
                                                 kl_dynamic,
                                                 kl_static,
@@ -164,13 +162,14 @@ class Metrics():
                                                 mean0,
                                                 var0)
 
-                    logger.save_checkpoint(self.net,epoch)
-                    if self.rhonet is not None:
-                        logger.save_checkpoint(self.rhonet,epoch)
-        
-            else: 
-                with torch.no_grad():
-                    self.integrator.update_ref_statistics(self.net)
+                    self.logger.save_checkpoint(self.net,epoch)
+                    #if self.rhonet is not None:
+                    #    self.logger.save_checkpoint(self.rhonet,epoch)
+            else:
+                pass
+            #else: 
+            #    with torch.no_grad():
+            #        self.integrator.update_ref_statistics()
                     #pass
 
 class TrainRho():
@@ -231,7 +230,7 @@ class TrainRho():
         return #loss_out
 
 
-    def train_loop(self, logger, epochs=None):
+    def train_loop(self, epochs=None):
         """
         loop for training the rho neural net
         args:
@@ -248,26 +247,18 @@ class TrainRho():
         optimiser = Adam(self.rhonet.parameters(), lr=self.lr)
         scheduler = ExponentialLR(optimiser, gamma=self.gamma)
         self.rhonet.train() #set neural net into train mode
-
-        for rho_epoch in range(int(round(epochs/self.milestone))):    
+        
+        with tqdm(total=int(round(epochs/self.milestone)), bar_format="{postfix[0]} {postfix[1][value]:>8.2g}",
+                postfix=["Batch", {"value": 0}]) as t:
+            for rho_epoch in range(int(round(epochs/self.milestone))):    
             
-            #========TESTING
-            with torch.no_grad():
-                x0_temp = (-4 - 4)*torch.rand(500, 2, dtype=torch.float32,requires_grad=False) + 4
-                yhat = self.generate_training_data(x0_temp)
-                ypred = self.rhonet(x0_temp)
-                loss_temp = loss(yhat,ypred)
-                print(f"Finished epoch {rho_epoch}, loss {loss_temp}")
-                print("sum",ypred.sum())
-                print("max",ypred.max())
-                print("min",ypred.min())
-                logger.save_checkpoint(self.rhonet,rho_epoch+100)
-            #======
-            for __ in range(self.milestone):
-                self.train_step(optimiser,loss) #repeat training step
-        
-            scheduler.step() #decrease learning rate
-        
+                for __ in range(self.milestone):
+                    self.train_step(optimiser,loss) #repeat training step
+            
+                scheduler.step() #decrease learning rate
+                
+                t.postfix[1]["value"] = rho_epoch
+                t.update()
 
 if __name__=="__main__":
     Pretrain("src/refsolution/UnderdampedHalfNet/refsol.csv").get_pretraining_data()

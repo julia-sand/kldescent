@@ -1,8 +1,26 @@
+"""
+Includes classes defining the initial and reference distributions
+
+    Boundaries: top level 
+
+    FullLandauer: Overdamped with Initial at 0 and reference as in final 2403.
+
+    OverdampedLandauer: Overdamped with both Initial and reference as in final 2403.
+
+    UnderdampedLandauer: Underdamped dynamics with Initial and reference are as in 2403.
+
+    UnderdampedGaussian: Initial and reference are given by Gaussians, with moments can be parsed as arguments
+
+    LinearOU: Linear Ornstein Uhlenbeck process in the overdamped dynamics with inital condition a delta peak defining a full bridge
+"""
+
 import os
 
 import numpy as np 
 
 from ..utils.parser import boundary_params, gaussian_params
+
+import pdb
 
 class Boundaries():
     """
@@ -17,7 +35,7 @@ class Boundaries():
     ref_path : str
         the file name of the default reference solution. 
     sigma0 : float
-        sets the value of the 
+        sets the value of the volatility
 
     Methods
     -------
@@ -45,7 +63,7 @@ class Boundaries():
         else:
             self.params = boundary_params()
         
-        self.Generator = np.random.default_rng(seed=None)
+        self.Generator = np.random.default_rng(seed=42)
 
         self.ref_path = self.get_ref_path()+"/refsol.csv"
         
@@ -57,7 +75,7 @@ class Boundaries():
 
         return os.path.dirname(__file__) + f"/../refsolution/{self.__class__.__name__}"
 
-class HalfBridgeLandauer(Boundaries):
+class FullLandauer(Boundaries):
     """
     Stores the boundary conditions for a bridge in the overdamped case, 
     where the initial state is a delta peak at 0 and the assigned final boundary is a double peak,
@@ -89,8 +107,6 @@ class HalfBridgeLandauer(Boundaries):
         fetches reference data found in ref sol path
     du_ref()
         reference drift for integration
-    gfun() 
-        terminal cost function
     euler_maruyama_step()
         returns one step of the overdamped sde wrt problem description
     """
@@ -98,26 +114,27 @@ class HalfBridgeLandauer(Boundaries):
     def __init__(self,params=None,logger=None):
         Boundaries.__init__(self,params,logger)
         self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
-        self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
+        #self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
 
     def overwrite_ref_path(self,new_path):
         
         self.ref_path = new_path + "/refsol.csv"
-
 
     def Ufinal(self,q):
 
         return ((q**2-1)**2)/4
 
     def scorefinal(self,q):
-
+        #negative log-gradient of the final distribution 
         return -(q**2-1)*q
 
     def qfinal(self,q):
+        #unnormalised final reference marginal distribution
 
         return np.exp(-self.Ufinal(q)) 
 
     def q_marginal_final(self,q): 
+        #normalised final reference distribution of the configuration
         
         return self.qfinal(q)/self.pf_norm
 
@@ -125,7 +142,6 @@ class HalfBridgeLandauer(Boundaries):
     def generate_samples(self,batch_samples,mode):
         
         ##sample points from the intial distribution for q 
-        #output as a tensor
 
         #from where to sample the q marginals
         if mode=="initial":
@@ -133,7 +149,6 @@ class HalfBridgeLandauer(Boundaries):
             #q_marginal = self.q_marginal_initial
 
         elif mode=="final": 
-            #q_marginal = 
 
             probs = self.q_marginal_final(np.linspace(-8,8,10000))/np.sum(self.q_marginal_final(np.linspace(-8,8,10000)))
             out = np.random.choice(np.linspace(-8,8,10000),
@@ -183,6 +198,47 @@ class HalfBridgeLandauer(Boundaries):
         
         return xn + (self.sigma0*du_bar)*dt + self.sigma0*dw
 
+class OverdampedLandauer(FullLandauer):
+
+    def __init__(self,params=None,logger=None):
+        FullLandauer.__init__(self,params,logger)
+        #self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
+        self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
+
+
+    def qinitial(self,q):
+
+        return np.exp(-self.Uinitial(q))
+
+    def q_marginal_initial(self,q):
+
+        return self.qinitial(q)/(self.pi_norm)
+
+
+    def q_marginal_final(self,q): 
+        
+        return self.qfinal(q)/self.pf_norm
+
+    #generate the initial data
+    def generate_samples(self,batch_samples,mode):
+        
+        ##sample points from the intial distribution for q 
+        #output as a tensor
+
+        #from where to sample the q marginals
+        if mode=="initial":
+
+            probs = self.q_marginal_initial(np.linspace(-8,8,10000))/np.sum(self.q_marginal_final(np.linspace(-8,8,10000)))
+
+        elif mode=="final": 
+
+            probs = self.q_marginal_final(np.linspace(-8,8,10000))/np.sum(self.q_marginal_final(np.linspace(-8,8,10000)))
+        
+        out = np.random.choice(np.linspace(-8,8,10000),
+                            (batch_samples,1),
+                            p=probs)
+        
+        return out
 
 class LinearOU(Boundaries):
     def __init__(self,d=1):
@@ -273,48 +329,14 @@ class LinearOU(Boundaries):
         return xn + (self.b(xn,t) \
                      + self.sigma0*du_bar)*dt + self.sigma0*dw
 
-class UnderdampedHalfLandauer(HalfBridgeLandauer):
+class UnderdampedLandauer(OverdampedLandauer):
     def __init__(self,params=None,logger=None):
-        HalfBridgeLandauer.__init__(self,params,logger)
+        OverdampedLandauer.__init__(self,params,logger)
         self.sigma0 = np.sqrt(2)
-
-        self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
-        self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
-
-    def Uinitial(self,q):
-
-        return ((q-1)**4)/4
-
-    def Ufinal(self,q):
-
-        return ((q**2-1)**2)/4
-
-    def scorefinal(self,q):
-
-        return -(q**2-1)*q
-
-    def qinitial(self,q):
-
-        return np.exp(-self.Uinitial(q))
-
-    def qfinal(self,q):
-
-        return np.exp(-self.Ufinal(q)) 
-
-    def q_marginal_initial(self,q):
-
-        return self.qinitial(q)/(self.pi_norm)
-
-
-    def q_marginal_final(self,q): 
-        
-        return self.qfinal(q)/self.pf_norm
-
 
     def p_initial(self,q,p):
 
         return (self.q_marginal_initial(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
-
 
     def p_final(self,q,p): 
         
@@ -364,10 +386,10 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
         #print("Reference solution not available.")
         return np.zeros_like(q)
 
-    def gfun(self,x):
+    #def gfun(self,x):
 
-        #Terminal cost
-        return (x[...,[1]]**2)/2 + self.Ufinal(x[...,[0]])
+    #    #Terminal cost
+    #    return (x[...,[1]]**2)/2 + self.Ufinal(x[...,[0]])
 
     def f(self,x,t):
 
@@ -410,66 +432,7 @@ class UnderdampedHalfLandauer(HalfBridgeLandauer):
 
         return xn
         
-
-class UnderdampedNoMomentum(UnderdampedHalfLandauer):
-    def __init__(self,params=None,logger=None):
-        UnderdampedHalfLandauer.__init__(self,params,logger)
-
-    def gfun(self,x):
-        #overwrite the terminal cost function 
-
-        #Terminal cost
-        return self.Ufinal(x[...,[0]]) #
-        
-
-    def get_reference_array(self):
-        return np.loadtxt(self.ref_path,
-                               delimiter=",")
-
-    def get_reference_timegrid(self,plottime):
-        
-        #time is the time you want the data
-        arr = self.get_reference_array()
-        ttemp = np.round(np.unique(arr[:,0])/(self.params["epsilon"]**2),5) #rescale
-
-        return ttemp[np.where(ttemp<plottime)]
-
-
-    def get_reference_data(self,time):
-
-        arr = self.get_reference_array()
-
-        ##fetch the reference data approximation data
-        arrtemp = arr[np.where(arr[:,0]==np.round(time*self.params["epsilon"]**2,7))] 
-        arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
-
-        #coeff
-        coeff = (1 - np.exp((time - self.params["Tf"])))
-
-        #RETURNS X, DU for plotting
-        return np.squeeze(arrtemp[:,1]),2*coeff*np.squeeze(arrtemp[:,-1])
-
-    def get_reference_value(self,time):
-
-        arr = self.get_reference_array()
-
-        ##fetch the reference data approximation data
-        arrtemp = arr[np.where(arr[:,0]==np.round(time*self.params["epsilon"]**2,7))] 
-        arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
-
-
-        #RETURNS X, DU for plotting
-        return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,-2])
-
-    def du_ref(self,q,time):
-
-      
-        #returns the drift of the reference solution 
-        qref,duref = self.get_reference_data(time)
-        return np.interp(q,qref,duref,left=duref[0],right=duref[-1])[:, np.newaxis]
-
-
-class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
+class UnderdampedGaussian(UnderdampedLandauer):
     
     def __init__(self,params=None,
                         gauss_params=None,
@@ -519,7 +482,6 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
     def q_marginal_final(self,q): 
         
         return self.qfinal(q)/(np.sqrt(2*np.pi)*(self.gauss_boundary["sigmafinal"]))
-
 
     #generate the initial data
     def generate_samples_q(self,batch_samples,mode):
@@ -588,105 +550,7 @@ class UnderdampedQuarterGaussian(UnderdampedHalfLandauer):
 
         return np.squeeze(arr[:,0]),temp
 
-class UnderdampedQuarterGaussianNoMomentum(UnderdampedQuarterGaussian):
-    def __init__(self,params=None,gauss_params=None,logger=None):
-        UnderdampedQuarterGaussian.__init__(self,params,gauss_params,logger)
-        
-    def gfun(self,x):
-        #overwrite the terminal cost function 
-
-        #Terminal cost
-        return self.Ufinal(x[...,[0]])
-
-
-class UnderdampedHalfGaussian(UnderdampedQuarterGaussian):
-    def __init__(self,params=None,gauss_params=None,logger=None):
-        UnderdampedQuarterGaussian.__init__(self,params,gauss_params,logger)
-        self.mean0 = 0
-        self.var0 = 1
-        #self.rho = rho
-
-    def set_ref_statistics(self,mean0,var0):
-        """overwrites the mean and variance of the reference parameters"""
-
-        self.mean0 = mean0
-        self.var0 = var0
-
-    def Utemp(self,q,mean,var):
-
-        return (q-mean)**2/(var)
-
-    def gfun(self,x):      
-        return (self.params["weight"]/2)*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.gauss_boundary["mufinal"], self.gauss_boundary["sigmafinal"]**2))
-
-class UnderdampedHalfNet(UnderdampedQuarterGaussian):
-    """
-    Class for when the distribution is learned by a neural network model, eg Rhonet or by a normalising flow
-    Inherits from UnderdampedHalfGaussian
-    """
-    
-    def __init__(self,params=None,gauss_params=None,logger=None):
-        """
-        args:
-            params: defines intial and final distributions in the gaussian case
-            logger: class used for writing and saving files
-        """
-
-        UnderdampedQuarterGaussian.__init__(self,params,gauss_params,logger)
-        #self.mean0 = 0
-        #self.var0 = 1
-        self.sigma0 = 2**0.5
-
-    def set_pdf(self,rhoval):
-        self.pdf = rhoval
-
-    def gfun(self,x,pdf): 
-     
-        return np.nan_to_num(pdf) + (self.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
-        #np.nan_to_num(np.log(pdf)) - np.log(self.p_final(x[...,[0]],x[...,[1]]))
-        #log_pdf - np.log(self.p_final(x[...,[0]],x[...,[1]]))
-        #np.nan_to_num(np.log(pdf)) - np.log(self.p_final(x[...,[0]],x[...,[1]]))
-      
-    def get_reference_data(self,time):
-        arr = self.get_ref_data()
-      
-        return np.squeeze(arr[np.where(arr[:,0]==np.round(time,8)),1]),np.squeeze(arr[np.where(arr[:,0]==np.round(time,8)),-1])
-
-    def get_ref_data(self):
-        #returns the folder where the reference solution is expected to be
-        arr = np.loadtxt(open(self.ref_path),
-                        delimiter=",",skiprows=1) 
-        return arr 
-
-    def get_ref_cumulants(self):
-        #returns the folder where the reference solution is expected to be
-        arr = np.loadtxt(open(self.cumulants_path),
-                        delimiter=",",skiprows=1) 
-        return arr 
-        
-    #def Uinitial(self,q):
-    #
-    #    return ((q**2-1)**2)/4
-
-class UnderdampedHalfGaussBridge(UnderdampedHalfGaussian):
-    """Underdamped half gaussian class with the full half bridge
-    (ie on the full distribution not just the marginals)
-    """
-
-    def log_multivariate_gauss(self,p,q,pmean,qmean,rho,pstd,qstd):
-        return -(1/(2*(1-rho)))*(((p-pmean)/pstd)**2 -2*np.sqrt(rho)*((q-qmean)*(p-pmean)/(qstd*pstd)) +((q-qmean)/qstd)**2 )
-
-    def gfun(self,x):
-        #estimate p moments
-        pmean = np.mean(x[...,[1]].numpy())
-        pstd = np.std(x[...,[1]].numpy())
-        #cov 
-        rho = np.cov(x[...,1].numpy(),x[...,0].numpy())[0]
-
-        return self.log_multivariate_gauss(x[...,[1]].numpy(),x[...,[0]].numpy(),pmean,self.mean0,rho,pstd,np.sqrt(self.var0)) - self.log_multivariate_gauss(x[...,[1]].numpy(),x[...,[0]].numpy(),0,self.gauss_boundary["mufinal"],0,1,self.gauss_boundary["sigmafinal"])
-
-
 if __name__=="__main__":
 
-    boundary = UnderdampedQuarterGaussian()
+    boundary = UnderdampedGaussian()
     
