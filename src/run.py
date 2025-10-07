@@ -10,7 +10,6 @@ from src.sde import *
 import src.sde.boundary as boundaries
 import src.sde.terminalcost as terminalcosts
 from src.utils import *
-#import src.viz.plots as plots
 from src.viz.checkpoint_plots import *
 import src.run_pretrain as pretrain
 
