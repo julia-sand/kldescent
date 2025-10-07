@@ -111,10 +111,10 @@ class Metrics():
         update_metrics
     """
 
-    def __init__(self, rhonet, net, integrator, logstep, logger):
+    def __init__(self, net, integrator, logstep, logger):
         self.integrator = integrator
         self.net = net
-        self.rhonet = rhonet
+        #self.rhonet = rhonet
         #self.scheduler = trainer.scheduler # for testing out different schedules, we record the learning rate 
         
         self.logstep = logstep #how frequently to save results
@@ -139,7 +139,7 @@ class Metrics():
             if loss_out is not None:
                 loss_out = loss_out
             else:
-                loss_out = 0 #compute the loss independently here
+                loss_out = 0 #TODO: compute the loss independently here
 
             if np.isnan(loss_out):
                 raise ValueError('Loss function is NaN. Terminating training process')
@@ -163,8 +163,8 @@ class Metrics():
                                                 var0)
 
                     self.logger.save_checkpoint(self.net,epoch)
-                    if self.rhonet is not None:
-                        self.logger.save_checkpoint(self.rhonet,epoch)
+                    #if self.rhonet is not None:
+                    #    self.logger.save_checkpoint(self.rhonet,epoch)
             else:
                 pass
             #else: 
