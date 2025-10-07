@@ -62,22 +62,23 @@ class GirsanovNet(TerminalCost):
 
     def __init__(self,boundaryconditions,*_):
         """
+        Initialise a neural network for learning the final distribution via Girsanov theorem 
+        
         args:
             boundaryconditions: class
-            rhonet: class
-                Neural network that can be used to estimate the final disitrbution
         """
 
         TerminalCost.__init__(self,boundaryconditions)
         
-        rhonet = RhoNeuralNetwork()
+        rhonet = RhoNeuralNetwork() 
         
         self.rhonet = DataParallel(rhonet) 
 
     def update_cost_params(self,integrator):
+        #initialise the fokkerplanck integration
         fpk_integrator = FokkerPlanck(integrator.boundary,integrator.net)
         
-        #TODO update trainer parameters based on epoch
+        #initialise a trainer class for rho
         rhotrainer = TrainRho(self.rhonet,fpk_integrator)
 
         #train the rho neural network
@@ -95,7 +96,10 @@ class MLE(TerminalCost):
 
     def __init__(self,boundaryconditions,*_):
         """
+        Initialise placeholder parameters for estimating the final distirbution using a parametric method
+
         args:
+            boundaryconditions: class
         """
 
         TerminalCost.__init__(self,boundaryconditions)
@@ -104,7 +108,10 @@ class MLE(TerminalCost):
         self.var0 = 1
 
     def update_cost_params(self,integrator,*_):
+        #compute x vals
         x = integrator.update_ref_statistics()
+
+        #set new mean and variance
         self.mean0 =torch.nanmean(xinit[...,0]).item()
         self.var0 = torch.var(xinit[...,0]).item()
     
@@ -125,14 +132,13 @@ class Histogram(TerminalCost):
 
         TerminalCost.__init__(self,boundaryconditions,*_)
         
-        #self.integrator = integrator
         #initialise blank histogram values
         self.H = None
         self.yedges = None
         self.xedges = None 
 
     def update_cost_params(self,integrator,*_):
-        x = integrator.update_ref_statistics()
+        x = integrator.update_ref_statistics().numpy()
         H, yedges, xedges = np.histogram2d(x[...,1], x[...,0], 
                                             bins=40,
                                             range=[[-5, 5], [-5, 5]],
@@ -166,7 +172,7 @@ class Histogram(TerminalCost):
 
     def gfun(self,x):
         
-        pdf = np.array([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))])
+        pdf = torch.array([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))])
         return np.nan_to_num(np.log(pdf+1e-10)) + (self.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
 
 class NormFlow(TerminalCost):
@@ -177,12 +183,11 @@ class NormFlow(TerminalCost):
 
     def update_cost_params(self,integrator):
 
-        #TODO update trainer parameters based on epoch
-        rhotrainer = TrainRho(self.rhonet,integrator)
+        #TODO train the normalising flow here? 
 
-        #train the rho neural network
-        rhotrainer.train_loop()
+        pass
 
     def gfun(self,x):
-        pdf = self.rhonet(x,condition="log")
-        return torch.nan_to_num(pdf) + (self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+        #pdf = self.rhonet(x,condition="log")
+        #return torch.nan_to_num(pdf) + (self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+        pass
