@@ -35,14 +35,14 @@ def run():
     #use data paralisation to speed up evaluations
     net = DataParallel(net)
    
-    terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions)
+    terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,metrics_logger)
     
     #intialise sde integration 
     integrator = langevin.SDE(boundaryconditions, net=net, terminal_cost=terminal_cost)
     
     #initialise integration of fpk
     metrics_logger.log_dict(integrator.sde_params)
-    metrics_logger.log_dict(terminal_cost.rhonet.module.params)
+    
     
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
@@ -56,13 +56,10 @@ def run():
     #get baseline metrics and saves initialisation checkpoint
     metrics.update_metrics(0, 0)
     
-    #compute reference metrics for final value function calculation
-    #integrator.update_ref_statistics()
-
     for epoch in tqdm(range(args["epochs"])):#range(0,args["epochs"]):
         try:
             #update the terminal cost with current final distribution
-            terminal_cost.update_cost_params(integrator)
+            terminal_cost.update_cost_params(integrator,epoch)
 
             #update the drift nn with the current learned final distribution  
             loss_out = trainer.train_step()

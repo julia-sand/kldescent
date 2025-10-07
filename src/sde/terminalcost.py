@@ -3,7 +3,6 @@ This file contains methods for estimating the final value function
 in the half bridge. 
 
 Methods 
-
     normflow: Use a neural network to learn the final distribution
     MLE: When we know the final distribution is Gaussian, we can use a parametric method of distirbution estimation, namely estimate first and second moments by MLE. 
     GirsanovNet: Use a neural network to learn the final distribution 
@@ -24,15 +23,18 @@ class TerminalCost():
     Top-level Class for methods for estimating the final value function 
     """
 
-    def __init__(self,boundaryconditions):
+    def __init__(self,boundaryconditions,logger):
         """
         Initialise how the terminal cost should be evaluated.    
         args:
             boundaryconditions: 
                 associated boundary conditions
+            logger: class
+                read and write saved run data (eg checkpoints)
         """
 
         self.boundary = boundaryconditions
+        self.logger = logger
 
     def marginal_halfbridge(self,):
         """
@@ -60,7 +62,7 @@ class GirsanovNet(TerminalCost):
     Estimate the final cost with a neural network trained on the final distribution
     """
 
-    def __init__(self,boundaryconditions,*_):
+    def __init__(self,boundaryconditions,logger,*_):
         """
         Initialise a neural network for learning the final distribution via Girsanov theorem 
         
@@ -68,13 +70,14 @@ class GirsanovNet(TerminalCost):
             boundaryconditions: class
         """
 
-        TerminalCost.__init__(self,boundaryconditions)
+        TerminalCost.__init__(self,boundaryconditions,logger)
         
         rhonet = RhoNeuralNetwork() 
         
         self.rhonet = DataParallel(rhonet) 
+        self.logger.log_dict(terminal_cost.rhonet.module.params)
 
-    def update_cost_params(self,integrator):
+    def update_cost_params(self,integrator,epoch):
         #initialise the fokkerplanck integration
         fpk_integrator = FokkerPlanck(integrator.boundary,integrator.net)
         
@@ -83,6 +86,7 @@ class GirsanovNet(TerminalCost):
 
         #train the rho neural network
         rhotrainer.train_loop()
+        self.logger.save_checkpoint(self.rhonet,epoch)
 
     def gfun(self,x):
         pdf = self.rhonet(x,condition="log")
@@ -94,7 +98,7 @@ class MLE(TerminalCost):
     estimates for the mean and variance
     """
 
-    def __init__(self,boundaryconditions,*_):
+    def __init__(self,boundaryconditions,logger,*_):
         """
         Initialise placeholder parameters for estimating the final distirbution using a parametric method
 
@@ -102,7 +106,7 @@ class MLE(TerminalCost):
             boundaryconditions: class
         """
 
-        TerminalCost.__init__(self,boundaryconditions)
+        TerminalCost.__init__(self,boundaryconditions,logger)
         #self.integrator = integrator
         self.mean0 = 0 
         self.var0 = 1
@@ -128,9 +132,9 @@ class Histogram(TerminalCost):
     Find the final probabilities from an estimated histogram
     """
 
-    def __init__(self,boundaryconditions):
+    def __init__(self,boundaryconditions,logger):
 
-        TerminalCost.__init__(self,boundaryconditions,*_)
+        TerminalCost.__init__(self,boundaryconditions,logger)
         
         #initialise blank histogram values
         self.H = None
@@ -177,9 +181,9 @@ class Histogram(TerminalCost):
 
 class NormFlow(TerminalCost):
 
-    def __init__(self,boundaryconditions):
+    def __init__(self,boundaryconditions,logger):
 
-        TerminalCost.__init__(self,boundaryconditions,*_)
+        TerminalCost.__init__(self,boundaryconditions,logger)
 
     def update_cost_params(self,integrator):
 
