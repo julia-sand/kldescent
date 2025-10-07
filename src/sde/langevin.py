@@ -180,7 +180,7 @@ class SDE(SDEBase):
 
         return torch.mean(kldyn).item(), kl_static, mean0, var0 
     
-    def update_ref_statistics(self,testing_samples=None,debug=False):
+    def update_ref_statistics(self,testing_samples=None):
         """
         computes estimates of the metrics to update the g function 
 
@@ -193,12 +193,9 @@ class SDE(SDEBase):
 
         """
 
-        #if debug:
-        #    pdb.set_trace()
-        
         #if self.boundary.__class__.__name__ in ["UnderdampedHalfGaussian","UnderdampedHalfGaussBridge"]:
-        #    if testing_samples == None: #default to the integrator 
-        #        testing_samples = self.sde_params["testsamples"] 
+        if testing_samples == None: #default to the integrator 
+            testing_samples = self.sde_params["testsamples"] 
 
         self.net.eval()
         
@@ -213,12 +210,11 @@ class SDE(SDEBase):
                 
                 dw = self.generate_innovation(dt,testing_samples)
                 #xdata = torch.column_stack(())
-                du_bar = net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
+                du_bar = self.net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
                                                         ,xinit[...,[0]])))
                 
                 xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
         
-
             #self.boundary.set_ref_statistics(torch.nanmean(xinit[...,0]).item(), torch.var(xinit[...,0]).item())
             #if self.boundary.__class__.__name__== "UnderdampedHalfGaussBridge":
             #    self.boundary.save_histogram(xinit.detach().numpy())

@@ -20,6 +20,8 @@ import numpy as np
 
 from ..utils.parser import boundary_params, gaussian_params
 
+import pdb
+
 class Boundaries():
     """
     A class used to store different boundary conditions
@@ -61,7 +63,7 @@ class Boundaries():
         else:
             self.params = boundary_params()
         
-        self.Generator = np.random.default_rng(seed=None)
+        self.Generator = np.random.default_rng(seed=42)
 
         self.ref_path = self.get_ref_path()+"/refsol.csv"
         
@@ -147,7 +149,6 @@ class FullLandauer(Boundaries):
             #q_marginal = self.q_marginal_initial
 
         elif mode=="final": 
-            #q_marginal = 
 
             probs = self.q_marginal_final(np.linspace(-8,8,10000))/np.sum(self.q_marginal_final(np.linspace(-8,8,10000)))
             out = np.random.choice(np.linspace(-8,8,10000),
@@ -431,65 +432,6 @@ class UnderdampedLandauer(OverdampedLandauer):
 
         return xn
         
-
-#class UnderdampedNoMomentum(UnderdampedHalfLandauer):
-#    def __init__(self,params=None,logger=None):
-#        UnderdampedHalfLandauer.__init__(self,params,logger)
-
-#    def gfun(self,x):
-        #overwrite the terminal cost function 
-
-        #Terminal cost
-#        return self.Ufinal(x[...,[0]]) #
-        
-
-#    def get_reference_array(self):
-#        return np.loadtxt(self.ref_path,
-#                               delimiter=",")
-
-#    def get_reference_timegrid(self,plottime):
-        
-        #time is the time you want the data
-#        arr = self.get_reference_array()
-#        ttemp = np.round(np.unique(arr[:,0])/(self.params["epsilon"]**2),5) #rescale
-
-#        return ttemp[np.where(ttemp<plottime)]
-
-
-#    def get_reference_data(self,time):
-
-#        arr = self.get_reference_array()
-
-        ##fetch the reference data approximation data
-#        arrtemp = arr[np.where(arr[:,0]==np.round(time*self.params["epsilon"]**2,7))] 
-#        arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
-
-        #coeff
-#        coeff = (1 - np.exp((time - self.params["Tf"])))
-
-        #RETURNS X, DU for plotting
-#       return np.squeeze(arrtemp[:,1]),2*coeff*np.squeeze(arrtemp[:,-1])
-
-#    def get_reference_value(self,time):
-
-#        arr = self.get_reference_array()
-
-        ##fetch the reference data approximation data
-#        arrtemp = arr[np.where(arr[:,0]==np.round(time*self.params["epsilon"]**2,7))] 
-#        arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
-
-
-        #RETURNS X, DU for plotting
-#        return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,-2])
-
-#    def du_ref(self,q,time):
-
-      
-        #returns the drift of the reference solution 
-#        qref,duref = self.get_reference_data(time)
-#        return np.interp(q,qref,duref,left=duref[0],right=duref[-1])[:, np.newaxis]
-
-
 class UnderdampedGaussian(UnderdampedLandauer):
     
     def __init__(self,params=None,

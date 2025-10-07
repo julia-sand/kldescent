@@ -75,7 +75,7 @@ class GirsanovNet(TerminalCost):
         rhonet = RhoNeuralNetwork() 
         
         self.rhonet = DataParallel(rhonet) 
-        self.logger.log_dict(terminal_cost.rhonet.module.params)
+        self.logger.log_dict(self.rhonet.module.params)
 
     def update_cost_params(self,integrator,epoch):
         #initialise the fokkerplanck integration
@@ -164,8 +164,8 @@ class Histogram(TerminalCost):
 
         #step 1: check which bin for x and y the point is in
         #get x,y coordinate
-        x = datapoint[0]
-        y = datapoint[1]
+        x = datapoint[0].numpy()
+        y = datapoint[1].numpy()
 
         #compare datapoint with bin edges
         indx = np.nonzero(self.xedges<x)[0][-1]# and x < self.xedges))
@@ -178,8 +178,8 @@ class Histogram(TerminalCost):
 
     def gfun(self,x):
         
-        pdf = torch.array([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))])
-        return np.nan_to_num(np.log(pdf+1e-10)) + (self.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+        pdf = torch.tensor([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))],dtype=torch.float32,requires_grad=False)
+        return torch.nan_to_num(torch.log(pdf+1e-10)) + (self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
 
 class NormFlow(TerminalCost):
 
