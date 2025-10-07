@@ -118,8 +118,8 @@ class MLE(TerminalCost):
         x = integrator.update_ref_statistics()
 
         #set new mean and variance
-        self.mean0 =torch.nanmean(xinit[...,0]).item()
-        self.var0 = torch.var(xinit[...,0]).item()
+        self.mean0 =torch.nanmean(x[...,0]).item()
+        self.var0 = torch.var(x[...,0]).item()
     
     def Utemp(self,q,mean,var):
 
