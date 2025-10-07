@@ -86,6 +86,8 @@ class GirsanovNet(TerminalCost):
 
         #train the rho neural network
         rhotrainer.train_loop()
+
+        #save the checkpoint
         self.logger.save_checkpoint(self.rhonet,epoch)
 
     def gfun(self,x):
