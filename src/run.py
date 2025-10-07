@@ -46,7 +46,7 @@ def run():
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
 
-    metrics = train.Metrics(terminal_cost.rhonet, net, integrator, args["logstep"],metrics_logger)    
+    metrics = train.Metrics(net, integrator, args["logstep"],metrics_logger)    
         
     if args["pretrain"]: #if a path is provided 
         pretrain.run_pretrain(net,
@@ -72,7 +72,7 @@ def run():
         
     plot_utils = PlotUtils(metrics_logger.get_results_path(),args["epochs"])
 
-    plot_utils.checkpoint_plots_rho()
+    #plot_utils.checkpoint_plots_rho()
     plot_utils.checkpoint_plots_du()
 
 

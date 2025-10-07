@@ -87,7 +87,7 @@ class PlotUtils():
     def load_du_checkpoint(self):
         self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
         self.net.load_checkpoint(self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
-        self.integrator = langevin.SDE(self.boundary_cond,net=self.net,sde_params=self.data_loaded)
+        self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
     def load_rho_checkpoint(self):
         self.rhonet = RhoNeuralNetwork(self.data_loaded)
@@ -243,4 +243,4 @@ if __name__=="__main__":
     plot_utils = PlotUtils()
 
     plot_utils.checkpoint_plots_du()
-    plot_utils.checkpoint_plots_rho()
+    #plot_utils.checkpoint_plots_rho()
