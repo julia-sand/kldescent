@@ -16,6 +16,8 @@ from torch.nn import DataParallel
 
 from ..model.nn import RhoNeuralNetwork
 from ..model.train import TrainRho 
+from ..model.normflow import RhoNormFlow,Train_normflow
+
 from .fpk import FokkerPlanck
 
 class TerminalCost():
@@ -186,14 +188,16 @@ class NormFlow(TerminalCost):
     def __init__(self,boundaryconditions,logger):
 
         TerminalCost.__init__(self,boundaryconditions,logger)
+        #initialise normalising flow
+        self.rho = RhoNormFlow()
+        self.trainer_normflow = Train_normflow(self.rho.model,self.boundary)
 
-    def update_cost_params(self,integrator):
+    def update_cost_params(self,integrator,*_):
 
-        #TODO train the normalising flow here? 
+        self.trainer_normflow.train_loop(integrator)
 
-        pass
 
     def gfun(self,x):
-        #pdf = self.rhonet(x,condition="log")
-        #return torch.nan_to_num(pdf) + (self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
-        pass
+        pdf = self.rho.model.log_prob(x)
+        return torch.nan_to_num(pdf) + (self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+        
