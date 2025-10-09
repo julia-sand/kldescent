@@ -13,10 +13,7 @@ import numpy as np
 import torch
 from torch.nn import DataParallel
 #from torch import nn
-
-from ..model.nn import RhoNeuralNetwork
-from ..model.train import TrainRho 
-from ..model.normflow import RhoNormFlow,Train_normflow
+#import pdb
 
 from .fpk import FokkerPlanck
 
@@ -62,6 +59,7 @@ class TerminalCost():
 class GirsanovNet(TerminalCost):
     """
     Estimate the final cost with a neural network trained on the final distribution
+    Note this is only available for full final distribution
     """
 
     def __init__(self,boundaryconditions,logger,*_):
@@ -71,6 +69,8 @@ class GirsanovNet(TerminalCost):
         args:
             boundaryconditions: class
         """
+        
+        from ..model.nn import RhoNeuralNetwork
 
         TerminalCost.__init__(self,boundaryconditions,logger)
         
@@ -80,6 +80,8 @@ class GirsanovNet(TerminalCost):
         self.logger.log_dict(self.rhonet.module.params)
 
     def update_cost_params(self,integrator,epoch):
+        from ..model.train import TrainRho #TODO is there a better way to reorganise?
+
         #initialise the fokkerplanck integration
         fpk_integrator = FokkerPlanck(integrator.boundary,integrator.net)
         
@@ -94,7 +96,8 @@ class GirsanovNet(TerminalCost):
 
     def gfun(self,x):
         pdf = self.rhonet(x,condition="log")
-        return torch.nan_to_num(pdf) + (self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+        return torch.nan_to_num(pdf) + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
+        #(self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
 
 class MLE(TerminalCost):
     """
@@ -112,24 +115,33 @@ class MLE(TerminalCost):
 
         TerminalCost.__init__(self,boundaryconditions,logger)
         #self.integrator = integrator
-        self.mean0 = 0 
-        self.var0 = 1
+        self.pos_mean0 = 0 
+        self.pos_var0 = 1
+        self.mom_mean0 = 0 
+        self.mom_var0 = 1
+        self.cc0 = 0 
 
     def update_cost_params(self,integrator,*_):
         #compute x vals
         x = integrator.update_ref_statistics()
 
-        #set new mean and variance
-        self.mean0 =torch.nanmean(x[...,0]).item()
-        self.var0 = torch.var(x[...,0]).item()
-    
-    def Utemp(self,q,mean,var):
+        #set new mean and variance and covariance
+        self.pos_mean0 = torch.nanmean(x[...,0]).item() 
+        self.pos_var0 = torch.var(x[...,0]).item()
+        self.mom_mean0 = torch.nanmean(x[...,1]).item() 
+        self.mom_var0 = torch.var(x[...,1]).item()
+        self.cc0 = (torch.sum((x[...,1]-self.mom_mean0)*(x[...,0]-self.pos_mean0))/(len(x[...,0]))).item()
 
-        return (q-mean)**2/(var)
+    def multivariate_U(self,x):
+        #exponent of a multivariate Gaussian distribution
+        #pdb.set_trace()
+        rho_var = self.cc0/(self.mom_var0*self.pos_var0)
+        return -(1/(2*(1-rho_var**2)))*(((x[...,[0]]-self.pos_mean0)**2)/self.pos_var0 - 2*(self.cc0*(x[...,[0]]-self.pos_mean0)*(x[...,[1]]-self.mom_mean0)) + ((x[...,[1]]-self.mom_mean0)**2)/self.mom_mean0)
 
     def gfun(self,x):
 
-        return (self.boundary.params["weight"]/2)*(-self.Utemp(x[...,[0]],self.mean0,self.var0)+self.Utemp(x[...,[0]],self.boundary.gauss_boundary["mufinal"], self.boundary.gauss_boundary["sigmafinal"]**2))
+        return self.multivariate_U(x) + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
+        #+self.Utemp(x[...,[0]],self.boundary.gauss_boundary["mufinal"], self.boundary.gauss_boundary["sigmafinal"]**2))
 
 class Histogram(TerminalCost):
     """
@@ -181,11 +193,14 @@ class Histogram(TerminalCost):
     def gfun(self,x):
         
         pdf = torch.tensor([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))],dtype=torch.float32,requires_grad=False)
-        return torch.nan_to_num(torch.log(pdf+1e-10)) + (self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+        return torch.nan_to_num(torch.log(pdf+1e-10)) + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
+
+        #(self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
 
 class NormFlow(TerminalCost):
 
     def __init__(self,boundaryconditions,logger):
+        from ..model.normflow import RhoNormFlow,Train_normflow
 
         TerminalCost.__init__(self,boundaryconditions,logger)
         #initialise normalising flow
@@ -199,5 +214,6 @@ class NormFlow(TerminalCost):
 
     def gfun(self,x):
         pdf = self.rho.model.log_prob(x)
-        return torch.nan_to_num(pdf) + (self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+        return torch.nan_to_num(pdf) + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
+        #+ (self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
         
