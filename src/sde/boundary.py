@@ -342,6 +342,10 @@ class UnderdampedLandauer(OverdampedLandauer):
         
         return (self.q_marginal_final(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
 
+    def log_pfinal(self,q,p):
+        #unnormalised positive final log density 
+        return self.Ufinal(q)+((p**2)/2)
+
     #generate the initial data
     def generate_samples_q(self,batch_samples,mode):
         
@@ -448,12 +452,12 @@ class UnderdampedGaussian(UnderdampedLandauer):
         if logger is not None:
             logger.log_dict(self.gauss_boundary) #add to log
         
-        self.cumulants_path = self.get_ref_path()+"/cumulants.csv"
+        self.cumulants_path = self.get_ref_path()+"/refcumulants.csv"
 
     def overwrite_ref_path(self,new_path):
         
         self.ref_path = new_path + "/refsol.csv"
-        self.cumulants_path = new_path + "/cumulants.csv"
+        self.cumulants_path = new_path + "/refcumulants.csv"
 
     def Uinitial(self,q):
 
@@ -534,11 +538,11 @@ class UnderdampedGaussian(UnderdampedLandauer):
               #          delimiter=",",skiprows=1) 
         try:  
             if cumulant_type == "Position Variance": 
-                temp = np.squeeze(arr[:,4])
+                temp = np.squeeze(arr[:,1])#np.squeeze(arr[:,4])
             elif cumulant_type == "Momentum Variance":
-                temp = np.squeeze(arr[:,6])
+                temp = np.squeeze(arr[:,3])#np.squeeze(arr[:,6])
             elif cumulant_type == "Cross Correlation":
-                temp = np.squeeze(arr[:,5])
+                temp = np.squeeze(arr[:,2])#np.squeeze(arr[:,5])
             elif cumulant_type == "Momentum Mean":
                 temp = np.squeeze(arr[:,8])
             elif cumulant_type == "Position Mean":

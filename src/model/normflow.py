@@ -4,9 +4,16 @@
 # Import required packages
 import torch
 import numpy as np
-import normflows as nf
+
+try:
+    import normflows as nf
+except ImportError:
+    print("Package normflows has not been imported. Please activate the virtual environment before this package can be used.")
+    pass
 
 from tqdm import tqdm
+
+from ..utils.parser import rho_network_params,fetch_checkpoint_path
 
 
 class RhoNormFlow():
@@ -14,9 +21,14 @@ class RhoNormFlow():
     learns a final distirbution
     """
 
-    def __init__(self,):
+    def __init__(self,nn_params=None):
         """Initialise the model """
 
+        if nn_params is not None:
+            self.params = nn_params    
+        else:
+            self.params = rho_network_params()
+        
         # Define 2D Gaussian base distribution
         base = nf.distributions.base.DiagGaussian(2)
 
@@ -32,7 +44,8 @@ class RhoNormFlow():
         for i in range(num_layers):
             # Neural network with two hidden layers having 64 units each
             # Last layer is initialized by zeros making training more stable
-            param_map = nf.nets.MLP([1, 16, 16, 2], init_zeros=True)
+            param_map = nf.nets.MLP([1, self.params["rhohiddenlayerneurons"],
+                                        self.params["rhohiddenlayerneurons"], 2], init_zeros=True)
             # Add flow layer
             flows.append(nf.flows.AffineCouplingBlock(param_map))
             # Swap dimensions
@@ -59,7 +72,7 @@ class Train_normflow():
         self.boundary = boundaryconditions
 
         self.max_iter = 400 #maximum number of iterations /training steps
-        self.num_samples = 128 #how many samples of final distribution to take for each training iteration
+        self.minibatch_samples = 128 #how many samples of final distribution to take for each training iteration
         #self.show_iter = 20 #at which iteration to plot intermediate results
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=5e-4, weight_decay=1e-5)
 
@@ -71,9 +84,11 @@ class Train_normflow():
             
             #integrate and get final samples
             x = integrator.update_ref_statistics()
+            #generate random indexes for the minibatch 
+            idx = torch.randint(low=0,high=x.shape[0],size=(self.minibatch_samples,))
 
             #torch.tensor(self.boundary.generate_samples(num_samples,mode="final"),dtype=torch.float32)
-            self.train_step(x,it,loss_hist)
+            self.train_step(x[idx,:],it,loss_hist)
 
     def train_step(self,x,it,loss_hist):
         

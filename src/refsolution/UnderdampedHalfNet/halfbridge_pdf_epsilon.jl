@@ -11,7 +11,7 @@ function integrate_half_gaussian()
     p = epsilon #[epsilon]
 
     sigma0 = 1
-    sigq_ref = 4
+    sigmaREF = 0.25^2
     sigp_ref = 1
 
     pos_mu_end = 0
@@ -22,10 +22,18 @@ function integrate_half_gaussian()
     x_var_start = 0 
     mom_var_start = 1
 
-    Vqq_end(sigq_end,cc_end) = (1/sigq_ref) - (1/(sigq_end*(1-cc_end)))
-    Vqp_end(sigp_end,sigq_end,cc_end) = sqrt(cc_end/(sigp_end*sigq_end))/(1-cc_end)
-    Vpp_end(sigp_end,cc_end) = (1/sigp_ref) - (1/(sigp_end*(1-cc_end)))
-   
+    function v11_coeff(sigma_pos_final,sigma_mom_final,sigma_cc_final)
+        return (1/sigmaREF) - (sigma_mom_final/(sigma_pos_final*sigma_mom_final-sigma_cc_final^2))
+    end
+
+    function v12_coeff(sigma_pos_final,sigma_mom_final,sigma_cc_final)
+        return (sigma_cc_final/(sigma_mom_final*sigma_pos_final-sigma_cc_final^2))
+    end
+    
+    function v22_coeff(sigma_pos_final,sigma_mom_final,sigma_cc_final)
+        return 1 - (sigma_pos_final/(sigma_pos_final*sigma_mom_final-sigma_cc_final^2))
+    end
+
     vp_end = 0
         
     tspan = (0.0,T)
@@ -48,9 +56,9 @@ function integrate_half_gaussian()
         residual[1] = u[1][4] - pos_var_start #the solution at the start
         residual[2] = u[1][5] - x_var_start
         residual[3] = u[1][6] - mom_var_start
-        residual[4] = u[end][1] - Vqq_end(u[end][4],u[end][5])#Vqq_end(u[end][4],u[end][5]) #Vqq_end #the solution at the end
-        residual[5] = u[end][2] - Vqp_end(u[end][6],u[end][4],u[end][5])#Vqp_end(u[end][6],u[end][4],u[end][5])
-        residual[6] = u[end][3] - Vpp_end(u[end][6],u[end][5])#Vpp_end(u[end][6],u[end][5])
+        residual[4] = u[end][1] - v11_coeff(u[end][4],u[end][6],u[end][5])#Vqq_end(u[end][4],u[end][5]) #Vqq_end #the solution at the end
+        residual[5] = u[end][2] - v12_coeff(u[end][4],u[end][6],u[end][5])#Vqp_end(u[end][6],u[end][4],u[end][5])
+        residual[6] = u[end][3] - v22_coeff(u[end][4],u[end][6],u[end][5])#Vpp_end(u[end][6],u[end][5])
     end
 
     #initial guess
@@ -79,7 +87,7 @@ function integrate_half_gaussian()
     #df = df_var
     df[!, "U2"] = u2.(df[!,"Vpp"], df[!,"Vqp"], df[!,"Ct"], df[!,"Qt"])
     df[!, "u1"] = u1.(0,0,0, df[!,"Vpp"], df[!,"Ct"], df[!,"Qt"])
-    CSV.write(string("src/refsolution/UnderdampedHalfNet/refsol_gauss_integrated_3.csv"),df)
+    CSV.write(string("src/refsolution/UnderdampedHalfNet/refsol_v2.csv"),df)
     println("completed.")
         
 end
