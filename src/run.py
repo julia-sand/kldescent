@@ -39,7 +39,7 @@ def run():
     #intialise sde integration 
     integrator = langevin.SDE(boundaryconditions, net=net, terminal_cost=terminal_cost)
     
-    #initialise integration of fpk
+    #log integration parameters
     metrics_logger.log_dict(integrator.sde_params)
     
     

@@ -184,12 +184,12 @@ class TrainRho():
         integrator: class that holds integration functions for the fokker planck
     """
 
-    def __init__(self, rhonet, integrator):
+    def __init__(self, rhonet):#, integrator):
 
         self.rhonet = rhonet 
 
         self.lr = 0.001 #initial learning rate
-        self.integrator = integrator
+        #self.integrator = integrator
 
         self.gamma = 0.1 #rate of learning rate decrease.
 
@@ -197,19 +197,20 @@ class TrainRho():
 
         self.rho_epochs = 1000 #total number of training epochs
         self.milestone = 200 #how often to decay learning rate
+        #self.fpk_integrator = FokkerPlanck(integrator.boundary,integrator.net)
+        
+        self.loss = torch.nn.MSELoss()
 
-    def generate_training_data(self,x0):
+    def generate_training_data(self,x0,integrator):
+        
         with torch.no_grad():
 
-            #copy x values 
-            x0_clone = x0.clone().detach()
+            yobs = integrator.compute_pdf(x0)
 
-            yhat = self.integrator.loss_fn(self.rhonet,x0_clone)
-
-        return yhat
+        return yobs
 
 
-    def train_step(self,optimiser,loss):  
+    def train_step(self,optimiser,integrator):  
 
         #reset gradients 
         optimiser.zero_grad()
@@ -217,10 +218,10 @@ class TrainRho():
         #initialise x values 
         x0 = (-4 - 4)*torch.rand(500, 2, dtype=torch.float32,requires_grad=True) + 4
 
-        yhat = self.generate_training_data(x0)
+        yobs = self.generate_training_data(x0,integrator)
 
         ypred = self.rhonet(x0)
-        Lhat = loss(ypred,yhat)
+        Lhat = self.loss(ypred,yobs)
         #clip_grad_norm_(self.rhonet.parameters(), self.clip)
 
         ##training##
@@ -230,7 +231,7 @@ class TrainRho():
         return #loss_out
 
 
-    def train_loop(self, epochs=None):
+    def train_loop(self, integrator, rho_epochs=None):
         """
         loop for training the rho neural net
         args:
@@ -238,22 +239,20 @@ class TrainRho():
                 number of epochs to train the network between updates to the drift net
         """
 
-        if epochs==None:
-            epochs=self.rho_epochs
+        if rho_epochs==None:
+            rho_epochs=self.rho_epochs
         
-        loss = torch.nn.MSELoss()
-
         #reset optimiser and scheduler for each train loop
         optimiser = Adam(self.rhonet.parameters(), lr=self.lr)
         scheduler = ExponentialLR(optimiser, gamma=self.gamma)
         self.rhonet.train() #set neural net into train mode
         
-        with tqdm(total=int(round(epochs/self.milestone)), bar_format="{postfix[0]} {postfix[1][value]:>8.2g}",
+        with tqdm(total=int(round(rho_epochs/self.milestone)), bar_format="{postfix[0]} {postfix[1][value]:>8.2g}",
                 postfix=["Batch", {"value": 0}]) as t:
-            for rho_epoch in range(int(round(epochs/self.milestone))):    
+            for rho_epoch in range(int(round(rho_epochs/self.milestone))):    
             
                 for __ in range(self.milestone):
-                    self.train_step(optimiser,loss) #repeat training step
+                    self.train_step(optimiser,integrator) #repeat training step
             
                 scheduler.step() #decrease learning rate
                 
