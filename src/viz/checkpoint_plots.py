@@ -9,7 +9,7 @@ import numpy as np
 
 from ..model.nn import RhoNeuralNetwork,NeuralNetwork
 from .plots import PlotFuns
-from ..sde import langevin,fpk
+from ..sde import langevin
 from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
 from ..utils.getboundary import *
 from .contour import *
@@ -94,10 +94,6 @@ class PlotUtils():
         self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
         print(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
 
-    def load_fpk_integrator(self,net):
-        self.fpk_integrator = fpk.FokkerPlanck(self.boundary_cond,net,
-                                                sde_params=self.data_loaded)
-              
     def checkpoint_plots_rho(self):
         self.load_rho_checkpoint()
         self.make_contour_plot()
@@ -148,7 +144,7 @@ class PlotUtils():
         
         #initialise drift network from checkpoint and set up integrator
         self.load_du_checkpoint()
-        fpk_integrator = self.load_fpk_integrator(self.net)
+        #fpk_integrator = self.load_fpk_integrator(self.net)
 
         #default number of samples from parameter file
         if x_samples==None:
@@ -168,7 +164,7 @@ class PlotUtils():
         with torch.no_grad():
             for _ in range(mc_samples):
                 #temp = self.fpk_integrator.compute_pdf(x2.detach().clone())
-                pdf_out += self.fpk_integrator.compute_pdf(x2.detach().clone())
+                pdf_out += self.integrator.compute_pdf(x2.detach().clone())
                 #print(torch.max(temp))
         
         return xinit.detach().numpy(),pdf_out.detach().numpy()/mc_samples
