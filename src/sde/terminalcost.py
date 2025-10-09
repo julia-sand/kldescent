@@ -15,7 +15,6 @@ from torch.nn import DataParallel
 #from torch import nn
 #import pdb
 
-from .fpk import FokkerPlanck
 
 class TerminalCost():
     """
@@ -34,6 +33,14 @@ class TerminalCost():
 
         self.boundary = boundaryconditions
         self.logger = logger
+    
+    def gfun(self,x):
+        
+        pdf = self.get_pdf(x)
+        #torch.tensor([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))],dtype=torch.float32,requires_grad=False)
+        return pdf + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
+
+
 
     def marginal_halfbridge(self,):
         """
@@ -71,6 +78,7 @@ class GirsanovNet(TerminalCost):
         """
         
         from ..model.nn import RhoNeuralNetwork
+        from ..model.train import TrainRho
 
         TerminalCost.__init__(self,boundaryconditions,logger)
         
@@ -78,25 +86,23 @@ class GirsanovNet(TerminalCost):
         
         self.rhonet = DataParallel(rhonet) 
         self.logger.log_dict(self.rhonet.module.params)
-
-    def update_cost_params(self,integrator,epoch):
-        from ..model.train import TrainRho #TODO is there a better way to reorganise?
-
-        #initialise the fokkerplanck integration
-        fpk_integrator = FokkerPlanck(integrator.boundary,integrator.net)
         
         #initialise a trainer class for rho
-        rhotrainer = TrainRho(self.rhonet,fpk_integrator)
+        self.rhotrainer = TrainRho(self.rhonet)
 
+    def update_cost_params(self,integrator,epoch):
         #train the rho neural network
-        rhotrainer.train_loop()
+        self.rhotrainer.train_loop(integrator)
 
         #save the checkpoint
         self.logger.save_checkpoint(self.rhonet,epoch)
 
-    def gfun(self,x):
-        pdf = self.rhonet(x,condition="log")
-        return torch.nan_to_num(pdf) + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
+    def get_logpdf(self,x):
+        return torch.nan_to_num(self.rhonet(x,condition="log"))
+
+    #def gfun(self,x):
+    #    pdf = 
+    #    return torch.nan_to_num(pdf) + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
         #(self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
 
 class MLE(TerminalCost):
@@ -138,10 +144,9 @@ class MLE(TerminalCost):
         rho_var = self.cc0/(self.mom_var0*self.pos_var0)
         return -(1/(2*(1-rho_var**2)))*(((x[...,[0]]-self.pos_mean0)**2)/self.pos_var0 - 2*(self.cc0*(x[...,[0]]-self.pos_mean0)*(x[...,[1]]-self.mom_mean0)) + ((x[...,[1]]-self.mom_mean0)**2)/self.mom_mean0)
 
-    def gfun(self,x):
+    def get_logpdf(self,x):
 
-        return self.multivariate_U(x) + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
-        #+self.Utemp(x[...,[0]],self.boundary.gauss_boundary["mufinal"], self.boundary.gauss_boundary["sigmafinal"]**2))
+        return self.multivariate_U(x)
 
 class Histogram(TerminalCost):
     """
@@ -190,12 +195,15 @@ class Histogram(TerminalCost):
         #step 2: return the correct histogram value
         return self.H[indy-1,indx-1]
 
-    def gfun(self,x):
-        
+    def get_logpdf(self,x):
         pdf = torch.tensor([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))],dtype=torch.float32,requires_grad=False)
-        return torch.nan_to_num(torch.log(pdf+1e-10)) + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
+        return torch.nan_to_num(torch.log(pdf+1e-10))
 
-        #(self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
+    #def gfun(self,x):
+        
+    #    pdf = torch.tensor([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))],dtype=torch.float32,requires_grad=False)
+    #    return torch.nan_to_num(torch.log(pdf+1e-10)) + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
+
 
 class NormFlow(TerminalCost):
 
@@ -212,8 +220,6 @@ class NormFlow(TerminalCost):
         self.trainer_normflow.train_loop(integrator)
 
 
-    def gfun(self,x):
+    def get_logpdf(self,x):
         pdf = self.rho.model.log_prob(x)
-        return torch.nan_to_num(pdf) + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
-        #+ (self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
-        
+        return torch.nan_to_num(pdf) 
