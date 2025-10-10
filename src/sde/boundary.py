@@ -3,7 +3,7 @@ Includes classes defining the initial and reference distributions
 
     Boundaries: top level 
 
-    FullLandauer: Overdamped with Initial at 0 and reference as in final 2403.
+    OverdampedFullLandauer: Overdamped with Initial at 0 and reference as in final 2403.
 
     OverdampedLandauer: Overdamped with both Initial and reference as in final 2403.
 
@@ -75,7 +75,7 @@ class Boundaries():
 
         return os.path.dirname(__file__) + f"/../refsolution/{self.__class__.__name__}"
 
-class FullLandauer(Boundaries):
+class OverdampedFullLandauer(Boundaries):
     """
     Stores the boundary conditions for a bridge in the overdamped case, 
     where the initial state is a delta peak at 0 and the assigned final boundary is a double peak,
@@ -205,6 +205,8 @@ class OverdampedLandauer(FullLandauer):
         #self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
         self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
 
+    def Uinitial(self,q):
+        return ((q**2-1)**2)/4
 
     def qinitial(self,q):
 
@@ -213,11 +215,6 @@ class OverdampedLandauer(FullLandauer):
     def q_marginal_initial(self,q):
 
         return self.qinitial(q)/(self.pi_norm)
-
-
-    def q_marginal_final(self,q): 
-        
-        return self.qfinal(q)/self.pf_norm
 
     #generate the initial data
     def generate_samples(self,batch_samples,mode):
@@ -309,7 +306,8 @@ class LinearOU(Boundaries):
 
     def euler_maruyama_step(self,xn,du_bar,dt,dw,t):
         """
-        One step forward in the euler maruyama discretisation
+        One step forward in the euler maruyama discretisation of the overdamped dynamics
+
         args:
             xn: 
                 current positions
@@ -333,7 +331,7 @@ class UnderdampedLandauer(OverdampedLandauer):
     def __init__(self,params=None,logger=None):
         OverdampedLandauer.__init__(self,params,logger)
         self.sigma0 = np.sqrt(2)
-
+        
     def p_initial(self,q,p):
 
         return (self.q_marginal_initial(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
@@ -348,9 +346,17 @@ class UnderdampedLandauer(OverdampedLandauer):
 
     #generate the initial data
     def generate_samples_q(self,batch_samples,mode):
-        
-        ##sample points from the intial distribution for q 
-        #output as a tensor
+        """
+        sample points from the assigned configuration (position) distributions
+        args:
+            batch_samples : int
+                number of samples to take of position 
+            mode : str
+                either "initial" or "final" whether to take from the initial or final distributions
+        returns:
+            xout : array 
+            samples from "mode" distribution with shape(batch_samples,)    
+        """
 
         #from where to sample the q marginals
         if mode=="initial":
@@ -368,13 +374,19 @@ class UnderdampedLandauer(OverdampedLandauer):
        
     #generate the initial data
     def generate_samples(self,batch_samples,mode):
-        
-        ##sample points from the intial distribution for q 
-        ##and from normal distribution for p and stack together 
-        #output as a tensor
+        """
+        sample points from the assigned state distirbutions
 
-        #gives the initialisation of the underdamped
-             
+        args:
+            batch_samples : int
+                number of samples to take of pairs (position,momentum) 
+            mode : str
+                either "initial" or "final" whether to take from the initial or final distributions
+        returns:
+            xout : array 
+                samples from "mode" distribution with shape(batch_samples,2)    
+        """
+
         return np.column_stack((self.generate_samples_q(batch_samples,mode)
                                 ,self.Generator.standard_normal(size=(batch_samples,1))))
     
@@ -389,11 +401,6 @@ class UnderdampedLandauer(OverdampedLandauer):
         #returns the drift of the reference solution 
         #print("Reference solution not available.")
         return np.zeros_like(q)
-
-    #def gfun(self,x):
-
-    #    #Terminal cost
-    #    return (x[...,[1]]**2)/2 + self.Ufinal(x[...,[0]])
 
     def f(self,x,t):
 
@@ -411,10 +418,6 @@ class UnderdampedLandauer(OverdampedLandauer):
         xn[:,1,None] = xn[:,1,None] - (xn[:,1,None] - self.sigma0*du_bar)*dt \
                                     + self.sigma0*dw
         
-        #xn[:,0,None] = xn[:,0,None] + (xn[:,1,None]/self.m)*dt 
-        #xn[:,1,None] = xn[:,1,None] - (xn[:,1,None]/self.tau - du_bar)*dt \
-        #                            + self.sigma0*dw
-
         return xn
 
 
@@ -432,10 +435,12 @@ class UnderdampedLandauer(OverdampedLandauer):
         #go forward one step 
         xn[...,[0]] = xn[...,[0]] + self.params["epsilon"]*xn[...,[1]]*dt 
         xn[...,[1]] = xn[...,[1]] + self.sigma0*du_bar*dt + self.sigma0*dw
-        #xn[...,[1]] = xn[...,[1]] + self.sigma0*du_bar*dt + self.sigma0*dw
 
         return xn
-        
+       
+    def get_known_solution_cumulants(self,cumulant_type):
+        pass
+
 class UnderdampedGaussian(UnderdampedLandauer):
     
     def __init__(self,params=None,
