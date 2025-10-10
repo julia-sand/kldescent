@@ -36,9 +36,10 @@ class TerminalCost():
     
     def gfun(self,x):
         
-        pdf = self.get_pdf(x)
-        #torch.tensor([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))],dtype=torch.float32,requires_grad=False)
-        return pdf + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
+        #pdf = self.get_half_logpdf(x)
+        pdf = self.get_logpdf(x)
+        return pdf + self.boundary.Ufinal(x[...,[0]])
+        #pdf + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
 
 
 
@@ -148,6 +149,10 @@ class MLE(TerminalCost):
 
         return self.multivariate_U(x)
 
+    def get_half_logpdf(self,x):
+
+        return -((x[...,[0]]-self.pos_mean0)**2)/(2*self.pos_var0)
+
 class Histogram(TerminalCost):
     """
     Find the final probabilities from an estimated histogram
@@ -189,11 +194,13 @@ class Histogram(TerminalCost):
         #compare datapoint with bin edges
         indx = np.nonzero(self.xedges<x)[0][-1]# and x < self.xedges))
         indy = np.nonzero(self.yedges<y)[0][-1]# and y < self.yedges))
-        #print(f"{x}",f"{y}")
 
-        #print("pdf=",self.H[indx,indy])
         #step 2: return the correct histogram value
         return self.H[indy-1,indx-1]
+
+    def get_half_logpdf(self,x):
+        pdf = torch.tensor([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))],dtype=torch.float32,requires_grad=False)
+        return torch.nan_to_num(torch.log(pdf+1e-10))
 
     def get_logpdf(self,x):
         pdf = torch.tensor([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))],dtype=torch.float32,requires_grad=False)
@@ -217,8 +224,14 @@ class NormFlow(TerminalCost):
 
     def update_cost_params(self,integrator,*_):
 
-        self.trainer_normflow.train_loop(integrator)
+        #integrate and get final samples
+        x = integrator.update_ref_statistics()
+        self.trainer_normflow.train_loop(integrator,x[...,[0]])
 
+
+    def get_half_logpdf(self,x):
+        pdf = self.rho.model.log_prob(x[...,0])
+        return torch.nan_to_num(pdf) 
 
     def get_logpdf(self,x):
         pdf = self.rho.model.log_prob(x)

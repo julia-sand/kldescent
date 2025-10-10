@@ -557,11 +557,11 @@ class PlotFuns():
     ax.plot(t_vec, cumulants_nn_plot[:,index], color="orange")
     ax.plot(t_vec, cumulants_ref_plot[:,index], color=self.c1)
 
-    try:
-      t,cumulant_vals = self.boundary.get_known_solution_cumulants(ylabel_text)
-      ax.plot(t,cumulant_vals,color="green")
-    except (FileExistsError,FileNotFoundError): #if the known solution is somehow unavailable
-      pass
+    #try:
+    #  t,cumulant_vals = self.boundary.get_known_solution_cumulants(ylabel_text)
+    #  ax.plot(t,cumulant_vals,color="green")
+    #except (FileExistsError,FileNotFoundError): #if the known solution is somehow unavailable
+    #  pass
 
     ax.set_title(self.make_plot_label(index),pad = self.titlepad,x = self.titlex, y = self.titley,zorder = 1000000)
     ax.set_ylabel(ylabel_text)

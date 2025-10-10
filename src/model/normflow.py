@@ -30,7 +30,8 @@ class RhoNormFlow():
             self.params = rho_network_params()
         
         # Define 2D Gaussian base distribution
-        base = nf.distributions.base.DiagGaussian(2)
+        #base = nf.distributions.base.DiagGaussian(2)
+        base = nf.distributions.base.DiagGaussian(1)
 
         # Construct flow model
         #check how to use a custom function for base?
@@ -49,7 +50,7 @@ class RhoNormFlow():
             # Add flow layer
             flows.append(nf.flows.AffineCouplingBlock(param_map))
             # Swap dimensions
-            flows.append(nf.flows.Permute(2, mode='swap'))
+            #flows.append(nf.flows.Permute(2, mode='swap'))
         return flows
             
 ##training
@@ -76,26 +77,25 @@ class Train_normflow():
         #self.show_iter = 20 #at which iteration to plot intermediate results
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=5e-4, weight_decay=1e-5)
 
-    def train_loop(self,integrator):
+    def train_loop(self,integrator,x):
         
         loss_hist = np.array([])
 
         for it in tqdm(range(self.max_iter)):
             
-            #integrate and get final samples
-            x = integrator.update_ref_statistics()
             #generate random indexes for the minibatch 
             idx = torch.randint(low=0,high=x.shape[0],size=(self.minibatch_samples,))
 
             #torch.tensor(self.boundary.generate_samples(num_samples,mode="final"),dtype=torch.float32)
-            self.train_step(x[idx,:],it,loss_hist)
+            self.train_step(x[idx,np.newaxis],it,loss_hist)
+            #self.train_step(x[idx,:],it,loss_hist)
 
     def train_step(self,x,it,loss_hist):
         
         self.optimizer.zero_grad()
            
         # Compute loss
-        loss = self.model.forward_kld(x) #TODO add batching here
+        loss = self.model.forward_kld(x) 
         
         # Do backprop and optimizer step
         if ~(torch.isnan(loss) | torch.isinf(loss)):
