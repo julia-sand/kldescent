@@ -101,7 +101,8 @@ class MLE(TerminalCost):
         """
 
         TerminalCost.__init__(self,boundaryconditions,logger)
-        #self.integrator = integrator
+
+        #initialise variables
         self.pos_mean0 = 0 
         self.pos_var0 = 1
         self.mom_mean0 = 0 
