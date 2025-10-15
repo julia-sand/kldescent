@@ -63,20 +63,23 @@ def overdamped_argparser():
     # Instantiate the parser
     parser = CustomArgParse()
 
+    parser.add_argument('-bridgetype','--bridgetype', type=str, default="marginal",
+                        help='whether to use the marginal or state distributions in the terminal cost')
+    
     parser.add_argument('-epochs','--epochs', type=int, default=1,
-                        help='A required integer positional argument')
+                        help='Total number of training epochs; relates to number of parameter updates for the drift (du) network')
     
     parser.add_argument('-device','--device', default="cpu",
-                        help='A required integer positional argument')
+                        help='Device to use. Currently only CPU supported')
     
     parser.add_argument('-logstep','--logstep', type=int, default=1,
-                        help='A required integer positional argument')
+                        help='Frequency to save checkpoints and compute loss metrics')
     
     parser.add_argument('-boundary','--boundary', type=str, default="UnderdampedGaussian",
-                        help='which set of boundary conditions to use. See Sde.Boundary for more details')
+                        help='which set of boundary conditions to use. See Sde.Boundary for options')
     
     parser.add_argument('-terminalcost','--terminalcost', type=str, default="MLE",
-                        help='How the terminal cost should be evaluated')
+                        help='How the terminal cost should be evaluated. See Sde.terminalcost for options')
     
     #TODO... move into model module?
     parser.add_argument('-pretrain','--pretrain', type=str, default="",
