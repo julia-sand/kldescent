@@ -14,7 +14,7 @@ import torch
 from torch.nn import DataParallel
 #from torch import nn
 #import pdb
-
+from .terminalcost import MLE
 
 class TerminalCost():
     """
@@ -68,10 +68,21 @@ class MLE(TerminalCost):
             boundaryconditions: class
         """
 
-        from terminalcost import MLE
+        TerminalCost.__init__(self,boundaryconditions,logger)
 
-        MLE.__init__(self,boundaryconditions,logger)
-       
+        #initialise variables
+        self.pos_mean0 = 0 
+        self.pos_var0 = 1
+
+
+    def update_cost_params(self,integrator,*_):
+        #compute x vals
+        x = integrator.update_ref_statistics()
+
+        #set new mean and variance and covariance
+        self.pos_mean0 = torch.nanmean(x[...,0]).item() 
+        self.pos_var0 = torch.var(x[...,0]).item()
+               
     def get_half_logpdf(self,x):
 
         return -((x[...,[0]]-self.pos_mean0)**2)/(2*self.pos_var0)
@@ -87,15 +98,17 @@ class Histogram(TerminalCost):
         
         #initialise blank histogram values
         self.H = None
-        self.yedges = None
         self.xedges = None 
+
+        self.nbins = 100
+        self.xrange = [-5,5]
 
     def update_cost_params(self,integrator,*_):
         x = integrator.update_ref_statistics().numpy()
         H, xedges = np.histogram(x[...,0], 
-                                            bins=100,
-                                            range=[[-5, 5], [-5, 5]],
-                                            density=True)
+                                            bins=self.nbins,
+                                            range=self.xrange)
+                                            #density=True)
         self.H = H
         self.xedges = xedges
         return 
@@ -109,10 +122,6 @@ class Histogram(TerminalCost):
         """
 
         #step 1: check which bin for x and y the point is in
-        #get x,y coordinate
-        x = datapoint[0].numpy()
-        #y = datapoint[1].numpy()
-
         #compare datapoint with bin edges
         indx = np.nonzero(self.xedges<x)[0][-1]# and x < self.xedges))
 
@@ -138,7 +147,6 @@ class NormFlow(TerminalCost):
         #integrate and get final samples
         x = integrator.update_ref_statistics()
         self.trainer_normflow.train_loop(integrator,x[...,[0]])
-
 
     def get_half_logpdf(self,x):
         pdf = self.rho.model.log_prob(x[...,0])
