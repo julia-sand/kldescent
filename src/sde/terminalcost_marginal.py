@@ -1,0 +1,145 @@
+"""
+This file contains methods for estimating the final value function 
+in the half bridge. 
+
+Methods 
+    normflow: Use a neural network to learn the final distribution
+    MLE: When we know the final distribution is Gaussian, we can use a parametric method of distirbution estimation, namely estimate first and second moments by MLE. 
+    GirsanovNet: Use a neural network to learn the final distribution 
+    histogram: Use a histogram to estimate the final value function
+"""
+
+import numpy as np 
+import torch
+from torch.nn import DataParallel
+#from torch import nn
+#import pdb
+
+
+class TerminalCost():
+    """
+    Top-level Class for methods for estimating the final value function 
+    
+    Terminal cost is the ratio of the final estimated configuration distribution divided by the log of the 
+    reference configuration distribution
+    g(q,p) = log(^P_marg(q,p) / Pref_marg)
+    """
+
+    def __init__(self,boundaryconditions,logger):
+        """
+        Initialise how the terminal cost should be evaluated.    
+        args:
+            boundaryconditions: 
+                associated boundary conditions
+            logger: class
+                read and write saved run data (eg checkpoints)
+        """
+
+        self.boundary = boundaryconditions
+        self.logger = logger
+    
+    def gfun(self,x):
+        
+        pdf = self.get_half_logpdf(x)
+        return pdf + self.boundary.Ufinal(x[...,[0]])
+        
+
+class GirsanovNet(TerminalCost):
+    """
+    Estimate the final cost with a neural network trained on the final distribution
+    Note this is only available for full final distribution
+    """
+
+    def __init__(self,*_):
+        
+        raise ValueError("Method valid only for half-bridge")
+        
+class MLE(TerminalCost):
+    """
+    Finds the final value function using a parametric estimate of the distribution as a gaussian and MLE 
+    estimates for the mean and variance
+    """
+
+    def __init__(self,boundaryconditions,logger,*_):
+        """
+        Initialise placeholder parameters for estimating the final distirbution using a parametric method
+
+        args:
+            boundaryconditions: class
+        """
+
+        from terminalcost import MLE
+
+        MLE.__init__(self,boundaryconditions,logger)
+       
+    def get_half_logpdf(self,x):
+
+        return -((x[...,[0]]-self.pos_mean0)**2)/(2*self.pos_var0)
+
+class Histogram(TerminalCost):
+    """
+    Find the final probabilities from an estimated histogram
+    """
+
+    def __init__(self,boundaryconditions,logger):
+
+        TerminalCost.__init__(self,boundaryconditions,logger)
+        
+        #initialise blank histogram values
+        self.H = None
+        self.yedges = None
+        self.xedges = None 
+
+    def update_cost_params(self,integrator,*_):
+        x = integrator.update_ref_statistics().numpy()
+        H, xedges = np.histogram(x[...,0], 
+                                            bins=100,
+                                            range=[[-5, 5], [-5, 5]],
+                                            density=True)
+        self.H = H
+        self.xedges = xedges
+        return 
+
+    def evaluate_density(self, x):
+        """
+        args:
+            x: position sample point or array of points in the shape (1,)
+        returns: 
+            p1: estimate of probability density from histogram
+        """
+
+        #step 1: check which bin for x and y the point is in
+        #get x,y coordinate
+        x = datapoint[0].numpy()
+        #y = datapoint[1].numpy()
+
+        #compare datapoint with bin edges
+        indx = np.nonzero(self.xedges<x)[0][-1]# and x < self.xedges))
+
+        #step 2: return the correct histogram value
+        return self.H[indx-1]
+
+    def get_half_logpdf(self,x):
+        pdf = torch.tensor([self.evaluate_density(x[i,0].numpy()) for i in range(len(x[:,0]))],dtype=torch.float32,requires_grad=False)
+        return torch.nan_to_num(torch.log(pdf+1e-10))
+
+class NormFlow(TerminalCost):
+
+    def __init__(self,boundaryconditions,logger):
+        from ..model.normflow import RhoNormFlow,Train_normflow
+
+        TerminalCost.__init__(self,boundaryconditions,logger)
+        #initialise normalising flow
+        self.rho = RhoNormFlow()
+        self.trainer_normflow = Train_normflow(self.rho.model,self.boundary)
+
+    def update_cost_params(self,integrator,*_):
+
+        #integrate and get final samples
+        x = integrator.update_ref_statistics()
+        self.trainer_normflow.train_loop(integrator,x[...,[0]])
+
+
+    def get_half_logpdf(self,x):
+        pdf = self.rho.model.log_prob(x[...,0])
+        return torch.nan_to_num(pdf) 

@@ -8,7 +8,6 @@ from tqdm import tqdm
 from src.model import *
 from src.sde import *
 import src.sde.boundary as boundaries
-import src.sde.terminalcost as terminalcosts
 from src.utils import *
 from src.viz.checkpoint_plots import *
 import src.run_pretrain as pretrain
@@ -20,6 +19,12 @@ def run():
 
     #parse arguments from command line
     args = parser.overdamped_argparser()
+
+    if args["bridgetype"]=="marginal":
+        import src.sde.terminalcost_marginal as terminalcosts
+    else:        
+        import src.sde.terminalcost as terminalcosts
+
     #overwrite the boundary conditions
     metrics_logger.log_dict(args)
 
