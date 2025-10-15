@@ -19,6 +19,10 @@ from torch.nn import DataParallel
 class TerminalCost():
     """
     Top-level Class for methods for estimating the final value function 
+
+    Terminal cost is the ratio of the final estimated state distribution divided by the log of the 
+    reference state distribution
+    g(q,p) = log(^P(q,p) / Pref)
     """
 
     def __init__(self,boundaryconditions,logger):
@@ -36,33 +40,9 @@ class TerminalCost():
     
     def gfun(self,x):
         
-        #pdf = self.get_half_logpdf(x)
         pdf = self.get_logpdf(x)
-        return pdf + self.boundary.Ufinal(x[...,[0]])
-        #pdf + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
+        return pdf + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
 
-
-
-    def marginal_halfbridge(self,):
-        """
-        Terminal cost is the ratio of the final estimated configuration distribution divided by the log of the 
-        reference configuration distribution
-        g(q,p) = log(^P_marg(q,p) / Pref_marg)
-        """
-
-        pass
-
-    def quarterbridge(self,):
-        pass
-
-    def full_halfbridge(self,):
-        """
-        Terminal cost is the ratio of the final estimated state distribution divided by the log of the 
-        reference state distribution
-        g(q,p) = log(^P(q,p) / Pref)
-        """
-        
-        pass
 
 class GirsanovNet(TerminalCost):
     """
@@ -149,10 +129,6 @@ class MLE(TerminalCost):
 
         return self.multivariate_U(x)
 
-    def get_half_logpdf(self,x):
-
-        return -((x[...,[0]]-self.pos_mean0)**2)/(2*self.pos_var0)
-
 class Histogram(TerminalCost):
     """
     Find the final probabilities from an estimated histogram
@@ -170,7 +146,7 @@ class Histogram(TerminalCost):
     def update_cost_params(self,integrator,*_):
         x = integrator.update_ref_statistics().numpy()
         H, yedges, xedges = np.histogram2d(x[...,1], x[...,0], 
-                                            bins=40,
+                                            bins=100,
                                             range=[[-5, 5], [-5, 5]],
                                             density=True)
         self.H = H

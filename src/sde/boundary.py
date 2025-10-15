@@ -198,10 +198,10 @@ class OverdampedFullLandauer(Boundaries):
         
         return xn + (self.sigma0*du_bar)*dt + self.sigma0*dw
 
-class OverdampedLandauer(FullLandauer):
+class OverdampedLandauer(OverdampedFullLandauer):
 
     def __init__(self,params=None,logger=None):
-        FullLandauer.__init__(self,params,logger)
+        OverdampedFullLandauer.__init__(self,params,logger)
         #self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
         self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
 
