@@ -12,9 +12,6 @@ Methods
 import numpy as np 
 import torch
 from torch.nn import DataParallel
-#from torch import nn
-#import pdb
-
 
 class TerminalCost():
     """
