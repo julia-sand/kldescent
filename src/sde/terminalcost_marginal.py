@@ -12,9 +12,6 @@ Methods
 import numpy as np 
 import torch
 from torch.nn import DataParallel
-#from torch import nn
-#import pdb
-from .terminalcost import MLE
 
 class TerminalCost():
     """
@@ -43,7 +40,6 @@ class TerminalCost():
         pdf = self.get_half_logpdf(x)
         return pdf + self.boundary.Ufinal(x[...,[0]])
         
-
 class GirsanovNet(TerminalCost):
     """
     Estimate the final cost with a neural network trained on the final distribution
