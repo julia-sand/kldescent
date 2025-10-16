@@ -55,9 +55,7 @@ def compute_joint(t,net,
         boundary_cond:
             boundary conditions class specifying the problem
     """
-
-    #net.eval()
-    
+   
     t_vec = np.array(boundary_cond.get_reference_timegrid(t+.0001))
     
     #start the trajectories
@@ -72,11 +70,7 @@ def compute_joint(t,net,
         dt = np.abs(t_vec[-i-1]-t_vec[-i])
         
         dw = np.sqrt(dt)*torch.randn((testing_samples,x_samples*x_samples,1))
-        #nn_input = 
-        #torch.dstack((t_vec[-i]*torch.ones((testing_samples,x_samples**2,1),dtype=torch.float32),
-                   #                 xinit[...,[0]]))
-        #du = torch.hstack([net(nn_input[:,i,:]) for i in range(x_samples**2)])[...,np.newaxis]
-
+        
         du = np.zeros_like(xinit[...,[0]])
         
         #underdamped dynamics
