@@ -76,8 +76,7 @@ class PlotFuns():
                                   gs_joint_distributions,
                                   plot_index,
                                   joint_out,
-                                  x_samples,
-                                  time=None,vmax=0.5):
+                                  x_samples,vmax=0.5):
     """
     Function that plots the scatter plot of the monte carlo approximation of the joint distribution
 
@@ -93,8 +92,6 @@ class PlotFuns():
 
     x_ind = int(np.floor(plot_index/3))
     y_ind = plot_index % 3
-
-    plot_title_value = round(time/self.boundary.params["Tf"],2)
 
     #get plot location
     ax = fig.add_subplot(gs_joint_distributions[x_ind,y_ind])
@@ -124,7 +121,13 @@ class PlotFuns():
     idx = np.argsort(x)
     return np.trapz(y[idx],x[idx])
 
-  def scatter_panel_layout(self,ax):
+  def scatter_panel_layout(self,ax,time=None):
+
+    if time ==None:
+      time = self.boundary.params["Tf"]
+    
+    plot_title_value = round(time/self.boundary.params["Tf"],2)
+    ax.set_title(f"t={plot_title_value}Tf")
 
     #make inset axes to show marginal distributions
     ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
@@ -186,8 +189,7 @@ class PlotFuns():
                                         ax_pmarginal,
                                         ax_qmarginal,
                                         joint_out,
-                                        xs,
-                                        time=None,vmax=0.5):
+                                        xs,vmax=0.5):
     """
     Plots one panel of the joint distribution, where the 
     center shows the joint and marginals are estimated
@@ -199,18 +201,11 @@ class PlotFuns():
         joint distribution (n**2,1) as a numpy array
       xs: arr
         2d input data shaped (n**2,2) as numpy arr
-      time: float
-        time at which the plot is evaluated- defaults to final time
       vmax: float
         maximum value for the scatter plots color scale
     """
 
     #pdb.set_trace()
-    
-    #set default time
-    if time==None:
-      time = self.boundary.params["Tf"]
-    
     n = joint_out.shape[0]
     
     #pdb.set_trace()
@@ -385,14 +380,17 @@ class PlotFuns():
         ax_mom.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,1])), color=colors[x[0]],label=labels[x[0]])
         ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,0])), color=colors[x[0]],label=labels[x[0]])
         
-        ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000),
-            self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=np.nanmean(x[1][:,0]),sigmasq=np.nanvar(x[1][:,0])),
-            color="gray",linestyle="dashed",alpha=0.5)
+        #ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000),
+        #    self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=np.nanmean(x[1][:,0]),sigmasq=np.nanvar(x[1][:,0])),
+        #    color="gray",linestyle="dashed",alpha=0.5)
         
         ax_mom.set_xlim((-self.qmax,self.qmax))
         ax_pos.set_xlim((-self.qmax,self.qmax))
     except:
       pass
+
+    #TODO add the reference solution plots here!!
+    #ax_pos.plot(self.boundary.q_marginal_initial(
     self.format_distribution_ax(ax_mom)
     self.format_distribution_ax(ax_pos)
 

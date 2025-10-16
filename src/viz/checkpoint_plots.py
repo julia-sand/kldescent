@@ -122,56 +122,66 @@ class PlotUtils():
             return xinit.detach().numpy(),pdf_out.detach().numpy()
 
 
-    def compute_rho_girsanov(self,x_samples=None,mc_samples=200):
+    def compute_rho_girsanov(self,x_samples=50,mc_samples=None,Tf=None):
         """
         Computes an estimate of the final joint distribution using girsanov theorem
         under the current drift
         
         args:
-            x_samples:
+            x_samples : int 
                 number of space discretisation steps
+            mc_samples : int
+                number of MC samples. Defaults to testing samples
+            Tf : float
+                time for the plot
         returns:
             xout: 
                 2d mesh of points of the statespace
             jointout:
                 estimated joint distribution using girsanov theorem
         """
-        
-        #initialise drift network from checkpoint and prepare integrator
-        self.load_du_checkpoint()
-
+       
         #default number of samples from parameter file
-        if x_samples==None:
-            x_samples = self.data_loaded["testsamples"]
+        if mc_samples==None:
+            mc_samples = self.data_loaded["testsamples"]
         
         #generate xmesh
         Q,P = generate_mesh(x_samples,qmax=6)
         xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
         
-        #torch.tensor(self.boundary_cond.generate_samples(x_samples,"initial"),dtype=torch.float32,requires_grad=False)
-        x2 = xinit.detach().clone() 
+        #intiialise pdf 
+        pdf_out = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
 
-        pdf_out = torch.zeros_like(x2[...,[0]],requires_grad=False,dtype=torch.float32)
-
-        #want shape = (x,2)
         with torch.no_grad():
             for _ in range(mc_samples):
-                #temp = self.fpk_integrator.compute_pdf(x2.detach().clone())
-                pdf_out += self.integrator.compute_pdf(x2.detach().clone())
+                pdf_out += self.integrator.compute_pdf(xinit.detach().clone(),Tf)
         
         return xinit.detach().numpy(),pdf_out.detach().numpy()/mc_samples
-
-    def make_contour_plot2(self):
-        xout,jointout = self.compute_rho_girsanov(x_samples=20)
-        fig,ax = plt.subplots()
-        ax, ax_pmarginal,ax_qmarginal = self.plotter.scatter_panel_layout(ax)
+    
+    def plot_joint_panel(self,ax,time):
+        xout,jointout = self.compute_rho_girsanov(Tf=time)
+        ax, ax_pmarginal,ax_qmarginal = self.plotter.scatter_panel_layout(ax,time)
 
         self.plotter.joint_distributions_scatter_panel(ax,
                                                     ax_pmarginal,
                                                     ax_qmarginal,
                                                     jointout,
-                                                    xout,
-                                                    time=None,vmax=0.5)
+                                                    xout,vmax=0.5)
+
+    def make_contour_plot2(self):
+         
+        #initialise drift network from checkpoint and prepare integrator
+        self.load_du_checkpoint()
+
+        times = [0,2.5,5]
+
+        fig,axs = plt.subplots(ncols=len(times),nrows=1)
+        fig.set_figheight(15)
+        fig.set_figwidth(25)
+        for ax in enumerate(axs):
+            self.plot_joint_panel(ax[1],times[ax[0]])
+        
+        fig.tight_layout()
         fig.savefig(self.folder+f"/plots_{self.epoch}"+"/test8_girs.png",bbox_inches="tight")        
 
         plt.close()
