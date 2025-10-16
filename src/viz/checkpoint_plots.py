@@ -50,11 +50,6 @@ class PlotUtils():
         
         self.plotter = PlotFuns(boundary_cond)
 
-        #if folder == None:
-        #    self.folder = "tests/"+f"{boundary_cond.__class__.__name__}"
-        #else: #if a folder path is provided, assume that the reference solution is there and overwrite the default    
-        #    self.folder = folder
-
         self.folder = folder
         self.boundary_cond.overwrite_ref_path(self.folder)
             
@@ -129,9 +124,9 @@ class PlotUtils():
 
     def compute_rho_girsanov(self,x_samples=None,mc_samples=200):
         """
-        Convenience function that returns an estimate of the final joint distribution using girsanov theorem
-        Used for testing
-
+        Computes an estimate of the final joint distribution using girsanov theorem
+        under the current drift
+        
         args:
             x_samples:
                 number of space discretisation steps
@@ -142,9 +137,8 @@ class PlotUtils():
                 estimated joint distribution using girsanov theorem
         """
         
-        #initialise drift network from checkpoint and set up integrator
+        #initialise drift network from checkpoint and prepare integrator
         self.load_du_checkpoint()
-        #fpk_integrator = self.load_fpk_integrator(self.net)
 
         #default number of samples from parameter file
         if x_samples==None:
@@ -158,14 +152,12 @@ class PlotUtils():
         x2 = xinit.detach().clone() 
 
         pdf_out = torch.zeros_like(x2[...,[0]],requires_grad=False,dtype=torch.float32)
-        #0*xinit[...,[0]]
 
         #want shape = (x,2)
         with torch.no_grad():
             for _ in range(mc_samples):
                 #temp = self.fpk_integrator.compute_pdf(x2.detach().clone())
                 pdf_out += self.integrator.compute_pdf(x2.detach().clone())
-                #print(torch.max(temp))
         
         return xinit.detach().numpy(),pdf_out.detach().numpy()/mc_samples
 
@@ -239,4 +231,4 @@ if __name__=="__main__":
     plot_utils = PlotUtils()
 
     plot_utils.checkpoint_plots_du()
-    #plot_utils.checkpoint_plots_rho()
+    plot_utils.make_contour_plot2()

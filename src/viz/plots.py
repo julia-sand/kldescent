@@ -38,10 +38,8 @@ class PlotFuns():
 
     update_mpl()
 
-    #self.subdir = self.folder #add default value to put plots into main folder if subdir has not been set
     self.boundary = boundary_data
     self.folder = os.path.dirname(__file__)
-    #self.epsilon = 1 #if boundary_data==None else boundary_data.params["epsilon"]
 
     #borders of xaxis
     self.qmax = 6
@@ -122,9 +120,9 @@ class PlotFuns():
     ax.plot(x0_init,x0_marginal#/xnorm
                       ,color=self.c1)
 
-  def normalise(self,x,y):
-    #idx = np.argsort(x)
-    return y #/np.trapz(y[idx],x[idx])
+  def get_norm(self,x,y):
+    idx = np.argsort(x)
+    return np.trapz(y[idx],x[idx])
 
   def scatter_panel_layout(self,ax):
 
@@ -224,13 +222,15 @@ class PlotFuns():
     #compute marginals
     qmarg = np.trapz(joint_out_temp,x = p_init,axis=0)#np.sum(joint_out_temp,axis=0) #np.trapz(joint_out_temp,x = p_init,axis=0)
     pmarg = np.trapz(joint_out_temp,x = p_init,axis=1)
-       
+    qnorm = self.get_norm(p_init, qmarg)
+    pnorm = self.get_norm(p_init, pmarg)
+
     #plot and format marginals
-    self.plot_marginal_joint(ax_qmarginal,p_init,qmarg)
-    self.plot_marginal_joint(ax_pmarginal,pmarg,p_init)
+    self.plot_marginal_joint(ax_qmarginal,p_init,qmarg/qnorm)
+    self.plot_marginal_joint(ax_pmarginal,pmarg/pnorm,p_init)
 
     #plot joint distribution
-    ax.scatter(xs[...,0],xs[...,1],c=joint_out_temp.T.flatten()
+    ax.scatter(xs[...,0]/(qnorm*pnorm),xs[...,1]/(qnorm*pnorm),c=joint_out_temp.T.flatten()
               ,cmap="Blues",norm="log",vmin=0.001,vmax=vmax)
     
   def make_colourbar(self,fig,vmax):
