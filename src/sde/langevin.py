@@ -21,14 +21,19 @@ class SDEBase():
         else:
             self.sde_params = integrator_params() #parse command line
 
-    def generate_time_grid(self):
+    def generate_time_grid(self,Tf=None):
         """
         Samples the interval [0,Tf] and returns sorted set of values to be used in integration
         """
 
+        if Tf ==None:
+            Tf = self.boundary.params["Tf"]
+        
+        #TODO : get self.sde_params["tsteps"] as a fraction of the total time
+        
         return np.concatenate([[0],
-                                np.sort(np.random.uniform(0, self.boundary.params["Tf"], self.sde_params["tsteps"]-1)),
-                                [self.boundary.params["Tf"]]])
+                                np.sort(np.random.uniform(0, Tf, self.sde_params["tsteps"]-1)),
+                                [Tf]])
 
     def generate_innovation(self,dt,size):
         #generate a step of brownian motion
@@ -273,7 +278,7 @@ class SDE(SDEBase):
         return t_vec, xinit.numpy(), xref.numpy(), cumulants_nn, cumulants_ref
 
 
-    def compute_pdf(self,x0):
+    def compute_pdf(self,xinit,Tf):
         """
         Computes an estimate for the final joint distribution using Girsanov theorem 
         Does not track gradients 
@@ -281,18 +286,22 @@ class SDE(SDEBase):
 
         ====
         Parameters
-            xinit: values of x0 on which to evaluate rho
+            xinit : array
+                values of x0 on which to evaluate rho
+            Tf : float 
+                time for the plot
         Returns: 
-            pdfout: estimate of the pdf at final time at locations xinit
+            pdfout : arr
+                estimate of the pdf at time Tf at locations xinit
         ====
         """
 
-        num_samples = x0.shape[0]
-        xinit = x0.clone()
+        num_samples = xinit.shape[0]
+        #xinit = x0.clone()
 
         with torch.no_grad():
 
-            t_vec = self.generate_time_grid()
+            t_vec = self.generate_time_grid(Tf)
 
             #preallocate girsanov integrals
             girs = torch.zeros((num_samples,1),requires_grad=False,dtype=torch.float32)

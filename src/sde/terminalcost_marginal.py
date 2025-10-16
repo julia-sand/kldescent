@@ -44,6 +44,7 @@ class GirsanovNet(TerminalCost):
     """
     Estimate the final cost with a neural network trained on the final distribution
     Note this is only available for full final distribution
+    Class is used to catch the error explicitly
     """
 
     def __init__(self,*_):
@@ -61,7 +62,8 @@ class MLE(TerminalCost):
         Initialise placeholder parameters for estimating the final distirbution using a parametric method
 
         args:
-            boundaryconditions: class
+            boundaryconditions : class
+            logger : class
         """
 
         TerminalCost.__init__(self,boundaryconditions,logger)
@@ -96,15 +98,15 @@ class Histogram(TerminalCost):
         self.H = None
         self.xedges = None 
 
-        self.nbins = 100
+        self.nbins = 300
         self.xrange = [-5,5]
 
     def update_cost_params(self,integrator,*_):
         x = integrator.update_ref_statistics().numpy()
         H, xedges = np.histogram(x[...,0], 
                                             bins=self.nbins,
-                                            range=self.xrange)
-                                            #density=True)
+                                            range=self.xrange,
+                                            density=True)
         self.H = H
         self.xedges = xedges
         return 

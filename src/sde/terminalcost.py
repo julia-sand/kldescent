@@ -144,7 +144,7 @@ class Histogram(TerminalCost):
     def update_cost_params(self,integrator,*_):
         x = integrator.update_ref_statistics().numpy()
         H, yedges, xedges = np.histogram2d(x[...,1], x[...,0], 
-                                            bins=100,
+                                            bins=500,
                                             range=[[-5, 5], [-5, 5]],
                                             density=True)
         self.H = H
