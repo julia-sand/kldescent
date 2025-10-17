@@ -57,9 +57,6 @@ def run():
         pretrain.run_pretrain(net,
                             args["pretrain"])
     
-    #get baseline metrics and saves initialisation checkpoint
-    metrics.update_metrics(0, 0)
-    
     for epoch in tqdm(range(args["epochs"])):#range(0,args["epochs"]):
         try:
             #update the terminal cost with current final distribution
@@ -68,7 +65,7 @@ def run():
             #update the drift nn with the current learned final distribution  
             loss_out = trainer.train_step()
 
-            #update metrics
+            #update metrics and save checkpoints
             metrics.update_metrics(epoch+1, loss_out)
             
         except ValueError:

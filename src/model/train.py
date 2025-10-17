@@ -81,7 +81,6 @@ class Train():
         self.scheduler = CosineAnnealingLR(self.optimiser, 
                             T_max=100, eta_min=1e-10)
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
-
         
     def train_step(self):  
         
@@ -195,10 +194,10 @@ class TrainRho():
 
         self.clip = 0.01 #gradient clipping
 
-        self.rho_epochs = 1000 #total number of training epochs
-        self.milestone = 200 #how often to decay learning rate
-        #self.fpk_integrator = FokkerPlanck(integrator.boundary,integrator.net)
-        
+        self.rho_epochs = 1024 #total number of training epochs
+        self.milestone = 256 #how often to decay learning rate
+        self.rho_batch = 512 #size of batch 
+
         self.loss = torch.nn.MSELoss()
 
     def generate_training_data(self,x0,integrator):
@@ -216,7 +215,7 @@ class TrainRho():
         optimiser.zero_grad()
         
         #initialise x values 
-        x0 = (-4 - 4)*torch.rand(500, 2, dtype=torch.float32,requires_grad=True) + 4
+        x0 = (-5 - 5)*torch.rand(self.rho_batch, 2, dtype=torch.float32,requires_grad=True) + 5
 
         yobs = self.generate_training_data(x0,integrator)
 
@@ -258,6 +257,8 @@ class TrainRho():
                 
                 t.postfix[1]["value"] = rho_epoch
                 t.update()
+
+        self.rhonet.eval() #return neural net into eval mode
 
 if __name__=="__main__":
     Pretrain("src/refsolution/UnderdampedHalfNet/refsol.csv").get_pretraining_data()

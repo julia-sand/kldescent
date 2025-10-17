@@ -200,7 +200,7 @@ class NormFlow(TerminalCost):
 
         #integrate and get final samples
         x = integrator.update_ref_statistics()
-        self.trainer_normflow.train_loop(integrator,x[...,[0]])
+        self.trainer_normflow.train_loop(integrator,x)
 
 
     def get_half_logpdf(self,x):

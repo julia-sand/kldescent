@@ -316,15 +316,6 @@ class PlotFuns():
   
     for t in range(len(times)):  
       
-      try:
-        xref,duref = self.boundary.get_reference_data(times[t])
-        self.plot_reference(ax[t],xref,0.2/(2**0.5)*duref)
-
-      except (FileNotFoundError): 
-        print("The reference solution file was not found. \n \
-                    Please make sure that it has been created by running the scripts in valueref.py or that it has not been moved")
-        break
-
       ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
                 self.evaluate_net_output(net,times[t]),
                 label="N.N.")
@@ -332,6 +323,16 @@ class PlotFuns():
       self.format_drift_ax(ax[t],times[t])
     
       ax[t].set_ylabel(r"$\mathbb{U}$")
+      
+      try:
+        xref,duref = self.boundary.get_reference_data(times[t])
+        self.plot_reference(ax[t],xref,0.2/(2**0.5)*duref)
+
+      except (FileNotFoundError): 
+        print("The reference solution file was not found. \n \
+                    Please make sure that it has been created by running the scripts in valueref.py or that it has not been moved")
+        #break
+
     
     plt.legend()
     plt.tight_layout()
@@ -391,7 +392,7 @@ class PlotFuns():
     ax_pos.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
             self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,num=1000)),
             color="gray",alpha=0.5)
-    ax_pos.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
+    ax_mom.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
         self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=0,sigmasq=1),
                     color="gray",alpha=0.5)
   

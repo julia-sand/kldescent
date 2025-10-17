@@ -206,7 +206,7 @@ class OverdampedLandauer(OverdampedFullLandauer):
         self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
 
     def Uinitial(self,q):
-        return ((q**2-1)**2)/4
+        return (q**4)/4
 
     def qinitial(self,q):
 
