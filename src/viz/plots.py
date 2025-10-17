@@ -323,6 +323,7 @@ class PlotFuns():
       except (FileNotFoundError): 
         print("The reference solution file was not found. \n \
                     Please make sure that it has been created by running the scripts in valueref.py or that it has not been moved")
+        break
 
       ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
                 self.evaluate_net_output(net,times[t]),
@@ -380,17 +381,20 @@ class PlotFuns():
         ax_mom.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,1])), color=colors[x[0]],label=labels[x[0]])
         ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,0])), color=colors[x[0]],label=labels[x[0]])
         
-        #ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000),
-        #    self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=np.nanmean(x[1][:,0]),sigmasq=np.nanvar(x[1][:,0])),
-        #    color="gray",linestyle="dashed",alpha=0.5)
-        
+         
         ax_mom.set_xlim((-self.qmax,self.qmax))
         ax_pos.set_xlim((-self.qmax,self.qmax))
     except:
       pass
 
-    #TODO add the reference solution plots here!!
-    #ax_pos.plot(self.boundary.q_marginal_initial(
+    #add reference distributions to plots
+    ax_pos.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
+            self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,num=1000)),
+            color="gray",alpha=0.5)
+    ax_pos.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
+        self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=0,sigmasq=1),
+                    color="gray",alpha=0.5)
+  
     self.format_distribution_ax(ax_mom)
     self.format_distribution_ax(ax_pos)
 
