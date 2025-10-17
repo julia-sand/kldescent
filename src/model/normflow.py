@@ -31,7 +31,7 @@ class RhoNormFlow():
         
         # Define 2D Gaussian base distribution
         #base = nf.distributions.base.DiagGaussian(2)
-        base = nf.distributions.base.DiagGaussian(1)
+        base = nf.distributions.base.DiagGaussian(2)
 
         # Construct flow model
         #check how to use a custom function for base?
@@ -50,7 +50,8 @@ class RhoNormFlow():
             # Add flow layer
             flows.append(nf.flows.AffineCouplingBlock(param_map))
             # Swap dimensions
-            #flows.append(nf.flows.Permute(2, mode='swap'))
+            flows.append(nf.flows.Permute(2, mode='swap'))
+        
         return flows
             
 ##training
@@ -86,9 +87,7 @@ class Train_normflow():
             #generate random indexes for the minibatch 
             idx = torch.randint(low=0,high=x.shape[0],size=(self.minibatch_samples,))
 
-            #torch.tensor(self.boundary.generate_samples(num_samples,mode="final"),dtype=torch.float32)
-            self.train_step(x[idx,np.newaxis],it,loss_hist)
-            #self.train_step(x[idx,:],it,loss_hist)
+            self.train_step(x[idx,:],it,loss_hist)
 
     def train_step(self,x,it,loss_hist):
         

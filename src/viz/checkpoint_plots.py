@@ -122,7 +122,7 @@ class PlotUtils():
             return xinit.detach().numpy(),pdf_out.detach().numpy()
 
 
-    def compute_rho_girsanov(self,x_samples=50,mc_samples=None,Tf=None):
+    def compute_rho_girsanov(self,x_samples=50,mc_samples=512,Tf=None):
         """
         Computes an estimate of the final joint distribution using girsanov theorem
         under the current drift
@@ -168,6 +168,7 @@ class PlotUtils():
                                                     jointout,
                                                     xout,vmax=0.5)
 
+    @torch.no_grad()
     def make_contour_plot2(self):
          
         #initialise drift network from checkpoint and prepare integrator
@@ -182,7 +183,7 @@ class PlotUtils():
             self.plot_joint_panel(ax[1],times[ax[0]])
         
         fig.tight_layout()
-        fig.savefig(self.folder+f"/plots_{self.epoch}"+"/test8_girs.png",bbox_inches="tight")        
+        fig.savefig(self.folder+f"/plots_{self.epoch}"+"/contour_distribution.png",bbox_inches="tight")        
 
         plt.close()
 
