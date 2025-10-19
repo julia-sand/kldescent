@@ -16,4 +16,3 @@ klenv
 timeprofile.py
 *.pdf
 src/refsolution/UnderdampedHalfNet/temp.py
-src/refsolution
