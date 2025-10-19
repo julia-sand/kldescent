@@ -58,7 +58,7 @@ def proximal_fpk(x0,y0,
         y_new = np.empty_like(y_old)
         z_new = np.empty_like(z_old)
 
-        xi = np.exp(-1)*np.ones_like(x_evolution)
+        xi = np.exp(-(b)-1)*np.ones_like(x_evolution)
 
         iters = 0 
 
@@ -68,6 +68,7 @@ def proximal_fpk(x0,y0,
 
             if ((np.sum(np.abs(y_new - y_old))<tol) and
                     (np.sum(np.abs(z_new - z_old))<tol)):
+                print("maxiter not reached")
                 break
             else: 
                 iters += 1
@@ -77,7 +78,7 @@ def proximal_fpk(x0,y0,
             z_old = z_new
         
         #set new running solutions
-        yvals = z_new* (gamma_kt@y_new)
+        yvals = z_new*(gamma_kt@y_new)
         x_evolution = x_evolution_new
 
     return x_evolution_new,yvals
