@@ -1,6 +1,8 @@
 import numpy as np
+import scipy.spatial.distance as sci
 
 import src.sde.boundary as boundaries
+
 #Proximal operator solution for fokkerplanck equation
 import pdb
 
@@ -12,7 +14,7 @@ def bfun(Tf):
 
 
 def proximal_fpk(x0,y0,
-                    num_steps=100,
+                    num_steps=10000,
                     max_iters=1000,
                     eps=0.05,
                     tol=0.00001):
@@ -25,6 +27,7 @@ def proximal_fpk(x0,y0,
 
     dt = Tf/num_steps
 
+
     #preallocate
     x_evolution_new = np.empty_like(x_evolution) #np.zeros((samples,num_steps))
 
@@ -34,15 +37,10 @@ def proximal_fpk(x0,y0,
     for k in range(num_steps):
         
         #step of sde evolution 
-        x_evolution_new = x_evolution + np.sqrt(2*dt/beta)*Generator.standard_normal(size=samples)
+        x_evolution_new = x_evolution + np.sqrt(2*dt/beta)*Generator.standard_normal(size=x_evolution.shape)
         #
 
-        c_k = np.zeros((samples,samples))
-        gamma_k = np.zeros((samples,samples))
-
-        for i in range(samples):
-            for j in range(samples):
-                c_k[i,j] = (x_evolution_new[i]-x_evolution[j])**2
+        c_k = sci.cdist(x_evolution_new[:,np.newaxis],x_evolution[:,np.newaxis],metric="sqeuclidean")#
 
         gamma_k = np.exp(-c_k/(2*eps))
         #pdb.set_trace()
@@ -52,23 +50,22 @@ def proximal_fpk(x0,y0,
         z_samples = Generator.standard_normal(size=x_evolution.shape)
 
         z_old = np.exp((dt*z_samples)/eps) 
-        y_old = yvals/(gamma_k@z_old)
+        y_old = np.divide(yvals,gamma_k@z_old)
 
         #preallocate
         y_new = np.empty_like(y_old)
         z_new = np.empty_like(z_old)
 
-        xi = np.exp(-(b)-1)*np.ones_like(x_evolution)
+        xi = np.exp(-1)*np.ones_like(x_evolution)
 
         iters = 0 
 
         while iters<=max_iters: 
-            z_new = (xi / (gamma_kt@y_old))**power
-            y_new = yvals/(gamma_k@z_new)
+            z_new = np.divide(xi,gamma_kt@y_old)**power
+            y_new = np.divide(yvals,gamma_k@z_new) 
 
             if ((np.sum(np.abs(y_new - y_old))<tol) and
                     (np.sum(np.abs(z_new - z_old))<tol)):
-                print("maxiter not reached")
                 break
             else: 
                 iters += 1
@@ -78,10 +75,10 @@ def proximal_fpk(x0,y0,
             z_old = z_new
         
         #set new running solutions
-        yvals = z_new*(gamma_kt@y_new)
+        yvals = np.multiply(z_new,gamma_kt@y_new)
         x_evolution = x_evolution_new
 
-    return x_evolution_new,yvals
+    return x_evolution,yvals
 
 if __name__=="__main__":
         
@@ -91,7 +88,7 @@ if __name__=="__main__":
 
     alpha = afun(Tf)
     beta = -1/alpha
-    nsamples=600
+    nsamples=300
 
     #get initial solution
     x0 = boundary.generate_samples_q(nsamples,"initial").flatten()
@@ -99,9 +96,17 @@ if __name__=="__main__":
     
     x_end, y_end = proximal_fpk(x0,y0)
 
+    def normalise(x,y):
+        idx = np.argsort(x)
+        return y/np.trapz(y[idx],x[idx])
+
+
     import matplotlib.pyplot as plt 
 
-    plt.scatter(x_end, y_end)
-    #plt.plot(np.linspace(0,8),afun(np.linspace(0,8)))
+    plt.scatter(x_end, normalise(x_end,y_end))
+    plt.scatter(x0, y0)
+    qax = np.linspace(-8,8)
+    sigfinal = 1 + Tf*2/beta
+    plt.plot(qax,np.exp(-qax**2/(2*sigfinal))/np.sqrt(2*np.pi*sigfinal))
     plt.savefig("test_fpk_prox1.png")
     plt.close()
