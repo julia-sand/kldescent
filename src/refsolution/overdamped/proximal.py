@@ -1,24 +1,42 @@
 import numpy as np
 import scipy.spatial.distance as sci
 
-import src.sde.boundary as boundaries
-
-#Proximal operator solution for fokkerplanck equation
-import pdb
-
-def afun(Tf):
-    return -(Tf - 1 + np.exp(-Tf))/Tf
-
-def bfun(Tf):
-    return -(1 - (1-np.exp(-Tf))*(3-np.exp(-Tf))/(2*Tf))
-
-
 def proximal_fpk(x0,y0,
-                    num_steps=10000,
-                    max_iters=1000,
-                    eps=0.05,
-                    tol=0.00001):
-
+                    Tf,
+                    beta,
+                    num_steps=10000, 
+                    max_iters=1000, 
+                    eps=0.1, 
+                    tol=0.00001): 
+    """Implementation of algorithm described in 
+    1908.00533 "Gradient Flow Algorithms for Density Propagation in Stochastic Systems"; Caluya&Halder,2019.
+    
+    Integrates a simple heat equation model 
+    args:
+        x0 : arr
+            array size (n,) of samples from starting distribution
+        y0 : arr
+            array size (n,) of probabilities of each sample x0
+        Tf : float
+            time up to which to integrate
+        beta : float
+            coefficient of laplacian in heat equation
+        num_steps : int
+            number of timesteps
+        max_iters : int
+            maximum number of sinkhorn iterations per timestep
+        eps : float
+            sinkhorn regularisation constant
+        tol : float
+            tolerance at which to stop iteration at each timestep
+    
+    returns: 
+        x_end : arr
+            array of shape (n,) of final positions (unordered)
+        y_end : arr
+            evaluated solution (unnormalised) at each point in x_end
+    """
+    
     #set up sampler
     Generator = np.random.default_rng(seed=42)
     
@@ -27,8 +45,7 @@ def proximal_fpk(x0,y0,
 
     dt = Tf/num_steps
 
-
-    #preallocate
+    #preallocate arrays
     x_evolution_new = np.empty_like(x_evolution) #np.zeros((samples,num_steps))
 
     power= 1/(1+(beta*eps/dt))
@@ -52,7 +69,7 @@ def proximal_fpk(x0,y0,
         z_old = np.exp((dt*z_samples)/eps) 
         y_old = np.divide(yvals,gamma_k@z_old)
 
-        #preallocate
+        #preallocate arrays
         y_new = np.empty_like(y_old)
         z_new = np.empty_like(z_old)
 
@@ -81,32 +98,27 @@ def proximal_fpk(x0,y0,
     return x_evolution,yvals
 
 if __name__=="__main__":
-        
+    import matplotlib.pyplot as plt 
+
+    import src.sde.boundary as boundaries
+
     boundary = boundaries.UnderdampedGaussian()
     Tf = boundary.params["Tf"]
-    epsilon = boundary.params["epsilon"]
 
-    alpha = afun(Tf)
-    beta = -1/alpha
-    nsamples=300
+    beta = 1/2
+    nsamples = 1000
 
     #get initial solution
     x0 = boundary.generate_samples_q(nsamples,"initial").flatten()
     y0 = boundary.q_marginal_initial(x0).flatten()
     
-    x_end, y_end = proximal_fpk(x0,y0)
-
-    def normalise(x,y):
-        idx = np.argsort(x)
-        return y/np.trapz(y[idx],x[idx])
+    x_end, y_end = proximal_fpk(x0,y0,Tf,beta)
 
 
-    import matplotlib.pyplot as plt 
-
-    plt.scatter(x_end, normalise(x_end,y_end))
+    plt.scatter(x_end, y_end)#normalise(x_end,y_end))
     plt.scatter(x0, y0)
     qax = np.linspace(-8,8)
     sigfinal = 1 + Tf*2/beta
-    plt.plot(qax,np.exp(-qax**2/(2*sigfinal))/np.sqrt(2*np.pi*sigfinal))
+    plt.plot(qax,np.exp(-qax**2/(2*sigfinal))/np.sqrt(2*np.pi*sigfinal),label="analytic solution")
     plt.savefig("test_fpk_prox1.png")
     plt.close()
