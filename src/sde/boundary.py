@@ -20,8 +20,6 @@ import numpy as np
 
 from ..utils.parser import boundary_params, gaussian_params
 
-import pdb
-
 class Boundaries():
     """
     A class used to store different boundary conditions
@@ -140,7 +138,6 @@ class OverdampedFullLandauer(Boundaries):
 
     #generate the initial data
     def generate_samples(self,batch_samples,mode):
-        
         ##sample points from the intial distribution for q 
 
         #from where to sample the q marginals
@@ -156,7 +153,6 @@ class OverdampedFullLandauer(Boundaries):
                                 p=probs)
         
         return out
-                            
        
     def get_reference_timegrid(self):
         arr = np.loadtxt(self.ref_path,
@@ -216,7 +212,6 @@ class OverdampedLandauer(OverdampedFullLandauer):
 
         return self.qinitial(q)/(self.pi_norm)
 
-    #generate the initial data
     def generate_samples(self,batch_samples,mode):
         
         ##sample points from the intial distribution for q 
@@ -253,7 +248,6 @@ class LinearOU(Boundaries):
         
         return np.exp(-(q**2)/2)/np.sqrt(2*np.pi)
 
-    #generate the initial data
     def generate_samples(self,batch_samples,mode):
         
         ##sample points from the intial distribution for q 
@@ -309,19 +303,19 @@ class LinearOU(Boundaries):
         One step forward in the euler maruyama discretisation of the overdamped dynamics
 
         args:
-            xn: 
+            xn : (n,2) arr
                 current positions
-            du_bar: 
+            du_bar : (n,1) arr
                 drift
-            dt:
+            dt : float
                 size of timestep
-            dw:
+            dw : float
                 innovation
-            t:
+            t : float
                 current time
         returns
-            x(n+1):
-                positions at the next timestep according to the evolution
+            x(n+1) : (n,2) arr
+                positions after one timestep of the evolution
         """
         
         return xn + (self.b(xn,t) \
