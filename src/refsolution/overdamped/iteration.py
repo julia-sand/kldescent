@@ -24,15 +24,15 @@ def iteration(boundary,
     'Wasserstein Proximal Algorithms for the Schr¨odinger Bridge Problem:
     Density Control with Nonlinear Drift', Caluya&Halder,2021.
     
-    to solve an overdamped 'halfbridge' problem
+    to solve the cell problem, which is a 'halfbridge' problem
 
     args: 
         boundary : class
             class storing the initial and final conditions of the problem
         A : float
-            constant defining the overdamped bridge problem 
-        B : float  
-            constant defining the overdamped bridge problem
+            constant defining the cell problem
+        B : float 
+            constant defining the cell problem
         num_samples : int
             number of samples
         num_iters : int
@@ -44,8 +44,6 @@ def iteration(boundary,
     """
     
     xpsi = boundary.generate_samples_q(num_samples, mode="initial").flatten()
-    #rho0 = boundary.q_marginal_initial(x0)
-    #rhoT = boundary.q_marginal_final(x0)
     
     #compute slow time
     Tf = boundary.params["Tf"]*(boundary.params["epsilon"]**2)
@@ -55,7 +53,7 @@ def iteration(boundary,
     hatphiT = np.empty_like(xpsi) 
     psi0 = np.empty_like(xpsi) 
     psiT = np.exp(-1)*np.ones_like(xpsi) #these must be non.zero positive values
-
+ 
     beta = 1/A
 
     iters = 0
@@ -74,47 +72,20 @@ def iteration(boundary,
         xpsi,psiT = proximal.proximal_fpk(xhatphi,psi0,Tf,beta)
 
         iters += 1
-        plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+        plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,A,B,iters)
 
     return xhatphi,xpsi,hatphiT,psiT
 
-def interpolate_(q,x,phi):
-    idx = np.argsort(x)
-    return np.interp(q,x[idx],phi[idx])
-
-def get_transient_factors(q,xpsi,psiT,t):
-    """
-    Evaluate the schrödinger factors along the time horizon 
-    args: 
-        t : float
-            time to compute the factor
-    returns:
-        phi_t : arr
-        hatphi_t : arr
-    """
-
-    #evolve hatphi0 to hatphi_t
-    #get hatphi0 
-    hatphi0 = boundary.q_marginal_initial(xpsi)/psiT
-    #returns the factor at time t evolved by proximal operator
-    xhatphi_t,hatphi_t = proximal.proximal_fpk(xpsi,hatphi0,t,1/A)
-
-    #get phi_t = psi_(T-t)
-    #returns the factor at time t evolved by proximal operator
-    xphi_t,phi_t = proximal.proximal_fpk(xpsi,psiT,t,1/A)
-    
-    return interpolate_(q,xphi_t,phi_t),interpolate_(q,xhatphi_t,hatphi_t)
-
-def plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
+def plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,A,B,iters):
     q = np.linspace(-4,4,)
     
     rhoT = interpolate_(q,xpsi,hatphiT)*interpolate_(q,xhatphi,psi0)
     rho0 = interpolate_(q,xhatphi,hatphi0)*interpolate_(q,xpsi,psiT)
 
-    plt.plot(q,normalise(q,rhoT), label="rho ref")
+    plt.plot(q,normalise(q,(rhoT)), label="rhoT")
     plt.plot(q,normalise(q,rho0), label="rho0")
 
-    plt.plot(q,boundary.q_marginal_final(q),linestyle="dashed",color="gray",alpha=0.5)
+    plt.plot(q,boundary.q_marginal_final(q)**(B/(B+A)),linestyle="dashed",color="gray",alpha=0.5)
     plt.plot(q,boundary.q_marginal_initial(q),linestyle="dashed",color="gray",alpha=0.5)
 
     
@@ -125,9 +96,11 @@ def plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
 if __name__=="__main__":
     boundary = boundaries.UnderdampedGaussian()
     Tf = boundary.params["Tf"]
+    
+    A = afun(Tf)
+    B = bfun(Tf)
 
-    xhatphi,xpsi,hatphiT,psiT = iteration(boundary,afun(Tf),bfun(Tf))
-
+    xhatphi,xpsi,hatphiT,psiT = iteration(boundary,A,B)
 
     #plt.scatter(x0,boundary.q_marginal_final(x0))
     plt.scatter(xhatphi,hatphiT, label="phihat")

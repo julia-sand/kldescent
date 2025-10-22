@@ -2,38 +2,36 @@ using DifferentialEquations;
 using DataFrames;
 using CSV;
 
-function integrate_half_gaussian()
+function integrate_half_gaussian(ARGS)
     
     #parameters
-    T = 5
-    epsilon = 0.2
+    T = parse(Float64,ARGS[1])
+    epsilon = parse(Float64,ARGS[2])
+    outputloc = ARGS[3]
+    weight = 1#parse(Float64,ARGS[4])
     
     p = epsilon #[epsilon]
 
     sigma0 = 1
-    sigmaREF = 0.25^2
-    sigp_ref = 1
+    sigmaT = 0.25
+
+    pos_mu_start = 0 
+    mom_mu_start = 0 
 
     pos_mu_end = 0
     mom_mu_end = 0
     
     #boundary conds
-    pos_var_start = sigma0
+    pos_var_start = (sigma0^2)#/beta
     x_var_start = 0 
-    mom_var_start = 1
+    mom_var_start = 1#/beta 
 
-    function v11_coeff(sigma_pos_final,sigma_mom_final,sigma_cc_final)
-        return (1/sigmaREF) - (sigma_mom_final/(sigma_pos_final*sigma_mom_final-sigma_cc_final^2))
-    end
+    Vqq_end(sig_end) = weight*((1/sigmaT^2) - (1/sig_end)) #beta*((1/sigmaT^2) - (1/sig_end))
+    Vqp_end = 0
+    Vpp_end = 0 #1/m
 
-    function v12_coeff(sigma_pos_final,sigma_mom_final,sigma_cc_final)
-        return (sigma_cc_final/(sigma_mom_final*sigma_pos_final-sigma_cc_final^2))
-    end
+    vq_end(mu_end,sig_end) = weight*((mu_end/sig_end) - pos_mu_end/(sigmaT^2))
     
-    function v22_coeff(sigma_pos_final,sigma_mom_final,sigma_cc_final)
-        return 1 - (sigma_pos_final/(sigma_pos_final*sigma_mom_final-sigma_cc_final^2))
-    end
-
     vp_end = 0
         
     tspan = (0.0,T)
@@ -56,9 +54,9 @@ function integrate_half_gaussian()
         residual[1] = u[1][4] - pos_var_start #the solution at the start
         residual[2] = u[1][5] - x_var_start
         residual[3] = u[1][6] - mom_var_start
-        residual[4] = u[end][1] - v11_coeff(u[end][4],u[end][6],u[end][5])#Vqq_end(u[end][4],u[end][5]) #Vqq_end #the solution at the end
-        residual[5] = u[end][2] - v12_coeff(u[end][4],u[end][6],u[end][5])#Vqp_end(u[end][6],u[end][4],u[end][5])
-        residual[6] = u[end][3] - v22_coeff(u[end][4],u[end][6],u[end][5])#Vpp_end(u[end][6],u[end][5])
+        residual[4] = u[end][1] - Vqq_end(u[end][4]) #Vqq_end #the solution at the end
+        residual[5] = u[end][2] - Vqp_end
+        residual[6] = u[end][3] - Vpp_end
     end
 
     #initial guess
@@ -66,31 +64,33 @@ function integrate_half_gaussian()
 
     bvp1 = BVProblem(varianceevolution!, varbc!, u0_var, tspan, p);
 
-    sol1 = solve(bvp1,LobattoIIIa5(),dt=0.1)
+    sol1 = solve(bvp1,LobattoIIIa5(),dt=0.01)
 
     ##SAVE CSV HERE
-    df = DataFrame(sol1)
+    df_var = DataFrame(sol1)
 
-    rename!(df, [:t, :Vqq, :Vqp, :Vpp, :Qt, :Ct, :Pt]) #rename 
-    CSV.write("variance_half.csv",df)
+    rename!(df_var, [:t, :Vqq, :Vqp, :Vpp, :Qt, :Ct, :Pt]) #rename 
+    CSV.write("variance_half.csv",df_var)
     
     println("variance csv ready.")
 
     
+    #df = innerjoin(df_var, df_mean, on=:t)
+   
     function u2(v22,v12,c12,c11)
         return 2*v12 + 2*(c12*v22)/c11
     end
     function u1(v2,s1,s2,v22,c12,c11)
-        return 0#2*v2 + 2*s2*v22 - 2*(c12*s1*v22)/c11
+        return 2*v2 + 2*s2*v22 - 2*(c12*s1*v22)/c11
     end
 
     #df = df_var
-    df[!, "U2"] = u2.(df[!,"Vpp"], df[!,"Vqp"], df[!,"Ct"], df[!,"Qt"])
-    df[!, "u1"] = u1.(0,0,0, df[!,"Vpp"], df[!,"Ct"], df[!,"Qt"])
-    CSV.write(string("src/refsolution/UnderdampedHalfNet/refsol_v2.csv"),df)
+    df_var[!, "U2"] = u2.(df[!,"Vpp"], df[!,"Vqp"], df[!,"Ct"], df[!,"Qt"])
+    #df[!, "u1"] = u1.(df[!,"vp"], df[!,"qt"], df[!,"pt"], df[!,"Vpp"], df[!,"Ct"], df[!,"Qt"])
+    CSV.write(string(outputloc,"/refsol.csv"),df_var)
     println("completed.")
         
 end
 
      
-integrate_half_gaussian()
+integrate_half_gaussian(ARGS)
