@@ -6,8 +6,8 @@ def proximal_fpk(x0,y0,
                     beta,
                     num_steps=10000, 
                     max_iters=1000, 
-                    eps=0.1, 
-                    tol=0.00001): 
+                    eps=0.05, 
+                    tol=0.000001): 
     """Implementation of algorithm described in 
     1908.00533 "Gradient Flow Algorithms for Density Propagation in Stochastic Systems"; Caluya&Halder,2019.
     
