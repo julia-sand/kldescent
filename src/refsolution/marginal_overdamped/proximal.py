@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.spatial.distance as sci
 
+
 def proximal_fpk(x0,y0,
                     Tf,
                     beta,
@@ -118,7 +119,10 @@ if __name__=="__main__":
     plt.scatter(x_end, y_end)#normalise(x_end,y_end))
     plt.scatter(x0, y0)
     qax = np.linspace(-8,8)
+
+    #ref solution
     sigfinal = 1 + Tf*2/beta
     plt.plot(qax,np.exp(-qax**2/(2*sigfinal))/np.sqrt(2*np.pi*sigfinal),label="analytic solution")
+    
     plt.savefig("test_fpk_prox1.png")
     plt.close()

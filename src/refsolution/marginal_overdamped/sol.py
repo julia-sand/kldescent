@@ -1,8 +1,12 @@
+import os
+
 import numpy as np
 
-import src.sde.boundary as boundaries
-import proximal
-from iteration import CellProblem
+from ...sde.boundary import UnderdampedGaussian,UnderdampedLandauer
+from .proximal import proximal_fpk
+from .iteration import CellProblem, interpolate_, normalise
+
+#import pdb
 
 #Proximal operator solution for fokkerplanck equation
 def afun(Tf):
@@ -19,19 +23,6 @@ def compute_V(phi_t,A,B):
     
     return -(A/B)*np.log(phi_t)
 
-def interpolate_(q,xs,phis):
-    idx = np.argsort(xs)
-
-    return np.interp(q,xs[idx],phis[idx])
-
-def interpolate_(q,xs,phis):
-    idx = np.argsort(xs)
-
-    return np.interp(q,xs[idx],phis[idx])
-
-def normalise(x,y):
-    idx = np.argsort(x)
-    return y/np.trapz(y[idx],x[idx])
 
 def get_solution_in_time(xpsi,
                         psiT,Tf2,A,B,
@@ -75,26 +66,30 @@ def get_solution_in_time(xpsi,
     xhatphi = xpsi.copy()
 
     #preallocate arrays
-    arr_out = np.array((0,4))
+    arr_out = np.empty((tnum*xnum,4))
 
     #iterate over times to compute the solution at each timepoint
-    for t in tvec:
-
+    for t in enumerate(tvec):
+        #pdb.set_trace()
         #compute one step of the proximal recursion
-        xhatphi_t,hatphi_temp = proximal.proximal_fpk(xhatphi,hatphi0,dt,1/A,num_steps=int(np.floor(10000/tnum)))
-        xphi_t,phi_temp = proximal.proximal_fpk(xpsi,psiT,t,1/A,num_steps=int(np.floor(10000/tnum)))
+        xhatphi_t,hatphi_temp = proximal_fpk(xhatphi,hatphi0,dt,1/A,num_steps=int(np.floor(10000/tnum)))
+        xphi_t,phi_temp = proximal_fpk(xpsi,psiT,dt,1/A,num_steps=int(np.floor(10000/tnum)))
         
         #interpolate 
         phi_t = interpolate_(q,xphi_t,phi_temp)
         hatphi_t = interpolate_(q,xhatphi_t,hatphi_temp)
         
         #compute rho and V
-        arr_out = np.append(arr_out,
-                    np.array([[np.ones(tnum*xnum)*t,
-                                q,
-                                normalise(q,compute_rho(phi_t,hatphi_t)),
-                                compute_V(phi_t)]]),axis=0)#cross corr
-           
+        #arr_out = np.append(arr_out,
+        #            np.array([np.ones(xnum)*t,
+        #                        q,
+        #                        normalise(q,compute_rho(phi_t,hatphi_t)),
+        #                        compute_V(phi_t,A,B)]),axis=0)#cross corr
+        rho_temp =  normalise(q,compute_rho(phi_t,hatphi_t))
+        vtemp = compute_V(phi_t,A,B)
+        new_rows = np.column_stack((t[1]*np.ones(xnum),q,rho_temp,vtemp))
+        arr_out[t[0]*xnum:(t[0]+1)*xnum] = new_rows
+
         #set new iterates
         xhatphi, hatphi0 = xhatphi_t,hatphi_temp 
         xpsi, psiT = xphi_t,phi_temp
@@ -105,19 +100,19 @@ def save_array(arr_out,boundary):
     #make dir
     os.makedirs(f"src/refsolution/{boundary.__class__.__name__}",exist_ok=True)
     print(f"src/refsolution/{boundary.__class__.__name__}")
-    np.savetxt(boundary.ref_path, arr_out ,fmt="%10.6f",header = "t,q,rho,V",delimiter=',')
+    np.savetxt(f"src/refsolution/{boundary.__class__.__name__}/overdamped.csv", arr_out ,fmt="%10.6f",header = "t,q,rho,V",delimiter=',')
     print(boundary.ref_path)
     return
 
 if __name__=="__main__":
-    boundary = boundaries.UnderdampedGaussian()
+    boundary = UnderdampedGaussian()
     Tf2 = boundary.params["Tf"]*(boundary.params["epsilon"]**2)
     
     #should these be in the boundary class? 
     A = afun(boundary.params["Tf"])
     B = bfun(boundary.params["Tf"])
     cell = CellProblem(boundary,A,B)
-    xhatphi,xpsi,hatphiT,psiT = cell.iteration()
+    xhatphi,xpsi,hatphiT,psiT = cell.iteration(num_iters=3)
 
     arr = get_solution_in_time(xpsi,
                         psiT,Tf2,A,B,
