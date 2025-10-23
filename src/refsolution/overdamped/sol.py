@@ -1,7 +1,8 @@
 import numpy as np
 
 import src.sde.boundary as boundaries
-import proximal,iteration
+import proximal
+from iteration import CellProblem
 
 #Proximal operator solution for fokkerplanck equation
 def afun(Tf):
@@ -110,17 +111,17 @@ def save_array(arr_out,boundary):
 
 if __name__=="__main__":
     boundary = boundaries.UnderdampedGaussian()
-    Tf = boundary.params["Tf"]
     Tf2 = boundary.params["Tf"]*(boundary.params["epsilon"]**2)
     
     #should these be in the boundary class? 
-    A = afun(Tf)
-    B = bfun(Tf)
-
-    xhatphi,xpsi,hatphiT,psiT = iteration.iteration(boundary,A,B,Tf2)
+    A = afun(boundary.params["Tf"])
+    B = bfun(boundary.params["Tf"])
+    cell = CellProblem(boundary,A,B)
+    xhatphi,xpsi,hatphiT,psiT = cell.iteration()
 
     arr = get_solution_in_time(xpsi,
                         psiT,Tf2,A,B,
                         xnum = 1000,
                         tnum = 50)
+
     save_array(arr,boundary)
