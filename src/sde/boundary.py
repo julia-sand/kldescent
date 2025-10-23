@@ -19,6 +19,7 @@ import os
 import numpy as np 
 
 from ..utils.parser import boundary_params, gaussian_params
+from ..refsolution.get_ref import RefSolution
 
 class Boundaries():
     """
@@ -64,14 +65,12 @@ class Boundaries():
         self.Generator = np.random.default_rng(seed=42)
 
         self.ref_path = self.get_ref_path()+"/refsol.csv"
+        self.overdamped_path = self.get_ref_path()+"/overdamped.csv"
         
         if logger is not None:
             logger.log_dict(self.params) #add to log
-    
-    def get_ref_path(self):
-        #returns the folder where the reference solution is expected to be
-
-        return os.path.dirname(__file__) + f"/../refsolution/{self.__class__.__name__}"
+        
+        self.refsol = RefSolution(self)
 
 class OverdampedFullLandauer(Boundaries):
     """
@@ -154,32 +153,6 @@ class OverdampedFullLandauer(Boundaries):
         
         return out
        
-    def get_reference_timegrid(self):
-        arr = np.loadtxt(self.ref_path,
-                        delimiter=",") 
-        return np.unique(arr[:,0])
-
-    def get_reference_data(self,time):
-
-        #time is the time you want the data
-
-        ##fetch the reference data for halfbridge
-        arr = np.loadtxt(self.ref_path,
-                        delimiter=",")  
-       
-        ##fetch the reference data approximation data
-        arrtemp = arr[np.where(arr[:,0]==np.round(time,8))] 
-        arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
-
-        #RETURNS X, DU
-        return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,-1])
-
-    def du_ref(self,q,time):
-
-        #returns the drift of the reference solution 
-        qref,duref = self.get_reference_data(time)
-        return np.interp(q,qref,duref,left=duref[0],right=duref[-1])
-
     def gfun(self,q):
         #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
 
@@ -363,8 +336,7 @@ class UnderdampedLandauer(OverdampedLandauer):
                                 (batch_samples,1),
                                 p=probs)
             
-        return out 
-                            
+        return out                
        
     #generate the initial data
     def generate_samples(self,batch_samples,mode):
@@ -390,12 +362,6 @@ class UnderdampedLandauer(OverdampedLandauer):
             time = self.params["Tf"]
         return np.linspace(0,time)
 
-    def du_ref(self,q,time):
-
-        #returns the drift of the reference solution 
-        #print("Reference solution not available.")
-        return np.zeros_like(q)
-
     def f(self,x,t):
 
         return 0
@@ -414,7 +380,6 @@ class UnderdampedLandauer(OverdampedLandauer):
         
         return xn
 
-
     def overdamped_counterpart(self,xn,du_bar,dt,dw,t):
 
         #takes one step forward in the euler maruyama discretisation
@@ -432,9 +397,6 @@ class UnderdampedLandauer(OverdampedLandauer):
 
         return xn
        
-    def get_known_solution_cumulants(self,cumulant_type):
-        pass
-
 class UnderdampedGaussian(UnderdampedLandauer):
     
     def __init__(self,params=None,
@@ -451,8 +413,6 @@ class UnderdampedGaussian(UnderdampedLandauer):
         if logger is not None:
             logger.log_dict(self.gauss_boundary) #add to log
         
-        self.cumulants_path = self.get_ref_path()+"/refcumulants.csv"
-
     def overwrite_ref_path(self,new_path):
         
         self.ref_path = new_path + "/refsol.csv"
@@ -500,58 +460,6 @@ class UnderdampedGaussian(UnderdampedLandauer):
             
         return out                           
 
-    def get_ref_data(self):
-        #returns the folder where the reference solution is expected to be
-        arr = np.loadtxt(open(self.ref_path),
-                        delimiter=",",skiprows=1) 
-        return arr 
-
-    def get_ref_cumulants(self):
-        #returns the folder where the reference solution is expected to be
-        arr = np.loadtxt(open(self.cumulants_path),
-                        delimiter=",",skiprows=1) 
-        return arr 
-
-    def get_reference_timegrid(self,time=None):
-        if time is None:
-            time = self.params["Tf"] + 0.00001
-        
-        try: 
-            arr = self.get_ref_data()
-            return np.unique(arr[:,0])
-        except FileNotFoundError:
-            return np.linspace(0,time)
-
-    def get_reference_data(self,time):
-        arr = self.get_ref_data()
-        
-        return np.linspace(-4,4),-(np.squeeze(arr[np.where(arr[:,0]==time),-1]) + np.squeeze(arr[np.where(arr[:,0]==time),-2])*np.linspace(-4,4))
-
-    def du_ref(self,q,time):
-        #A FREE DIFFUSION
-        # ie. returns zero drift of the right shape! 
-        return np.zeros_like(q)
-
-    def get_known_solution_cumulants(self,cumulant_type):
-        arr = self.get_ref_cumulants()#np.loadtxt(open(self.ref_path),
-              #          delimiter=",",skiprows=1) 
-        try:  
-            if cumulant_type == "Position Variance": 
-                temp = np.squeeze(arr[:,1])#np.squeeze(arr[:,4])
-            elif cumulant_type == "Momentum Variance":
-                temp = np.squeeze(arr[:,3])#np.squeeze(arr[:,6])
-            elif cumulant_type == "Cross Correlation":
-                temp = np.squeeze(arr[:,2])#np.squeeze(arr[:,5])
-            elif cumulant_type == "Momentum Mean":
-                temp = np.squeeze(arr[:,8])
-            elif cumulant_type == "Position Mean":
-                temp = np.squeeze(arr[:,7])
-            else:
-                temp = np.zeros_like(np.squeeze(arr[:,0]))
-        except IndexError:
-            return np.zeros_like(np.squeeze(arr[:,0])),np.zeros_like(np.squeeze(arr[:,0]))
-
-        return np.squeeze(arr[:,0]),temp
 
 if __name__=="__main__":
 

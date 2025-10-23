@@ -1,8 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt 
 
-import src.sde.boundary as boundaries
-import proximal,sol
+from .proximal import proximal_fpk
+
+def interpolate_(q,xs,phis):
+    idx = np.argsort(xs)
+
+    return np.interp(q,xs[idx],phis[idx])
+
+def normalise(x,y):
+    idx = np.argsort(x)
+    return y/np.trapz(y[idx],x[idx])
 
 class CellProblem():
 
@@ -28,6 +36,7 @@ class CellProblem():
 
         self.A = A
         self.B = B
+        self.beta = 1/A
 
     def iteration(self,num_samples=200,
                     num_iters=4):
@@ -48,60 +57,60 @@ class CellProblem():
         
         xpsi = self.boundary.generate_samples_q(num_samples, mode="initial").flatten()
         
-        
         #preallocate arrays
         hatphi0 = np.empty_like(xpsi) 
         hatphiT = np.empty_like(xpsi) 
         psi0 = np.empty_like(xpsi) 
         psiT = np.exp(-1)*np.ones_like(xpsi) #these must be non.zero positive values
     
-        #beta = 1/A
-
         iters = 0
         while iters <= num_iters:
             
             #compute hatphi0
-            hatphi0 = boundary.q_marginal_initial(xpsi)/psiT
+            hatphi0 = self.boundary.q_marginal_initial(xpsi)/psiT
 
             #integrate phihat to Tf
-            xhatphi,hatphiT = proximal.proximal_fpk(xpsi,hatphi0,self.Tf2,self.beta)
+            xhatphi,hatphiT = proximal_fpk(xpsi,hatphi0,self.Tf2,self.beta)
                 
             #compute psi0
-            psi0 = (boundary.q_marginal_final(xhatphi)/hatphiT)**(self.B/(self.A+self.B)) #(rhoT/normalise(x0,hatphiT))**(B/(A+B))
+            psi0 = (self.boundary.q_marginal_final(xhatphi)/hatphiT)**(self.B/(self.A+self.B)) #(rhoT/normalise(x0,hatphiT))**(B/(A+B))
 
             #integrate psi to Tf
-            xpsi,psiT = proximal.proximal_fpk(xhatphi,psi0,self.Tf2,self.beta)
+            xpsi,psiT = proximal_fpk(xhatphi,psi0,self.Tf2,self.beta)
 
             iters += 1
-            self.plot_boundary(self.boundary,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+
+            self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
 
         return xhatphi,xpsi,hatphiT,psiT
 
     def plot_boundary(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
         
         
-        rhoT = sol.interpolate_(self.q,xpsi,hatphiT)*sol.interpolate_(q,xhatphi,psi0)
-        rho0 = sol.interpolate_(self.q,xhatphi,hatphi0)*sol.interpolate_(q,xpsi,psiT)
+        rhoT = interpolate_(self.q,xpsi,hatphiT)*interpolate_(self.q,xhatphi,psi0)
+        rho0 = interpolate_(self.q,xhatphi,hatphi0)*interpolate_(self.q,xpsi,psiT)
 
-        plt.plot(self.q,sol.normalise(self.q,(rhoT)), label="rhoT")
-        plt.plot(self.q,sol.normalise(self.q,rho0), label="rho0")
+        plt.plot(self.q,normalise(self.q,(rhoT)), label="rhoT")
+        plt.plot(self.q,normalise(self.q,rho0), label="rho0")
 
-        plt.plot(self.q,self.boundary.q_marginal_final(q)**(self.B/(self.B+self.A)),linestyle="dashed",color="gray",alpha=0.5)
-        plt.plot(self.q,self.boundary.q_marginal_initial(q),linestyle="dashed",color="gray",alpha=0.5)
+        plt.plot(self.q,self.boundary.q_marginal_final(self.q)**(self.B/(self.B+self.A)),linestyle="dashed",color="gray",alpha=0.5)
+        plt.plot(self.q,self.boundary.q_marginal_initial(self.q),linestyle="dashed",color="gray",alpha=0.5)
 
         plt.legend()
         plt.savefig(f"boundary_test_iter_{iters}.png")
         plt.close()
 
 if __name__=="__main__":
+    import src.sde.boundary as boundaries
+
     boundary = boundaries.UnderdampedGaussian()
     Tf = boundary.params["Tf"]
     Tf2 = boundary.params["Tf"]*(boundary.params["epsilon"]**2)
     
-    A = sol.afun(Tf)
-    B = sol.bfun(Tf)
+    #A = sol.afun(Tf)
+    #B = sol.bfun(Tf)
 
-    xhatphi,xpsi,hatphiT,psiT = iteration(boundary,A,B,Tf2)
+    xhatphi,xpsi,hatphiT,psiT = iteration(boundary,1,1,Tf2)
 
     #plt.scatter(x0,boundary.q_marginal_final(x0))
     plt.scatter(xhatphi,hatphiT, label="phihat")
