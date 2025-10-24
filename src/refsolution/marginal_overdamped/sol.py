@@ -5,7 +5,7 @@ import numpy as np
 from ...sde.boundary import UnderdampedGaussian,UnderdampedLandauer
 from .proximal import proximal_fpk
 from .iteration import CellProblem, interpolate_, normalise
-
+from ..get_ref import RefSolution
 #import pdb
 
 #Proximal operator solution for fokkerplanck equation
@@ -25,9 +25,9 @@ def compute_V(phi_t,A,B):
 
 
 def get_solution_in_time(xpsi,
-                        psiT,Tf2,A,B,
-                        xnum = 1000,
-                        tnum = 50):
+                            psiT,Tf2,A,B,
+                            xnum = 1000,
+                            tnum = 10):
     """
     Evaluate the schrödinger factors along the time horizon and use them to compute 
     the probability distribution and value function in the horizon [0,Tf2]
@@ -68,9 +68,11 @@ def get_solution_in_time(xpsi,
     #preallocate arrays
     arr_out = np.empty((tnum*xnum,4))
 
+    #preallocate for phi 
+
     #iterate over times to compute the solution at each timepoint
     for t in enumerate(tvec):
-        #pdb.set_trace()
+
         #compute one step of the proximal recursion
         xhatphi_t,hatphi_temp = proximal_fpk(xhatphi,hatphi0,dt,1/A,num_steps=int(np.floor(10000/tnum)))
         xphi_t,phi_temp = proximal_fpk(xpsi,psiT,dt,1/A,num_steps=int(np.floor(10000/tnum)))
@@ -79,16 +81,8 @@ def get_solution_in_time(xpsi,
         phi_t = interpolate_(q,xphi_t,phi_temp)
         hatphi_t = interpolate_(q,xhatphi_t,hatphi_temp)
         
-        #compute rho and V
-        #arr_out = np.append(arr_out,
-        #            np.array([np.ones(xnum)*t,
-        #                        q,
-        #                        normalise(q,compute_rho(phi_t,hatphi_t)),
-        #                        compute_V(phi_t,A,B)]),axis=0)#cross corr
-        rho_temp =  normalise(q,compute_rho(phi_t,hatphi_t))
-        vtemp = compute_V(phi_t,A,B)
-        new_rows = np.column_stack((t[1]*np.ones(xnum),q,rho_temp,vtemp))
-        arr_out[t[0]*xnum:(t[0]+1)*xnum] = new_rows
+        arr_out[t[0]*xnum:(t[0]+1)*xnum] = np.column_stack((t[1]*np.ones(xnum),q,
+                                                            normalise(q,compute_rho(phi_t,hatphi_t)),compute_V(phi_t,A,B)))
 
         #set new iterates
         xhatphi, hatphi0 = xhatphi_t,hatphi_temp 
@@ -101,7 +95,7 @@ def save_array(arr_out,boundary):
     os.makedirs(f"src/refsolution/{boundary.__class__.__name__}",exist_ok=True)
     print(f"src/refsolution/{boundary.__class__.__name__}")
     np.savetxt(f"src/refsolution/{boundary.__class__.__name__}/overdamped.csv", arr_out ,fmt="%10.6f",header = "t,q,rho,V",delimiter=',')
-    print(boundary.ref_path)
+    #print(boundary.ref_path)
     return
 
 if __name__=="__main__":
@@ -117,6 +111,6 @@ if __name__=="__main__":
     arr = get_solution_in_time(xpsi,
                         psiT,Tf2,A,B,
                         xnum = 1000,
-                        tnum = 50)
+                        tnum = 21)
 
     save_array(arr,boundary)

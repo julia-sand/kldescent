@@ -64,13 +64,13 @@ class Boundaries():
         
         self.Generator = np.random.default_rng(seed=42)
 
-        self.ref_path = self.get_ref_path()+"/refsol.csv"
-        self.overdamped_path = self.get_ref_path()+"/overdamped.csv"
+        #self.ref_path = self.get_ref_path()+"/refsol.csv"
+        #self.overdamped_path = self.get_ref_path()+"/overdamped.csv"
         
         if logger is not None:
             logger.log_dict(self.params) #add to log
         
-        self.refsol = RefSolution(self)
+        self.refsol = RefSolution(boundary=self,folder_name=None)
 
 class OverdampedFullLandauer(Boundaries):
     """
