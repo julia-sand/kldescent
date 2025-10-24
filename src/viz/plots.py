@@ -59,7 +59,6 @@ class PlotFuns():
     self.mut_q = 0
     self.sigsqt_q = 1
   
-  
   def setresultsdir(self,folder):
     #set output location 
     self.folder = folder

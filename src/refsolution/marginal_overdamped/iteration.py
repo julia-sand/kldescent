@@ -72,7 +72,7 @@ class CellProblem():
             #integrate phihat to Tf
             xhatphi,hatphiT = proximal_fpk(xpsi,hatphi0,self.Tf2,self.beta)
                 
-            #compute psi0
+            #compute psi0/phiT
             psi0 = (self.boundary.q_marginal_final(xhatphi)/hatphiT)**(self.B/(self.A+self.B)) #(rhoT/normalise(x0,hatphiT))**(B/(A+B))
 
             #integrate psi to Tf
