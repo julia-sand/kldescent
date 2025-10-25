@@ -60,7 +60,7 @@ class CellProblem():
         #preallocate arrays
         hatphi0 = np.empty_like(xpsi) 
         hatphiT = np.empty_like(xpsi) 
-        psi0 = np.empty_like(xpsi) 
+        psi0 = np.exp(-1)*np.ones_like(xpsi) #np.empty_like(xpsi) 
         psiT = np.exp(-1)*np.ones_like(xpsi) #these must be non.zero positive values
     
         iters = 0
@@ -83,9 +83,9 @@ class CellProblem():
             self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
 
         return xhatphi,xpsi,hatphiT,psiT
+        #want xhatphi, xpsi, hatphi0, psi0
 
     def plot_boundary(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
-        
         
         rhoT = interpolate_(self.q,xpsi,hatphiT)*interpolate_(self.q,xhatphi,psi0)
         rho0 = interpolate_(self.q,xhatphi,hatphi0)*interpolate_(self.q,xpsi,psiT)
