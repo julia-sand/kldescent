@@ -24,10 +24,10 @@ def compute_V(phi_t,A,B):
     return -(A/B)*np.log(phi_t)
 
 
-def get_solution_in_time(xpsi,
-                            psiT,Tf2,A,B,
+def get_solution_in_time(xhatphi,xpsi,
+                            hatphi0,psi0,Tf2,A,B,
                             xnum = 1000,
-                            tnum = 10):
+                            tnum = 21):
     """
     Evaluate the schrödinger factors along the time horizon and use them to compute 
     the probability distribution and value function in the horizon [0,Tf2]
@@ -69,20 +69,32 @@ def get_solution_in_time(xpsi,
     arr_out = np.empty((tnum*xnum,4))
 
     #preallocate for phi 
+    phi_out = np.empty((tnum,len(xhatphi_t),2))
+    
+    for t in range(len(tvec)):
+
+        #compute one step of the proximal recursion
+        xphi_Tt,phi_Ttemp = proximal_fpk(xpsi,psi0,dt,1/A,num_steps=int(np.floor(10000/tnum)))
+        
+        #save the value
+        phi_out[t,:,0] = xphi_Tt
+        phi_out[t,:,1] = phi_Ttemp
+
 
     #iterate over times to compute the solution at each timepoint
     for t in enumerate(tvec):
 
         #compute one step of the proximal recursion
         xhatphi_t,hatphi_temp = proximal_fpk(xhatphi,hatphi0,dt,1/A,num_steps=int(np.floor(10000/tnum)))
-        xphi_t,phi_temp = proximal_fpk(xpsi,psiT,dt,1/A,num_steps=int(np.floor(10000/tnum)))
+        xphi_Tt,phi_Ttemp = proximal_fpk(xpsi,psi0,dt,1/A,num_steps=int(np.floor(10000/tnum)))
         
         #interpolate 
-        phi_t = interpolate_(q,xphi_t,phi_temp)
+        phi_t = interpolate_(q,xphi_Tt,phi_Ttemp)
         hatphi_t = interpolate_(q,xhatphi_t,hatphi_temp)
         
         arr_out[t[0]*xnum:(t[0]+1)*xnum] = np.column_stack((t[1]*np.ones(xnum),q,
-                                                            normalise(q,compute_rho(phi_t,hatphi_t)),compute_V(phi_t,A,B)))
+                                                            normalise(q,compute_rho(phi_t,hatphi_t)),
+                                                            compute_V(phi_t,A,B)))
 
         #set new iterates
         xhatphi, hatphi0 = xhatphi_t,hatphi_temp 
@@ -109,8 +121,8 @@ if __name__=="__main__":
     xhatphi,xpsi,hatphiT,psiT = cell.iteration(num_iters=3)
 
     arr = get_solution_in_time(xpsi,
-                        psiT,Tf2,A,B,
-                        xnum = 1000,
-                        tnum = 21)
+                        psiT,Tf2,A,B)
+                        #xnum = 1000,
+                        #tnum = 21)
 
     save_array(arr,boundary)
