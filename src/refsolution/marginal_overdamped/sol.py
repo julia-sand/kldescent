@@ -25,7 +25,7 @@ def compute_V(phi_t,A,B):
 
 
 def get_solution_in_time(xhatphi,xpsi,
-                            hatphi0,psi0,Tf2,A,B,
+                            hatphiT,psiT,Tf2,A,B,
                             xnum = 1000,
                             tnum = 21):
     """
@@ -63,15 +63,17 @@ def get_solution_in_time(xhatphi,xpsi,
 
     #set hatphi initial conditions from psi
     hatphi0 = boundary.q_marginal_initial(xpsi)/psiT
-    xhatphi = xpsi.copy()
+    psi0 = (boundary.q_marginal_final(xhatphi)/hatphiT)**(B/(A+B))
 
     #preallocate arrays
     arr_out = np.empty((tnum*xnum,4))
 
     #preallocate for phi 
-    phi_out = np.empty((tnum,len(xhatphi_t),2))
-    
-    for t in range(len(tvec)):
+    phi_out = np.empty((tnum,len(xhatphi),2))
+    phi_out[0,:,0] = xhatphi
+    phi_out[0,:,1] = psi0
+
+    for t in range(1,tnum-1):
 
         #compute one step of the proximal recursion
         xphi_Tt,phi_Ttemp = proximal_fpk(xpsi,psi0,dt,1/A,num_steps=int(np.floor(10000/tnum)))
@@ -80,16 +82,20 @@ def get_solution_in_time(xhatphi,xpsi,
         phi_out[t,:,0] = xphi_Tt
         phi_out[t,:,1] = phi_Ttemp
 
+        psi0 = phi_Ttemp
+        xpsi = xphi_Tt
 
+    phi_out = np.flip(phi_out,axis=1)
+    
     #iterate over times to compute the solution at each timepoint
     for t in enumerate(tvec):
 
         #compute one step of the proximal recursion
         xhatphi_t,hatphi_temp = proximal_fpk(xhatphi,hatphi0,dt,1/A,num_steps=int(np.floor(10000/tnum)))
-        xphi_Tt,phi_Ttemp = proximal_fpk(xpsi,psi0,dt,1/A,num_steps=int(np.floor(10000/tnum)))
+        #xphi_Tt,phi_Ttemp = proximal_fpk(xpsi,psi0,dt,1/A,num_steps=int(np.floor(10000/tnum)))
         
         #interpolate 
-        phi_t = interpolate_(q,xphi_Tt,phi_Ttemp)
+        phi_t = interpolate_(q,phi_out[t[0],:,0],phi_out[t[0],:,1])
         hatphi_t = interpolate_(q,xhatphi_t,hatphi_temp)
         
         arr_out[t[0]*xnum:(t[0]+1)*xnum] = np.column_stack((t[1]*np.ones(xnum),q,
@@ -98,7 +104,7 @@ def get_solution_in_time(xhatphi,xpsi,
 
         #set new iterates
         xhatphi, hatphi0 = xhatphi_t,hatphi_temp 
-        xpsi, psiT = xphi_t,phi_temp
+        xpsi, psiT = xphi_Tt,phi_Ttemp
 
     return arr_out
 
@@ -120,9 +126,7 @@ if __name__=="__main__":
     cell = CellProblem(boundary,A,B)
     xhatphi,xpsi,hatphiT,psiT = cell.iteration(num_iters=3)
 
-    arr = get_solution_in_time(xpsi,
-                        psiT,Tf2,A,B)
-                        #xnum = 1000,
-                        #tnum = 21)
+    arr = get_solution_in_time(xhatphi,xpsi,
+                            hatphiT,psiT,Tf2,A,B)
 
     save_array(arr,boundary)
