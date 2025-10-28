@@ -68,12 +68,11 @@ class RefSolution():
         ##fetch the reference data approximation data
         arrtemp = arr[np.where(arr[:,0]==np.round(time,8))] 
         arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
-        
+
         if quantity =="value":
             idx=-1
         elif quantity =="marginal":
             idx=-2
-
         
         #RETURNS X, DU
         return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx])
@@ -123,19 +122,15 @@ class RefSolution():
                             delimiter=",")  
         return arr 
 
-    def overdamped_drift(q,t,epsilon):
-        return 0
-
     def perturbative_marginal(q,t,epsilon):
         return 0
 
-    def overdamped_pdf(q,t):
-        return 0
+
 
 def plot_overdamped(folder_name, quantity):
     reference_ = RefSolution(boundary=None,folder_name=folder_name)
 
-    times = [0,0.05,0.1,0.2]
+    times = [0,0.06,0.12,0.2]
 
     fig,axs = plt.subplots(ncols=len(times),nrows=1)
     fig.set_figheight(15)
@@ -145,6 +140,9 @@ def plot_overdamped(folder_name, quantity):
         q, ptq = reference_.get_overdamped_quantity(time[1], quantity)
         axs[time[0]].plot(q,ptq)
         axs[time[0]].set_title(f"t={time[1]}")
+        if quantity=="marginal":
+            axs[time[0]].plot(q,np.exp(-q**2/2)/(np.sqrt(2*np.pi)))
+            axs[time[0]].plot(q,np.exp(-q**2/(2*0.25**2))/(np.sqrt(2*np.pi*0.25**2)))
 
     fig.tight_layout()
 

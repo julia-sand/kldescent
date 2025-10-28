@@ -6,7 +6,7 @@ from ...sde.boundary import UnderdampedGaussian,UnderdampedLandauer
 from .proximal import proximal_fpk
 from .iteration import CellProblem, interpolate_, normalise
 from ..get_ref import RefSolution
-#import pdb
+import pdb
 
 #Proximal operator solution for fokkerplanck equation
 def afun(Tf):
@@ -27,7 +27,7 @@ def compute_V(phi_t,A,B):
 def get_solution_in_time(xhatphi,xpsi,
                             hatphiT,psiT,Tf2,A,B,
                             xnum = 1000,
-                            tnum = 21):
+                            tnum = 11):
     """
     Evaluate the schrödinger factors along the time horizon and use them to compute 
     the probability distribution and value function in the horizon [0,Tf2]
@@ -73,38 +73,38 @@ def get_solution_in_time(xhatphi,xpsi,
     phi_out[0,:,0] = xhatphi
     phi_out[0,:,1] = psi0
 
-    for t in range(1,tnum-1):
+    xpsi0 = xhatphi.copy()
+    xhatphi0 = xpsi.copy()
+
+    for t in range(1,tnum):
 
         #compute one step of the proximal recursion
-        xphi_Tt,phi_Ttemp = proximal_fpk(xpsi,psi0,dt,1/A,num_steps=int(np.floor(10000/tnum)))
+        xphi_Tt,phi_Ttemp = proximal_fpk(xpsi0,psi0,dt,1/A,num_steps=int(np.floor(1000/tnum)))
         
-        #save the value
+        #save phi_(T-t)
         phi_out[t,:,0] = xphi_Tt
         phi_out[t,:,1] = phi_Ttemp
 
         psi0 = phi_Ttemp
-        xpsi = xphi_Tt
+        xpsi0 = xphi_Tt
 
-    phi_out = np.flip(phi_out,axis=1)
     
     #iterate over times to compute the solution at each timepoint
-    for t in enumerate(tvec):
+    for t in range(tnum):
 
-        #compute one step of the proximal recursion
-        xhatphi_t,hatphi_temp = proximal_fpk(xhatphi,hatphi0,dt,1/A,num_steps=int(np.floor(10000/tnum)))
-        #xphi_Tt,phi_Ttemp = proximal_fpk(xpsi,psi0,dt,1/A,num_steps=int(np.floor(10000/tnum)))
-        
         #interpolate 
-        phi_t = interpolate_(q,phi_out[t[0],:,0],phi_out[t[0],:,1])
-        hatphi_t = interpolate_(q,xhatphi_t,hatphi_temp)
-        
-        arr_out[t[0]*xnum:(t[0]+1)*xnum] = np.column_stack((t[1]*np.ones(xnum),q,
+        phi_t = interpolate_(q,phi_out[-t-1,:,0],phi_out[-t-1,:,1])
+        hatphi_t = interpolate_(q,xhatphi0,hatphi0)       
+
+        arr_out[t*xnum:(t+1)*xnum] = np.column_stack((tvec[t]*np.ones(xnum),q,
                                                             normalise(q,compute_rho(phi_t,hatphi_t)),
                                                             compute_V(phi_t,A,B)))
 
+        #compute one step of the proximal recursion
+        xhatphi_t,hatphi_temp = proximal_fpk(xhatphi0,hatphi0,dt,1/A,num_steps=int(np.floor(1000/tnum)))
+             
         #set new iterates
-        xhatphi, hatphi0 = xhatphi_t,hatphi_temp 
-        xpsi, psiT = xphi_Tt,phi_Ttemp
+        xhatphi0, hatphi0 = xhatphi_t,hatphi_temp 
 
     return arr_out
 

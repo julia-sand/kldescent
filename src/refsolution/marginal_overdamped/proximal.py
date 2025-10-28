@@ -5,7 +5,7 @@ import scipy.spatial.distance as sci
 def proximal_fpk(x0,y0,
                     Tf,
                     beta,
-                    num_steps=10000, 
+                    num_steps=1000, 
                     max_iters=1000, 
                     eps=0.05, 
                     tol=0.000001): 
@@ -44,7 +44,7 @@ def proximal_fpk(x0,y0,
     samples = x0.shape[0] #number of points in the cloud
     x_evolution = x0.copy()
 
-    dt = Tf/num_steps
+    dt = Tf/(num_steps)
 
     #preallocate arrays
     x_evolution_new = np.empty_like(x_evolution) #np.zeros((samples,num_steps))
@@ -104,19 +104,25 @@ if __name__=="__main__":
     import src.sde.boundary as boundaries
 
     boundary = boundaries.UnderdampedGaussian()
-    Tf = boundary.params["Tf"]
+    Tf = boundary.params["Tf"]*0.2**2
+    def afun(Tf):
+        return (Tf - 1 + np.exp(-Tf))/Tf
 
-    beta = 1/2
+    beta = 1/afun(boundary.params["Tf"])
     nsamples = 1000
 
     #get initial solution
     x0 = boundary.generate_samples_q(nsamples,"initial").flatten()
     y0 = boundary.q_marginal_initial(x0).flatten()
     
-    x_end, y_end = proximal_fpk(x0,y0,Tf,beta)
+    x_end, y_end = proximal_fpk(x0,y0,Tf,beta,num_steps=10000)
 
 
-    plt.scatter(x_end, y_end)#normalise(x_end,y_end))
+    def normalise(x,y):
+        idx = np.argsort(x)
+        return y/np.trapz(y[idx],x[idx])
+
+    plt.scatter(x_end, normalise(x_end,y_end))#normalise(x_end,y_end))
     plt.scatter(x0, y0)
     qax = np.linspace(-8,8)
 
