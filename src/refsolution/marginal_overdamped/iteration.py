@@ -12,6 +12,13 @@ def normalise(x,y):
     idx = np.argsort(x)
     return y/np.trapz(y[idx],x[idx])
 
+def sig_initial(x,y):
+    idx = np.argsort(x)
+    ynorm = normalise(x,y)
+
+    return np.trapz(ynorm[idx]*x[idx]**2,x[idx])
+    
+
 class CellProblem():
 
     def __init__(self,boundary,
@@ -34,8 +41,8 @@ class CellProblem():
         
         self.q = np.linspace(-4,4) #for plotting 
 
-        self.A = A
-        self.B = B
+        self.A = self.boundary.afun(self.boundary.params["Tf"])
+        self.B = self.boundary.bfun(self.boundary.params["Tf"])
         self.beta = 1/A
 
     def iteration(self,num_samples=1000,
@@ -83,19 +90,35 @@ class CellProblem():
 
             self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
 
-            self.plot_factors(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+            self.plot_factors0(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+            self.plot_factorsT(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
 
         return xhatphi,xpsi,hatphiT,psiT
 
-    def plot_factors(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
+    def plot_factors0(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
         
-        
-        plt.scatter(xpsi,psiT, label="phi0")
-        plt.scatter(xhatphi,hatphiT, label="hatphi0")
+        plt.scatter(xhatphi,psi0, label="phi0")
+        plt.scatter(xpsi,hatphi0, label="hatphi0")
 
         #plt.plot(self.q,self.boundary.q_marginal_final(self.q)**(self.B/(self.B+self.A)),linestyle="dashed",color="gray",alpha=0.5)
         #plt.plot(self.q,self.boundary.q_marginal_initial(self.q),linestyle="dashed",color="gray",alpha=0.5)
 
+        plt.legend()
+        plt.savefig(f"factors0_iter_{iters}.png")
+        plt.close()
+
+    def plot_factorsT(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
+        
+        
+        plt.scatter(xpsi,normalise(xpsi,psiT), label="phi0")
+        plt.scatter(xhatphi,normalise(xhatphi,hatphiT), label="hatphi0")
+
+        #plt.plot(self.q,self.boundary.q_marginal_final(self.q)**(self.B/(self.B+self.A)),linestyle="dashed",color="gray",alpha=0.5)
+        #plt.plot(self.q,self.boundary.q_marginal_initial(self.q),linestyle="dashed",color="gray",alpha=0.5)
+        qax = np.linspace(-8,8)
+
+        plt.plot(qax,np.exp(-qax**2/(2*sigfinal))/np.sqrt(2*np.pi*sigfinal),label="analytic solution")
+        
         plt.legend()
         plt.savefig(f"factors_iter_{iters}.png")
         plt.close()
@@ -120,16 +143,9 @@ if __name__=="__main__":
 
     boundary = boundaries.UnderdampedGaussian()
     Tf = boundary.params["Tf"]
-    Tf2 = boundary.params["Tf"]*(boundary.params["epsilon"]**2)
     
-    #A = sol.afun(Tf)
-    #B = sol.bfun(Tf)
-
-    xhatphi,xpsi,hatphiT,psiT = iteration(boundary,1,1,Tf2)
-
-    #plt.scatter(x0,boundary.q_marginal_final(x0))
-    plt.scatter(xhatphi,hatphiT, label="phihat")
-    plt.scatter(xpsi,psiT, label="psi")
-    plt.legend()
-    plt.savefig("iter_test1.png")
-    plt.close()
+    A = afun(Tf)
+    B = bfun(Tf)
+    cell = CellProblem(boundary)
+    
+    xhatphi,xpsi,hatphiT,psiT = cell.iteration(num_iters=1)
