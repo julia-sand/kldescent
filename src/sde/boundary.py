@@ -397,6 +397,12 @@ class UnderdampedLandauer(OverdampedLandauer):
 
         return xn
        
+    def afun(self,Tf):
+        return (Tf - 1 + np.exp(-Tf))/Tf
+
+    def bfun(self,Tf):
+        return 1 - (1-np.exp(-Tf))*(3-np.exp(-Tf))/(2*Tf)
+    
 class UnderdampedGaussian(UnderdampedLandauer):
     
     def __init__(self,params=None,

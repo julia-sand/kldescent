@@ -50,7 +50,7 @@ def proximal_fpk(x0,y0,
     x_evolution_new = np.empty_like(x_evolution) #np.zeros((samples,num_steps))
 
     power= 1/(1+(beta*eps/dt))
-    yvals = y0.copy()
+    yvals = y0.copy()/np.sum(y0)
 
     for k in range(num_steps):
         
