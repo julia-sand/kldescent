@@ -102,31 +102,31 @@ if __name__=="__main__":
     import matplotlib.pyplot as plt 
 
     import src.sde.boundary as boundaries
+    from src.refsolution.marginal_overdamped.gauss import Gaussian_Overdamped_Ref,normalise
 
-    boundary = boundaries.UnderdampedLandauer()
-    Tf = boundary.params["Tf"]*0.2**2
+    refsol = Gaussian_Overdamped_Ref()
+    boundary = boundaries.UnderdampedGaussian()
+    Tf2 = boundary.params["Tf"]*0.2**2
     
     beta = 1/boundary.afun(boundary.params["Tf"])
     nsamples = 1000
 
     #get initial solution
     x0 = boundary.generate_samples_q(nsamples,"initial").flatten()
-    y0 = boundary.q_marginal_initial(x0).flatten()
+    y0 = refsol.phi_t(x0,Tf2)
+    #boundary.q_marginal_initial(x0).flatten()
     
-    x_end, y_end = proximal_fpk(x0,y0,Tf,beta,num_steps=10000)
-
-
-    def normalise(x,y):
-        idx = np.argsort(x)
-        return y/np.trapz(y[idx],x[idx])
+    x_end, y_end = proximal_fpk(x0,y0,Tf2,beta,num_steps=10000)
 
     plt.scatter(x_end, normalise(x_end,y_end))#normalise(x_end,y_end))
-    plt.scatter(x0, y0)
+    #plt.scatter(x0, y0)
     qax = np.linspace(-8,8)
-
+    plt.plot(qax,refsol.phi_t(qax,0))
     #ref solution
-    sigfinal = 1 + Tf*2/beta
-    plt.plot(qax,np.exp(-qax**2/(2*sigfinal))/np.sqrt(2*np.pi*sigfinal),label="analytic solution")
+    #sigfinal = 1 + Tf*2/beta
+    #plt.plot(qax,np.exp(-qax**2/(2*sigfinal))/np.sqrt(2*np.pi*sigfinal),label="analytic solution")
     
-    plt.savefig("test_fpk_prox1.png")
+    plt.xlim((-2,2))
+    plt.ylim((0,3))
+    plt.savefig("test_fpk_phi_.png")
     plt.close()

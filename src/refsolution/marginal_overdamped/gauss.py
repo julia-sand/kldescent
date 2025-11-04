@@ -36,18 +36,18 @@ class Gaussian_Overdamped_Ref():
         return coeff1*(t1+t2)
 
     def v2(self,t):
-        #num = sqrt_ - Tf2 - sigma0**2
-        #denom = 2*(t*sqrt_ + (Tf2-t)*sigma0 - t*Tf2)
-        #return beta*num/denom 
-        v20_temp = self.Tf2 + (self.sigma0**2)*self.beta - np.sqrt((self.beta*self.sigma0*self.sigmaT)**2+self.Tf2**2)
-        v20 = v20_temp/(2*self.Tf2*(self.sigma0**2))
-        return self.beta*v20/(self.beta-2*t*v20)
+        num = self.sqrt_ - self.Tf2 - self.sigma0**2
+        denom = 2*(t*self.sqrt_ + (self.Tf2-t)*self.sigma0 - t*self.Tf2)
+        return self.beta*num/denom 
+        #v20_temp = self.Tf2 + (self.sigma0**2)*self.beta - np.sqrt((self.beta*self.sigma0*self.sigmaT)**2+self.Tf2**2)
+        #v20 = v20_temp/(2*self.Tf2*(self.sigma0**2))
+        #return self.beta*v20/(self.beta-2*t*v20)
 
     def phi_t(self,q,t):
         return np.exp((self.v2(t)*q**2)/2)
 
     def hatphi_t(self,q,t):
-        return np.exp((self.v2(t)*q**2)/2)*np.exp(-(q**2)/(2*self.m2(t)))#/np.sqrt(2*m2(t)*np.pi)
+        return np.exp(-(self.v2(t)*q**2)/2)*np.exp(-(q**2)/(2*self.m2(t)))#/np.sqrt(2*m2(t)*np.pi)
 
 def normalise(x,y):
     idx = np.argsort(x)
