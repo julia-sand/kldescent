@@ -11,17 +11,10 @@ import os
 import numpy as np 
 from scipy.ndimage import generic_filter,median
 
-def afun(Tf):
-    return -(Tf - 1 + np.exp(-Tf))/Tf
-
-def bfun(Tf):
-    return -(1 - (1-np.exp(-Tf))*(3-np.exp(-Tf))/(2*Tf))
-
 def save_file(arr,dirname,filename):
     os.makedirs(dirname, exist_ok = True) #add checkpoints folder
     np.savetxt(os.path.join(dirname, filename), arr ,fmt="%10.6f",header = "t,q,v,du",delimiter=',')
     print("done.")
-
 
 if __name__=="__main__":
 

@@ -50,7 +50,7 @@ def proximal_fpk(x0,y0,
     x_evolution_new = np.empty_like(x_evolution) #np.zeros((samples,num_steps))
 
     power= 1/(1+(beta*eps/dt))
-    yvals = y0.copy()/np.sum(y0)
+    yvals = y0.copy()#/np.sum(y0)
 
     for k in range(num_steps):
         
@@ -103,12 +103,10 @@ if __name__=="__main__":
 
     import src.sde.boundary as boundaries
 
-    boundary = boundaries.UnderdampedGaussian()
+    boundary = boundaries.UnderdampedLandauer()
     Tf = boundary.params["Tf"]*0.2**2
-    def afun(Tf):
-        return (Tf - 1 + np.exp(-Tf))/Tf
-
-    beta = 1/afun(boundary.params["Tf"])
+    
+    beta = 1/boundary.afun(boundary.params["Tf"])
     nsamples = 1000
 
     #get initial solution

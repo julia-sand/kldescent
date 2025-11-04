@@ -1,24 +1,18 @@
 #integrate a one-dimensional heat equation 
 
-def integrate(a,b,T2f,vfinal,dvfinal,
-                tstep=0.01,
+def integrate(boundary,Tf2,
+                num_tsteps = 100,
                 mc_samples = 200,
                 num_qsamples = 500,
                 filter_delta = 10):
     """
     Parameters:
-        a : float
-            negative coefficient of second derivative in the burgers equation
-        b : float
-            coefficient of the squared first derivative
+        boundary : class
+            specifies the initial conditions 
         T2f : float
             final time in the slow time (Tf*epsilon**2)
-        vfinal : function
-            terminal condition
-        dvfinal : function
-            gradient of terminal condition
-        tstep : float
-            size of timestep in MC evolution
+        num_tsteps : float
+            number of timesteps
         mcsamples : int
             number of MonteCarlo trajectories
         qsamples : int
