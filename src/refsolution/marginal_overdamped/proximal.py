@@ -8,7 +8,7 @@ def proximal_fpk(x0,y0,
                     num_steps=1000, 
                     max_iters=1000, 
                     eps=0.05, 
-                    tol=0.000001): 
+                    tol=1e-12): 
     """Implementation of algorithm described in 
     1908.00533 "Gradient Flow Algorithms for Density Propagation in Stochastic Systems"; Caluya&Halder,2019.
     
@@ -44,12 +44,12 @@ def proximal_fpk(x0,y0,
     samples = x0.shape[0] #number of points in the cloud
     x_evolution = x0.copy()
 
-    dt = Tf/(num_steps)
+    dt = Tf/(num_steps-1)
 
     #preallocate arrays
     x_evolution_new = np.empty_like(x_evolution) #np.zeros((samples,num_steps))
 
-    power= 1/(1+(beta*eps/dt))
+    power = 1/(1+(beta*eps/dt))
     yvals = y0.copy()#/np.sum(y0)
 
     for k in range(num_steps):
@@ -84,16 +84,22 @@ def proximal_fpk(x0,y0,
 
             if ((np.sum(np.abs(y_new - y_old))<tol) and
                     (np.sum(np.abs(z_new - z_old))<tol)):
+                
+                #update iterates
+                y_old = y_new
+                z_old = z_new
                 break
+            
             else: 
                 iters += 1
+            print(iters)
             
             #update iterates
             y_old = y_new
             z_old = z_new
         
         #set new running solutions
-        yvals = np.multiply(z_new,gamma_kt@y_new)
+        yvals = np.multiply(z_old,gamma_kt@y_old)
         x_evolution = x_evolution_new
 
     return x_evolution,yvals
@@ -106,27 +112,31 @@ if __name__=="__main__":
 
     refsol = Gaussian_Overdamped_Ref()
     boundary = boundaries.UnderdampedGaussian()
-    Tf2 = boundary.params["Tf"]*0.2**2
+    Tf2 = boundary.params["Tf"]*(boundary.params["epsilon"]**2)
     
-    beta = 1/boundary.afun(boundary.params["Tf"])
-    nsamples = 1000
+    beta = boundary.bfun(boundary.params["Tf"])/(boundary.afun(boundary.params["Tf"]))
+    nsamples = 500
 
     #get initial solution
     x0 = boundary.generate_samples_q(nsamples,"initial").flatten()
-    y0 = refsol.phi_t(x0,Tf2)
+    y0 = np.ones_like(x0)#refsol.phi_t(x0,Tf2)
     #boundary.q_marginal_initial(x0).flatten()
     
-    x_end, y_end = proximal_fpk(x0,y0,Tf2,beta,num_steps=10000)
+    x_end, y_end = proximal_fpk(x0,y0,Tf2,beta,num_steps=10)
+    plt.scatter(x0, normalise(x0,y0),label="start")#normalise(x_end,y_end))
 
-    plt.scatter(x_end, normalise(x_end,y_end))#normalise(x_end,y_end))
+    plt.scatter(x_end, normalise(x_end,y_end),label="end")#normalise(x_end,y_end))
     #plt.scatter(x0, y0)
-    qax = np.linspace(-8,8)
-    plt.plot(qax,refsol.phi_t(qax,0))
+    qax = np.linspace(-4,4)
+    plt.plot(qax,normalise(qax,refsol.phi_t(qax,Tf2)),label="ref at Tf")
+    plt.plot(qax,normalise(qax,refsol.phi_t(qax,0)),label="ref at 0")
+    
     #ref solution
     #sigfinal = 1 + Tf*2/beta
     #plt.plot(qax,np.exp(-qax**2/(2*sigfinal))/np.sqrt(2*np.pi*sigfinal),label="analytic solution")
     
-    plt.xlim((-2,2))
-    plt.ylim((0,3))
-    plt.savefig("test_fpk_phi_.png")
+    plt.legend()
+    #plt.xlim((-2,2))
+    plt.ylim((0,2))
+    plt.savefig("test_fpk_phi_3.png")
     plt.close()
