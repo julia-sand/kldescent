@@ -17,7 +17,6 @@ class Gaussian_Overdamped_Ref():
         self.B = self.boundary.bfun(self.boundary.params["Tf"])
         self.Tf2 = self.boundary.params["Tf"]*(self.boundary.params["epsilon"]**2)
         #self.beta = 1/self.A
-
         self.sqrt_ = np.sqrt(self.Tf2**2 + (self.sigma0*self.sigmaT)**2)
 
     def m1(self,t):
@@ -39,7 +38,7 @@ class Gaussian_Overdamped_Ref():
         return v20/(1-2*self.B*t*v20)
         
     def phi_t(self,q,t):
-        return np.exp(-(self.B/self.A)*(self.v2(t)*q**2)/2)
+        return np.exp(-(self.B/self.A)*self.v2(t)*(q**2)/2)
 
     def hatphi_t(self,q,t):
         return np.exp((self.B/self.A)*(self.v2(t)*q**2)/2)*np.exp(-(q**2)/(2*self.m2(t)))
