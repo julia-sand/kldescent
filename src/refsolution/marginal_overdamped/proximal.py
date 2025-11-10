@@ -7,7 +7,7 @@ def proximal_fpk(x0,y0,
                     beta,
                     num_steps=1000, 
                     max_iters=1000, 
-                    eps=0.05, 
+                    eps=0.01, 
                     tol=1e-12): 
     """Implementation of algorithm described in 
     1908.00533 "Gradient Flow Algorithms for Density Propagation in Stochastic Systems"; Caluya&Halder,2019.
@@ -55,10 +55,11 @@ def proximal_fpk(x0,y0,
     for k in range(num_steps):
         
         #step of sde evolution 
-        x_evolution_new = x_evolution + np.sqrt(2*dt/beta)*Generator.standard_normal(size=x_evolution.shape)
-        #
+        innovation = np.sqrt(2*dt/beta)*Generator.standard_normal(size=x_evolution.shape)
 
-        c_k = sci.cdist(x_evolution_new[:,np.newaxis],x_evolution[:,np.newaxis],metric="sqeuclidean")#
+        x_evolution_new = x_evolution + innovation
+        c_k = np.sum((x_evolution_new[:, None, np.newaxis] - x_evolution[None, :, np.newaxis]) ** 2, axis=2)
+        #sci.cdist(x_evolution_new[:,np.newaxis],x_evolution[:,np.newaxis],metric="sqeuclidean")#
 
         gamma_k = np.exp(-c_k/(2*eps))
         #pdb.set_trace()
@@ -72,7 +73,7 @@ def proximal_fpk(x0,y0,
 
         #preallocate arrays
         y_new = np.empty_like(y_old)
-        z_new = np.empty_like(z_old)
+        z_new = np.empty_like(y_old)
 
         xi = np.exp(-1)*np.ones_like(x_evolution)
 
@@ -92,14 +93,14 @@ def proximal_fpk(x0,y0,
             
             else: 
                 iters += 1
-            print(iters)
+            #print(iters)
             
             #update iterates
             y_old = y_new
             z_old = z_new
         
         #set new running solutions
-        yvals = np.multiply(z_old,gamma_kt@y_old)
+        yvals = np.multiply(z_new,gamma_kt@y_new)
         x_evolution = x_evolution_new
 
     return x_evolution,yvals
@@ -109,34 +110,34 @@ if __name__=="__main__":
 
     import src.sde.boundary as boundaries
     from src.refsolution.marginal_overdamped.gauss import Gaussian_Overdamped_Ref,normalise
-
+    Generator = np.random.default_rng(seed=42)
     refsol = Gaussian_Overdamped_Ref()
     boundary = boundaries.UnderdampedGaussian()
-    Tf2 = boundary.params["Tf"]*(boundary.params["epsilon"]**2)
+    Tf2 = 3#boundary.params["Tf"]*(boundary.params["epsilon"]**2)
     
-    beta = boundary.bfun(boundary.params["Tf"])/(boundary.afun(boundary.params["Tf"]))
+    beta = 1/(boundary.afun(boundary.params["Tf"]))
     nsamples = 500
 
     #get initial solution
-    x0 = boundary.generate_samples_q(nsamples,"initial").flatten()
-    y0 = np.ones_like(x0)#refsol.phi_t(x0,Tf2)
+    xchoice = np.linspace(-4,4,10000)
+    y0_choice = normalise(xchoice,refsol.phi_t(xchoice,Tf2))
+    
+    x0 = Generator.standard_normal(size=nsamples) #np.random.choice(xchoice,size=nsamples, p = y0_choice/np.sum(y0_choice))
+    #boundary.generate_samples_q(nsamples,"initial").flatten()
+    y0 = np.exp(-x0**2/2)/(np.sqrt(2*np.pi))#refsol.phi_t(x0,Tf2)
     #boundary.q_marginal_initial(x0).flatten()
     
-    x_end, y_end = proximal_fpk(x0,y0,Tf2,beta,num_steps=10)
+    x_end, y_end = proximal_fpk(x0,y0,Tf2,beta,num_steps=10000)
     plt.scatter(x0, normalise(x0,y0),label="start")#normalise(x_end,y_end))
 
+    #plt.scatter(x_end, normalise(x_end,y_end),label="end")#normalise(x_end,y_end))
     plt.scatter(x_end, normalise(x_end,y_end),label="end")#normalise(x_end,y_end))
     #plt.scatter(x0, y0)
     qax = np.linspace(-4,4)
     plt.plot(qax,normalise(qax,refsol.phi_t(qax,Tf2)),label="ref at Tf")
     plt.plot(qax,normalise(qax,refsol.phi_t(qax,0)),label="ref at 0")
     
-    #ref solution
-    #sigfinal = 1 + Tf*2/beta
-    #plt.plot(qax,np.exp(-qax**2/(2*sigfinal))/np.sqrt(2*np.pi*sigfinal),label="analytic solution")
-    
     plt.legend()
-    #plt.xlim((-2,2))
     plt.ylim((0,2))
-    plt.savefig("test_fpk_phi_3.png")
+    plt.savefig("test_fpk_phi_4.png")
     plt.close()
