@@ -5,9 +5,9 @@ import scipy.spatial.distance as sci
 def proximal_fpk(x0,y0,
                     Tf,
                     beta,
-                    num_steps=1000, 
+                    num_steps=200, 
                     max_iters=1000, 
-                    eps=0.01, 
+                    eps=0.05, 
                     tol=1e-12): 
     """Implementation of algorithm described in 
     1908.00533 "Gradient Flow Algorithms for Density Propagation in Stochastic Systems"; Caluya&Halder,2019.
@@ -113,31 +113,31 @@ if __name__=="__main__":
     Generator = np.random.default_rng(seed=42)
     refsol = Gaussian_Overdamped_Ref()
     boundary = boundaries.UnderdampedGaussian()
-    Tf2 = 3#boundary.params["Tf"]*(boundary.params["epsilon"]**2)
+    Tf2 = boundary.params["Tf"]*(boundary.params["epsilon"]**2)
     
     beta = 1/(boundary.afun(boundary.params["Tf"]))
     nsamples = 500
 
     #get initial solution
     xchoice = np.linspace(-4,4,10000)
-    y0_choice = normalise(xchoice,refsol.phi_t(xchoice,Tf2))
+    y0_choice = normalise(xchoice,refsol.hatphi_t(xchoice,0))
     
-    x0 = Generator.standard_normal(size=nsamples) #np.random.choice(xchoice,size=nsamples, p = y0_choice/np.sum(y0_choice))
+    x0 = np.random.choice(xchoice, size=nsamples, p = y0_choice/np.sum(y0_choice))
     #boundary.generate_samples_q(nsamples,"initial").flatten()
-    y0 = np.exp(-x0**2/2)/(np.sqrt(2*np.pi))#refsol.phi_t(x0,Tf2)
+    y0 = refsol.hatphi_t(x0,0)
     #boundary.q_marginal_initial(x0).flatten()
     
-    x_end, y_end = proximal_fpk(x0,y0,Tf2,beta,num_steps=10000)
+    x_end, y_end = proximal_fpk(x0,y0,Tf2,beta,num_steps=1000)
     plt.scatter(x0, normalise(x0,y0),label="start")#normalise(x_end,y_end))
 
     #plt.scatter(x_end, normalise(x_end,y_end),label="end")#normalise(x_end,y_end))
     plt.scatter(x_end, normalise(x_end,y_end),label="end")#normalise(x_end,y_end))
     #plt.scatter(x0, y0)
     qax = np.linspace(-4,4)
-    plt.plot(qax,normalise(qax,refsol.phi_t(qax,Tf2)),label="ref at Tf")
-    plt.plot(qax,normalise(qax,refsol.phi_t(qax,0)),label="ref at 0")
+    plt.plot(qax,normalise(qax,refsol.hatphi_t(qax,Tf2)),label="ref at Tf")
+    plt.plot(qax,normalise(qax,refsol.hatphi_t(qax,0)),label="ref at 0")
     
     plt.legend()
-    plt.ylim((0,2))
-    plt.savefig("test_fpk_phi_4.png")
+    #plt.ylim((0,2))
+    plt.savefig("test_fpk_hatphi_4.png")
     plt.close()
