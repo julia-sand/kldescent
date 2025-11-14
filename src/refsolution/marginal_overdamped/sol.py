@@ -112,7 +112,7 @@ def save_array(arr_out,boundary):
     return
 
 if __name__=="__main__":
-    boundary = UnderdampedGaussian()
+    boundary = UnderdampedLandauer()
     Tf2 = boundary.params["Tf"]*(boundary.params["epsilon"]**2)
     
     #should these be in the boundary class? 

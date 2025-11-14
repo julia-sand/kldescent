@@ -395,11 +395,14 @@ class UnderdampedLandauer(OverdampedLandauer):
 
         return xn
        
-    def afun(self,Tf):
-        return 1#(Tf - 1 + np.exp(-Tf))/Tf
+    def afun(self,Tf=None):
+        if Tf is None:
+            Tf = self.params["Tf"]
+
+        return (Tf - 1 + np.exp(-Tf))/Tf
 
     def bfun(self,Tf):
-        return 1#1 - (1-np.exp(-Tf))*(3-np.exp(-Tf))/(2*Tf)
+        return 1 - (1-np.exp(-Tf))*(3-np.exp(-Tf))/(2*Tf)
     
 class UnderdampedGaussian(UnderdampedLandauer):
     
@@ -470,4 +473,8 @@ class UnderdampedGaussian(UnderdampedLandauer):
 if __name__=="__main__":
 
     boundary = UnderdampedGaussian()
-    
+    import matplotlib.pyplot as plt
+
+    plt.plot(np.linspace(0,20),boundary.bfun(np.linspace(0,20))/boundary.afun(np.linspace(0,20)))
+    plt.savefig("BA.png")
+    plt.close()

@@ -1,15 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt 
 
-from .proximal import proximal_fpk
+from .heatintegrators import proximal_fpk,mcintegrator
 from .gauss import *
 from ..utilfunctions import *
-
-def sig_initial(x,y):
-    idx = np.argsort(x)
-    ynorm = normalise(x,y)
-
-    return np.trapz(ynorm[idx]*x[idx]**2,x[idx])
 
 class CellProblem():
 
@@ -37,7 +31,9 @@ class CellProblem():
 
         self.power = self.B/(self.A+self.B)
 
-        self.refsol = Gaussian_Overdamped_Ref(boundary)
+        #only initialise when using gaussian boundaries
+        if "Gauss" in self.boundary.__class__.__name__:
+            self.refsol = Gaussian_Overdamped_Ref(boundary)
         
         if num_samples is not None:
             self.num_samples = num_samples
@@ -50,7 +46,7 @@ class CellProblem():
 
         self.xsamples = np.linspace(-5,5,self.num_samples*100)
 
-    def iteration(self):
+    def iteration(self,integrator):
         """
         Implementation of Iteration in 1912.01244
         'Wasserstein Proximal Algorithms for the Schr¨odinger Bridge Problem:
@@ -67,42 +63,41 @@ class CellProblem():
             psiT : arr
         """
         
-        xhatphi = self.boundary.generate_samples_q(self.num_samples, mode="final").flatten()
+        xhatphi = np.linspace(-6,6,self.num_samples)
+        #self.boundary.generate_samples_q(self.num_samples, mode="final").flatten()
         
         #preallocate arrays
-        hatphi0 = np.zeros_like(xhatphi) #these must be non.zero positive values
-        hatphiT = np.exp(-1)*np.ones_like(xhatphi)
+        hatphi0 = np.ones_like(xhatphi) #these must be non.zero positive values
+        hatphiT = np.exp(1)*np.ones_like(xhatphi)
         psi0 = np.ones_like(xhatphi) #np.empty_like(xpsi) 
         psiT = np.ones_like(xhatphi) 
         
         xpsi = xhatphi.copy() #np.zeros_like(xhatphi)
-        xtemp = xhatphi.copy()
 
         iters = 0
         while iters < self.num_iters:
 
             #compute psi0/phiT
-            psi0 = self.boundary.q_marginal_final(xhatphi)/hatphiT#**(self.B/(self.A+self.B)) 
+            psi0 = self.boundary.q_marginal_final(xhatphi)/normalise(xhatphi,hatphiT)#**(self.B/(self.A+self.B)) 
 
             #integrate psi to Tf
-            xpsi,psiT = proximal_fpk(xhatphi,psi0+1e-10,self.Tf2,self.beta)
-
-            #xpsi,psiT = self.new_iterate(xpsi_old,psiT_old)
+            xpsi,psiT = integrator(xhatphi,psi0,self.Tf2,self.beta)
 
             #compute hatphi0 
-            hatphi0 = self.boundary.q_marginal_initial(xpsi)/psiT
+            hatphi0 = self.boundary.q_marginal_initial(xpsi)/normalise(xpsi,psiT)
 
             #integrate phihat to Tf
-            xhatphi,hatphiT = proximal_fpk(xpsi,hatphi0+1e-10,self.Tf2,self.beta)
-            #xhatphi,hatphiT = self.new_iterate(xhatphi_old,hatphiT_old)
+            xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
             
-            #xhatphi = xhatphi_temp 
-            #xpsi = xpsi_temp 
             iters += 1
-
             self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-            self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-            self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+            
+            try:
+                #plot factors for gaussians
+                self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+                self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+            except: 
+                pass
 
         return xhatphi,xpsi,hatphiT,psiT
 
@@ -112,26 +107,15 @@ class CellProblem():
         ps_temp = interpolate_(self.xsamples,x,phi)
         return np.random.choice(self.xsamples,size=self.num_samples,p=ps_temp/np.sum(ps_temp))
 
-    def new_iterate(self,xpsi_old,psiT_old):
-
-        xpsi = self.resample_x(xpsi_old,psiT_old)
-        psiT = interpolate_(xpsi,xpsi_old,psiT_old)
-        plt.scatter(xpsi,psiT)
-        plt.plot(self.q,self.refsol.phi_t(self.q,0))
-        plt.savefig("temp.png")
-        plt.close()
-        return xpsi,psiT 
 
     def plot_factors_HATPHI(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
 
-        plt.scatter(xhatphi,hatphiT, label="t=T")
-        #plt.scatter(xpsi,hatphi0, label="t=0")
+        #plt.scatter(xhatphi,normalise(xhatphi,hatphiT), label="t=T")
+        plt.scatter(xpsi,hatphi0, label="t=0")
 
-        plt.plot(self.q,normalise(self.q,self.refsol.phi_t(self.q,self.Tf2)),linestyle="dashed",color="blue",alpha=0.5)
-        plt.plot(self.q,normalise(self.q,self.refsol.phi_t(self.q,0)),linestyle="dashed",color="blue",alpha=0.5)
+        plt.plot(self.q,normalise(self.q,self.refsol.hatphi_t(self.q,self.Tf2)),linestyle="dashed",color="blue",alpha=0.5)
+        plt.plot(self.q,normalise(self.q,self.refsol.hatphi_t(self.q,0)),linestyle="dashed",color="blue",alpha=0.5)
 
-        #plt.xlim((-2,2))
-        #plt.ylim((0,5))
         plt.legend()
         plt.savefig(f"factors0_hatphi_{iters}.png")
         plt.close()
@@ -139,14 +123,12 @@ class CellProblem():
     def plot_factors_PHI(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
         
         
-        #plt.scatter(xhatphi,psi0, label="t=T",zorder=100)
-        plt.scatter(xpsi,normalise(xpsi,psiT), label="t=0")
+        plt.scatter(xhatphi,psi0, label="t=T",zorder=100)
+        #plt.scatter(xpsi,normalise(xpsi,psiT), label="t=0")
 
-        #plt.plot(self.q,self.refsol.phi_t(self.q,self.Tf2),linestyle="dashed",color="blue",alpha=0.5)
-        plt.plot(self.q,normalise(self.q,self.refsol.hatphi_t(self.q,0)),linestyle="dashed",color="orange",alpha=0.5)
-        #plt.xlim((-2,2))
-        #plt.ylim((0,5))
-
+        plt.plot(self.q,normalise(self.q,self.refsol.phi_t(self.q,self.Tf2)),linestyle="dashed",color="blue",alpha=0.5)
+        plt.plot(self.q,normalise(self.q,self.refsol.phi_t(self.q,0)),linestyle="dashed",color="orange",alpha=0.5)
+        
         plt.legend()
         plt.savefig(f"factors_phi_{iters}.png")
         plt.close()
@@ -154,7 +136,7 @@ class CellProblem():
     def plot_boundary(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
         
         rhoT = interpolate_(self.q,xpsi,hatphiT)*interpolate_(self.q,xhatphi,psi0)
-        rho0 =interpolate_(self.q,xpsi,hatphi0*psiT) #interpolate_(self.q,xhatphi,hatphi0)*interpolate_(self.q,xpsi,psiT)
+        rho0 = interpolate_(self.q,xpsi,hatphi0)*interpolate_(self.q,xhatphi,psiT) #interpolate_(self.q,xhatphi,hatphi0)*interpolate_(self.q,xpsi,psiT)
 
         plt.plot(self.q,normalise(self.q,rhoT), label="rhoT")
         plt.plot(self.q,normalise(self.q,rho0), label="rho0")
@@ -172,6 +154,6 @@ if __name__=="__main__":
     boundary = boundaries.UnderdampedGaussian()
     Tf = boundary.params["Tf"]
 
-    cell = CellProblem(boundary,num_iters=30)
+    cell = CellProblem(boundary,num_iters=3)
     
-    xhatphi,xpsi,hatphiT,psiT = cell.iteration()
+    xhatphi,xpsi,hatphiT,psiT = cell.iteration(mcintegrator)

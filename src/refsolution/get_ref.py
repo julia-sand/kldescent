@@ -19,7 +19,7 @@ class GaussRefSolution():
         
         self.boundary= boundary
         #only for gaussian
-        self.refsol_phi = Gaussian_Overdamped_Ref(self.boundary)
+        #self.refsol_phi = Gaussian_Overdamped_Ref(self.boundary)
 
         #locate the reference solutions
         self.ref_loc = self.get_ref_path()+"/refsol.csv"
@@ -140,16 +140,20 @@ def plot_overdamped(boundary,folder_name, quantity):
     fig.set_figheight(15)
     fig.set_figwidth(25)
 
+
     for time in enumerate(times):
         q, ptq = reference_.get_overdamped_quantity(time[1], quantity)
         axs[time[0]].plot(q,ptq)
         axs[time[0]].set_title(f"t={time[1]}")
-        if quantity=="marginal":
-            axs[time[0]].plot(q,normalise(q,reference_.refsol_phi.phi_t(q,time[1])*reference_.refsol_phi.hatphi_t(q,time[1])))
+        axs[time[0]].set_ylim((0,24))
+        
+
+        #if quantity=="marginal":
+        #    axs[time[0]].plot(q,normalise(q,reference_.refsol_phi.phi_t(q,time[1])*reference_.refsol_phi.hatphi_t(q,time[1])))
             #plot(q,np.exp(-q**2/2)/(np.sqrt(2*np.pi)))
             #axs[time[0]].plot(q,np.exp(-q**2/(2*0.25**2))/(np.sqrt(2*np.pi*0.25**2)))
-        if quantity=="value":
-            axs[time[0]].plot(q,reference_.refsol_phi.value_fun(q,time[1]))
+        #if quantity=="value":
+        #    axs[time[0]].plot(q,reference_.refsol_phi.value_fun(q,time[1]))
             #plot(q,np.exp(-q**2/2)/(np.sqrt(2*np.pi)))
             #axs[time[0]].plot(q,np.exp(-q**2/(2*0.25**2))/(np.sqrt(2*np.pi*0.25**2)))
 
@@ -159,6 +163,6 @@ def plot_overdamped(boundary,folder_name, quantity):
 
 if __name__=="__main__":
     import matplotlib.pyplot as plt
-    boundary = UnderdampedGaussian()
+    boundary = UnderdampedLandauer()
     for quantity in ["value","marginal"]:
-        plot_overdamped(boundary = boundary,folder_name="UnderdampedGaussian",quantity=quantity)
+        plot_overdamped(boundary = boundary,folder_name="UnderdampedLandauer",quantity=quantity)
