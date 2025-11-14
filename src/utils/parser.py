@@ -124,7 +124,7 @@ def boundary_params():
                         help='constant')
 
     boundary_params.add_argument('-weight','--weight', type=float, default=1,
-                        help='weight constant in front of the terminal cost')
+                        help='M, baldovin constant')
 
     boundary_params.add_argument('-g','--g', type=float, default=0,
                         help='constant')

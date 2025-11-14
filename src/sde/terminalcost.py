@@ -34,11 +34,12 @@ class TerminalCost():
 
         self.boundary = boundaryconditions
         self.logger = logger
-    
+        self.M = self.boundary.params["weight"]
+
     def gfun(self,x):
         
         pdf = self.get_logpdf(x)
-        return pdf + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
+        return self.M*(pdf + self.boundary.log_pfinal(x[...,[0]],x[...,[1]]))
 
 
 class GirsanovNet(TerminalCost):

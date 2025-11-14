@@ -31,20 +31,20 @@ class Gaussian_Overdamped_Ref():
 
     def m2(self,t):
         denom = (self.Tf2*self.sigma0)**2
-        return ((t*self.sq + ((self.Tf2-t)*self.sigma0**2))**2 - (t*self.Tf2)**2)/denom
+        return self.sigma0**2/(1+2*self.B*t*self.alpha2())**3
         
     def alpha2(self):
         return ((1-(self.sigmaT/self.sigma0)**(2/3))/(2*self.B*self.Tf2))
     
     def v2(self,t):
-        num = self.sq-self.Tf2-(self.sigma0**2)
-        return num /self.denominator(t)
+        v20 = self.alpha2()
+        return v20/(1-2*self.B*t*v20)
         
     def phi_t(self,q,t):
-        return np.exp((self.B/self.A)*self.v2(t)*(q**2)/2)
+        return np.exp(-(self.B/self.A)*self.v2(t)*(q**2)/2)
 
     def hatphi_t(self,q,t):
-        return np.exp(-(self.B/self.A)*(self.v2(t)*q**2)/2)*np.exp(-(q**2)/(2*self.m2(t)))
+        return np.exp((self.B/self.A)*(self.v2(t)*q**2)/2)*np.exp(-(q**2)/(2*self.m2(t)))
 
     def rho(self,q,t):
         return np.exp(-(q**2)/(2*self.m2(t)))/(2*np.pi*self.m2(t))
