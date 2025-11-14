@@ -19,7 +19,7 @@ import os
 import numpy as np 
 
 from ..utils.parser import boundary_params, gaussian_params
-from ..refsolution.get_ref import RefSolution
+#from ..refsolution.get_ref import GaussRefSolution
 
 class Boundaries():
     """
@@ -70,8 +70,6 @@ class Boundaries():
         if logger is not None:
             logger.log_dict(self.params) #add to log
         
-        self.refsol = RefSolution(boundary=self,folder_name=None)
-
 class OverdampedFullLandauer(Boundaries):
     """
     Stores the boundary conditions for a bridge in the overdamped case, 
@@ -398,10 +396,10 @@ class UnderdampedLandauer(OverdampedLandauer):
         return xn
        
     def afun(self,Tf):
-        return (Tf - 1 + np.exp(-Tf))/Tf
+        return 1#(Tf - 1 + np.exp(-Tf))/Tf
 
     def bfun(self,Tf):
-        return 1 - (1-np.exp(-Tf))*(3-np.exp(-Tf))/(2*Tf)
+        return 1#1 - (1-np.exp(-Tf))*(3-np.exp(-Tf))/(2*Tf)
     
 class UnderdampedGaussian(UnderdampedLandauer):
     
@@ -419,6 +417,8 @@ class UnderdampedGaussian(UnderdampedLandauer):
         if logger is not None:
             logger.log_dict(self.gauss_boundary) #add to log
         
+        #self.refsol = GaussRefSolution(folder_name=None)
+
     def overwrite_ref_path(self,new_path):
         
         self.ref_path = new_path + "/refsol.csv"

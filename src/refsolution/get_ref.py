@@ -2,19 +2,25 @@ import os
 
 import numpy as np 
 
-class RefSolution():
+from ..sde.boundary import *
+from .marginal_overdamped.gauss import Gaussian_Overdamped_Ref
+from .utilfunctions import *
+
+class GaussRefSolution():
     """
     Class used for fetching the reference solutions for plotting
     """
 
-    def __init__(self,boundary,folder_name):   
+    def __init__(self,boundary=None,folder_name=None):   
         
         if folder_name is not None: #use this if running the file directly
             self.folder_name = folder_name
-        if boundary is not None: #
-            self.boundary = boundary
-            self.folder_name = f"{self.boundary.__class__.__name__}"
+        #self.folder_name = f"{self.boundary.__class__.__name__}"
         
+        self.boundary= boundary
+        #only for gaussian
+        self.refsol_phi = Gaussian_Overdamped_Ref(self.boundary)
+
         #locate the reference solutions
         self.ref_loc = self.get_ref_path()+"/refsol.csv"
         self.cumulants_loc = self.get_ref_path()+"/refcumulants.csv"   
@@ -36,8 +42,6 @@ class RefSolution():
         return arr 
 
     def get_reference_timegrid(self,time=None):
-        if time is None:
-            time = self.boundary.params["Tf"] + 0.00001
         try: 
             arr = self.get_ref_data()
             return np.unique(arr[:,0])
@@ -117,8 +121,8 @@ class RefSolution():
         
         return np.linspace(-4,4),-(np.squeeze(arr[np.where(arr[:,0]==time),-1]) + np.squeeze(arr[np.where(arr[:,0]==time),-2])*np.linspace(-4,4))
 
-    def load_overdamped(boundary):
-        arr = np.loadtxt(boundary.overdamped_path,
+    def load_overdamped(self,folder):
+        arr = np.loadtxt(folder+"/overdamped.csv",
                             delimiter=",")  
         return arr 
 
@@ -127,8 +131,8 @@ class RefSolution():
 
 
 
-def plot_overdamped(folder_name, quantity):
-    reference_ = RefSolution(boundary=None,folder_name=folder_name)
+def plot_overdamped(boundary,folder_name, quantity):
+    reference_ = GaussRefSolution(boundary,folder_name=folder_name)
 
     times = [0,0.06,0.12,0.2]
 
@@ -141,8 +145,13 @@ def plot_overdamped(folder_name, quantity):
         axs[time[0]].plot(q,ptq)
         axs[time[0]].set_title(f"t={time[1]}")
         if quantity=="marginal":
-            axs[time[0]].plot(q,np.exp(-q**2/2)/(np.sqrt(2*np.pi)))
-            axs[time[0]].plot(q,np.exp(-q**2/(2*0.25**2))/(np.sqrt(2*np.pi*0.25**2)))
+            axs[time[0]].plot(q,normalise(q,reference_.refsol_phi.phi_t(q,time[1])*reference_.refsol_phi.hatphi_t(q,time[1])))
+            #plot(q,np.exp(-q**2/2)/(np.sqrt(2*np.pi)))
+            #axs[time[0]].plot(q,np.exp(-q**2/(2*0.25**2))/(np.sqrt(2*np.pi*0.25**2)))
+        if quantity=="value":
+            axs[time[0]].plot(q,reference_.refsol_phi.value_fun(q,time[1]))
+            #plot(q,np.exp(-q**2/2)/(np.sqrt(2*np.pi)))
+            #axs[time[0]].plot(q,np.exp(-q**2/(2*0.25**2))/(np.sqrt(2*np.pi*0.25**2)))
 
     fig.tight_layout()
 
@@ -150,5 +159,6 @@ def plot_overdamped(folder_name, quantity):
 
 if __name__=="__main__":
     import matplotlib.pyplot as plt
+    boundary = UnderdampedGaussian()
     for quantity in ["value","marginal"]:
-        plot_overdamped(folder_name="UnderdampedGaussian",quantity=quantity)
+        plot_overdamped(boundary = boundary,folder_name="UnderdampedGaussian",quantity=quantity)

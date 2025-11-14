@@ -4,17 +4,12 @@ import numpy as np
 
 from ...sde.boundary import UnderdampedGaussian,UnderdampedLandauer
 from .proximal import proximal_fpk
-from .iteration import CellProblem, interpolate_, normalise
-from ..get_ref import RefSolution
+from .iteration import CellProblem
+from ..get_ref import GaussRefSolution
+from ..utilfunctions import * 
 import pdb
 
 #Proximal operator solution for fokkerplanck equation
-def afun(Tf):
-    return (Tf - 1 + np.exp(-Tf))/Tf
-
-def bfun(Tf):
-    return 1 - (1-np.exp(-Tf))*(3-np.exp(-Tf))/(2*Tf)
-
 def compute_rho(phi_t,hatphi_t):
     
     return phi_t*hatphi_t
@@ -62,8 +57,8 @@ def get_solution_in_time(xhatphi,xpsi,
     dt = tvec[1] 
 
     #set hatphi initial conditions from psi
-    hatphi0 = boundary.q_marginal_initial(xpsi)/psiT
-    psi0 = (boundary.q_marginal_final(xhatphi)/hatphiT)**(B/(A+B))
+    hatphi0 = (boundary.q_marginal_initial(xpsi)/psiT)+1e-10
+    psi0 = (boundary.q_marginal_final(xhatphi)/hatphiT)+1e-10#**(B/(A+B))
 
     #preallocate arrays
     arr_out = np.empty((tnum*xnum,4))
@@ -79,7 +74,7 @@ def get_solution_in_time(xhatphi,xpsi,
     for t in range(1,tnum):
 
         #compute one step of the proximal recursion
-        xphi_Tt,phi_Ttemp = proximal_fpk(xpsi0,psi0,dt,1/A,num_steps=int(np.floor(1000/tnum)))
+        xphi_Tt,phi_Ttemp = proximal_fpk(xpsi0,psi0,dt,1/A,num_steps=int(np.floor(100/tnum)))
         
         #save phi_(T-t)
         phi_out[t,:,0] = xphi_Tt
@@ -121,12 +116,12 @@ if __name__=="__main__":
     Tf2 = boundary.params["Tf"]*(boundary.params["epsilon"]**2)
     
     #should these be in the boundary class? 
-    A = afun(boundary.params["Tf"])
-    B = bfun(boundary.params["Tf"])
-    cell = CellProblem(boundary,A,B)
-    xhatphi,xpsi,hatphiT,psiT = cell.iteration(num_iters=3)
+    A = boundary.afun(boundary.params["Tf"])
+    B = boundary.bfun(boundary.params["Tf"])
+    cell = CellProblem(boundary,num_iters=25)
+    xhatphi,xpsi,hatphiT,psiT = cell.iteration()
 
     arr = get_solution_in_time(xhatphi,xpsi,
-                            hatphiT,psiT,Tf2,A,B)
+                            hatphiT,psiT,Tf2,cell.A,cell.B)
 
     save_array(arr,boundary)
