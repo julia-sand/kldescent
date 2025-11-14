@@ -1,0 +1,11 @@
+import numpy as np 
+
+
+def interpolate_(q,xs,phis):
+    idx = np.argsort(xs)
+
+    return np.interp(q,xs[idx],phis[idx])
+
+def normalise(x,y):
+    idx = np.argsort(x)
+    return y.copy()/np.trapz(y[idx],x[idx])

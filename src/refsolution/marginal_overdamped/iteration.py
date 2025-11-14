@@ -3,22 +3,13 @@ import matplotlib.pyplot as plt
 
 from .proximal import proximal_fpk
 from .gauss import *
-
-def interpolate_(q,xs,phis):
-    idx = np.argsort(xs)
-
-    return np.interp(q,xs[idx],phis[idx])
-
-def normalise(x,y):
-    idx = np.argsort(x)
-    return y.copy()/np.trapz(y[idx],x[idx])
+from ..utilfunctions import *
 
 def sig_initial(x,y):
     idx = np.argsort(x)
     ynorm = normalise(x,y)
 
     return np.trapz(ynorm[idx]*x[idx]**2,x[idx])
-    
 
 class CellProblem():
 
@@ -38,7 +29,7 @@ class CellProblem():
         self.boundary = boundary
         self.Tf2 = self.boundary.params["Tf"]*(self.boundary.params["epsilon"]**2)
         
-        self.q = np.linspace(-4,4) #for plotting 
+        self.q = np.linspace(-6,6) #for plotting 
 
         self.A = self.boundary.afun(self.boundary.params["Tf"])
         self.B = self.boundary.bfun(self.boundary.params["Tf"])
@@ -46,7 +37,7 @@ class CellProblem():
 
         self.power = self.B/(self.A+self.B)
 
-        self.refsol = Gaussian_Overdamped_Ref()
+        self.refsol = Gaussian_Overdamped_Ref(boundary)
         
         if num_samples is not None:
             self.num_samples = num_samples
@@ -76,8 +67,7 @@ class CellProblem():
             psiT : arr
         """
         
-        xhatphi = np.linspace(-5,5,num=self.num_samples)
-        #self.boundary.generate_samples_q(self.num_samples, mode="final").flatten()
+        xhatphi = self.boundary.generate_samples_q(self.num_samples, mode="final").flatten()
         
         #preallocate arrays
         hatphi0 = np.zeros_like(xhatphi) #these must be non.zero positive values
@@ -166,10 +156,10 @@ class CellProblem():
         rhoT = interpolate_(self.q,xpsi,hatphiT)*interpolate_(self.q,xhatphi,psi0)
         rho0 =interpolate_(self.q,xpsi,hatphi0*psiT) #interpolate_(self.q,xhatphi,hatphi0)*interpolate_(self.q,xpsi,psiT)
 
-        plt.plot(self.q,normalise(self.q,(rhoT)), label="rhoT")
+        plt.plot(self.q,normalise(self.q,rhoT), label="rhoT")
         plt.plot(self.q,normalise(self.q,rho0), label="rho0")
 
-        plt.plot(self.q,self.boundary.q_marginal_final(self.q)**(self.B/(self.B+self.A)),linestyle="dashed",color="gray",alpha=0.5)
+        plt.plot(self.q,self.boundary.q_marginal_final(self.q),linestyle="dashed",color="gray",alpha=0.5)
         plt.plot(self.q,self.boundary.q_marginal_initial(self.q),linestyle="dashed",color="gray",alpha=0.5)
 
         plt.legend()

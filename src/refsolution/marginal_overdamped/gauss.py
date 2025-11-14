@@ -1,13 +1,13 @@
 #reference solution for gaussian full bridge
 import numpy as np 
-import src.sde.boundary as boundaries
-
+#import src.sde.boundary as boundaries
+from ..utilfunctions import *
 
 class Gaussian_Overdamped_Ref():
 
-    def __init__(self):   
+    def __init__(self,boundary):   
         
-        self.boundary = boundaries.UnderdampedGaussian()
+        self.boundary = boundary #boundaries.UnderdampedGaussian()
 
         self.mu0 = 0#self.boundary.gauss_boundary["muinitial"]
         self.muT =  0#self.boundary.gauss_boundary["mufinal"]
@@ -47,14 +47,10 @@ class Gaussian_Overdamped_Ref():
         return np.exp(-(self.B/self.A)*(self.v2(t)*q**2)/2)*np.exp(-(q**2)/(2*self.m2(t)))
 
     def rho(self,q,t):
-        return np.exp(-(q**2)/(2*self.m2(t)))
+        return np.exp(-(q**2)/(2*self.m2(t)))/(2*np.pi*self.m2(t))
 
     def value_fun(self,q,t):
-        return self.v2(t)*(q**2)/2
-
-def normalise(x,y):
-    idx = np.argsort(x)
-    return y/np.trapz(y[idx],x[idx])
+        return -self.v2(t)*(q**2)/2
 
 if __name__=="__main__":
     import matplotlib.pyplot as plt
