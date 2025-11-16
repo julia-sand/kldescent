@@ -78,16 +78,16 @@ class CellProblem():
         while iters < self.num_iters:
 
             #compute psi0/phiT
-            psi0 = np.nantonum(self.boundary.q_marginal_final(xhatphi)/normalise(xhatphi,hatphiT),posinf=0,neginf=0,nan=0)#**(self.B/(self.A+self.B)) 
+            psi0 = np.nan_to_num(self.boundary.q_marginal_final(xhatphi)/normalise(xhatphi,hatphiT),posinf=0,neginf=0,nan=0)#**(self.B/(self.A+self.B)) 
 
             #integrate psi to Tf
-            xpsi,psiT = integrator(xhatphi,zchop(psi0,self.Tf2,self.beta)
+            xpsi,psiT = integrator(xhatphi,zchop(psi0),self.Tf2,self.beta)
 
             #compute hatphi0 
-            hatphi0 = np.nantonum(self.boundary.q_marginal_initial(xpsi)/normalise(xpsi,psiT),posinf=0,neginf=0,nan=0)
+            hatphi0 = np.nan_to_num(self.boundary.q_marginal_initial(xpsi)/normalise(xpsi,psiT),posinf=0,neginf=0,nan=0)
 
             #integrate phihat to Tf
-            xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
+            xhatphi,hatphiT = integrator(xhatphi,zchop(hatphi0),self.Tf2,self.beta)
             
             iters += 1
             self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
