@@ -11,5 +11,5 @@ def normalise(x,y):
     return y.copy()/np.trapz(y[idx],x[idx])
 
 def zchop(x,tol=1e-10):
-    idx = np.where(x<)
-    return 
+   
+    return np.where(np.abs(x)<tol,0,x)
