@@ -27,12 +27,12 @@ class CellProblem():
 
         self.A = self.boundary.afun(self.boundary.params["Tf"])
         self.B = self.boundary.bfun(self.boundary.params["Tf"])
-        self.beta = 1/self.A
+        self.beta = 1/np.sqrt(self.A)
 
         self.power = self.B/(self.A+self.B)
 
         #only initialise when using gaussian boundaries
-        if "Gauss" in self.boundary.__class__.__name__:
+        if "Gauss" in str(self.boundary.__class__.__name__):
             self.refsol = Gaussian_Overdamped_Ref(boundary)
         
 
@@ -58,7 +58,7 @@ class CellProblem():
         
         #preallocate arrays
         hatphi0 = np.ones_like(xhatphi) #these must be non.zero positive values
-        hatphiT = self.refsol.hatphi_t(xhatphi,self.Tf2)
+        hatphiT = np.ones_like(xhatphi)
         psi0 = np.ones_like(xhatphi) #np.empty_like(xpsi) 
         psiT = np.ones_like(xhatphi) 
         
@@ -68,13 +68,13 @@ class CellProblem():
         while iters < num_iters:
 
             #compute psi0/phiT
-            psi0 = np.nan_to_num(self.boundary.q_marginal_final(xhatphi)/hatphiT,posinf=0,neginf=0,nan=0)#**(self.B/(self.A+self.B)) 
+            psi0 = np.nan_to_num(zchop(self.boundary.q_marginal_final(xhatphi)/hatphiT),posinf=0,neginf=0,nan=0)#**(self.B/(self.A+self.B)) 
 
             #integrate psi to Tf
             xpsi,psiT = integrator(xhatphi,psi0,self.Tf2,self.beta)
 
             #compute hatphi0 
-            hatphi0 = np.nan_to_num(self.boundary.q_marginal_initial(xpsi)/psiT,posinf=0,neginf=0,nan=0)
+            hatphi0 = np.nan_to_num(zchop(self.boundary.q_marginal_initial(xpsi)/psiT),posinf=0,neginf=0,nan=0)
 
             #integrate phihat to Tf
             xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
@@ -82,12 +82,8 @@ class CellProblem():
             iters += 1
             self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
             
-            try:
-                #plot factors for gaussians
-                self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-                self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-            except: 
-                pass
+            self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+            self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
 
         return xhatphi,xpsi,hatphiT,psiT
 
@@ -96,9 +92,11 @@ class CellProblem():
         #plt.scatter(xhatphi,normalise(xhatphi,hatphiT), label="t=T")
         #plt.scatter(xhatphi,hatphi0, label="t=0")
         plt.scatter(xpsi,hatphiT, label="t=T")
-
-        plt.plot(self.q,normalise(self.q,self.refsol.hatphi_t(self.q,self.Tf2)),linestyle="dashed",color="blue",alpha=0.5)
-        plt.plot(self.q,normalise(self.q,self.refsol.hatphi_t(self.q,0)),linestyle="dashed",color="blue",alpha=0.5)
+        try:
+            plt.plot(self.q,normalise(self.q,self.refsol.hatphi_t(self.q,self.Tf2)),linestyle="dashed",color="blue",alpha=0.5)
+            plt.plot(self.q,normalise(self.q,self.refsol.hatphi_t(self.q,0)),linestyle="dashed",color="blue",alpha=0.5)
+        except:
+            pass
 
         plt.legend()
         plt.savefig(f"factors0_hatphi_{iters}.png")
@@ -111,8 +109,11 @@ class CellProblem():
         plt.scatter(xpsi,psiT, label="t=T",zorder=100)
         #plt.scatter(xpsi,normalise(xpsi,psiT), label="t=0")
 
-        plt.plot(self.q,normalise(self.q,self.refsol.phi_t(self.q,self.Tf2)),linestyle="dashed",color="blue",alpha=0.5)
-        plt.plot(self.q,normalise(self.q,self.refsol.phi_t(self.q,0)),linestyle="dashed",color="orange",alpha=0.5)
+        try:
+            plt.plot(self.q,normalise(self.q,self.refsol.phi_t(self.q,self.Tf2)),linestyle="dashed",color="blue",alpha=0.5)
+            plt.plot(self.q,normalise(self.q,self.refsol.phi_t(self.q,0)),linestyle="dashed",color="orange",alpha=0.5)
+        except:
+            pass  
         
         plt.legend()
         plt.savefig(f"factors_phi_{iters}.png")
@@ -136,7 +137,7 @@ class CellProblem():
 if __name__=="__main__":
     import src.sde.boundary as boundaries
 
-    boundary = boundaries.UnderdampedGaussian()
+    boundary = boundaries.UnderdampedLandauer()
     Tf = boundary.params["Tf"]
 
     cell = CellProblem(boundary)
