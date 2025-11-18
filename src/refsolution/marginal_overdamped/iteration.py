@@ -1,13 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt 
 
-from .heatintegrators import proximal_fpk,mcintegrator
+from ..heatintegrators import proximal_fpk,mcintegrator
 from .gauss import *
 from ..utilfunctions import *
 
 class CellProblem():
 
-    def __init__(self,boundary):
+    def __init__(self,boundary,bridge_type="marginal  half"):
         """
         class for solving the cell problem, which is a 'halfbridge' problem
 
@@ -29,12 +29,25 @@ class CellProblem():
         self.B = self.boundary.bfun(self.boundary.params["Tf"])
         self.beta = 1/np.sqrt(self.A)
 
-        self.power = self.B/(self.A+self.B)
+        if bridge_type=="marginal half":
+            self.power = self.boundary.params["weight"]*self.B/(self.A+self.B)
+        elif bridge_type=="full":
+            self.power = 1
+        else:
+            self.power = 1
+            print("Bridge type not found. Default values used.")
 
         #only initialise when using gaussian boundaries
         if "Gauss" in str(self.boundary.__class__.__name__):
             self.refsol = Gaussian_Overdamped_Ref(boundary)
         
+        #preallocate the arrays here 
+        self.xhatphi = None #np.linspace(-6,6,num_samples)
+        self.hatphiT = None # np.ones_like(xhatphi)
+        self.psiT = None #np.ones_like(xhatphi) 
+        self.hatphi0 = None # np.ones_like(xhatphi)
+        self.psi0 = None #np.ones_like(xhatphi) 
+        self.xpsi = None
 
     def iteration(self,integrator,num_iters=4,num_samples=400):
         """
@@ -43,6 +56,8 @@ class CellProblem():
         Density Control with Nonlinear Drift', Caluya&Halder,2021.
         
         args:
+            integrator : method
+                method to use for integrating the heat equations
             num_samples : int
                 number of samples
             num_iters : int
@@ -68,7 +83,7 @@ class CellProblem():
         while iters < num_iters:
 
             #compute psi0/phiT
-            psi0 = np.nan_to_num(zchop(self.boundary.q_marginal_final(xhatphi)/hatphiT),posinf=0,neginf=0,nan=0)#**(self.B/(self.A+self.B)) 
+            psi0 = np.nan_to_num(zchop(self.boundary.q_marginal_final(xhatphi)/hatphiT),posinf=0,neginf=0,nan=0)**(self.B/(self.A+self.B)) 
 
             #integrate psi to Tf
             xpsi,psiT = integrator(xhatphi,psi0,self.Tf2,self.beta)
@@ -80,12 +95,21 @@ class CellProblem():
             xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
             
             iters += 1
+
             self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
             
             self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
             self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
 
-        return xhatphi,xpsi,hatphiT,psiT
+        #set new class properties
+        self.xhatphi =xhatphi
+        self.xpsi = xpsi 
+        self.hatphiT = hatphiT
+        self.psiT = psiT
+        self.hatphi0 = hatphi0
+        self.psi0 = psi0
+
+        return 
 
     def plot_factors_HATPHI(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
 
@@ -114,7 +138,7 @@ class CellProblem():
             plt.plot(self.q,normalise(self.q,self.refsol.phi_t(self.q,0)),linestyle="dashed",color="orange",alpha=0.5)
         except:
             pass  
-        
+
         plt.legend()
         plt.savefig(f"factors_phi_{iters}.png")
         plt.close()
@@ -123,7 +147,8 @@ class CellProblem():
         
         rhoT = interpolate_(self.q,xpsi,hatphiT)*interpolate_(self.q,xhatphi,psi0)
         rho0 = interpolate_(self.q,xpsi,hatphi0)*interpolate_(self.q,xhatphi,psiT) #interpolate_(self.q,xhatphi,hatphi0)*interpolate_(self.q,xpsi,psiT)
-
+        
+        plt.plot(self.q,normalise(self.q,rhoT)**self.power, label="rhoT half")
         plt.plot(self.q,normalise(self.q,rhoT), label="rhoT")
         plt.plot(self.q,normalise(self.q,rho0), label="rho0")
 
@@ -142,4 +167,4 @@ if __name__=="__main__":
 
     cell = CellProblem(boundary)
     
-    xhatphi,xpsi,hatphiT,psiT = cell.iteration(mcintegrator,num_iters=4)
+    cell.iteration(mcintegrator,num_iters=4)

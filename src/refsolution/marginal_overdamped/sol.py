@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 from ...sde.boundary import UnderdampedGaussian,UnderdampedLandauer
-from .proximal import proximal_fpk
+from ..heatintegrators import *
 from .iteration import CellProblem
 from ..get_ref import GaussRefSolution
 from ..utilfunctions import * 
@@ -19,8 +19,7 @@ def compute_V(phi_t,A,B):
     return -(A/B)*np.log(phi_t)
 
 
-def get_solution_in_time(xhatphi,xpsi,
-                            hatphiT,psiT,Tf2,A,B,
+def get_solution_in_time(cell,integrator,
                             xnum = 1000,
                             tnum = 11):
     """
@@ -28,16 +27,10 @@ def get_solution_in_time(xhatphi,xpsi,
     the probability distribution and value function in the horizon [0,Tf2]
     
     args: 
-        xpsi : arr
-            position coordinates returned by iteration
-        psiT : arr
-            densities returned by iteration, equivalent to phi0 in paper notation
-        Tf2 : float
-            time horizon for the cell problem
-        A : float
-            constant defining the cell problem
-        B : float
-            constant defining the cell problem 
+        cell : class
+            class containing solution of the cell problem
+        integrator : function
+            method to use for integrating the heat equations
         xnum : int
             number of coordinates in the space discretisation 
         tnum : int
@@ -53,28 +46,27 @@ def get_solution_in_time(xhatphi,xpsi,
 
     #define timepoints to save solution 
     #time points in the slow time (t2)
-    tvec = np.linspace(0,Tf2,num=tnum)
+    tvec = np.linspace(0,cell.Tf2,num=tnum)
     dt = tvec[1] 
 
     #set hatphi initial conditions from psi
-    hatphi0 = (boundary.q_marginal_initial(xpsi)/psiT)+1e-10
-    psi0 = (boundary.q_marginal_final(xhatphi)/hatphiT)+1e-10#**(B/(A+B))
+    hatphi0 = cell.hatphi0
+    #(cell.boundary.q_marginal_initial(cell.xpsi)/cell.psiT)+1e-10
+    #(cell.boundary.q_marginal_final(cell.xhatphi)/cell.hatphiT)+1e-10)**(B/(A+B))
 
     #preallocate arrays
     arr_out = np.empty((tnum*xnum,4))
 
     #preallocate for phi 
-    phi_out = np.empty((tnum,len(xhatphi),2))
-    phi_out[0,:,0] = xhatphi
-    phi_out[0,:,1] = psi0
+    phi_out = np.empty((tnum,len(cell.xhatphi),2))
+    phi_out[0,:,0] = cell.xhatphi
+    phi_out[0,:,1] = cell.psi0
 
-    xpsi0 = xhatphi.copy()
-    xhatphi0 = xpsi.copy()
 
     for t in range(1,tnum):
 
         #compute one step of the proximal recursion
-        xphi_Tt,phi_Ttemp = proximal_fpk(xpsi0,psi0,dt,1/A,num_steps=int(np.floor(100/tnum)))
+        xphi_Tt,phi_Ttemp = integrator(cell.xhatphi.copy(),cell.psi0,dt,cell.beta,num_steps=int(np.floor(100/tnum)))
         
         #save phi_(T-t)
         phi_out[t,:,0] = xphi_Tt
@@ -83,23 +75,23 @@ def get_solution_in_time(xhatphi,xpsi,
         psi0 = phi_Ttemp
         xpsi0 = xphi_Tt
 
-    
     #iterate over times to compute the solution at each timepoint
+    xhatphi_t,hatphi_temp = cell.xpsi.copy(),cell.hatphi0.copy()
     for t in range(tnum):
 
         #interpolate 
         phi_t = interpolate_(q,phi_out[-t-1,:,0],phi_out[-t-1,:,1])
-        hatphi_t = interpolate_(q,xhatphi0,hatphi0)       
+        hatphi_t = interpolate_(q,xhatphi_t,hatphi_temp)       
 
         arr_out[t*xnum:(t+1)*xnum] = np.column_stack((tvec[t]*np.ones(xnum),q,
                                                             normalise(q,compute_rho(phi_t,hatphi_t)),
-                                                            compute_V(phi_t,A,B)))
+                                                            compute_V(phi_t,cell.A,cell.B)))
 
         #compute one step of the proximal recursion
-        xhatphi_t,hatphi_temp = proximal_fpk(xhatphi0,hatphi0,dt,1/A,num_steps=int(np.floor(1000/tnum)))
+        xhatphi_t,hatphi_temp = integrator(xhatphi_t,hatphi_temp,dt,cell.beta,num_steps=int(np.floor(1000/tnum)))
              
         #set new iterates
-        xhatphi0, hatphi0 = xhatphi_t,hatphi_temp 
+        #xhatphi0, hatphi0 = xhatphi_t,hatphi_temp 
 
     return arr_out
 
@@ -113,15 +105,10 @@ def save_array(arr_out,boundary):
 
 if __name__=="__main__":
     boundary = UnderdampedLandauer()
-    Tf2 = boundary.params["Tf"]*(boundary.params["epsilon"]**2)
     
-    #should these be in the boundary class? 
-    A = boundary.afun(boundary.params["Tf"])
-    B = boundary.bfun(boundary.params["Tf"])
     cell = CellProblem(boundary)
-    xhatphi,xpsi,hatphiT,psiT = cell.iteration(num_iters=4)
+    cell.iteration(integrator=mcintegrator,num_iters=4)
 
-    arr = get_solution_in_time(xhatphi,xpsi,
-                            hatphiT,psiT,cell.Tf2,cell.A,cell.B)
+    arr = get_solution_in_time(cell,integrator=mcintegrator)
 
     save_array(arr,boundary)
