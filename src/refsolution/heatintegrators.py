@@ -1,8 +1,7 @@
 import numpy as np
 import scipy.spatial.distance as sci
 
-from ..utilfunctions import *
-import pdb
+from .utilfunctions import *
 
 
 def mcintegrator(x0,y0,
