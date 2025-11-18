@@ -5,9 +5,9 @@ import numpy as np
 from ...sde.boundary import UnderdampedGaussian,UnderdampedLandauer
 from ..heatintegrators import *
 from .iteration import CellProblem
-from ..get_ref import GaussRefSolution
 from ..utilfunctions import * 
-import pdb
+
+#import pdb
 
 #Proximal operator solution for fokkerplanck equation
 def compute_rho(phi_t,hatphi_t):

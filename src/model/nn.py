@@ -228,6 +228,10 @@ class RhoNeuralNetwork(nn.Module):
             pass
 
 class MLP(nn.Module):
+    """Defines a simple flexible model
+    used for simple regression problems. 
+    """
+
     def __init__(self,checkpointpath=None):
         self.params = du_network_params()
         
@@ -235,15 +239,9 @@ class MLP(nn.Module):
         self.flatten = nn.Flatten()
         self.linear_stack = nn.Sequential(
             nn.Linear(2, self.params["duhiddenlayerneurons"] ),  #two inputs
-            MyActivation(),
+            GELU(),
             nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #hidden layer
-            nn.ReLU(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #hidden layer
-            nn.ReLU(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #hidden layer
-            nn.ReLU(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #hidden layer
-            MyActivation(),
+            GELU(),
             nn.Linear(self.params["duhiddenlayerneurons"] , 1)     #one output
         )    
         self.initialize_weights()   
@@ -259,8 +257,6 @@ class MLP(nn.Module):
                 torch.nn.init.xavier_normal_(m.weight,gain=4)
                 if m.bias is not None:
                     torch.nn.init.constant_(m.bias, 0)
-
-
 
 if __name__ == "__main__":
     from torchinfo import summary

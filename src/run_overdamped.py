@@ -35,7 +35,7 @@ def run():
     net = DataParallel(net)
 
     if args["pretrain"]: #TODO this needs updating
-        import run_pretrain
+        from model.pretrain import run_pretrain
         run_pretrain.run_pretrain(net,metrics_logger.get_results_path(),boundaryconditions)
     
     #intialise sde integration 

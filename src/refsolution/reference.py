@@ -14,7 +14,8 @@ class RefSolution():
     def __init__(self, boundary=None, folder_name=None):
         if folder_name is not None: #use this if running the file directly
             self.folder_name = folder_name
-        #self.folder_name = f"{self.boundary.__class__.__name__}"
+        else:
+            self.folder_name = f"{self.boundary.__class__.__name__}"
         
         self.boundary= boundary
         
