@@ -154,7 +154,7 @@ if __name__=="__main__":
     import matplotlib.pyplot as plt 
 
     import src.sde.boundary as boundaries
-    from src.refsolution.marginal_overdamped.gauss import Gaussian_Overdamped_Ref,normalise
+    from src.refsolution.overdamped.gauss import Gaussian_Overdamped_Ref,normalise
     Generator = np.random.default_rng(seed=42)
     boundary = boundaries.UnderdampedGaussian()
     refsol = Gaussian_Overdamped_Ref(boundary)

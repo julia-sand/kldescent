@@ -93,12 +93,12 @@ def get_solution_in_time(cell,integrator,
         #set new iterates
         #xhatphi0, hatphi0 = xhatphi_t,hatphi_temp 
 
-    return arr_out
+    return np.nan_to_num(arr_out,nan=0,posinf=0,neginf=0)
 
 def save_array(arr_out,boundary):
     #make dir
     os.makedirs(f"src/refsolution/{boundary.__class__.__name__}",exist_ok=True)
-    print(f"src/refsolution/{boundary.__class__.__name__}")
+
     np.savetxt(f"src/refsolution/{boundary.__class__.__name__}/overdamped.csv", arr_out ,fmt="%10.6f",header = "t,q,rho,V",delimiter=',')
     #print(boundary.ref_path)
     return
@@ -107,7 +107,9 @@ if __name__=="__main__":
     boundary = UnderdampedLandauer()
     
     cell = CellProblem(boundary)
-    cell.iteration(integrator=mcintegrator,num_iters=4)
+    cell.iteration(integrator=mcintegrator,
+                    num_iters=4,
+                    bridge_type="marginal half")
 
     arr = get_solution_in_time(cell,integrator=mcintegrator)
 

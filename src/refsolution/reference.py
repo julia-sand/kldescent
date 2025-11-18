@@ -3,7 +3,7 @@ import os
 import numpy as np 
 
 from ..sde.boundary import *
-from .marginal_overdamped.gauss import Gaussian_Overdamped_Ref
+from .overdamped.gauss import Gaussian_Overdamped_Ref
 from .utilfunctions import *
 
 class RefSolution():
@@ -12,16 +12,17 @@ class RefSolution():
     """
 
     def __init__(self, boundary=None, folder_name=None):
+        
+        self.boundary= boundary
+
         if folder_name is not None: #use this if running the file directly
             self.folder_name = folder_name
         else:
             self.folder_name = f"{self.boundary.__class__.__name__}"
         
-        self.boundary= boundary
         
         self.overdamped_loc = self.get_ref_path()+"/overdamped.csv"
         self.ref_loc = self.get_ref_path()+"/refsol.csv"
-
 
     def get_ref_path(self):
         #returns the folder where the reference solution is expected to be
@@ -59,21 +60,22 @@ class RefSolution():
         #RETURNS X, DU
         return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,-1])
 
-    def get_overdamped_quantity(self,time,quantity):
+    def get_overdamped_quantity(self,time,quantity,arr=None):
 
         #time is the time you want the data
 
         ##fetch the reference data for halfbridge
-        arr = self.get_ref_data(data="overdamped")  
+        if arr is None:
+            arr = self.get_ref_data(data="overdamped")  
        
         ##fetch the reference data approximation data
         arrtemp = arr[np.where(arr[:,0]==np.round(time,8))] 
         arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
 
         if quantity =="value":
-            idx=-1
+            idx=3
         elif quantity =="marginal":
-            idx=-2
+            idx=2
         
         #RETURNS X, DU
         return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx])
@@ -91,11 +93,6 @@ class RefSolution():
         arr = self.get_ref_data()
         
         return np.linspace(-4,4),-(np.squeeze(arr[np.where(arr[:,0]==time),-1]) + np.squeeze(arr[np.where(arr[:,0]==time),-2])*np.linspace(-4,4))
-
-    def load_overdamped(self,folder):
-        arr = np.loadtxt(folder+"/overdamped.csv",
-                            delimiter=",")  
-        return arr 
 
     def perturbative_marginal(q,t,epsilon):
         return 0

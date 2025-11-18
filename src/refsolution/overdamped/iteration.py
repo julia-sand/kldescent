@@ -7,7 +7,7 @@ from ..utilfunctions import *
 
 class CellProblem():
 
-    def __init__(self,boundary,bridge_type="marginal  half"):
+    def __init__(self,boundary,bridge_type="marginal half"):
         """
         class for solving the cell problem, which is a 'halfbridge' problem
 
