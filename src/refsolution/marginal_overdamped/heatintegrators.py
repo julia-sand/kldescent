@@ -9,11 +9,12 @@ def mcintegrator(x0,y0,
                     Tf,
                     beta,
                     num_steps = 20,
-                    mc_samples = 5000):
+                    mc_samples = 2000):
     """
     Integrates a heat equation by the monte carlo method
     yT = E(Phi(xT)|x0)
     where xT are final positions of trajectories of the auxiliary dynamics
+    
     Parameters:
         x0 : 
             initial positions, where the pde will be evaluated 
@@ -38,14 +39,13 @@ def mcintegrator(x0,y0,
     
     def phifinal(qT,x0,y0):
         idx = np.argsort(x0)
-        return np.interp(qT,x0[idx],zchop(y0[idx]),left=0 ,right=0)
+        return np.interp(qT,x0[idx],zchop(y0[idx]))
 
     t_vec = np.linspace(0,Tf,num_steps) #time vector
-    tstep = t_vec[1] #size of time interval
     
     #generate trajectories
     traj =  np.tile(qax[:,np.newaxis],(1,mc_samples)) + \
-        np.sqrt(2*tstep/beta)*np.sum(Generator.standard_normal((num_qsamples,mc_samples,num_steps)),axis=2)
+        np.sqrt(2*t_vec[1]/beta)*np.sum(Generator.standard_normal((num_qsamples,mc_samples,num_steps)),axis=2)
     #traj = np.flip(traj,axis = 1) #flip along columns
     yT = np.mean(phifinal(traj,qax,y0),axis=1) 
     return x0, yT
@@ -162,26 +162,37 @@ if __name__=="__main__":
     Tf2 = boundary.params["Tf"]*(boundary.params["epsilon"]**2)
     
     beta = 1/(boundary.afun(boundary.params["Tf"]))
-    nsamples = 500
+    nsamples = 150
 
-    x0 = boundary.generate_samples_q(nsamples,"final").flatten()
-    y0 = refsol.hatphi_t(x0,0)
-    
-    x0_mc = np.linspace(-4,4,nsamples)
+    #print(refsol.m2(Tf2))
+    def makeplot(phifun,tinit,nsamples):
+        x0_temp = np.linspace(-6,6,nsamples)
 
-    #x_end, y_end = proximal_fpk(x0,y0,Tf2,beta,num_steps=1000)
-    x_end_mc, y_end_mc = mcintegrator(x0_mc,refsol.hatphi_t(x0_mc,0),Tf2,beta,num_steps=200)
+        x0_mc = np.linspace(-4,4,nsamples)
+        y0_mc = normalise(x0_mc,phifun(x0_mc,tinit))#normalise(x0_mc,refsol.hatphi_t(x0_mc,0))
+        #x_end, y_end = proximal_fpk(x0,y0,Tf2,beta,num_steps=1000)
+        x_end_mc, y_end_mc = mcintegrator(x0_mc,y0_mc,Tf2,beta,num_steps=200)
+        
+        def phifinal(qT,x0,y0):
+            idx = np.argsort(x0)
+            return np.interp(qT,x0[idx],y0[idx])
 
-    #plt.scatter(x_end, normalise(x_end,y_end),label="prox")#normalise(x_end,y_end))
-    plt.plot(x_end_mc, normalise(x_end_mc,y_end_mc),label="mc")#normalise(x_end,y_end))
+        plt.plot(x0_temp,phifinal(x0_temp,x0_mc,y0_mc),label="phi")
+        #plt.scatter(x_end, normalise(x_end,y_end),label="prox")#normalise(x_end,y_end))
+        plt.plot(x_end_mc, normalise(x_end_mc,y_end_mc),label="mc end")#normalise(x_end,y_end))
+        #plt.plot(x0_mc,y0_mc,label="mc start")#normalise(x_end,y_end))
+
+        qax = np.linspace(-4,4)
+        #plt.plot(qax,normalise(qax,refsol.phi_t(qax,Tf2)),label="phi at Tf")
+        #plt.plot(qax,normalise(qax,refsol.phi_t(qax,0)),label="phi at 0")
+        #plt.plot(qax,normalise(qax,refsol.rho(qax,Tf2)),label="rho at Tf")
+        #plt.plot(qax,normalise(qax,refsol.rho(qax,0)),label="rho at 0")
+        plt.plot(qax,normalise(qax,phifun(qax,Tf2)),label="hatphi at Tf")
+        plt.plot(qax,normalise(qax,phifun(qax,0)),label="hatphi at 0")
+        
+        plt.legend()
+        #plt.ylim((0,2))
+        plt.savefig(f"test_fpk_.png")
+        plt.close()
     
-    qax = np.linspace(-4,4)
-    plt.plot(qax,normalise(qax,refsol.phi_t(qax,Tf2)),label="phi at Tf")
-    plt.plot(qax,normalise(qax,refsol.phi_t(qax,0)),label="phi at 0")
-    plt.plot(qax,normalise(qax,refsol.hatphi_t(qax,Tf2)),label="hatphi at Tf")
-    plt.plot(qax,normalise(qax,refsol.hatphi_t(qax,0)),label="hatphi at 0")
-    
-    plt.legend()
-    #plt.ylim((0,2))
-    plt.savefig("test_fpk_phi_5.png")
-    plt.close()
+    makeplot(refsol.hatphi_t,0,nsamples)
