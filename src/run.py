@@ -10,7 +10,7 @@ from src.sde import *
 import src.sde.boundary as boundaries
 from src.utils import *
 from src.viz.checkpoint_plots import *
-import src.run_pretrain as pretrain
+import src.model.pretrain as pretrain
 
 def run():
 
