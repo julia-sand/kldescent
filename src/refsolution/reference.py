@@ -31,7 +31,10 @@ class RefSolution():
         return os.path.dirname(__file__) + "/" + self.folder_name
     
     def get_ref_data(self,data=None):
-        #returns the folder where the reference solution is expected to be
+        """"
+        Returns an array for reference solution is expected to be
+        """
+        
         if data == "overdamped":
             arr = np.loadtxt(open(self.overdamped_loc),
                         delimiter=",",skiprows=1) 

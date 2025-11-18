@@ -239,9 +239,9 @@ class MLP(nn.Module):
         self.flatten = nn.Flatten()
         self.linear_stack = nn.Sequential(
             nn.Linear(2, self.params["duhiddenlayerneurons"] ),  #two inputs
-            GELU(),
+            nn.GELU(),
             nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #hidden layer
-            GELU(),
+            nn.GELU(),
             nn.Linear(self.params["duhiddenlayerneurons"] , 1)     #one output
         )    
         self.initialize_weights()   

@@ -49,7 +49,7 @@ class Pretrain():
             
             #pdb.set_trace()
             #generate random batch 
-            idx = torch.randint(low=0,high=x.shape[0],size=(self.minibatch_samples,))
+            idx = torch.randint(low=0,high=X.shape[0],size=(self.minibatch_samples,))
 
             optimizer.zero_grad()
             y_pred = net(X[idx,:])

@@ -5,8 +5,7 @@ import torch
 from src.model.train import Pretrain
 
 def run_pretrain(net, 
-                    path_to_pretrain
-                    ):
+                    path_to_pretrain):
     """
     Trains a neural network to approximate a numerical function given by values in a csv
 

@@ -3,7 +3,7 @@ import numpy as np
 from ..reference import *
 from ...sde.boundary import *
 
-import pdb
+#import pdb
 
 class MarginalHalfBridgePerturbation():
     """Class to contain the functions for computing perturbative 
@@ -56,6 +56,8 @@ class MarginalHalfBridgePerturbation():
 
         #save pertsol 
         np.savetxt(self.reference.get_ref_path()+"/perturbative_underdamped.csv",pertsol,fmt="%10.6f",header = "t,q,rho,V,DU",delimiter=',')
+
+
 
 if __name__=="__main__":
     boundary = UnderdampedLandauer()
