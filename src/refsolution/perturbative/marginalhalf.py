@@ -27,14 +27,13 @@ class MarginalHalfBridgePerturbation():
 
     def dv00(self,t2):
 
-        x,v00 = self.reference.get_overdamped_quantity(t2,"value",self.overdamped_arr)
+        x,v00 = self.reference.get_quantity(t2,"value",arr=self.overdamped_arr)
         return np.gradient(v00,x) 
 
     def v11(self,t0,t2):
         
         coeff = 1- np.exp(t0-self.Tf)
 
-        #t2 = t0*(self.epsilon**2)
         return coeff*self.dv00(t2)
 
     def DU(self,t0,t2):

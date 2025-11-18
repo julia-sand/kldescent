@@ -22,6 +22,7 @@ class RefSolution():
         
         
         self.overdamped_loc = self.get_ref_path()+"/overdamped.csv"
+        self.perturb_underdamped_loc = self.get_ref_path()+"/perturbative_underdamped.csv"
         self.ref_loc = self.get_ref_path()+"/refsol.csv"
 
     def get_ref_path(self):
@@ -33,6 +34,9 @@ class RefSolution():
         #returns the folder where the reference solution is expected to be
         if data == "overdamped":
             arr = np.loadtxt(open(self.overdamped_loc),
+                        delimiter=",",skiprows=1) 
+        elif data == "perturbative underdamped":
+            arr = np.loadtxt(open(self.perturb_underdamped_loc),
                         delimiter=",",skiprows=1) 
         else: 
             arr = np.loadtxt(open(self.ref_loc),
@@ -60,13 +64,13 @@ class RefSolution():
         #RETURNS X, DU
         return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,-1])
 
-    def get_overdamped_quantity(self,time,quantity,arr=None):
+    def get_quantity(self,time,quantity,data=None,arr=None):
 
         #time is the time you want the data
 
         ##fetch the reference data for halfbridge
-        if arr is None:
-            arr = self.get_ref_data(data="overdamped")  
+        if arr is None: #default overdamped
+            arr = self.get_ref_data(data=data)  
        
         ##fetch the reference data approximation data
         arrtemp = arr[np.where(arr[:,0]==np.round(time,8))] 
@@ -76,7 +80,9 @@ class RefSolution():
             idx=3
         elif quantity =="marginal":
             idx=2
-        
+        elif quantity =="underdamped drift":
+            idx=4
+            
         #RETURNS X, DU
         return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx])
 
@@ -94,8 +100,6 @@ class RefSolution():
         
         return np.linspace(-4,4),-(np.squeeze(arr[np.where(arr[:,0]==time),-1]) + np.squeeze(arr[np.where(arr[:,0]==time),-2])*np.linspace(-4,4))
 
-    def perturbative_marginal(q,t,epsilon):
-        return 0
 
 
 class GaussRefSolution(RefSolution):
@@ -141,9 +145,8 @@ class GaussRefSolution(RefSolution):
         return np.squeeze(arr[:,0]),temp
 
 
-def plot_overdamped(boundary,folder_name,quantity):
-    reference_ = RefSolution(boundary,folder_name=folder_name)
-
+def plot_data(reference_,quantity,data):
+    
     times = [0,0.06,0.12,0.2]
 
     fig,axs = plt.subplots(ncols=len(times),nrows=1)
@@ -151,16 +154,18 @@ def plot_overdamped(boundary,folder_name,quantity):
     fig.set_figwidth(25)
 
     for time in enumerate(times):
-        q, ptq = reference_.get_overdamped_quantity(time[1], quantity)
+        q, ptq = reference_.get_quantity(time[1], quantity, data=data)
         axs[time[0]].plot(q,ptq)
         axs[time[0]].set_title(f"t={time[1]}")
         
     fig.tight_layout()
 
-    fig.savefig(reference_.get_ref_path()+f"/overdamped_{quantity}.png",bbox_inches="tight")        
+    fig.savefig(reference_.get_ref_path()+f"/{data}_{quantity}.png",bbox_inches="tight")        
 
 if __name__=="__main__":
     import matplotlib.pyplot as plt
     boundary = UnderdampedLandauer()
-    for quantity in ["value","marginal"]:
-        plot_overdamped(boundary = boundary,folder_name="UnderdampedLandauer",quantity=quantity)
+    reference_ = RefSolution(boundary)
+    plot_data(reference_,quantity="value",data="overdamped")
+    plot_data(reference_,quantity="marginal",data="overdamped")
+    plot_data(reference_,quantity="underdamped drift",data="perturbative underdamped")

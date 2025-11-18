@@ -51,8 +51,6 @@ def get_solution_in_time(cell,integrator,
 
     #set hatphi initial conditions from psi
     hatphi0 = cell.hatphi0
-    #(cell.boundary.q_marginal_initial(cell.xpsi)/cell.psiT)+1e-10
-    #(cell.boundary.q_marginal_final(cell.xhatphi)/cell.hatphiT)+1e-10)**(B/(A+B))
 
     #preallocate arrays
     arr_out = np.empty((tnum*xnum,4))
@@ -61,7 +59,6 @@ def get_solution_in_time(cell,integrator,
     phi_out = np.empty((tnum,len(cell.xhatphi),2))
     phi_out[0,:,0] = cell.xhatphi
     phi_out[0,:,1] = cell.psi0
-
 
     for t in range(1,tnum):
 

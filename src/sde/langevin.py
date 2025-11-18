@@ -53,7 +53,6 @@ class SDEBase():
         else:
             return np.linspace(0,final_time,self.sde_params["tsteps"])
 
-
 class SDE(SDEBase):
 
     def __init__(self,
