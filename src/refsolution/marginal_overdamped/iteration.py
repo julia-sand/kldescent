@@ -36,7 +36,7 @@ class CellProblem():
             self.refsol = Gaussian_Overdamped_Ref(boundary)
         
 
-    def iteration(self,integrator,num_iters=4,num_samples=1000):
+    def iteration(self,integrator,num_iters=4,num_samples=400):
         """
         Implementation of Iteration in 1912.01244
         'Wasserstein Proximal Algorithms for the Schr¨odinger Bridge Problem:

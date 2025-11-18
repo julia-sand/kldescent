@@ -7,10 +7,10 @@ class Gaussian_Overdamped_Ref():
 
     def __init__(self,boundary):   
         
-        self.boundary = boundary #boundaries.UnderdampedGaussian()
+        self.boundary = boundary 
 
-        self.mu0 = 0#self.boundary.gauss_boundary["muinitial"]
-        self.muT =  0#self.boundary.gauss_boundary["mufinal"]
+        self.mu0 = 0 #self.boundary.gauss_boundary["muinitial"]
+        self.muT =  0 #self.boundary.gauss_boundary["mufinal"]
         self.sigma0 = self.boundary.gauss_boundary["sigmainitial"]
         self.sigmaT = self.boundary.gauss_boundary["sigmafinal"]
         self.A = self.boundary.afun(self.boundary.params["Tf"])
@@ -30,8 +30,10 @@ class Gaussian_Overdamped_Ref():
         return 0 
 
     def m2(self,t):
+        #denom = (self.Tf2*self.sigma0)**2
+        #return self.sigma0**2/(1+2*self.B*t*self.alpha2())**3
         denom = (self.Tf2*self.sigma0)**2
-        return self.sigma0**2/(1+2*self.B*t*self.alpha2())**3
+        return ((t*self.sq + ((self.Tf2-t)*self.sigma0**2))**2 - (t*self.Tf2)**2)/denom
         
     def alpha2(self):
         return ((1-(self.sigmaT/self.sigma0)**(2/3))/(2*self.B*self.Tf2))
@@ -47,7 +49,7 @@ class Gaussian_Overdamped_Ref():
         return np.exp((self.B/self.A)*(self.v2(t)*q**2)/2)*np.exp(-(q**2)/(2*self.m2(t)))
 
     def rho(self,q,t):
-        return np.exp(-(q**2)/(2*self.m2(t)))/(2*np.pi*self.m2(t))
+        return np.exp(-(q**2)/(2*self.m2(t)))/np.sqrt(2*np.pi*self.m2(t))
 
     def value_fun(self,q,t):
         return -self.v2(t)*(q**2)/2
