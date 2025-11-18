@@ -20,6 +20,8 @@ class Pretrain():
         self.step_size = 500 #frequency of learning rate decay (in epochs)
         self.n_epochs = 1000 #total number of epochs
 
+        self.minibatch_samples = 128 
+
         self.clip = 0.1
 
     def get_pretraining_data(self):
@@ -46,9 +48,12 @@ class Pretrain():
         for epoch in range(1,self.n_epochs+1):
             
             #pdb.set_trace()
+            #generate random batch 
+            idx = torch.randint(low=0,high=x.shape[0],size=(self.minibatch_samples,))
+
             optimizer.zero_grad()
-            y_pred = net(X)
-            loss = loss_fn(y_pred, y)
+            y_pred = net(X[idx,:])
+            loss = loss_fn(y_pred, y[idx])
             #clip_grad_norm_(net.parameters(), self.clip)
             loss.backward()
             optimizer.step()       
