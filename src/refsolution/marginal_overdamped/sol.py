@@ -118,10 +118,10 @@ if __name__=="__main__":
     #should these be in the boundary class? 
     A = boundary.afun(boundary.params["Tf"])
     B = boundary.bfun(boundary.params["Tf"])
-    cell = CellProblem(boundary,num_iters=25)
-    xhatphi,xpsi,hatphiT,psiT = cell.iteration()
+    cell = CellProblem(boundary)
+    xhatphi,xpsi,hatphiT,psiT = cell.iteration(num_iters=4)
 
     arr = get_solution_in_time(xhatphi,xpsi,
-                            hatphiT,psiT,Tf2,cell.A,cell.B)
+                            hatphiT,psiT,cell.Tf2,cell.A,cell.B)
 
     save_array(arr,boundary)
