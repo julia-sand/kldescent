@@ -49,7 +49,6 @@ def get_solution_in_time(cell,integrator,
     tvec = np.linspace(0,cell.Tf2,num=tnum)
     dt = tvec[1] 
 
-    #set hatphi initial conditions from psi
     hatphi0 = cell.hatphi0
 
     #preallocate arrays
@@ -58,19 +57,18 @@ def get_solution_in_time(cell,integrator,
     #preallocate for phi 
     phi_out = np.empty((tnum,len(cell.xhatphi),2))
     phi_out[0,:,0] = cell.xhatphi
-    phi_out[0,:,1] = cell.psi0
+    phi_out[0,:,1] = cell.psi0  
+    
 
     for t in range(1,tnum):
 
         #compute one step of the proximal recursion
-        xphi_Tt,phi_Ttemp = integrator(cell.xhatphi.copy(),cell.psi0,dt,cell.beta,num_steps=int(np.floor(100/tnum)))
+        xphi_Tt,phi_Ttemp = integrator(phi_out[t-1,:,0],phi_out[t-1,:,1],dt,cell.beta,num_steps=int(np.floor(100/tnum)))
         
         #save phi_(T-t)
         phi_out[t,:,0] = xphi_Tt
         phi_out[t,:,1] = phi_Ttemp
 
-        psi0 = phi_Ttemp
-        xpsi0 = xphi_Tt
 
     #iterate over times to compute the solution at each timepoint
     xhatphi_t,hatphi_temp = cell.xpsi.copy(),cell.hatphi0.copy()
@@ -103,10 +101,9 @@ def save_array(arr_out,boundary):
 if __name__=="__main__":
     boundary = UnderdampedLandauer()
     
-    cell = CellProblem(boundary)
+    cell = CellProblem(boundary,bridge_type="marginal half")
     cell.iteration(integrator=mcintegrator,
-                    num_iters=4,
-                    bridge_type="marginal half")
+                    num_iters=4)
 
     arr = get_solution_in_time(cell,integrator=mcintegrator)
 

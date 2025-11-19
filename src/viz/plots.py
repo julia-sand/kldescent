@@ -14,6 +14,8 @@ import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
 import matplotlib.gridspec as gridspec
 
+from ..refsolution.reference import RefSolution,GaussRefSolution
+
 '''
 This file holds all the functions used in plotting.
 
@@ -40,7 +42,8 @@ class PlotFuns():
 
     self.boundary = boundary_data
     self.folder = os.path.dirname(__file__)
-
+    self.referencesol = RefSolution(boundary_data)
+    
     #borders of xaxis
     self.qmax = 6
     
@@ -58,6 +61,8 @@ class PlotFuns():
     self.sigsqt_p = 1
     self.mut_q = 0
     self.sigsqt_q = 1
+
+    self.subdir = self.folder #default to folder
   
   def setresultsdir(self,folder):
     #set output location 
@@ -223,6 +228,11 @@ class PlotFuns():
     self.plot_marginal_joint(ax_qmarginal,p_init,qmarg/qnorm)
     self.plot_marginal_joint(ax_pmarginal,pmarg/pnorm,p_init)
 
+    #plot marginals
+    x,ptx = self.referencesol.get_quantity(0.2,quantity = "marginal",data="perturbative underdamped")
+    ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed")
+
+
     #plot joint distribution
     ax.scatter(xs[...,0]/(qnorm*pnorm),xs[...,1]/(qnorm*pnorm),c=joint_out_temp.T.flatten()
               ,cmap="Blues",norm="log",vmin=0.001,vmax=vmax)
@@ -318,14 +328,15 @@ class PlotFuns():
       ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
                 self.evaluate_net_output(net,times[t]),
                 label="N.N.")
-
+      
       self.format_drift_ax(ax[t],times[t])
     
       ax[t].set_ylabel(r"$\mathbb{U}$")
       
       try:
-        xref,duref = self.boundary.get_reference_data(times[t])
-        self.plot_reference(ax[t],xref,0.2/(2**0.5)*duref)
+        xref,duref = self.referencesol.get_quantity(times[t], "underdamped drift", data="perturbative underdamped")
+        #self.referencesol.get_reference_data(times[t])
+        self.plot_reference(ax[t],xref,duref/(2**0.5))
 
       except (FileNotFoundError): 
         print("The reference solution file was not found. \n \
@@ -351,7 +362,6 @@ class PlotFuns():
 
   ##scatter plot of final distribution 
   def marginal_distribution(self,xs,plottime):
-
     """
     Function that plots the scatter plot of the monte carlo approximation of the joint distribution
 
@@ -612,7 +622,15 @@ class PlotFuns():
       data_means = np.convolve(data, np.ones(int(window_size))/float(window_size), 'same')
       return data_means[window_size:-window_size]
 
-  
+  def plot_joint_panel(self,ax,time,jointout,xout):
+      ax, ax_pmarginal,ax_qmarginal = self.scatter_panel_layout(ax,time)
+
+      self.joint_distributions_scatter_panel(ax,
+                                                    ax_pmarginal,
+                                                    ax_qmarginal,
+                                                    jointout,
+                                                    xout,vmax=0.5)
+
 if __name__=="__main__":
   
   update_mpl()

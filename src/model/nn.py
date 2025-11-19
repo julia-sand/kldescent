@@ -234,15 +234,15 @@ class MLP(nn.Module):
 
     def __init__(self,checkpointpath=None):
         self.params = du_network_params()
-        
+        neurons = 64#self.params["duhiddenlayerneurons"]
         super(MLP, self).__init__()
         self.flatten = nn.Flatten()
         self.linear_stack = nn.Sequential(
-            nn.Linear(2, self.params["duhiddenlayerneurons"] ),  #two inputs
+            nn.Linear(2, neurons ),  #two inputs
             nn.GELU(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #hidden layer
+            nn.Linear(neurons , neurons),   #hidden layer
             nn.GELU(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , 1)     #one output
+            nn.Linear(neurons , 1)     #one output
         )    
         self.initialize_weights()   
 

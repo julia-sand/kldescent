@@ -14,6 +14,46 @@ from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
 from ..utils.getboundary import *
 from .contour import *
 
+
+
+
+def compute_rho_girsanov(dunet,integrator,x_samples=50,mc_samples=512,Tf=None):
+    """
+    Computes an estimate of the final joint distribution using girsanov theorem
+    under the current drift
+    
+    args:
+        dunet : class 
+            neural network approximating the drift
+        integrator : class
+            determines the method of SDE integration
+        x_samples : int 
+            number of space discretisation steps
+        mc_samples : int
+            number of MC samples. 
+        Tf : float
+            time for the plot
+    returns:
+        xout: 
+            2d mesh of points of the statespace
+        jointout:
+            estimated joint distribution using girsanov theorem
+    """
+    
+    #generate xmesh
+    Q,P = generate_mesh(x_samples,qmax=6)
+    xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
+    
+    #intiialise pdf 
+    pdf_out = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
+
+    with torch.no_grad():
+        for _ in range(mc_samples):
+            pdf_out += integrator.compute_pdf(xinit.detach().clone(),Tf)
+    
+    return xinit.detach().numpy(),pdf_out.detach().numpy()/mc_samples
+
+
 class PlotUtils():
     """
     Class which prepares the neural net, boundary and plotting variables to
@@ -87,7 +127,7 @@ class PlotUtils():
     def load_rho_checkpoint(self):
         self.rhonet = RhoNeuralNetwork(self.data_loaded)
         self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
-        print(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
+        #print(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
 
     def checkpoint_plots_rho(self):
         self.load_rho_checkpoint()
@@ -121,66 +161,17 @@ class PlotUtils():
         
             return xinit.detach().numpy(),pdf_out.detach().numpy()
 
-
-    def compute_rho_girsanov(self,x_samples=50,mc_samples=512,Tf=None):
-        """
-        Computes an estimate of the final joint distribution using girsanov theorem
-        under the current drift
+    def make_contour_plot2(self,):
         
-        args:
-            x_samples : int 
-                number of space discretisation steps
-            mc_samples : int
-                number of MC samples. Defaults to testing samples
-            Tf : float
-                time for the plot
-        returns:
-            xout: 
-                2d mesh of points of the statespace
-            jointout:
-                estimated joint distribution using girsanov theorem
-        """
-       
-        #default number of samples from parameter file
-        if mc_samples==None:
-            mc_samples = self.data_loaded["testsamples"]
-        
-        #generate xmesh
-        Q,P = generate_mesh(x_samples,qmax=6)
-        xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
-        
-        #intiialise pdf 
-        pdf_out = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
-
-        with torch.no_grad():
-            for _ in range(mc_samples):
-                pdf_out += self.integrator.compute_pdf(xinit.detach().clone(),Tf)
-        
-        return xinit.detach().numpy(),pdf_out.detach().numpy()/mc_samples
-    
-    def plot_joint_panel(self,ax,time):
-        xout,jointout = self.compute_rho_girsanov(Tf=time)
-        ax, ax_pmarginal,ax_qmarginal = self.plotter.scatter_panel_layout(ax,time)
-
-        self.plotter.joint_distributions_scatter_panel(ax,
-                                                    ax_pmarginal,
-                                                    ax_qmarginal,
-                                                    jointout,
-                                                    xout,vmax=0.5)
-
-    @torch.no_grad()
-    def make_contour_plot2(self):
-         
-        #initialise drift network from checkpoint and prepare integrator
-        self.load_du_checkpoint()
-
         times = [0,2.5,5]
 
         fig,axs = plt.subplots(ncols=len(times),nrows=1)
         fig.set_figheight(15)
         fig.set_figwidth(25)
         for ax in enumerate(axs):
-            self.plot_joint_panel(ax[1],times[ax[0]])
+            xout,jointout = compute_rho_girsanov(self.net,self.integrator,mc_samples=self.data_loaded["testsamples"],Tf=times[ax[0]])
+
+            self.plotter.plot_joint_panel(ax[1],times[ax[0]],jointout,xout)
         
         fig.tight_layout()
         fig.savefig(self.folder+f"/plots_{self.epoch}"+"/contour_distribution.png",bbox_inches="tight")        
@@ -242,4 +233,5 @@ if __name__=="__main__":
     plot_utils = PlotUtils()
 
     plot_utils.checkpoint_plots_du()
+    plot_utils.load_du_checkpoint()
     plot_utils.make_contour_plot2()
