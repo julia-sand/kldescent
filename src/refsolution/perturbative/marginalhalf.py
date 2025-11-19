@@ -13,10 +13,9 @@ class MarginalHalfBridgePerturbation():
             determines boundary conditions and parameters
     """
 
-    def __init__(self,boundary):
+    def __init__(self,boundary,reference):
 
         self.boundary = boundary
-        self.reference = RefSolution(boundary=boundary)  
         
         self.overdamped_arr = self.reference.get_ref_data(data="overdamped")
         self.t2vec = np.unique(self.overdamped_arr[:,0])
@@ -38,6 +37,11 @@ class MarginalHalfBridgePerturbation():
 
     def DU(self,t0,t2):
         """Finds the perturbative drift for the marginal half bridge
+        args:
+            t0 : float
+                fast time
+            t2 : float
+                slow time
         """
         
         return 2*self.v11(t0,t2)
@@ -56,11 +60,11 @@ class MarginalHalfBridgePerturbation():
 
         #save pertsol 
         np.savetxt(self.reference.get_ref_path()+"/perturbative_underdamped.csv",pertsol,fmt="%10.6f",header = "t,q,rho,V,DU",delimiter=',')
-
+        self.reference.add_perturbative_underdamped_data(self.reference.get_ref_path()+"/perturbative_underdamped.csv")
 
 
 if __name__=="__main__":
     boundary = UnderdampedLandauer()
-
+    reference = RefSolution(boundary=boundary)
     pertsol = MarginalHalfBridgePerturbation(boundary)
     pertsol.save_perturbative()

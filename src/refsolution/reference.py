@@ -8,7 +8,8 @@ from .utilfunctions import *
 
 class RefSolution():
     """
-    Class used for fetching the reference solutions for plotting
+    Class used for organising the location
+    for the reference solutions used in plotting
     """
 
     def __init__(self, boundary=None, folder_name=None):
@@ -22,8 +23,13 @@ class RefSolution():
         
         
         self.overdamped_loc = self.get_ref_path()+"/overdamped.csv"
-        self.perturb_underdamped_loc = self.get_ref_path()+"/perturbative_underdamped.csv"
+        self.perturb_underdamped_loc = "None"#self.get_ref_path()+"/perturbative_underdamped.csv"
         self.ref_loc = self.get_ref_path()+"/refsol.csv"
+
+    def add_perturbative_underdamped_data(self,path):
+        #updates the ref path 
+        self.perturb_underdamped_loc = path#self.get_ref_path()+"/perturbative_underdamped.csv"
+
 
     def get_ref_path(self):
         #returns the folder where the reference solution is expected to be

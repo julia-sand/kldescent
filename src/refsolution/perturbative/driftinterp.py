@@ -18,26 +18,47 @@ from ...viz.plots import PlotFuns
 
 
 def perturbative_du_interp(boundary):
+    """Trains a neural network to approximate the perturbatively 
+    estimated drift. If a checkpoint is included in the reference solution
+    folder, this is loaded instead of training.
 
-    #get the reference solution 
+    args: 
+        boundary : class
+            class for specifying the boundary conditions and hence the reference solution
+    """
+
+    #get the reference solution folder
     reference_sol = RefSolution(boundary)
        
-    #initialise a neural net
+    #initialise a simple neural net
     mlp_net = MLP()
-
 
     try: #load checkpoint if available
         mlp_net.load_state_dict(torch.load(reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt", weights_only=True))
         print("Checkpoint found and loaded")
     except FileNotFoundError: 
         print("No checkpoint found. Training from CSV data.")
-        #train it to learn the csv
-        run_pretrain(mlp_net,reference_sol.perturb_underdamped_loc)
+        #train it to learn the csv in the reference solution folder
+        try: 
+            run_pretrain(mlp_net,reference_sol.perturb_underdamped_loc)
+        except FileNotFoundError:
+            #first compute perturbative data 
+            pertsol = MarginalHalfBridgePerturbation(boundary,reference)
+            pertsol.save_perturbative()
         torch.save(mlp_net.state_dict(),reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt") 
 
     return mlp_net
 
 def contour(boundary,net):
+    """Plots a contour plot of the solution to the Fokker-Planck 
+    driven by the perturbatively estimated potential. 
+    args: 
+        boundary : class
+            used for parsing into the plotting and integrator classes
+        net : class
+            trained neural net estimating a drift. 
+    """
+
     plotter = PlotFuns(boundary)
     integrator1 = SDE(boundary,net=net)
 
@@ -47,14 +68,15 @@ def contour(boundary,net):
     fig.set_figheight(15)
     fig.set_figwidth(25)
     for ax in enumerate(axs):
-        xout,jointout = compute_rho_girsanov(net,integrator1,mc_samples=100,Tf=times[ax[0]])
+        xout,jointout = compute_rho_girsanov(net,integrator1,mc_samples=500,Tf=times[ax[0]])
 
         plotter.plot_joint_panel(ax[1],times[ax[0]],jointout,xout)
+    
     fig.tight_layout()
     fig.savefig("test_contour_distribution.png",bbox_inches="tight")        
 
     plt.close()
-    plotter.plot_drift(times = [0,0.1,0.2],net=net)
+    plotter.plot_drift(times = [0,2.5,5],net=net)
     
 if __name__=="__main__":
     boundary = UnderdampedLandauer()

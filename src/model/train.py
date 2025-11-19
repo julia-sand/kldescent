@@ -15,12 +15,12 @@ class Pretrain():
         self.path = path 
 
         #set defaults of training process
-        self.lr = 0.001 #initial learning rate
+        self.lr = 0.01 #initial learning rate
         self.gamma = 0.1 #decay rate of learning rate
-        self.step_size = 1000 #frequency of learning rate decay (in epochs)
-        self.n_epochs = 800 #total number of epochs
+        self.step_size = 2000 #frequency of learning rate decay (in epochs)
+        self.n_epochs = 30000 #total number of epochs
 
-        self.minibatch_samples = 8192 
+        self.minibatch_samples = 512
 
         self.clip = 0.1
 
