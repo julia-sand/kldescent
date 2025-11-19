@@ -100,9 +100,6 @@ class PlotFuns():
     #get plot location
     ax = fig.add_subplot(gs_joint_distributions[x_ind,y_ind])
     ax.text(-9,0.4,self.make_plot_label(plot_index),zorder = 200)
-
-    #plotting goes here
-    #self.joint_distributions_scatter_panel(ax,joint_out,x_samples,time,vmax)
     
     #add boundary conditions to first plot and format titles
     if plot_index ==0:
@@ -193,7 +190,7 @@ class PlotFuns():
                                         ax_pmarginal,
                                         ax_qmarginal,
                                         joint_out,
-                                        xs,vmax=0.5):
+                                        xs,time,vmax=0.5):
     """
     Plots one panel of the joint distribution, where the 
     center shows the joint and marginals are estimated
@@ -229,9 +226,8 @@ class PlotFuns():
     self.plot_marginal_joint(ax_pmarginal,pmarg/pnorm,p_init)
 
     #plot marginals
-    x,ptx = self.referencesol.get_quantity(0.2,quantity = "marginal",data="perturbative underdamped")
+    x,ptx = self.referencesol.get_quantity(np.round(time,6),quantity = "marginal",data="perturbative underdamped")
     ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed")
-
 
     #plot joint distribution
     ax.scatter(xs[...,0]/(qnorm*pnorm),xs[...,1]/(qnorm*pnorm),c=joint_out_temp.T.flatten()
@@ -629,7 +625,7 @@ class PlotFuns():
                                                     ax_pmarginal,
                                                     ax_qmarginal,
                                                     jointout,
-                                                    xout,vmax=0.5)
+                                                    xout,time,vmax=0.5)
 
 if __name__=="__main__":
   

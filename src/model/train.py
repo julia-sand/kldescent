@@ -18,9 +18,9 @@ class Pretrain():
         self.lr = 0.001 #initial learning rate
         self.gamma = 0.1 #decay rate of learning rate
         self.step_size = 1000 #frequency of learning rate decay (in epochs)
-        self.n_epochs = 8000 #total number of epochs
+        self.n_epochs = 800 #total number of epochs
 
-        self.minibatch_samples = 2048 
+        self.minibatch_samples = 8192 
 
         self.clip = 0.1
 
