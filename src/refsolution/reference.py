@@ -93,15 +93,10 @@ class RefSolution():
 
         #returns the drift of the reference solution 
         try:
-            qref,duref = self.get_reference_data(time)
+            qref,duref = self.get_ref_drift_gaussian(time)
             return np.interp(q,qref,duref,left=duref[0],right=duref[-1])
         except:
             return np.zeros_like(q)
-
-    def get_reference_data(self,time):
-        arr = self.get_ref_data()
-        
-        return np.linspace(-4,4),-(np.squeeze(arr[np.where(arr[:,0]==time),-1]) + np.squeeze(arr[np.where(arr[:,0]==time),-2])*np.linspace(-4,4))
 
 
 
@@ -126,6 +121,11 @@ class GaussRefSolution(RefSolution):
         arr = np.loadtxt(open(self.cumulants_path),
                         delimiter=",",skiprows=1) 
         return arr 
+
+    def get_ref_drift_gaussian(self,time):
+        arr = self.get_ref_data()
+        
+        return np.linspace(-4,4),-(np.squeeze(arr[np.where(arr[:,0]==time),-1]) + np.squeeze(arr[np.where(arr[:,0]==time),-2])*np.linspace(-4,4))
 
     def get_known_solution_cumulants(self,cumulant_type):
         arr = self.get_ref_cumulants_file() 

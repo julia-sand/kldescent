@@ -17,10 +17,10 @@ class Pretrain():
         #set defaults of training process
         self.lr = 0.001 #initial learning rate
         self.gamma = 0.1 #decay rate of learning rate
-        self.step_size = 500 #frequency of learning rate decay (in epochs)
-        self.n_epochs = 1000 #total number of epochs
+        self.step_size = 1000 #frequency of learning rate decay (in epochs)
+        self.n_epochs = 8000 #total number of epochs
 
-        self.minibatch_samples = 128 
+        self.minibatch_samples = 2048 
 
         self.clip = 0.1
 
@@ -32,6 +32,7 @@ class Pretrain():
         
         #pdb.set_trace()
         X = torch.tensor(arr[:,0:2], dtype=torch.float32)
+        X[:,0] /= 0.2**2
         y = torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
         
         return X,y/(2**0.5)
