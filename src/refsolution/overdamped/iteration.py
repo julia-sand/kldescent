@@ -28,9 +28,10 @@ class CellProblem():
         self.A = self.boundary.afun(self.boundary.params["Tf"])
         self.B = self.boundary.bfun(self.boundary.params["Tf"])
         self.beta = 1/np.sqrt(self.A)
+        self.M = self.boundary.params["weight"]
 
         if bridge_type=="marginal half":
-            self.power = self.boundary.params["weight"]*self.B/(self.A+self.B)
+            self.power = (self.M*self.B)/(self.A+self.M*self.B)
         elif bridge_type=="full":
             self.power = 1
         else:
