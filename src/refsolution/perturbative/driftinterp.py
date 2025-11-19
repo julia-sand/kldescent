@@ -25,8 +25,15 @@ def perturbative_du_interp(boundary):
     #initialise a neural net
     mlp_net = MLP()
 
-    #train it to learn the csv
-    run_pretrain(mlp_net,reference_sol.perturb_underdamped_loc)
+
+    try: #load checkpoint if available
+        mlp_net.load_state_dict(torch.load(reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt", weights_only=True))
+        print("Checkpoint found and loaded")
+    except FileNotFoundError: 
+        print("No checkpoint found. Training from CSV data.")
+        #train it to learn the csv
+        run_pretrain(mlp_net,reference_sol.perturb_underdamped_loc)
+        torch.save(mlp_net.state_dict(),reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt") 
 
     return mlp_net
 
