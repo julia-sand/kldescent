@@ -16,7 +16,8 @@ class MarginalHalfBridgePerturbation():
     def __init__(self,boundary,reference):
 
         self.boundary = boundary
-        
+        self.reference = reference
+
         self.overdamped_arr = self.reference.get_ref_data(data="overdamped")
         self.t2vec = np.unique(self.overdamped_arr[:,0])
         self.xnum = int(self.overdamped_arr.shape[0]/len(self.t2vec))
@@ -60,11 +61,11 @@ class MarginalHalfBridgePerturbation():
 
         #save pertsol 
         np.savetxt(self.reference.get_ref_path()+"/perturbative_underdamped.csv",pertsol,fmt="%10.6f",header = "t,q,rho,V,DU",delimiter=',')
-        self.reference.add_perturbative_underdamped_data(self.reference.get_ref_path()+"/perturbative_underdamped.csv")
+        #self.reference.add_perturbative_underdamped_data(self.reference.get_ref_path()+"/perturbative_underdamped.csv")
 
 
 if __name__=="__main__":
     boundary = UnderdampedLandauer()
     reference = RefSolution(boundary=boundary)
-    pertsol = MarginalHalfBridgePerturbation(boundary)
+    pertsol = MarginalHalfBridgePerturbation(boundary,reference)
     pertsol.save_perturbative()

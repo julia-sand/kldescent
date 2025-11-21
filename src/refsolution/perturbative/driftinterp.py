@@ -15,9 +15,10 @@ from ...sde.langevin import *
 from ..reference import *
 from ...viz.checkpoint_plots import compute_rho_girsanov
 from ...viz.plots import PlotFuns
+from  .marginalhalf import MarginalHalfBridgePerturbation
 
 
-def perturbative_du_interp(boundary):
+def perturbative_du_interp(boundary,reference_sol):
     """Trains a neural network to approximate the perturbatively 
     estimated drift. If a checkpoint is included in the reference solution
     folder, this is loaded instead of training.
@@ -27,9 +28,6 @@ def perturbative_du_interp(boundary):
             class for specifying the boundary conditions and hence the reference solution
     """
 
-    #get the reference solution folder
-    reference_sol = RefSolution(boundary)
-       
     #initialise a simple neural net
     mlp_net = MLP()
 
@@ -43,13 +41,15 @@ def perturbative_du_interp(boundary):
             run_pretrain(mlp_net,reference_sol.perturb_underdamped_loc)
         except FileNotFoundError:
             #first compute perturbative data 
-            pertsol = MarginalHalfBridgePerturbation(boundary,reference)
+            pertsol = MarginalHalfBridgePerturbation(boundary,reference_sol)
             pertsol.save_perturbative()
+            run_pretrain(mlp_net,reference_sol.perturb_underdamped_loc)
+
         torch.save(mlp_net.state_dict(),reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt") 
 
     return mlp_net
 
-def contour(boundary,net):
+def contour(boundary,reference_sol,net):
     """Plots a contour plot of the solution to the Fokker-Planck 
     driven by the perturbatively estimated potential. 
     args: 
@@ -59,7 +59,7 @@ def contour(boundary,net):
             trained neural net estimating a drift. 
     """
 
-    plotter = PlotFuns(boundary)
+    plotter = PlotFuns(boundary,referencesol=reference_sol)
     integrator1 = SDE(boundary,net=net)
 
     times = [0,2.5,5]
@@ -80,5 +80,8 @@ def contour(boundary,net):
     
 if __name__=="__main__":
     boundary = UnderdampedLandauer()
-    mlp_net = perturbative_du_interp(boundary)
-    contour(boundary,mlp_net)
+    #get the reference solution folder
+    reference_sol = RefSolution(boundary)
+    
+    mlp_net = perturbative_du_interp(boundary,reference_sol)
+    contour(boundary,reference_sol,mlp_net)

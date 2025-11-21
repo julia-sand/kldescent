@@ -104,7 +104,7 @@ if __name__=="__main__":
     
     cell = CellProblem(boundary,bridge_type="marginal half")
     cell.iteration(integrator=mcintegrator,
-                    num_iters=4)
+                    num_iters=10)
 
     arr = get_solution_in_time(cell,integrator=mcintegrator)
 
