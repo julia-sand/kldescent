@@ -84,7 +84,7 @@ class CellProblem():
         while iters < num_iters:
 
             #compute psi0/phiT
-            psi0 = np.nan_to_num(zchop(self.boundary.q_marginal_final(xhatphi)/hatphiT),posinf=0,neginf=0,nan=0)**(self.B/(self.A+self.B)) 
+            psi0 = np.nan_to_num(zchop(self.boundary.q_marginal_final(xhatphi)/hatphiT),posinf=0,neginf=0,nan=0)**self.power
 
             #integrate psi to Tf
             xpsi,psiT = integrator(xhatphi,psi0,self.Tf2,self.beta)
@@ -149,7 +149,7 @@ class CellProblem():
         rhoT = interpolate_(self.q,xpsi,hatphiT)*interpolate_(self.q,xhatphi,psi0)
         rho0 = interpolate_(self.q,xpsi,hatphi0)*interpolate_(self.q,xhatphi,psiT) #interpolate_(self.q,xhatphi,hatphi0)*interpolate_(self.q,xpsi,psiT)
         
-        plt.plot(self.q,normalise(self.q,rhoT)**self.power, label="rhoT half")
+        #plt.plot(self.q,normalise(self.q,rhoT)**self.power)
         plt.plot(self.q,normalise(self.q,rhoT), label="rhoT")
         plt.plot(self.q,normalise(self.q,rho0), label="rho0")
 

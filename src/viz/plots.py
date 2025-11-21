@@ -36,13 +36,17 @@ def update_mpl():
   mpl.rcParams['axes.labelsize'] = 22
 
 class PlotFuns():
-  def __init__(self,boundary_data=None):
+  def __init__(self,boundary_data=None,referencesol = None):
 
     update_mpl()
 
     self.boundary = boundary_data
     self.folder = os.path.dirname(__file__)
-    self.referencesol = RefSolution(boundary_data)
+    if referencesol is None:
+      self.referencesol = RefSolution(boundary_data)
+      self.referencesol.add_perturbative_underdamped_data(self.referencesol.get_ref_path()+"/perturbative_underdamped.csv")
+    else:
+      self.referencesol = referencesol
     
     #borders of xaxis
     self.qmax = 6
@@ -102,7 +106,7 @@ class PlotFuns():
     ax.text(-9,0.4,self.make_plot_label(plot_index),zorder = 200)
     
     #add boundary conditions to first plot and format titles
-    if plot_index ==0:
+    if plot_index==0:
       ax.set_title(f"$t = 0$", loc = "center")
       ax_pmarginal.fill_between(q_init,np.exp(-(q_init**2)/2)/np.sqrt(np.pi*2),color=self.c2)
       ax_qmarginal.fill_between(self.boundary.q_marginal_initial(q_init),q_init,color=self.c2)
