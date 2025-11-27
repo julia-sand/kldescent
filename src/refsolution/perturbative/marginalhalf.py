@@ -1,10 +1,5 @@
 import numpy as np
 
-from ..reference import *
-from ...sde.boundary import *
-
-#import pdb
-
 class MarginalHalfBridgePerturbation():
     """Class to contain the functions for computing perturbative 
     corrections from overdamped data
@@ -47,6 +42,21 @@ class MarginalHalfBridgePerturbation():
         
         return 2*self.v11(t0,t2)
     
+    def xcorr(self,t0,t2):
+        return 0
+
+    def momvar(self,t0,t2):
+        return 0
+
+    def posvar(self,t0,t2):
+        return 0
+
+    def mommean(self,t0,t2):
+        return 0
+
+    def posmean(self,t0,t2):
+        return 0
+
     def save_perturbative(self,):
         """
         compute perturbative drift and adds to 
@@ -63,9 +73,32 @@ class MarginalHalfBridgePerturbation():
         np.savetxt(self.reference.get_ref_path()+"/perturbative_underdamped.csv",pertsol,fmt="%10.6f",header = "t,q,rho,V,DU",delimiter=',')
         #self.reference.add_perturbative_underdamped_data(self.reference.get_ref_path()+"/perturbative_underdamped.csv")
 
+    def save_perturbative_cumulants(self,):
+        """
+        computes estiamtes of the perturbative cumulants and saves as a csv
+        """
+
+        #preallocate
+        pertcumulants = np.empty((len(t2vec,6)))
+        
+        for t in range(len(self.t2vec)):
+            
+            pertcumulants[t,0] = self.t2vec[t]
+            pertcumulants[t,1] = self.posmean(self.t2vec[t])
+            pertcumulants[t,2] = self.mommean(self.t2vec[t])
+            pertcumulants[t,3] = self.posvar(self.t2vec[t])
+            pertcumulants[t,4] = self.momvar(self.t2vec[t])
+            pertcumulants[t,5] = self.xcorr(self.t2vec[t])
+
+        #save pertsol 
+        np.savetxt(self.reference.get_ref_path()+"/cumulants.csv",pertcumulants,fmt="%10.6f",header = "t,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
 
 if __name__=="__main__":
+    #from ..reference import RefSolution
+    #from ...sde.boundary import *
+    
     boundary = UnderdampedLandauer()
     reference = RefSolution(boundary=boundary)
     pertsol = MarginalHalfBridgePerturbation(boundary,reference)
     pertsol.save_perturbative()
+    pertsol.save_perturbative_cumulants()

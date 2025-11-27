@@ -130,9 +130,7 @@ class SDE(SDEBase):
 
         ====
         Parameters
-            net: class
-                neural network for estimating the 
-
+          
         Returns:
 
         ====
@@ -154,9 +152,11 @@ class SDE(SDEBase):
             
             dw = self.generate_innovation(dt,testing_samples)
 
-            du_ref = torch.tensor(self.boundary.du_ref(xinit_ref[:,0,None],t_vec[i]),
-                                    requires_grad=False,
-                                    dtype=torch.float32)
+            du_ref = torch.zeros_like(xinit_ref[:,[0]],requires_grad=False,
+                                                   dtype=torch.float32)
+            #torch.tensor(self.reference(xinit_ref[:,0,None],t_vec[i]),
+                     #               requires_grad=False,
+                     #               dtype=torch.float32)
 
             with torch.no_grad():
 
@@ -262,7 +262,7 @@ class SDE(SDEBase):
                                                         ,xinit[...,[0]])))
                 
                 xinit = self.boundary.euler_maruyama_step(xinit,du,dt,dw,t_vec[i])
-                xref = self.boundary.euler_maruyama_step(xref,self.boundary.du_ref(xref[:,[0]],t_vec[i]),dt,dw,t_vec[i])
+                xref = self.boundary.euler_maruyama_step(xref,torch.zeros_like(xref[:,[0]]),dt,dw,t_vec[i])
                 cumulants_nn = self.save_cumulants(cumulants_nn,xinit.numpy())
                 cumulants_ref = self.save_cumulants(cumulants_ref,xref.numpy())
         

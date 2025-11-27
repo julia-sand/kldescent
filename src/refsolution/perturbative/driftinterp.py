@@ -10,13 +10,11 @@ import matplotlib.pyplot as plt
 
 from ...model.nn import MLP
 from ...model.pretrain import run_pretrain
-from ...sde.boundary import *
+#
 from ...sde.langevin import *
-from ..reference import *
-from ...viz.checkpoint_plots import compute_rho_girsanov
-from ...viz.plots import PlotFuns
+#from ...viz.checkpoint_plots import compute_rho_girsanov
+#from ...viz.plots import PlotFuns
 from  .marginalhalf import MarginalHalfBridgePerturbation
-
 
 def perturbative_du_interp(boundary,reference_sol):
     """Trains a neural network to approximate the perturbatively 
@@ -26,6 +24,8 @@ def perturbative_du_interp(boundary,reference_sol):
     args: 
         boundary : class
             class for specifying the boundary conditions and hence the reference solution
+        reference_sol : class
+            controls how the reference solution is saved
     """
 
     #initialise a simple neural net
@@ -41,15 +41,13 @@ def perturbative_du_interp(boundary,reference_sol):
             run_pretrain(mlp_net,reference_sol.perturb_underdamped_loc)
         except FileNotFoundError:
             #first compute perturbative data 
-            pertsol = MarginalHalfBridgePerturbation(boundary,reference_sol)
-            pertsol.save_perturbative()
             run_pretrain(mlp_net,reference_sol.perturb_underdamped_loc)
 
         torch.save(mlp_net.state_dict(),reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt") 
 
     return mlp_net
 
-def contour(boundary,reference_sol,net):
+def contour(plotter,net):
     """Plots a contour plot of the solution to the Fokker-Planck 
     driven by the perturbatively estimated potential. 
     args: 
@@ -59,7 +57,7 @@ def contour(boundary,reference_sol,net):
             trained neural net estimating a drift. 
     """
 
-    plotter = PlotFuns(boundary,referencesol=reference_sol)
+    #plotter = PlotFuns(boundary,referencesol=reference_sol)
     integrator1 = SDE(boundary,net=net)
 
     times = [0,2.5,5]
@@ -68,7 +66,7 @@ def contour(boundary,reference_sol,net):
     fig.set_figheight(15)
     fig.set_figwidth(25)
     for ax in enumerate(axs):
-        xout,jointout = compute_rho_girsanov(net,integrator1,mc_samples=500,Tf=times[ax[0]])
+        xout,jointout = compute_rho_girsanov(net,integrator1,mc_samples=1000,Tf=times[ax[0]])
 
         plotter.plot_joint_panel(ax[1],times[ax[0]],jointout,xout)
     
@@ -79,6 +77,9 @@ def contour(boundary,reference_sol,net):
     plotter.plot_drift(times = [0,2.5,5],net=net)
     
 if __name__=="__main__":
+    from ..reference import *
+    from ...sde.boundary import *
+    
     boundary = UnderdampedLandauer()
     #get the reference solution folder
     reference_sol = RefSolution(boundary)

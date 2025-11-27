@@ -44,7 +44,7 @@ class PlotFuns():
     self.folder = os.path.dirname(__file__)
     if referencesol is None:
       self.referencesol = RefSolution(boundary_data)
-      self.referencesol.add_perturbative_underdamped_data(self.referencesol.get_ref_path()+"/perturbative_underdamped.csv")
+      #self.referencesol.add_perturbative_underdamped_data(self.referencesol.get_ref_path()+"/perturbative_underdamped.csv")
     else:
       self.referencesol = referencesol
     
