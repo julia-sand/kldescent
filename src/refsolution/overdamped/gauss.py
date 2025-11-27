@@ -1,6 +1,5 @@
 #reference solution for gaussian full bridge
 import numpy as np 
-#import src.sde.boundary as boundaries
 from ..utilfunctions import *
 
 class Gaussian_Overdamped_Ref():

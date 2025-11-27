@@ -5,6 +5,9 @@ import numpy as np
 from ..sde.boundary import *
 from .overdamped.gauss import Gaussian_Overdamped_Ref
 from .utilfunctions import *
+from .perturbative.driftinterp import perturbative_du_interp
+from .perturbative.marginalhalf import MarginalHalfBridgePerturbation
+from .overdamped.sol import compute_overdamped
 
 class RefSolution():
     """
@@ -20,11 +23,27 @@ class RefSolution():
             self.folder_name = folder_name
         else:
             self.folder_name = f"{self.boundary.__class__.__name__}"
-        
-        
+                
+        os.makedirs(self.get_ref_path(),exist_ok=True)
+
+        #sets reference file locations
         self.overdamped_loc = self.get_ref_path()+"/overdamped.csv"
         self.perturb_underdamped_loc = self.get_ref_path()+"/perturbative_underdamped.csv"
         self.ref_loc = self.get_ref_path()+"/refsol.csv"
+
+        try:
+            #compute corrections
+            self.duref_net = perturbative_du_interp(self.boundary,self)
+        except FileNotFoundError:
+            print("Overdamped results not available. Solving cell problem...")
+            #compute overdamped ref solution
+            compute_overdamped(self.boundary,self.get_ref_path())
+            print("Cell problem completed. Computing Corrections...")
+            pertsol = MarginalHalfBridgePerturbation(boundary,reference_sol)
+            pertsol.save_perturbative()
+            pertsol.save_perturbative_cumulants()
+            print("Underdamped Results saved.")
+            self.duref_net = perturbative_du_interp(self.boundary,self)
 
     def get_ref_path(self):
         #returns the folder where the reference solution is expected to be
@@ -147,7 +166,6 @@ class GaussRefSolution(RefSolution):
             return np.zeros_like(np.squeeze(arr[:,0])),np.zeros_like(np.squeeze(arr[:,0]))
 
         return np.squeeze(arr[:,0]),temp
-
 
 def plot_data(reference_,quantity,data):
     

@@ -19,7 +19,6 @@ import os
 import numpy as np 
 
 from ..utils.parser import boundary_params, gaussian_params
-#from ..refsolution.get_ref import GaussRefSolution
 
 class Boundaries():
     """
@@ -296,6 +295,7 @@ class UnderdampedLandauer(OverdampedLandauer):
     def __init__(self,params=None,logger=None):
         OverdampedLandauer.__init__(self,params,logger)
         self.sigma0 = np.sqrt(2)
+        
         
     def p_initial(self,q,p):
 

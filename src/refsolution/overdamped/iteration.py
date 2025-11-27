@@ -7,7 +7,7 @@ from ..utilfunctions import *
 
 class CellProblem():
 
-    def __init__(self,boundary,bridge_type="marginal half"):
+    def __init__(self,boundary,save_location,bridge_type="marginal half"):
         """
         class for solving the cell problem, which is a 'halfbridge' problem
 
@@ -21,6 +21,8 @@ class CellProblem():
         """
         
         self.boundary = boundary
+        self.save_location = save_location #where to save the plots
+        
         self.Tf2 = self.boundary.params["Tf"]*(self.boundary.params["epsilon"]**2)
         
         self.q = np.linspace(-6,6) #for plotting 
@@ -29,6 +31,7 @@ class CellProblem():
         self.B = self.boundary.bfun(self.boundary.params["Tf"])
         self.beta = 1/np.sqrt(self.A)
         self.M = self.boundary.params["weight"]
+
 
         if bridge_type=="marginal half":
             self.power = (self.M*self.B)/(self.A+self.M*self.B)
@@ -124,7 +127,7 @@ class CellProblem():
             pass
 
         plt.legend()
-        plt.savefig(f"factors0_hatphi_{iters}.png")
+        plt.savefig(self.save_location+f"/factors0_hatphi_{iters}.png")
         plt.close()
 
     def plot_factors_PHI(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
@@ -141,7 +144,7 @@ class CellProblem():
             pass  
 
         plt.legend()
-        plt.savefig(f"factors_phi_{iters}.png")
+        plt.savefig(self.save_location+f"/factors_phi_{iters}.png")
         plt.close()
 
     def plot_boundary(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
@@ -157,7 +160,7 @@ class CellProblem():
         plt.plot(self.q,self.boundary.q_marginal_initial(self.q),linestyle="dashed",color="gray",alpha=0.5)
 
         plt.legend()
-        plt.savefig(f"boundary_test_iter_{iters}.png")
+        plt.savefig(self.save_location+f"/boundary_test_iter_{iters}.png")
         plt.close()
 
 if __name__=="__main__":
