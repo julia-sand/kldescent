@@ -12,7 +12,6 @@ class SDEBase():
     def __init__(self,boundary_data,
                     sde_params=None):
 
-        #self.rhonet = rhonet #to be replaced with Terminal cost class
         self.boundary = boundary_data
 
         #get params 
@@ -123,13 +122,15 @@ class SDE(SDEBase):
         return Lhat
     
     #@profile
-    def compute_metrics(self):
+    def compute_metrics(self,duref_net=None):
         """
         Computes sample evolutions of the dynamics and saves the metrics for 
         recording the training process
 
         ====
-        Parameters
+        Parameters:
+            duref_net : class
+                neural network approximating the perturbative drift 
           
         Returns:
 
@@ -152,11 +153,7 @@ class SDE(SDEBase):
             
             dw = self.generate_innovation(dt,testing_samples)
 
-            du_ref = torch.zeros_like(xinit_ref[:,[0]],requires_grad=False,
-                                                   dtype=torch.float32)
-            #torch.tensor(self.reference(xinit_ref[:,0,None],t_vec[i]),
-                     #               requires_grad=False,
-                     #               dtype=torch.float32)
+            du_ref = duref_net(torch.column_stack((xinit_ref[:,0,None],t_vec[i]*torch.ones((testing_samples,1)))))
 
             with torch.no_grad():
 
@@ -230,7 +227,7 @@ class SDE(SDEBase):
                                               np.correlate(temp[...,0],temp[...,1])[0]/(len(temp[...,0]))]]),axis=0)#cross corr
 
     def compute_sde(self,
-                        final_time):
+                        final_time,duref_net=None):
         """
         Computes the SDE while saving cumulants 
 
@@ -260,9 +257,10 @@ class SDE(SDEBase):
                 dw = self.generate_innovation(dt,self.sde_params["testsamples"])
                 du = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["testsamples"],1),dtype=torch.float32)
                                                         ,xinit[...,[0]])))
-                
+                duref = duref_net(torch.column_stack((xref[:,0,None],t_vec[i]*torch.ones((self.sde_params["testsamples"],1)))))
+
                 xinit = self.boundary.euler_maruyama_step(xinit,du,dt,dw,t_vec[i])
-                xref = self.boundary.euler_maruyama_step(xref,torch.zeros_like(xref[:,[0]]),dt,dw,t_vec[i])
+                xref = self.boundary.euler_maruyama_step(xref,duref,dt,dw,t_vec[i])
                 cumulants_nn = self.save_cumulants(cumulants_nn,xinit.numpy())
                 cumulants_ref = self.save_cumulants(cumulants_ref,xref.numpy())
         

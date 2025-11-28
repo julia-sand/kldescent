@@ -95,12 +95,6 @@ class OverdampedFullLandauer(Boundaries):
         Returns the normalised assigned final distribution
     generate_samples()
         Generates samples from the boundary distributions
-    get_reference_timegrid()
-        Fetches time discretisation from reference solution
-    get_reference_data()
-        fetches reference data found in ref sol path
-    du_ref()
-        reference drift for integration
     euler_maruyama_step()
         returns one step of the overdamped sde wrt problem description
     """
@@ -295,7 +289,6 @@ class UnderdampedLandauer(OverdampedLandauer):
     def __init__(self,params=None,logger=None):
         OverdampedLandauer.__init__(self,params,logger)
         self.sigma0 = np.sqrt(2)
-        
         
     def p_initial(self,q,p):
 

@@ -17,7 +17,7 @@ from .contour import *
 
 
 
-def compute_rho_girsanov(dunet,integrator,x_samples=50,mc_samples=512,Tf=None):
+def compute_rho_girsanov(dunet,integrator,x_samples=50,mc_samples=64,Tf=None):
     """
     Computes an estimate of the final joint distribution using girsanov theorem
     under the current drift
@@ -112,7 +112,7 @@ class PlotUtils():
             
         final_plot_time = self.boundary_cond.params["Tf"]
         
-        t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(final_plot_time)
+        t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(final_plot_time,self.plotter.referencesol.duref_net)
         
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
         self.plotter.marginal_distribution([xinit,xref],final_plot_time)

@@ -36,18 +36,14 @@ def update_mpl():
   mpl.rcParams['axes.labelsize'] = 22
 
 class PlotFuns():
-  def __init__(self,boundary_data=None,referencesol = None):
+  def __init__(self,boundary_data=None):
 
     update_mpl()
 
     self.boundary = boundary_data
     self.folder = os.path.dirname(__file__)
-    if referencesol is None:
-      self.referencesol = RefSolution(boundary_data)
-      #self.referencesol.add_perturbative_underdamped_data(self.referencesol.get_ref_path()+"/perturbative_underdamped.csv")
-    else:
-      self.referencesol = referencesol
-    
+    self.referencesol = RefSolution(boundary_data)
+     
     #borders of xaxis
     self.qmax = 6
     
@@ -334,7 +330,7 @@ class PlotFuns():
       ax[t].set_ylabel(r"$\mathbb{U}$")
       
       try:
-        xref,duref = self.referencesol.get_quantity(times[t], "underdamped drift", data="perturbative underdamped")
+        xref,duref = self.referencesol.get_quantity(times[t]*(0.2**2), "underdamped drift", data="perturbative underdamped")
         #self.referencesol.get_reference_data(times[t])
         self.plot_reference(ax[t],xref,duref/(2**0.5))
 
@@ -343,7 +339,6 @@ class PlotFuns():
                     Please make sure that it has been created by running the scripts in valueref.py or that it has not been moved")
         #break
 
-    
     plt.legend()
     plt.tight_layout()
     plt.savefig(self.subdir+f"/drift.png", bbox_inches='tight')

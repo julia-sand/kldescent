@@ -51,7 +51,7 @@ def run():
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
 
-    metrics = train.Metrics(net, integrator, args["logstep"],metrics_logger)    
+    metric_ = metrics.Metrics(net,integrator, args["logstep"], metrics_logger)    
         
     if args["pretrain"]: #if a path is provided 
         pretrain.run_pretrain(net,
@@ -66,7 +66,7 @@ def run():
             loss_out = trainer.train_step()
 
             #update metrics and save checkpoints
-            metrics.update_metrics(epoch+1, loss_out)
+            metric_.update_metrics(epoch+1, loss_out)
             
         except ValueError:
             print("The training has resulted in NaN loss and therefore failed. Please retry.")
