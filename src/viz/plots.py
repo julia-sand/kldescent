@@ -333,7 +333,10 @@ class PlotFuns():
         xref,duref = self.referencesol.get_quantity(times[t]*(0.2**2), "underdamped drift", data="perturbative underdamped")
         #self.referencesol.get_reference_data(times[t])
         self.plot_reference(ax[t],xref,duref/(2**0.5))
-
+        #self.plot_reference(ax[t],xref,self.referencesol.duref_net(torch.column_stack((times[t]*torch.ones((xref.shape[0],1),dtype=torch.float32,requires_grad=False),torch.tensor(xref[:,np.newaxis],dtype=torch.float32,requires_grad=False)))).detach())
+        ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
+                self.evaluate_net_output(self.referencesol.duref_net,times[t]),
+                label="Perturbative N.N.")
       except (FileNotFoundError): 
         print("The reference solution file was not found. \n \
                     Please make sure that it has been created by running the scripts in valueref.py or that it has not been moved")
@@ -379,7 +382,7 @@ class PlotFuns():
     ax_pos.set_title("Position")
     ax_mom.set_title("Momentum")
     colors = ["orange",self.c1]
-    labels = ["Controlled by NN.","Free Diffusion"]
+    labels = ["Controlled by NN.","Perturbative"]
     try:
       for x in enumerate(xs):
       
@@ -498,7 +501,7 @@ class PlotFuns():
       with torch.no_grad():
         #computes neural network output (forward pass) to use in plotting
         return net(torch.column_stack((time*torch.ones((1000,1),requires_grad=False,dtype=torch.float32)
-                                                    ,torch.linspace(-self.qmax,self.qmax,1000,requires_grad=False))))
+                                                    ,torch.linspace(-self.qmax,self.qmax,1000,requires_grad=False)))).detach()
         
   def position_mean_free_diffusion(self,t_vec,q0,p0):
       return q0 + self.boundary.params["epsilon"]*(1-np.exp(-t_vec))*p0

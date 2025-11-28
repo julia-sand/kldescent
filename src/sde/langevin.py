@@ -138,7 +138,7 @@ class SDE(SDEBase):
         """
 
         self.net.eval()
-        t_vec = self.testing_time_grid()
+        t_vec = self.generate_time_grid()#self.testing_time_grid()
         testing_samples = self.sde_params["testsamples"] #4000 #reduced number of samples in computing the loss metrics
 
         #initialise x values as samples from assigned initial distribution
@@ -153,9 +153,9 @@ class SDE(SDEBase):
             
             dw = self.generate_innovation(dt,testing_samples)
 
-            du_ref = duref_net(torch.column_stack((xinit_ref[:,0,None],t_vec[i]*torch.ones((testing_samples,1)))))
-
             with torch.no_grad():
+
+                du_ref = duref_net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1)),xinit_ref[:,0,None])))
 
                 du_bar = self.net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
                                                         ,xinit[...,[0]]))).detach()
@@ -257,7 +257,7 @@ class SDE(SDEBase):
                 dw = self.generate_innovation(dt,self.sde_params["testsamples"])
                 du = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["testsamples"],1),dtype=torch.float32)
                                                         ,xinit[...,[0]])))
-                duref = duref_net(torch.column_stack((xref[:,0,None],t_vec[i]*torch.ones((self.sde_params["testsamples"],1)))))
+                duref = duref_net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["testsamples"],1)),xref[:,0,None])))
 
                 xinit = self.boundary.euler_maruyama_step(xinit,du,dt,dw,t_vec[i])
                 xref = self.boundary.euler_maruyama_step(xref,duref,dt,dw,t_vec[i])

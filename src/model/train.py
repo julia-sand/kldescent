@@ -34,7 +34,7 @@ class Pretrain():
         X = torch.tensor(arr[:,0:2], dtype=torch.float32)
         X[:,0] /= 0.2**2 #use t0 
 
-        y = -1*torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
+        y = torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
         
         return X,y/(2**0.5)
 
