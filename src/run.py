@@ -76,7 +76,7 @@ def run():
 
     #plot_utils.checkpoint_plots_rho()
     plot_utils.checkpoint_plots_du()
-    plot_utils.make_contour_plot2()
+    #plot_utils.make_contour_plot2()
 
 if __name__=="__main__":
     run()

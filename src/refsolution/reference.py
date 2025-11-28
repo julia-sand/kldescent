@@ -60,6 +60,8 @@ class RefSolution():
             #pertsol.save_perturbative_cumulants()
             print("Underdamped Results saved.")
             self.duref_net = perturbative_du_interp(self.boundary,self)
+        
+        self.duref_net.eval()
 
     def get_ref_path(self):
         #returns the folder where the reference solution is expected to be
