@@ -32,8 +32,9 @@ class Pretrain():
         
         #pdb.set_trace()
         X = torch.tensor(arr[:,0:2], dtype=torch.float32)
-        X[:,0] /= 0.2**2
-        y = torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
+        X[:,0] /= 0.2**2 #use t0 
+
+        y = -1*torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
         
         return X,y/(2**0.5)
 
@@ -106,76 +107,6 @@ class Train():
         #if (epoch % self.milestone == 0) and (epoch>0):
             
         return Lhat.detach().numpy().item()
-
-
-class Metrics():
-    """
-    Class for finding metrics during the training process 
-
-    Method: 
-        update_metrics
-    """
-
-    def __init__(self, net, integrator, logstep, logger):
-        self.integrator = integrator
-        self.net = net
-        #self.rhonet = rhonet
-        #self.scheduler = trainer.scheduler # for testing out different schedules, we record the learning rate 
-        
-        self.logstep = logstep #how frequently to save results
-        self.logger = logger
-        self.update_metrics(0, 0)
-
-    def update_metrics(self, epoch, loss_out, trainer=None):
-        """
-        Function for computing metrics
-            -logs the metrics at logstep
-            - checks for nan loss
-            TODO (fix logic)- updates the metrics for final distribution, gaussian reference. 
-        args:
-            epoch:
-                pass current epoch to use in logging loss
-            loss_out:
-                value of the loss from the metrics function
-        """
-        
-        with torch.no_grad():
-
-            if loss_out is not None:
-                loss_out = loss_out
-            else:
-                loss_out = 0 #TODO: compute the loss independently here
-
-            if np.isnan(loss_out):
-                raise ValueError('Loss function is NaN. Terminating training process')
-        
-            if (epoch % self.logstep == 0): #compute metrics 
-                with torch.no_grad():
-                    #this also updates the ref. cumulants
-                    kl_dynamic, kl_static, mean0, var0 =self.integrator.compute_metrics()
-
-                    if trainer is not None:
-                        lr_rate = trainer.scheduler.get_last_lr()[0]
-                    else:
-                        lr_rate = 0
-
-                    self.logger.write_data_row(epoch,
-                                                loss_out,
-                                                kl_dynamic,
-                                                kl_static,
-                                                lr_rate, #,
-                                                mean0,
-                                                var0)
-
-                    self.logger.save_checkpoint(self.net,epoch)
-                    #if self.rhonet is not None:
-                    #    self.logger.save_checkpoint(self.rhonet,epoch)
-            else:
-                pass
-            #else: 
-            #    with torch.no_grad():
-            #        self.integrator.update_ref_statistics()
-                    #pass
 
 class TrainRho():
     """

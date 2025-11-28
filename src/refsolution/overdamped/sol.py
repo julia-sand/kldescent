@@ -85,7 +85,7 @@ def get_solution_in_time(cell,integrator,
              
     return np.nan_to_num(arr_out,nan=0,posinf=0,neginf=0)
 
-def save_array(arr_out,boundary,save_location):
+def save_array(arr_out,save_location):
     
     #make dir
     #os.makedirs(save_location,exist_ok=True)
@@ -101,7 +101,7 @@ def compute_overdamped(boundary,save_location,bridge_type="marginal half"):
 
     arr = get_solution_in_time(cell,integrator=mcintegrator)
 
-    save_array(arr,boundary,save_location)
+    save_array(arr,save_location)
 
 if __name__=="__main__":
     boundary = UnderdampedLandauer()

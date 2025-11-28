@@ -13,10 +13,26 @@ class RefSolution():
     """
     Class used for organising the location
     for the reference solutions used in plotting
+    
+    Methods:
+        get_reference_timegrid()
+            Fetches time discretisation from reference solution
+        get_reference_data()
+            fetches reference data found in ref sol path
+        du_ref()
+            reference drift for integration
     """
 
     def __init__(self, boundary=None, folder_name=None):
-        
+        """
+        Initialises parameters and directs to the reference solutions. 
+        If no reference solution is available in the folder, then computes the reference solution
+        args:
+            boundary : class
+                specifies the boundary conditions
+            folder_name : str
+                if no boundary condition specified, the folder can be set manually using this parameter. 
+        """
         self.boundary= boundary
 
         if folder_name is not None: #use this if running the file directly
@@ -39,9 +55,9 @@ class RefSolution():
             #compute overdamped ref solution
             compute_overdamped(self.boundary,self.get_ref_path())
             print("Cell problem completed. Computing Corrections...")
-            pertsol = MarginalHalfBridgePerturbation(boundary,reference_sol)
+            pertsol = MarginalHalfBridgePerturbation(boundary,self)
             pertsol.save_perturbative()
-            pertsol.save_perturbative_cumulants()
+            #pertsol.save_perturbative_cumulants()
             print("Underdamped Results saved.")
             self.duref_net = perturbative_du_interp(self.boundary,self)
 
