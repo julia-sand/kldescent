@@ -155,7 +155,7 @@ class SDE(SDEBase):
 
             with torch.no_grad():
 
-                du_ref = duref_net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1)),xinit_ref[:,0,None])))
+                du_ref = 0.2*duref_net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1)),xinit_ref[:,0,None])))
 
                 du_bar = self.net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
                                                         ,xinit[...,[0]]))).detach()
@@ -254,13 +254,15 @@ class SDE(SDEBase):
             for i in range(0,len(t_vec)-1):
                 dt = (t_vec[i+1]-t_vec[i])
                 
-                dw = self.generate_innovation(dt,self.sde_params["testsamples"])
+                dw1 = self.generate_innovation(dt,self.sde_params["testsamples"])
+                dw2 = self.generate_innovation(dt,self.sde_params["testsamples"])
+
                 du = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["testsamples"],1),dtype=torch.float32)
                                                         ,xinit[...,[0]])))
-                duref = duref_net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["testsamples"],1)),xref[:,0,None])))
+                duref = 0.2*duref_net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["testsamples"],1)),xref[:,0,None])))
 
-                xinit = self.boundary.euler_maruyama_step(xinit,du,dt,dw,t_vec[i])
-                xref = self.boundary.euler_maruyama_step(xref,duref,dt,dw,t_vec[i])
+                xinit = self.boundary.euler_maruyama_step(xinit,du,dt,dw1,t_vec[i])
+                xref = self.boundary.euler_maruyama_step(xref,-duref,dt,dw2,t_vec[i])
                 cumulants_nn = self.save_cumulants(cumulants_nn,xinit.numpy())
                 cumulants_ref = self.save_cumulants(cumulants_ref,xref.numpy())
         
