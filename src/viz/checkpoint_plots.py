@@ -233,5 +233,5 @@ if __name__=="__main__":
     plot_utils = PlotUtils()
 
     plot_utils.checkpoint_plots_du()
-    plot_utils.load_du_checkpoint()
-    plot_utils.make_contour_plot2()
+    #plot_utils.load_du_checkpoint()
+    #plot_utils.make_contour_plot2()

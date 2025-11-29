@@ -103,7 +103,7 @@ class Train():
         Lhat.backward()
         self.optimiser.step()
                
-        self.scheduler.step()
+        #self.scheduler.step()
         #if (epoch % self.milestone == 0) and (epoch>0):
             
         return Lhat.detach().numpy().item()

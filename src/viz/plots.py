@@ -18,7 +18,6 @@ from ..refsolution.reference import RefSolution,GaussRefSolution
 
 '''
 This file holds all the functions used in plotting.
-
 '''
 
 def update_mpl():
@@ -45,7 +44,7 @@ class PlotFuns():
     self.referencesol = RefSolution(boundary_data)
      
     #borders of xaxis
-    self.qmax = 6
+    self.qmax = 2.5
     
     #colors
     self.c1 = "#1f78b4" #darkblue
@@ -137,12 +136,21 @@ class PlotFuns():
     ax_qmarginal.set_ylim((-self.qmax,self.qmax))
 
     ax_pmarginal.set_xlim((-self.qmax,self.qmax))
-    ax_pmarginal.plot(np.linspace(-self.qmax,self.qmax,),
-              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=self.mut_p,sigmasq=self.sigsqt_p),color="orange")
+    if time==0:
+      ax_qmarginal.fill_between(np.linspace(-self.qmax,self.qmax,),
+                self.boundary.q_marginal_initial(np.linspace(-self.qmax,self.qmax,)),color="orange")
+      
+      ax_pmarginal.fill_between(np.linspace(-self.qmax,self.qmax,),
+                self.normal_distribution(np.linspace(-self.qmax,self.qmax,),0,1),np.linspace(-self.qmax,self.qmax,),color="orange")
     
-    ax_qmarginal.plot(
-              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=self.mut_q,sigmasq=self.sigsqt_q),np.linspace(-self.qmax,self.qmax,),color="orange")
-    #ax_qmarginal.set_xlim((-0.05,0.7))
+    elif time==self.boundary.params["Tf"]:
+      ax_qmarginal.fill_between(np.linspace(-self.qmax,self.qmax,),
+                self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,)),color="orange")
+      
+      ax_pmarginal.fill_between(np.linspace(-self.qmax,self.qmax,),
+                self.normal_distribution(np.linspace(-self.qmax,self.qmax,),0,1),np.linspace(-self.qmax,self.qmax,),color="orange")
+    else: 
+      pass
 
     ###ticks formatting and labelling
     ax_pmarginal.yaxis.tick_right()
@@ -322,20 +330,20 @@ class PlotFuns():
     for t in range(len(times)):  
       
       ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
-                self.evaluate_net_output(net,times[t]),
+              self.evaluate_net_output(net,times[t]),
                 label="N.N.")
       
       self.format_drift_ax(ax[t],times[t])
     
       ax[t].set_ylabel(r"$\mathbb{U}$")
-      
+      ax[t].set_ylim((-5,5))
       try:
         xref,duref = self.referencesol.get_quantity(times[t]*(0.2**2), "underdamped drift", data="perturbative underdamped")
         #self.referencesol.get_reference_data(times[t])
-        self.plot_reference(ax[t],xref,duref/(2**0.5))
+        #self.plot_reference(ax[t],xref,-duref)
         #self.plot_reference(ax[t],xref,self.referencesol.duref_net(torch.column_stack((times[t]*torch.ones((xref.shape[0],1),dtype=torch.float32,requires_grad=False),torch.tensor(xref[:,np.newaxis],dtype=torch.float32,requires_grad=False)))).detach())
         ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
-                self.evaluate_net_output(self.referencesol.duref_net,times[t]),
+                -0.2*self.evaluate_net_output(self.referencesol.duref_net,times[t]),
                 label="Perturbative N.N.")
       except (FileNotFoundError): 
         print("The reference solution file was not found. \n \

@@ -99,7 +99,7 @@ class Histogram(TerminalCost):
         self.H = None
         self.xedges = None 
 
-        self.nbins = 300
+        self.nbins = 100
         self.xrange = [-5,5]
 
     def update_cost_params(self,integrator,*_):
