@@ -6,18 +6,6 @@ from torch import nn
 
 from ..utils.parser import du_network_params,rho_network_params,fetch_checkpoint_path
 
-#import pdb
-
-#https://www.geeksforgeeks.org/swish-activation-function-in-pytorch/
-# Swish Function 
-class Swish(nn.Module):
-    def forward(self, x):
-        return torch.sigmoid(x)
-
-class MyActivation(nn.Module):
-    def forward(self, x):
-        return x * torch.sigmoid(x)
-
 ##FROM: https://github.com/miaotianyi 
 class FourierFeatures(nn.Module):
     def __init__(self, out_features: int,
