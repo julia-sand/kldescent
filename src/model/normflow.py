@@ -3,6 +3,7 @@
 
 # Import required packages
 import torch
+from torch import nn
 import numpy as np
 
 try:
@@ -14,6 +15,15 @@ except ImportError:
 from tqdm import tqdm
 
 from ..utils.parser import rho_network_params,fetch_checkpoint_path
+
+class RhoLayer():
+    def __init__(self,checkpointpath=None):
+        
+        self.one_linear = nn.Linear(1, 1)   
+
+    def forward(self, x):   #how the model should evaluate
+        out = self.linear_stack(x)
+        return x + nn.RELU(out)
 
 
 class RhoNormFlow():
@@ -30,7 +40,6 @@ class RhoNormFlow():
             self.params = rho_network_params()
         
         # Define 2D Gaussian base distribution
-        #base = nf.distributions.base.DiagGaussian(2)
         base = nf.distributions.base.DiagGaussian(2)
 
         # Construct flow model
@@ -53,9 +62,44 @@ class RhoNormFlow():
             flows.append(nf.flows.Permute(2, mode='swap'))
         
         return flows
-            
+
+class RhoPositionNormFlow(RhoNormFlow):
+    """model object for a neural network, trainable normalising flow that 
+    learns the final position distribution 
+    """
+
+    def __init__(self,nn_params=None):
+        """Initialise the model 
+        Initialise from the normalising flow learning the """
+
+
+        if nn_params is not None:
+            self.params = nn_params    
+        else:
+            self.params = rho_network_params()
+        
+        # Define Gaussian base distribution
+        base = torch.distributions.Normal(0,1)
+        self.model = nn.Sequential(self.make_flow())
+
+    # Define list of flows
+    def make_flow(self,num_layers=4):
+        flows = []
+        
+        for i in range(num_layers):
+            # Neural network with two hidden layers having 64 units each
+            # Last layer is initialized by zeros making training more stable
+            #param_map = nf.nets.MLP([1, self.params["rhohiddenlayerneurons"],
+            #                            self.params["rhohiddenlayerneurons"], 2], init_zeros=True)
+            # Add flow layer
+            flows.append(nf.flows.Planar(1))
+            # Swap dimensions
+            #flows.append(nf.flows.Permute(2, mode='swap'))
+        
+        return flows
+
 ##training
-class Train_normflow():
+class TrainNormFlow():
     """
     Class to store training loop and parameters for training a normalising flow
     """
@@ -104,6 +148,49 @@ class Train_normflow():
             # Log loss
             loss_hist = np.append(loss_hist, loss.to('cpu').data.numpy())
 
+class TrainPositionNormFlow(TrainNormFlow):
+    """
+    Class to store training loop and parameters for training a normalising flow
+    """
+
+    def __init__(self,model,boundaryconditions):
+        """
+        Initialise training parameters for trainign a normalising flow to learn a one-dimensional distribution 
+        args:   
+            model: 
+                normalising flow model (neural net with planar layers)
+            boundaryconditions:
+                boundary conditions
+        """
+
+        #initialise params as TrainNormFlow
+        TrainNormFlow.__init__(self,model,boundaryconditions)
+        
+    def train_loop(self,integrator,x):
+        
+        loss_hist = np.array([])
+
+        for it in tqdm(range(self.max_iter)):
+            
+            #generate random indexes for the minibatch 
+            idx = torch.randint(low=0,high=x.shape[0],size=(self.minibatch_samples,))
+
+            self.train_step(x[idx],it,loss_hist)
+
+    def train_step(self,x,it,loss_hist):
+        
+        self.optimizer.zero_grad()
+           
+        # Compute loss
+        loss = self.model.forward_kld(x) 
+        
+        # Do backprop and optimizer step
+        if ~(torch.isnan(loss) | torch.isinf(loss)):
+            loss.backward()
+            self.optimizer.step()
+            
+            # Log loss
+            loss_hist = np.append(loss_hist, loss.to('cpu').data.numpy())
 
 if __name__=="__main__":
 

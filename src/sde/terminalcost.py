@@ -190,23 +190,18 @@ class Histogram(TerminalCost):
 class NormFlow(TerminalCost):
 
     def __init__(self,boundaryconditions,logger):
-        from ..model.normflow import RhoNormFlow,Train_normflow
+        from ..model.normflow import RhoNormFlow,TrainNormFlow
 
         TerminalCost.__init__(self,boundaryconditions,logger)
         #initialise normalising flow
         self.rho = RhoNormFlow()
-        self.trainer_normflow = Train_normflow(self.rho.model,self.boundary)
+        self.trainer_normflow = TrainNormFlow(self.rho.model,self.boundary)
 
     def update_cost_params(self,integrator,*_):
 
         #integrate and get final samples
         x = integrator.update_ref_statistics()
         self.trainer_normflow.train_loop(integrator,x)
-
-
-    def get_half_logpdf(self,x):
-        pdf = self.rho.model.log_prob(x[...,0])
-        return torch.nan_to_num(pdf) 
 
     def get_logpdf(self,x):
         pdf = self.rho.model.log_prob(x)
