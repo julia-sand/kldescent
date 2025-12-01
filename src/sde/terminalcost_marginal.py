@@ -3,10 +3,9 @@ This file contains methods for estimating the final value function
 in the half bridge. 
 
 Methods 
-    normflow: Use a neural network to learn the final distribution
+    normflow: Use a neural network to learn the final distribution of the positions
     MLE: When we know the final distribution is Gaussian, we can use a parametric method of distirbution estimation, namely estimate first and second moments by MLE. 
-    GirsanovNet: Use a neural network to learn the final distribution 
-    histogram: Use a histogram to estimate the final value function
+    histogram: Use a histogram to estimate the final distribution of the positions
 """
 
 import numpy as np 
@@ -50,7 +49,7 @@ class GirsanovNet(TerminalCost):
 
     def __init__(self,*_):
         
-        raise ValueError("Method valid only for half-bridge")
+        raise ValueError("Method valid only for half-bridge with configuration distribution")
         
 class MLE(TerminalCost):
     """
@@ -134,12 +133,12 @@ class Histogram(TerminalCost):
 class NormFlow(TerminalCost):
 
     def __init__(self,boundaryconditions,logger):
-        from ..model.normflow import RhoNormFlow,Train_normflow
+        from ..model.normflow import RhoPositionNormFlow,TrainPositionNormFlow
 
         TerminalCost.__init__(self,boundaryconditions,logger)
         #initialise normalising flow
-        self.rho = RhoNormFlow()
-        self.trainer_normflow = Train_normflow(self.rho.model,self.boundary)
+        self.rho = RhoPositionNormFlow()
+        self.trainer_normflow = TrainPositionNormFlow(self.rho.model,self.boundary)
 
     def update_cost_params(self,integrator,*_):
 
