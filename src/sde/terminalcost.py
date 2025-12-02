@@ -194,7 +194,7 @@ class NormFlow(TerminalCost):
 
         TerminalCost.__init__(self,boundaryconditions,logger)
         #initialise normalising flow
-        self.rho = RhoNormFlow()
+        self.rho = RhoNormFlow(bridgetype="marginal")
         self.trainer_normflow = TrainNormFlow(self.rho.model,self.boundary)
 
     def update_cost_params(self,integrator,*_):
@@ -202,8 +202,8 @@ class NormFlow(TerminalCost):
         x0 = torch.tensor(self.boundary.generate_samples(integrator.sde_params["testsamples"] ,"initial"),requires_grad=False,dtype=torch.float32)
         
         #integrate and get final samples
-        x = integrator.update_ref_statistics(xinit=x0)
-        self.trainer_normflow.train_loop(integrator,x)
+        x = integrator.update_ref_statistics(x0_samples=x0)
+        self.trainer_normflow.train_loop(x)
 
     def get_logpdf(self,x):
         pdf = self.rho.model.log_prob(x)

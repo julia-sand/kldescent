@@ -49,7 +49,7 @@ class GirsanovNet(TerminalCost):
 
     def __init__(self,*_):
         
-        raise ValueError("Method valid only for half-bridge with configuration distribution")
+        raise ValueError("Method not available for marginal half-bridge")
         
 class MLE(TerminalCost):
     """
@@ -133,13 +133,13 @@ class Histogram(TerminalCost):
 class NormFlow(TerminalCost):
 
     def __init__(self,boundaryconditions,logger):
-        from ..model.normflow import RhoPositionNormFlow,TrainPositionNormFlow
+        from ..model.normflow import RhoNormFlow,TrainNormFlow
 
         TerminalCost.__init__(self,boundaryconditions,logger)
         
         #initialise normalising flow
-        self.rho = RhoPositionNormFlow()
-        self.trainer_normflow = TrainPositionNormFlow(self.rho.model,self.boundary)
+        self.rho = RhoNormFlow(bridgetype="marginal")
+        self.trainer_normflow = TrainNormFlow(self.rho.model,self.boundary)
 
     def update_cost_params(self,integrator,*_):
         
@@ -147,14 +147,36 @@ class NormFlow(TerminalCost):
         x0 = torch.tensor(self.boundary.generate_samples(integrator.sde_params["testsamples"] ,"initial"),requires_grad=False,dtype=torch.float32)
         
         #integrate and get final samples
-        x = integrator.update_ref_statistics(xinit=x0)
+        x = torch.tensor(self.boundary.generate_samples(integrator.sde_params["testsamples"] ,"final"),dtype=torch.float32)
+        #integrator.update_ref_statistics(x0_samples=x0)
         
-        self.trainer_normflow.train_loop(integrator,x[...,[0]],x0[...,[0]])
+        #put model in train mode
+        self.rho.model.train()
 
-        plot_loc = self.logger.newpath 
-
-        #make a plot of final points vs initial
+        #train normalising flow
+        self.trainer_normflow.train_loop(x[...,[0]],x0[...,[0]])
         
+        #put model in evaluation mode
+        self.rho.model.eval()
+        
+        #plot learned distribution vs histogram
+        self.make_plot(x)
+
     def get_half_logpdf(self,x):
         pdf = self.rho.model.log_prob(x[...,[0]])
         return torch.nan_to_num(pdf) 
+
+    @torch.no_grad
+    def make_plot(self,x):
+        import matplotlib.pyplot as plt
+
+        plot_loc = self.logger.newpath 
+        
+        #make a plot of final points vs estimated distribution
+        pdf_temp = torch.exp(self.get_half_logpdf(x))
+        pdf_temp[torch.isnan(pdf_temp)] = 0
+        plt.scatter(x[...,0].detach().numpy(),pdf_temp.data.numpy())
+        plt.hist(x[...,0].detach().numpy(),density=True,bins=100,alpha=0.5,color="orange")
+        plt.savefig(plot_loc+"/distribution.png")
+        plt.close()
+        
