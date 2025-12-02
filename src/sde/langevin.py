@@ -177,7 +177,7 @@ class SDE(SDEBase):
 
         return torch.mean(kldyn).item(), kl_static, mean0, var0 
     
-    def update_ref_statistics(self,testing_samples=None,xinit=None):
+    def update_ref_statistics(self,testing_samples=None,x0_samples=None):
         """
         computes samples of the final time to update the g function 
 
