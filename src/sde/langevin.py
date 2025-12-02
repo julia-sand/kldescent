@@ -177,7 +177,7 @@ class SDE(SDEBase):
 
         return torch.mean(kldyn).item(), kl_static, mean0, var0 
     
-    def update_ref_statistics(self,testing_samples=None):
+    def update_ref_statistics(self,testing_samples=None,xinit=None):
         """
         computes samples of the final time to update the g function 
 
@@ -201,7 +201,10 @@ class SDE(SDEBase):
 
             t_vec = torch.linspace(0,self.boundary.params["Tf"],self.sde_params["tsteps"])#self.testing_time_grid()
 
-            xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
+            if x0_samples == None: #default to the integrator 
+                xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
+            else:
+                xinit = x0_samples.detach().clone()
 
             for i in range(0,len(t_vec)-1):
                 dt = (t_vec[i+1]-t_vec[i])

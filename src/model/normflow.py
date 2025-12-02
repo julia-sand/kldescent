@@ -10,6 +10,7 @@ try:
     import normflows as nf
 except ImportError:
     print("Package normflows has not been imported. Please activate the virtual environment before this package can be used.")
+    raise ImportError
     pass
 
 from tqdm import tqdm
@@ -24,7 +25,6 @@ class RhoLayer():
     def forward(self, x):   #how the model should evaluate
         out = self.linear_stack(x)
         return x + nn.RELU(out)
-
 
 class RhoNormFlow():
     """model object for a neural network, trainable normalising flow that 
@@ -79,23 +79,23 @@ class RhoPositionNormFlow(RhoNormFlow):
             self.params = rho_network_params()
         
         # Define Gaussian base distribution
-        base = torch.distributions.Normal(0,1)
-        self.model = nn.Sequential(self.make_flow())
+        base = nf.distributions.DiagGaussian(1)
+        self.model = nf.NormalizingFlow(base, flows=self.make_flows())#self.make_flow()
 
     # Define list of flows
-    def make_flow(self,num_layers=4):
+    def make_flows(self,num_layers=4):
+                
+        latent_size = 1
+        b = torch.Tensor([1 if i % 2 == 0 else 0 for i in range(latent_size)])
         flows = []
-        
         for i in range(num_layers):
-            # Neural network with two hidden layers having 64 units each
-            # Last layer is initialized by zeros making training more stable
-            #param_map = nf.nets.MLP([1, self.params["rhohiddenlayerneurons"],
-            #                            self.params["rhohiddenlayerneurons"], 2], init_zeros=True)
-            # Add flow layer
-            flows.append(nf.flows.Planar(1))
-            # Swap dimensions
-            #flows.append(nf.flows.Permute(2, mode='swap'))
-        
+            s = nf.nets.MLP([latent_size, 2 * latent_size, latent_size], init_zeros=True)
+            t = nf.nets.MLP([latent_size, 2 * latent_size, latent_size], init_zeros=True)
+            if i % 2 == 0:
+                flows += [nf.flows.MaskedAffineFlow(b, t, s)]
+            else:
+                flows += [nf.flows.MaskedAffineFlow(1 - b, t, s)]
+            flows += [nf.flows.ActNorm(latent_size)]
         return flows
 
 ##training
@@ -122,7 +122,7 @@ class TrainNormFlow():
         #self.show_iter = 20 #at which iteration to plot intermediate results
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=5e-4, weight_decay=1e-5)
 
-    def train_loop(self,integrator,x):
+    def train_loop(self,integrator,x,x0):
         
         loss_hist = np.array([])
 
@@ -166,7 +166,7 @@ class TrainPositionNormFlow(TrainNormFlow):
         #initialise params as TrainNormFlow
         TrainNormFlow.__init__(self,model,boundaryconditions)
         
-    def train_loop(self,integrator,x):
+    def train_loop(self,integrator,x,x0):
         
         loss_hist = np.array([])
 
@@ -176,6 +176,7 @@ class TrainPositionNormFlow(TrainNormFlow):
             idx = torch.randint(low=0,high=x.shape[0],size=(self.minibatch_samples,))
 
             self.train_step(x[idx],it,loss_hist)
+
 
     def train_step(self,x,it,loss_hist):
         

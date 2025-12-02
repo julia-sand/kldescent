@@ -99,10 +99,6 @@ class LossLogger():
         with open(self.datafile, "a") as f:
             print(str(name)+f"= {val}", file=f)
 
-    #def log_args(self,args):
-    #    for arg in vars(args): 
-    #        self.add_param_to_log(arg, getattr(args, arg))
-        
     def log_dict(self,dictparams):
                 
         with open(self.datayaml, 'a+') as outfile:
