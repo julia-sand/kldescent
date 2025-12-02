@@ -606,9 +606,10 @@ class PlotFuns():
     orange_line = mlines.Line2D([], [],color="orange")
     blue_line = mlines.Line2D([], [],color=self.c1)
     green_line = mlines.Line2D([], [],color="green")
+    gray_line = mlines.Line2D([], [],color="gray",linestyle="dashed",alpha=0.5)
 
-    legend = fig1.legend(handles=[blue_line,orange_line,green_line],#,green_line],
-              labels = ["Free Diffusion","Controlled","Known Reference Solution"],
+    legend = fig1.legend(handles=[blue_line,orange_line,gray_line],#,green_line],
+              labels = ["Perturbative","Controlled","Free Diffusion"],
               frameon = False,
               handlelength = 1,
               ncols = 3)
