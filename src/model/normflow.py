@@ -17,56 +17,38 @@ from tqdm import tqdm
 
 from ..utils.parser import rho_network_params,fetch_checkpoint_path
 
+class CustomBase(nf.distributions.BaseDistribution):
 
-class CustomNormFlow(nf.NormalizingFlow):
-    """Overwrite the base class to use custom probabilities
-    """
-
-    def __init__(self,):
-        #inherit from parent
-        nf.NormalizingFlow.__init__()
-
-    def sample(self, num_samples=1):
-        """Samples from flow-based approximate distribution
+    def __init__(self,boundary):
+        nf.distributions.BaseDistribution.__init__(self)
+        self.boundary = boundary #assign the boundary conditions
+                
+    def log_prob(self, z):
+        """Calculate log probability of batch of samples
 
         Args:
-          num_samples: Number of samples to draw
+          z: Batch of random variables to determine log probability for
 
         Returns:
-          Samples, log probability
+          log probability for each batch element
         """
-        z, log_q = self.q0(num_samples)
-        for flow in self.flows:
-            z, log_det = flow(z)
-            log_q -= log_det
-        return z, log_q
-    
-
-
-    def forward_kld(self, x):
-        """Estimates forward KL divergence, see [arXiv 1912.02762](https://arxiv.org/abs/1912.02762)
-
-        Args:
-          x: Batch sampled from target distribution
-
-        Returns:
-          Estimate of forward KL divergence averaged over batch
-        """
-        log_q = torch.zeros(len(x), device=x.device)
-        z = x
-        for i in range(len(self.flows) - 1, -1, -1):
-            z, log_det = self.flows[i].inverse(z)
-            log_q += log_det
-        log_q += self.q0.log_prob(z)
-        return -torch.mean(log_q)
-
+        
+        logprobtemp = - self.boundary.Uinitial(z) - \
+             torch.log(torch.ones(1,dtype=torch.float32)*self.boundary.pi_norm)
+        
+        return logprobtemp[:,0]
+        
+    def forward(self, num_samples=1, context=None):
+        z = torch.tensor(self.boundary.generate_samples(num_samples,mode="initial"),dtype=torch.float32)
+        
+        return z, self.log_prob(z)
 
 class RhoNormFlow():
     """model object for a neural network, trainable normalising flow that 
     learns a final distirbution
     """
 
-    def __init__(self,nn_params=None,bridgetype="marginal"):
+    def __init__(self,boundaryconditions,nn_params=None,bridgetype="marginal"):
         """Initialise the model """
 
         if nn_params is not None:
@@ -74,61 +56,41 @@ class RhoNormFlow():
         else:
             self.params = rho_network_params()
         
-        
         if bridgetype=="marginal":
             self.latent_size = 1 
         else:
             self.latent_size = 2 
         
-        # Define 2D Gaussian base distribution
-        base = nf.distributions.base.DiagGaussian(self.latent_size)
-
-        # Construct flow model
-        #check how to use a custom function for base?
+        self.boundary = boundaryconditions
         
-        flows = self.make_flows(num_layers=4)
+        # Define the base distribution 
+        base = CustomBase(self.boundary)
+
+        flows = self.make_flows(num_layers=50)
         self.model = nf.NormalizingFlow(base, flows=flows)#self.make_flow()
         
+        #training parameters
+        self.max_iter = 4000 #maximum number of iterations /training steps
+        self.minibatch_samples = 128 #how many samples of final distribution to take for each training iteration
+        #self.show_iter = 20 #at which iteration to plot intermediate results
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=5e-3, weight_decay=1e-5)
+
     def make_flows(self,num_layers=25):
                 
         b = torch.Tensor([1 if i % 2 == 0 else 0 for i in range(self.latent_size)])
         flows = []
         for i in range(num_layers):
-            s = nf.nets.MLP([self.latent_size, 64, 64, self.latent_size], init_zeros=True)
-            t = nf.nets.MLP([self.latent_size, 64, 64, self.latent_size], init_zeros=True)
-            if i % 2 == 0:
+            s = nf.nets.MLP([self.latent_size, 64, self.latent_size], init_zeros=True)
+            t = nf.nets.MLP([self.latent_size, 64, self.latent_size], init_zeros=True)
+            if i % 2 == 0: #even layers
                 flows += [nf.flows.MaskedAffineFlow(b, t, s)]
-            else:
+            else: #odd layers
                 flows += [nf.flows.MaskedAffineFlow(1 - b, t, s)]
             flows += [nf.flows.ActNorm(self.latent_size)]
         
         return flows
 
-##training
-class TrainNormFlow():
-    """
-    Class to store training loop and parameters for training a normalising flow
-    """
-
-    def __init__(self,model,boundaryconditions):
-        """
-        Initialise training parameters for trainign a normalising flow
-        args:   
-            model: 
-                normalising flow model (neural net with planar layers)
-            boundaryconditions:
-                boundary conditions
-        """
-
-        self.model = model
-        self.boundary = boundaryconditions
-
-        self.max_iter = 400 #maximum number of iterations /training steps
-        self.minibatch_samples = 256 #how many samples of final distribution to take for each training iteration
-        #self.show_iter = 20 #at which iteration to plot intermediate results
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=5e-3, weight_decay=1e-5)
-
-    def train_loop(self,x,x0):
+    def train_loop(self,x):
         
         loss_hist = np.array([])
 
@@ -136,10 +98,9 @@ class TrainNormFlow():
             
             #generate random indexes for the minibatch 
             idx = torch.randint(low=0,high=x.shape[0],size=(self.minibatch_samples,))
+            self.train_step(x[idx,:],it,loss_hist)
 
-            self.train_step(x[idx,:],x0[idx,:],it,loss_hist)
-
-    def train_step(self,x,x0,it,loss_hist):
+    def train_step(self,x,it,loss_hist):
         
         self.optimizer.zero_grad()
         
@@ -152,8 +113,8 @@ class TrainNormFlow():
             self.optimizer.step()
             
             # Log loss
-            loss_hist = np.append(loss_hist, loss.to('cpu').data.numpy())
-
+            #loss_hist = np.append(loss_hist, loss.to('cpu').data.numpy())
+            #print(loss.to('cpu').data.numpy())
 
 if __name__=="__main__":
 
