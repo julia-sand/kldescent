@@ -133,13 +133,12 @@ class Histogram(TerminalCost):
 class NormFlow(TerminalCost):
 
     def __init__(self,boundaryconditions,logger):
-        from ..model.normflow import RhoNormFlow,TrainNormFlow
+        from ..model.normflow import RhoNormFlow
 
         TerminalCost.__init__(self,boundaryconditions,logger)
         
         #initialise normalising flow
-        self.rho = RhoNormFlow(bridgetype="marginal")
-        self.trainer_normflow = TrainNormFlow(self.rho.model,self.boundary)
+        self.rho = RhoNormFlow(boundaryconditions=self.boundary,bridgetype="marginal")
 
     def update_cost_params(self,integrator,*_):
         
@@ -154,7 +153,7 @@ class NormFlow(TerminalCost):
         self.rho.model.train()
 
         #train normalising flow
-        self.trainer_normflow.train_loop(x[...,[0]],x0[...,[0]])
+        self.rho.train_loop(x[...,[0]])
         
         #put model in evaluation mode
         self.rho.model.eval()

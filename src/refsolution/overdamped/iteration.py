@@ -25,8 +25,6 @@ class CellProblem():
         
         self.Tf2 = self.boundary.params["Tf"]*(self.boundary.params["epsilon"]**2)
         
-        self.q = np.linspace(-6,6) #for plotting 
-
         self.A = self.boundary.afun(self.boundary.params["Tf"])
         self.B = self.boundary.bfun(self.boundary.params["Tf"])
         self.beta = 1/np.sqrt(self.A)
@@ -44,7 +42,13 @@ class CellProblem():
         #only initialise when using gaussian boundaries
         if "Gauss" in str(self.boundary.__class__.__name__):
             self.refsol = Gaussian_Overdamped_Ref(boundary)
+            self.qmax = 15
+        else:            
+            self.qmax = 6
         
+        self.q = np.linspace(-self.qmax,self.qmax) #for plotting 
+
+
         #preallocate the arrays here 
         self.xhatphi = None #np.linspace(-6,6,num_samples)
         self.hatphiT = None # np.ones_like(xhatphi)
@@ -72,7 +76,7 @@ class CellProblem():
             psiT : arr
         """
         
-        xhatphi = np.linspace(-6,6,num_samples)
+        xhatphi = np.linspace(-self.qmax,self.qmax,num_samples)
         #self.boundary.generate_samples_q(num_samples, mode="final").flatten()
         
         #preallocate arrays

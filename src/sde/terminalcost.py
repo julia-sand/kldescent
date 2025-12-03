@@ -181,21 +181,15 @@ class Histogram(TerminalCost):
         pdf = torch.tensor([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))],dtype=torch.float32,requires_grad=False)
         return torch.nan_to_num(torch.log(pdf+1e-10))
 
-    #def gfun(self,x):
-        
-    #    pdf = torch.tensor([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))],dtype=torch.float32,requires_grad=False)
-    #    return torch.nan_to_num(torch.log(pdf+1e-10)) + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
-
-
 class NormFlow(TerminalCost):
 
     def __init__(self,boundaryconditions,logger):
-        from ..model.normflow import RhoNormFlow,TrainNormFlow
+        from ..model.normflow import RhoNormFlow
 
         TerminalCost.__init__(self,boundaryconditions,logger)
         #initialise normalising flow
-        self.rho = RhoNormFlow(bridgetype="marginal")
-        self.trainer_normflow = TrainNormFlow(self.rho.model,self.boundary)
+        self.rho = RhoNormFlow(boundaryconditions=self.boundary,bridgetype="marginal")
+        #self.trainer_normflow = TrainNormFlow(self.rho.model,self.boundary)
 
     def update_cost_params(self,integrator,*_):
         #get initial samples
