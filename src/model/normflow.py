@@ -17,14 +17,17 @@ from tqdm import tqdm
 
 from ..utils.parser import rho_network_params,fetch_checkpoint_path
 
+
 class CustomBase(nf.distributions.BaseDistribution):
 
-    def __init__(self,boundary):
+    def __init__(self,boundary,latent_size):
         nf.distributions.BaseDistribution.__init__(self)
         self.boundary = boundary #assign the boundary conditions
-                
+        self.latent_size = latent_size
+
     def log_prob(self, z):
-        """Calculate log probability of batch of samples
+        """Calculate log probability of batch of samples using the assigned initial 
+        probability density
 
         Args:
           z: Batch of random variables to determine log probability for
@@ -33,15 +36,23 @@ class CustomBase(nf.distributions.BaseDistribution):
           log probability for each batch element
         """
         
-        logprobtemp = - self.boundary.Uinitial(z) - \
-             torch.log(torch.ones(1,dtype=torch.float32)*self.boundary.pi_norm)
-        
-        return logprobtemp[:,0]
-        
+        if self.latent_size == 1:    
+            logprob = - self.boundary.Uinitial(z) - \
+             torch.log(self.boundary.pi_norm*torch.ones(1,dtype=torch.float32))
+            return logprob.flatten()
+        else:
+            logprob = - self.boundary.Uinitial(z[:,0]) - (z[:,1]-1)**2/2 \
+             - 0.5*(torch.log(self.boundary.pi_norm*torch.ones(1,dtype=torch.float32)) + torch.log(4*torch.acos(torch.zeros(1)))) #hacky way to get pi into pytorch
+            return logprob
+            
     def forward(self, num_samples=1, context=None):
-        z = torch.tensor(self.boundary.generate_samples(num_samples,mode="initial"),dtype=torch.float32)
         
-        return z, self.log_prob(z)
+        if self.latent_size == 1:    
+            z = torch.tensor(self.boundary.generate_samples_q(num_samples,mode="initial"),dtype=torch.float32)
+            return z, self.log_prob(z)
+        else:
+            z = torch.tensor(self.boundary.generate_samples(num_samples,mode="initial"),dtype=torch.float32)
+            return z, self.log_prob(z)
 
 class RhoNormFlow():
     """model object for a neural network, trainable normalising flow that 
@@ -63,31 +74,27 @@ class RhoNormFlow():
         
         self.boundary = boundaryconditions
         
-        # Define the base distribution 
-        base = CustomBase(self.boundary)
-
-        flows = self.make_flows(num_layers=50)
-        self.model = nf.NormalizingFlow(base, flows=flows)#self.make_flow()
-        
         #training parameters
-        self.max_iter = 4000 #maximum number of iterations /training steps
+        self.max_iter = 500 #maximum number of iterations /training steps
         self.minibatch_samples = 128 #how many samples of final distribution to take for each training iteration
-        #self.show_iter = 20 #at which iteration to plot intermediate results
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=5e-3, weight_decay=1e-5)
+        
+        # Define the base distribution 
+        base = CustomBase(self.boundary,self.latent_size)
+        #base = nf.distributions.DiagGaussian(1)
+        flows = self.make_flows(num_layers=50)
+        self.model = nf.NormalizingFlow(base, flows=flows)
+        
+        #set optimiser
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=5e-4, weight_decay=1e-5)
 
-    def make_flows(self,num_layers=25):
+    def make_flows(self,num_layers=1):
                 
-        b = torch.Tensor([1 if i % 2 == 0 else 0 for i in range(self.latent_size)])
+        #b = torch.Tensor([1 if i % 2 == 0 else 0 for i in range(self.latent_size)])
         flows = []
         for i in range(num_layers):
-            s = nf.nets.MLP([self.latent_size, 64, self.latent_size], init_zeros=True)
-            t = nf.nets.MLP([self.latent_size, 64, self.latent_size], init_zeros=True)
-            if i % 2 == 0: #even layers
-                flows += [nf.flows.MaskedAffineFlow(b, t, s)]
-            else: #odd layers
-                flows += [nf.flows.MaskedAffineFlow(1 - b, t, s)]
-            flows += [nf.flows.ActNorm(self.latent_size)]
-        
+
+            flows.append(nf.flows.Planar(shape=self.latent_size, act="leaky_relu"))
+
         return flows
 
     def train_loop(self,x):
@@ -98,7 +105,8 @@ class RhoNormFlow():
             
             #generate random indexes for the minibatch 
             idx = torch.randint(low=0,high=x.shape[0],size=(self.minibatch_samples,))
-            self.train_step(x[idx,:],it,loss_hist)
+            #print(x[idx,:].shape)
+            self.train_step(x[idx],it,loss_hist)
 
     def train_step(self,x,it,loss_hist):
         
@@ -112,9 +120,12 @@ class RhoNormFlow():
             loss.backward()
             self.optimizer.step()
             
+        else:
+            raise BaseException 
             # Log loss
             #loss_hist = np.append(loss_hist, loss.to('cpu').data.numpy())
-            #print(loss.to('cpu').data.numpy())
+        
+        print(loss.to('cpu').data.numpy())
 
 if __name__=="__main__":
 
