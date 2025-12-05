@@ -49,7 +49,7 @@ class GirsanovNet(TerminalCost):
 
     def __init__(self,*_):
         
-        raise ValueError("Method not available for marginal half-bridge")
+        raise NotImplementedError("Method not available for marginal half-bridge")
         
 class MLE(TerminalCost):
     """
@@ -71,7 +71,6 @@ class MLE(TerminalCost):
         #initialise variables
         self.pos_mean0 = 0 
         self.pos_var0 = 1
-
 
     def update_cost_params(self,integrator,*_):
         #compute x vals
@@ -147,6 +146,7 @@ class NormFlow(TerminalCost):
         
         #integrate and get final samples
         x = torch.tensor(self.boundary.generate_samples(integrator.sde_params["testsamples"] ,"final"),dtype=torch.float32)
+
         #integrator.update_ref_statistics(x0_samples=x0)
         
         #put model in train mode

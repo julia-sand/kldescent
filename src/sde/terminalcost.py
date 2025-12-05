@@ -188,8 +188,7 @@ class NormFlow(TerminalCost):
 
         TerminalCost.__init__(self,boundaryconditions,logger)
         #initialise normalising flow
-        self.rho = RhoNormFlow(boundaryconditions=self.boundary,bridgetype="marginal")
-        #self.trainer_normflow = TrainNormFlow(self.rho.model,self.boundary)
+        self.rho = RhoNormFlow(boundaryconditions=self.boundary,bridgetype="state")
 
     def update_cost_params(self,integrator,*_):
         #get initial samples
@@ -197,8 +196,32 @@ class NormFlow(TerminalCost):
         
         #integrate and get final samples
         x = integrator.update_ref_statistics(x0_samples=x0)
-        self.trainer_normflow.train_loop(x)
 
+        #put model in train mode
+        self.rho.model.train()
+
+        #train normalising flow
+        self.rho.train_loop(x)
+        
+        #put model in evaluation mode
+        self.rho.model.eval()
+        self.make_plot(x)
+        
     def get_logpdf(self,x):
         pdf = self.rho.model.log_prob(x)
         return torch.nan_to_num(pdf) 
+
+    
+    @torch.no_grad
+    def make_plot(self,x):
+        import matplotlib.pyplot as plt
+
+        plot_loc = self.logger.newpath 
+        
+        #make a plot of final points vs estimated distribution
+        x_samples,_ = self.rho.model.sample(1000)
+        plt.scatter(x_samples[...,0].detach().numpy(),x_samples[...,1].detach().numpy(),color="blue")
+        plt.scatter(x[...,0].detach().numpy(),x[...,1].detach().numpy(),color="orange")
+        #plt.hist(x[...,0].detach().numpy(),density=True,bins=100,alpha=0.5,color="orange")
+        plt.savefig(plot_loc+"/distribution.png")
+        plt.close()
