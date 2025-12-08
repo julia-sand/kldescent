@@ -149,6 +149,129 @@ def format_plot(net,
     plt.close(fig_joint_distributions_meshgrid)
 
 
+
+
+def joint_distributions_scatter_panel(self,
+                                        ax,
+                                        ax_pmarginal,
+                                        ax_qmarginal,
+                                        joint_out,
+                                        xs,time,vmax=0.5):
+    """
+    Plots one panel of the joint distribution, where the 
+    center shows the joint and marginals are estimated
+
+    args:
+      ax: artist
+        axes where to plot. can be a gridspec subplot
+      joint_out: arr
+        joint distribution (n**2,1) as a numpy array
+      xs: arr
+        2d input data shaped (n**2,2) as numpy arr
+      vmax: float
+        maximum value for the scatter plots color scale
+    """
+
+    #pdb.set_trace()
+    n = joint_out.shape[0]
+    
+    #pdb.set_trace()
+    joint_out_temp = joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n))))
+    Q = xs[...,[0]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
+    p_init = np.sort(Q[[0],:].flatten()) #one axis 
+    dx = np.abs(p_init[1]-p_init[0])
+
+    #compute marginals
+    qmarg = np.trapz(joint_out_temp,x = p_init,axis=0)#np.sum(joint_out_temp,axis=0) #np.trapz(joint_out_temp,x = p_init,axis=0)
+    pmarg = np.trapz(joint_out_temp,x = p_init,axis=1)
+    qnorm = self.get_norm(p_init, qmarg)
+    pnorm = self.get_norm(p_init, pmarg)
+
+    #plot and format marginals
+    self.plot_marginal_joint(ax_qmarginal,p_init,qmarg/qnorm)
+    self.plot_marginal_joint(ax_pmarginal,pmarg/pnorm,p_init)
+
+    #plot marginals
+    x,ptx = self.referencesol.get_quantity(np.round(time,6),quantity = "marginal",data="perturbative underdamped")
+    ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed")
+
+    #plot joint distribution
+    ax.scatter(xs[...,0]/(qnorm*pnorm),xs[...,1]/(qnorm*pnorm),c=joint_out_temp.T.flatten()
+              ,cmap="Blues",norm="log",vmin=0.001,vmax=vmax)
+    
+
+
+def scatter_panel_layout(self,ax,time=None):
+
+    if time ==None:
+        time = self.boundary.params["Tf"]
+
+    plot_title_value = round(time/self.boundary.params["Tf"],2)
+    ax.set_title(f"t={plot_title_value}Tf")
+
+    #make inset axes to show marginal distributions
+    ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
+    ax_qmarginal = ax.inset_axes([-0.65, 0, 0.6, 1])
+    ax_qmarginal.invert_xaxis()
+    ax_qmarginal.set_ylim((-self.qmax,self.qmax))
+
+    ax_pmarginal.set_xlim((-self.qmax,self.qmax))
+
+    self.add_boundary_conditions_scatter_panel(ax_qmarginal,ax_pmarginal,time)
+
+    ###ticks formatting and labelling
+    ax_pmarginal.yaxis.tick_right()
+    ax.yaxis.tick_right()
+
+    ax_pmarginal.tick_params(
+        axis='y',
+        which='both',
+        length=5,
+        rotation=-20,
+        pad = -3)
+
+    ax_qmarginal.tick_params(
+        axis='x',          # changes apply to the x-axis
+        which='both',
+        rotation=70,
+        length =5,
+        pad = -3,
+        labelleft=False)
+    ax_qmarginal.tick_params(
+        axis='y',          # changes apply to the y-axis
+        which='both',      #both major and minor ticks
+        left=False,
+        labelleft=False)
+
+    #ax.set_xlim((-self.qmax,self.qmax))
+    #ax.set_ylim((-self.qmax,self.qmax))
+
+    ax_pmarginal.set_xticklabels([])
+
+    ax.set_xlabel(r"$p$")
+    ax_qmarginal.set_xlabel(r"$\rho_t(q)$")
+
+    ax.set_ylabel(r"$q$")
+    ax_pmarginal.set_ylabel(r"$\rho_t(p)$")
+    ax.yaxis.set_label_position("right")
+
+    ax.set_aspect('equal', adjustable='box')
+    ax.set_xticks([-2.5,0,2.5])
+
+    return ax, ax_pmarginal,ax_qmarginal
+
+
+
+
+def plot_joint_panel(self,ax,time,jointout,xout):
+    ax, ax_pmarginal,ax_qmarginal = scatter_panel_layout(ax,time)
+
+    joint_distributions_scatter_panel(ax,
+                                        ax_pmarginal,
+                                        ax_qmarginal,
+                                        jointout,
+                                        xout,time,vmax=0.5)
+
 if __name__=="__main__":
     import os 
 
