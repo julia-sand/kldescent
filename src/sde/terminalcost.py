@@ -13,6 +13,9 @@ import numpy as np
 import torch
 from torch.nn import DataParallel
 
+from .kl import kl_div
+from ..viz.distribution_plots import *
+
 class TerminalCost():
     """
     Top-level Class for methods for estimating the final value function 
@@ -79,10 +82,6 @@ class GirsanovNet(TerminalCost):
     def get_logpdf(self,x):
         return torch.nan_to_num(self.rhonet(x,condition="log"))
 
-    #def gfun(self,x):
-    #    pdf = 
-    #    return torch.nan_to_num(pdf) + self.boundary.log_pfinal(x[...,[0]],x[...,[1]])
-        #(self.boundary.Ufinal(x[...,[0]])+((x[...,[1]]**2)/2))
 
 class MLE(TerminalCost):
     """
@@ -205,23 +204,11 @@ class NormFlow(TerminalCost):
         
         #put model in evaluation mode
         self.rho.model.eval()
-        self.make_plot(x)
-        
-    def get_logpdf(self,x):
-        pdf = self.rho.model.log_prob(x)
-        return torch.nan_to_num(pdf) 
-
-    
-    @torch.no_grad
-    def make_plot(self,x):
-        import matplotlib.pyplot as plt
 
         plot_loc = self.logger.newpath 
-        
-        #make a plot of final points vs estimated distribution
-        x_samples,_ = self.rho.model.sample(1000)
-        plt.scatter(x_samples[...,0].detach().numpy(),x_samples[...,1].detach().numpy(),color="blue")
-        plt.scatter(x[...,0].detach().numpy(),x[...,1].detach().numpy(),color="orange")
-        #plt.hist(x[...,0].detach().numpy(),density=True,bins=100,alpha=0.5,color="orange")
-        plt.savefig(plot_loc+"/distribution.png")
-        plt.close()
+        make_scatter_plot(plot_loc,x,self.rho.model)
+        distribution_plot(plot_loc,self.rho.model,self.boundary.params["Tf"])
+
+    def get_logpdf(self,x):
+        pdf = self.rho.model.log_prob(x)
+        return torch.nan_to_num(pdf)     

@@ -41,10 +41,14 @@ class PlotFuns():
 
     self.boundary = boundary_data
     self.folder = os.path.dirname(__file__)
-    self.referencesol = RefSolution(boundary_data)
-     
+    
+    if boundary_data is not None:
+      self.referencesol = RefSolution(boundary_data)
+    else: 
+      self.referencesol = None
+
     #borders of xaxis
-    self.qmax = 2.5
+    self.qmax = 4
     
     #colors
     self.c1 = "#1f78b4" #darkblue
@@ -121,21 +125,8 @@ class PlotFuns():
     idx = np.argsort(x)
     return np.trapz(y[idx],x[idx])
 
-  def scatter_panel_layout(self,ax,time=None):
-
-    if time ==None:
-      time = self.boundary.params["Tf"]
+  def add_boundary_conditions_scatter_panel(self,ax_pmarginal,ax_qmarginal,time):
     
-    plot_title_value = round(time/self.boundary.params["Tf"],2)
-    ax.set_title(f"t={plot_title_value}Tf")
-
-    #make inset axes to show marginal distributions
-    ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
-    ax_qmarginal = ax.inset_axes([-0.65, 0, 0.6, 1])
-    ax_qmarginal.invert_xaxis()
-    ax_qmarginal.set_ylim((-self.qmax,self.qmax))
-
-    ax_pmarginal.set_xlim((-self.qmax,self.qmax))
     if time==0:
       ax_qmarginal.fill_between(np.linspace(-self.qmax,self.qmax,),
                 self.boundary.q_marginal_initial(np.linspace(-self.qmax,self.qmax,)),color="orange")
@@ -151,6 +142,30 @@ class PlotFuns():
                 self.normal_distribution(np.linspace(-self.qmax,self.qmax,),0,1),np.linspace(-self.qmax,self.qmax,),color="orange")
     else: 
       pass
+
+
+  def scatter_panel_layout(self,ax,time=None):
+
+    if time == None:
+      time = self.boundary.params["Tf"]
+
+    if self.boundary is not None:  
+      plot_title_value = round(time/self.boundary.params["Tf"],2)
+      ax.set_title(f"t={plot_title_value}Tf")
+    else: 
+      ax.set_title(f"t={time}")
+
+    #make inset axes to show marginal distributions
+    ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
+    ax_qmarginal = ax.inset_axes([-0.65, 0, 0.6, 1])
+    ax_qmarginal.invert_xaxis()
+    ax_qmarginal.set_ylim((-self.qmax,self.qmax))
+
+    ax_pmarginal.set_xlim((-self.qmax,self.qmax))
+    
+
+    if self.boundary is not None:
+      self.add_boundary_conditions_scatter_panel(ax_pmarginal,ax_qmarginal,time)
 
     ###ticks formatting and labelling
     ax_pmarginal.yaxis.tick_right()
@@ -175,9 +190,6 @@ class PlotFuns():
         which='both',      #both major and minor ticks
         left=False,
         labelleft=False)
-
-    #ax.set_xlim((-self.qmax,self.qmax))
-    #ax.set_ylim((-self.qmax,self.qmax))
 
     ax_pmarginal.set_xticklabels([])
    
@@ -218,24 +230,27 @@ class PlotFuns():
     n = joint_out.shape[0]
     
     #pdb.set_trace()
-    joint_out_temp = joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n))))
+    joint_out_temp = np.nan_to_num(joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n)))),nan=0,posinf=0,neginf=0)
     Q = xs[...,[0]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
     p_init = np.sort(Q[[0],:].flatten()) #one axis 
     dx = np.abs(p_init[1]-p_init[0])
-
+    print(p_init)
     #compute marginals
     qmarg = np.trapz(joint_out_temp,x = p_init,axis=0)#np.sum(joint_out_temp,axis=0) #np.trapz(joint_out_temp,x = p_init,axis=0)
     pmarg = np.trapz(joint_out_temp,x = p_init,axis=1)
     qnorm = self.get_norm(p_init, qmarg)
     pnorm = self.get_norm(p_init, pmarg)
 
+    print("qnorm",qnorm)
+    print("pnorm",pnorm)
     #plot and format marginals
     self.plot_marginal_joint(ax_qmarginal,p_init,qmarg/qnorm)
     self.plot_marginal_joint(ax_pmarginal,pmarg/pnorm,p_init)
 
-    #plot marginals
-    x,ptx = self.referencesol.get_quantity(np.round(time,6),quantity = "marginal",data="perturbative underdamped")
-    ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed")
+    if self.referencesol is not None:
+      #plot marginals
+      x,ptx = self.referencesol.get_quantity(np.round(time,6),quantity = "marginal",data="perturbative underdamped")
+      ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed")
 
     #plot joint distribution
     ax.scatter(xs[...,0]/(qnorm*pnorm),xs[...,1]/(qnorm*pnorm),c=joint_out_temp.T.flatten()

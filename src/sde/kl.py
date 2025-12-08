@@ -13,7 +13,7 @@ def kl_div(d1,d2,k=1):
     d1 : array
         Samples from a distribution
     d2 : array
-        logger object of the training run. If given, the parameters are logged through this object
+        Samples from a distribution
     k : int
         number of nearest neighbours to consider. As a rule,larger k reduces variance, small k reduces bias
     

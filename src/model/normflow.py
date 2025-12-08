@@ -69,25 +69,27 @@ class RhoNormFlow():
         
         if bridgetype=="marginal":
             self.latent_size = 1 
+            flows = self.make_flows_1d(num_layers=50)
+
         else:
             self.latent_size = 2 
-        
+            flows = self.make_flows_2d(num_layers=50)
+
         self.boundary = boundaryconditions
         
         #training parameters
-        self.max_iter = 500 #maximum number of iterations /training steps
+        self.max_iter = 1#maximum number of iterations /training steps
         self.minibatch_samples = 128 #how many samples of final distribution to take for each training iteration
         
         # Define the base distribution 
         base = CustomBase(self.boundary,self.latent_size)
         #base = nf.distributions.DiagGaussian(1)
-        flows = self.make_flows(num_layers=50)
         self.model = nf.NormalizingFlow(base, flows=flows)
         
         #set optimiser
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=5e-4, weight_decay=1e-5)
 
-    def make_flows(self,num_layers=1):
+    def make_flows_1d(self,num_layers=1):
                 
         #b = torch.Tensor([1 if i % 2 == 0 else 0 for i in range(self.latent_size)])
         flows = []
@@ -97,6 +99,21 @@ class RhoNormFlow():
 
         return flows
 
+    def make_flows_2d(self,num_layers=1):
+                
+        #b = torch.Tensor([1 if i % 2 == 0 else 0 for i in range(self.latent_size)])
+        flows = []
+        for i in range(num_layers):
+            # Neural network with two hidden layers having 64 units each
+            # Last layer is initialized by zeros making training more stable
+            param_map = nf.nets.MLP([1, 64, 64, 2], init_zeros=True)
+            # Add flow layer
+            flows.append(nf.flows.AffineCouplingBlock(param_map))
+            # Swap dimensions
+            flows.append(nf.flows.Permute(2, mode='swap'))
+            
+        return flows 
+        
     def train_loop(self,x):
         
         loss_hist = np.array([])
