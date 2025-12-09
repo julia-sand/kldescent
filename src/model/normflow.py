@@ -83,7 +83,7 @@ class RhoNormFlow():
         self.minibatch_samples = 128 #how many samples of final distribution to take for each training iteration
         
         # Define the base distribution 
-        base = CustomBase(self.boundary,self.latent_size)
+        base = nf.distributions.DiagGaussian(1)#CustomBase(self.boundary,self.latent_size)
         #base = nf.distributions.DiagGaussian(1)
         self.model = nf.NormalizingFlow(base, flows=flows)
         
