@@ -122,8 +122,9 @@ class RefSolution():
         elif quantity =="marginal":
             idx=2
         elif quantity =="underdamped drift":
-            idx=4
-            
+            idx=-1
+        elif quantity =="underdamped marginal":
+            idx=-2
         #RETURNS X, DU
         return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx])
 

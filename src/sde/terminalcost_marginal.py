@@ -12,6 +12,8 @@ import numpy as np
 import torch
 from torch.nn import DataParallel
 
+from ..viz.distribution_plots import *
+
 class TerminalCost():
     """
     Top-level Class for methods for estimating the final value function 
@@ -159,7 +161,8 @@ class NormFlow(TerminalCost):
         self.rho.model.eval()
         
         #plot learned distribution vs histogram
-        self.make_plot(x)
+        plot_loc = self.logger.newpath 
+        make_histogram(plot_loc,self.rho.model,self.boundary)
 
     def get_half_logpdf(self,x):
         pdf = self.rho.model.log_prob(x[...,[0]])

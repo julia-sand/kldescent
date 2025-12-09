@@ -194,7 +194,8 @@ class NormFlow(TerminalCost):
         x0 = torch.tensor(self.boundary.generate_samples(integrator.sde_params["testsamples"] ,"initial"),requires_grad=False,dtype=torch.float32)
         
         #integrate and get final samples
-        x = integrator.update_ref_statistics(x0_samples=x0)
+        x = torch.tensor(self.boundary.generate_samples(integrator.sde_params["testsamples"] ,"final"),dtype=torch.float32)
+        #integrator.update_ref_statistics(x0_samples=x0)
 
         #put model in train mode
         self.rho.model.train()
@@ -206,8 +207,8 @@ class NormFlow(TerminalCost):
         self.rho.model.eval()
 
         plot_loc = self.logger.newpath 
-        make_scatter_plot(plot_loc,x,self.rho.model)
-        distribution_plot(plot_loc,self.rho.model,self.boundary.params["Tf"])
+        make_scatter_plot(plot_loc,x,self.rho.model)#,self.boundary)
+        distribution_plot(plot_loc,self.rho.model,self.boundary.params["Tf"],self.boundary)
 
     def get_logpdf(self,x):
         pdf = self.rho.model.log_prob(x)

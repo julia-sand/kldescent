@@ -39,11 +39,12 @@ class CustomBase(nf.distributions.BaseDistribution):
         if self.latent_size == 1:    
             logprob = - self.boundary.Uinitial(z) - \
              torch.log(self.boundary.pi_norm*torch.ones(1,dtype=torch.float32))
-            return logprob.flatten()
+            #return logprob.flatten()
         else:
             logprob = - self.boundary.Uinitial(z[:,0]) - (z[:,1]-1)**2/2 \
-             - 0.5*(torch.log(self.boundary.pi_norm*torch.ones(1,dtype=torch.float32)) + torch.log(4*torch.acos(torch.zeros(1)))) #hacky way to get pi into pytorch
-            return logprob
+             - 0.5*(torch.log(self.boundary.pi_norm*torch.ones(1,dtype=torch.float32)) + torch.log(4*torch.acos(torch.zeros(1,dtype=torch.float32)))) #hacky way to get pi into pytorch
+            
+        return logprob.flatten()
             
     def forward(self, num_samples=1, context=None):
         
@@ -69,7 +70,7 @@ class RhoNormFlow():
         
         if bridgetype=="marginal":
             self.latent_size = 1 
-            flows = self.make_flows_1d(num_layers=50)
+            flows = self.make_flows_1d(num_layers=5)
 
         else:
             self.latent_size = 2 
@@ -78,7 +79,7 @@ class RhoNormFlow():
         self.boundary = boundaryconditions
         
         #training parameters
-        self.max_iter = 1#maximum number of iterations /training steps
+        self.max_iter = 1 #maximum number of iterations /training steps
         self.minibatch_samples = 128 #how many samples of final distribution to take for each training iteration
         
         # Define the base distribution 
@@ -123,7 +124,7 @@ class RhoNormFlow():
             #generate random indexes for the minibatch 
             idx = torch.randint(low=0,high=x.shape[0],size=(self.minibatch_samples,))
             #print(x[idx,:].shape)
-            self.train_step(x[idx],it,loss_hist)
+            self.train_step(x[idx,:],it,loss_hist)
 
     def train_step(self,x,it,loss_hist):
         
@@ -142,7 +143,7 @@ class RhoNormFlow():
             # Log loss
             #loss_hist = np.append(loss_hist, loss.to('cpu').data.numpy())
         
-        print(loss.to('cpu').data.numpy())
+        #print(loss.to('cpu').data.numpy())
 
 if __name__=="__main__":
 
