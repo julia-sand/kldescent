@@ -13,8 +13,10 @@ class MarginalHalfBridgePerturbation():
         self.boundary = boundary
         self.reference = reference
 
-        #set up expansion parameters
+        #load the csv
         self.overdamped_arr = self.reference.get_ref_data(data="overdamped")
+
+        #set up expansion parameters
         self.t2vec = np.unique(self.overdamped_arr[:,0])
         self.xnum = int(self.overdamped_arr.shape[0]/len(self.t2vec))
         self.Tf = self.boundary.params["Tf"]
@@ -28,7 +30,7 @@ class MarginalHalfBridgePerturbation():
 
     def f00(self,t2):
 
-        x,f00 = self.reference.get_quantity(t2,"value",arr=self.overdamped_arr)
+        x,f00 = self.reference.get_quantity(t2,"marginal",arr=self.overdamped_arr)
         return f00
 
     def dv00(self,t2):

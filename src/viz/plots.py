@@ -128,18 +128,19 @@ class PlotFuns():
   def add_boundary_conditions_scatter_panel(self,ax_pmarginal,ax_qmarginal,time):
     
     if time==0:
-      ax_qmarginal.fill_between(np.linspace(-self.qmax,self.qmax,),
-                self.boundary.q_marginal_initial(np.linspace(-self.qmax,self.qmax,)),color="orange")
+      ax_qmarginal.fill_between(
+                self.boundary.q_marginal_initial(np.linspace(-self.qmax,self.qmax,)),np.linspace(-self.qmax,self.qmax,),color="orange")
       
       ax_pmarginal.fill_between(np.linspace(-self.qmax,self.qmax,),
-                self.normal_distribution(np.linspace(-self.qmax,self.qmax,),0,1),np.linspace(-self.qmax,self.qmax,),color="orange")
+                self.normal_distribution(np.linspace(-self.qmax,self.qmax,),0,1),color="orange")
     
     elif time==self.boundary.params["Tf"]:
-      ax_qmarginal.fill_between(np.linspace(-self.qmax,self.qmax,),
-                self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,)),color="orange")
+      ax_qmarginal.fill_between(
+                self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,)),np.linspace(-self.qmax,self.qmax,),color="orange")
       
       ax_pmarginal.fill_between(np.linspace(-self.qmax,self.qmax,),
-                self.normal_distribution(np.linspace(-self.qmax,self.qmax,),0,1),np.linspace(-self.qmax,self.qmax,),color="orange")
+                self.normal_distribution(np.linspace(-self.qmax,self.qmax,),0,1),color="orange")
+    
     else: 
       pass
 
@@ -195,10 +196,12 @@ class PlotFuns():
    
     ax.set_xlabel(r"$p$")
     ax_qmarginal.set_xlabel(r"$\rho_t(q)$")
+    ax_qmarginal.set_xlim(right=-0.01)
 
     ax.set_ylabel(r"$q$")
     ax_pmarginal.set_ylabel(r"$\rho_t(p)$")
     ax.yaxis.set_label_position("right")
+    ax_pmarginal.set_ylim(bottom=-0.01)
 
     ax.set_aspect('equal', adjustable='box')
     ax.set_xticks([-2.5,0,2.5])
@@ -231,18 +234,16 @@ class PlotFuns():
     
     #pdb.set_trace()
     joint_out_temp = np.nan_to_num(joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n)))),nan=0,posinf=0,neginf=0)
-    Q = xs[...,[0]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
-    p_init = np.sort(Q[[0],:].flatten()) #one axis 
+    #Q = xs[...,[0]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
+    p_init = np.unique(xs)#np.sort(Q[[0],:].flatten()) #one axis 
     dx = np.abs(p_init[1]-p_init[0])
-    print(p_init)
+
     #compute marginals
     qmarg = np.trapz(joint_out_temp,x = p_init,axis=0)#np.sum(joint_out_temp,axis=0) #np.trapz(joint_out_temp,x = p_init,axis=0)
     pmarg = np.trapz(joint_out_temp,x = p_init,axis=1)
     qnorm = self.get_norm(p_init, qmarg)
     pnorm = self.get_norm(p_init, pmarg)
 
-    print("qnorm",qnorm)
-    print("pnorm",pnorm)
     #plot and format marginals
     self.plot_marginal_joint(ax_qmarginal,p_init,qmarg/qnorm)
     self.plot_marginal_joint(ax_pmarginal,pmarg/pnorm,p_init)
