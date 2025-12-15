@@ -147,7 +147,8 @@ class NormFlow(TerminalCost):
         x0 = torch.tensor(self.boundary.generate_samples(integrator.sde_params["testsamples"] ,"initial"),requires_grad=False,dtype=torch.float32)
         
         #integrate and get final samples
-        x = torch.tensor(self.boundary.generate_samples(integrator.sde_params["testsamples"] ,"final"),dtype=torch.float32)
+        x = torch.tensor(self.boundary.generate_samples(8192,"final"),dtype=torch.float32)
+        #integrator.sde_params["testsamples"] ,"final"),dtype=torch.float32)
 
         #integrator.update_ref_statistics(x0_samples=x0)
         
@@ -155,14 +156,14 @@ class NormFlow(TerminalCost):
         self.rho.model.train()
 
         #train normalising flow
-        self.rho.train_loop(x[...,[0]])
+        self.rho.train_loop(x[...,0])
         
         #put model in evaluation mode
         self.rho.model.eval()
         
         #plot learned distribution vs histogram
         plot_loc = self.logger.newpath 
-        make_histogram(plot_loc,self.rho.model,self.boundary)
+        make_histogram(plot_loc,x,self.rho.model,self.boundary)
 
     def get_half_logpdf(self,x):
         pdf = self.rho.model.log_prob(x[...,[0]])

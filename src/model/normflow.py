@@ -17,6 +17,7 @@ from tqdm import tqdm
 
 from ..utils.parser import rho_network_params,fetch_checkpoint_path
 
+import pdb
 
 class CustomBase(nf.distributions.BaseDistribution):
 
@@ -70,7 +71,7 @@ class RhoNormFlow():
         
         if bridgetype=="marginal":
             self.latent_size = 1 
-            flows = self.make_flows_1d(num_layers=5)
+            flows = self.make_flows_1d(num_layers=10)
 
         else:
             self.latent_size = 2 
@@ -79,11 +80,11 @@ class RhoNormFlow():
         self.boundary = boundaryconditions
         
         #training parameters
-        self.max_iter = 1 #maximum number of iterations /training steps
+        self.max_iter = 5000 #how many parameter updates
         self.minibatch_samples = 128 #how many samples of final distribution to take for each training iteration
         
         # Define the base distribution 
-        base = nf.distributions.DiagGaussian(1)#CustomBase(self.boundary,self.latent_size)
+        base = CustomBase(self.boundary,self.latent_size)
         #base = nf.distributions.DiagGaussian(1)
         self.model = nf.NormalizingFlow(base, flows=flows)
         
@@ -96,7 +97,7 @@ class RhoNormFlow():
         flows = []
         for i in range(num_layers):
 
-            flows.append(nf.flows.Planar(shape=self.latent_size, act="leaky_relu"))
+            flows.append(nf.flows.Planar(shape=self.latent_size,act="leaky_relu"))
 
         return flows
 
@@ -116,15 +117,15 @@ class RhoNormFlow():
         return flows 
         
     def train_loop(self,x):
-        
+       
         loss_hist = np.array([])
 
         for it in tqdm(range(self.max_iter)):
-            
+        
             #generate random indexes for the minibatch 
             idx = torch.randint(low=0,high=x.shape[0],size=(self.minibatch_samples,))
-            #print(x[idx,:].shape)
             self.train_step(x[idx,:],it,loss_hist)
+
 
     def train_step(self,x,it,loss_hist):
         
