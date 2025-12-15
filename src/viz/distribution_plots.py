@@ -7,14 +7,14 @@ plots.update_mpl()
 
 
 @torch.no_grad
-def make_histogram(plot_loc,model,boundary):
+def make_histogram(plot_loc,x,model,boundary):
     
     #plot_loc = self.logger.newpath 
     
     #make a plot of final points vs estimated distribution
-    x_samples,_ = model.sample(10000)
+    x_samples,_ = model.sample(5000)
     
-    qaxtemp = torch.linspace(-5,5,1000,dtype=torch.float32)
+    qaxtemp = torch.linspace(-5,5,1000,dtype=torch.float32).reshape((1000,1))
     pdf_temp = torch.exp(model.log_prob(qaxtemp))
     pdf_temp[torch.isnan(pdf_temp)] = 0
 
@@ -22,6 +22,7 @@ def make_histogram(plot_loc,model,boundary):
     
     #samples from learned distribution
     plt.hist(x_samples.detach().numpy().flatten(),density=True,bins=100,alpha=0.5,color="orange")
+    #plt.hist(x.detach().numpy().flatten(),density=True,bins=100,alpha=0.5)
     
     #pdf of learned distribution
     plt.plot(qaxtemp.detach().numpy().flatten(),pdf_temp.detach().numpy().flatten())    
@@ -31,7 +32,7 @@ def make_histogram(plot_loc,model,boundary):
 
 
 @torch.no_grad
-def make_scatter_plot(plot_loc,x,model,boundary=None):
+def make_scatter_plot(plot_loc,x,model,epoch=1,boundary=None):
     
     #plot_loc = self.logger.newpath 
     
@@ -47,14 +48,14 @@ def make_scatter_plot(plot_loc,x,model,boundary=None):
     #plt.scatter(qsamples[...,0],qsamples[...,1])
     #plt.hist(x[...,0].detach().numpy(),density=True,bins=100,alpha=0.5,color="orange")
         
-    fig2.savefig(plot_loc+"/distribution.png")
+    fig2.savefig(plot_loc+f"/distribution_{epoch}.png")
     plt.close()
     
     #estimate kl divergence between the two sample sets
     #print("KL divergence between the samples",kl_div(x.detach().numpy(),x_samples.detach().numpy()))
     
 @torch.no_grad
-def distribution_plot(plot_loc,model,Tf,boundary=None):
+def distribution_plot(plot_loc,model,Tf,epoch=1,boundary=None):
     plotter = plots.PlotFuns(boundary)
 
     #compute marginals 
@@ -77,7 +78,7 @@ def distribution_plot(plot_loc,model,Tf,boundary=None):
     plotter.plot_joint_panel(plt.gca(),5,jointout,xout)
 
     fig.tight_layout()
-    fig.savefig(plot_loc+"/contour_distribution.png",bbox_inches="tight")        
+    fig.savefig(plot_loc+f"/contour_distribution_{epoch}.png",bbox_inches="tight")        
 
     plt.close()
 
