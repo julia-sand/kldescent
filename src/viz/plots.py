@@ -423,6 +423,7 @@ class PlotFuns():
     ax_pos.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
             self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,num=1000)),
             color="gray",alpha=0.5)
+    
     ax_mom.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
         self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=0,sigmasq=1),
                     color="gray",alpha=0.5)

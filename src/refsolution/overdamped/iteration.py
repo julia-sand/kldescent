@@ -42,12 +42,12 @@ class CellProblem():
         #only initialise when using gaussian boundaries
         if "Gauss" in str(self.boundary.__class__.__name__):
             self.refsol = Gaussian_Overdamped_Ref(boundary)
-            self.qmax = 15
+            #
         else:            
-            self.qmax = 6
+            pass#self.qmax = 6
+        self.qmax = self.boundary.qmax
         
         self.q = np.linspace(-self.qmax,self.qmax) #for plotting 
-
 
         #preallocate the arrays here 
         self.xhatphi = None #np.linspace(-6,6,num_samples)

@@ -57,7 +57,7 @@ class RefSolution():
             print("Cell problem completed. Computing Corrections...")
             pertsol = MarginalHalfBridgePerturbation(boundary,self)
             pertsol.save_perturbative()
-            #pertsol.save_perturbative_cumulants()
+
             print("Underdamped Results saved.")
             self.duref_net = perturbative_du_interp(self.boundary,self)
         
