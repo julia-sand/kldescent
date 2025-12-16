@@ -68,6 +68,7 @@ class Boundaries():
         
         if logger is not None:
             logger.log_dict(self.params) #add to log
+
         
 class OverdampedFullLandauer(Boundaries):
     """
@@ -103,6 +104,7 @@ class OverdampedFullLandauer(Boundaries):
         Boundaries.__init__(self,params,logger)
         self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
         #self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
+        self.qmax = 6
 
     def overwrite_ref_path(self,new_path):
         
@@ -164,6 +166,7 @@ class OverdampedLandauer(OverdampedFullLandauer):
         OverdampedFullLandauer.__init__(self,params,logger)
         #self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
         self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
+        self.qmax = 6
 
     def Uinitial(self,q):
         return ((q-1)**4)/4
@@ -203,7 +206,8 @@ class LinearOU(Boundaries):
         self.gamma = 1
         self.A = 0.2
         self.Lambda = 1
-        
+        self.qmax = 6
+
     def q_marginal_initial(self,q):
 
         return np.exp(-(q**2))/np.sqrt(np.pi)
@@ -289,7 +293,8 @@ class UnderdampedLandauer(OverdampedLandauer):
     def __init__(self,params=None,logger=None):
         OverdampedLandauer.__init__(self,params,logger)
         self.sigma0 = np.sqrt(2)
-        
+        self.qmax = 6
+
     def p_initial(self,q,p):
 
         return (self.q_marginal_initial(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
@@ -404,7 +409,8 @@ class UnderdampedGaussian(UnderdampedLandauer):
                         logger=None):
         Boundaries.__init__(self,params,logger)
         self.sigma0 = np.sqrt(2)
-        
+        self.qmax = 15
+
         if gauss_params is not None: #read from file if available
             self.gauss_boundary = gauss_params
         else: #fetch from command line

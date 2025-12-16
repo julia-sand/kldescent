@@ -14,7 +14,6 @@ def generate_mesh(x_samples,qmax=6):
             number of samples in the space discretisation
     """
 
-    #pmax,qmax = 4,4
     p_init = np.linspace(-qmax,qmax,x_samples)
     q_init = np.linspace(-qmax,qmax,x_samples)
     
