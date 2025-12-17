@@ -10,6 +10,13 @@ from torch.nn.utils import clip_grad_norm_
 from tqdm import tqdm
 
 class Pretrain():
+    """
+    Class for training a neural network to interpolate CSV
+    data to be useable as a function
+    Used for eg. initialising a drift or training a secondary model to easier compute
+    the perturbative evolutions
+    """
+    
     #define the training parameters and loop for any pretraining. 
     def __init__(self,path):
         self.path = path 
@@ -20,7 +27,7 @@ class Pretrain():
         self.step_size = 3000 #frequency of learning rate decay (in epochs)
         self.n_epochs = 30000 #total number of epochs
 
-        self.minibatch_samples = 512
+        self.minibatch_samples = 512 #number of datarows to use per parameter update
 
         self.clip = 0.1
 
@@ -32,11 +39,11 @@ class Pretrain():
         
         #pdb.set_trace()
         X = torch.tensor(arr[:,0:2], dtype=torch.float32)
-        X[:,0] /= 0.2**2 #use t0 
+        #X[:,0] /= 0.2**2 #use t0 
 
         y = torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
         
-        return X,y/(2**0.5)
+        return X,y
 
     def pretraining(self,net):   
         
