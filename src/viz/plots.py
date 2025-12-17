@@ -29,8 +29,8 @@ def update_mpl():
 
   #update matplotlib config
   mpl.rcParams['lines.linewidth'] = 3
-  mpl.rcParams['xtick.labelsize'] = 18
-  mpl.rcParams['ytick.labelsize'] = 18
+  mpl.rcParams['xtick.labelsize'] = 20
+  mpl.rcParams['ytick.labelsize'] = 20
   mpl.rcParams['font.size'] = 22
   mpl.rcParams['axes.labelsize'] = 22
 
@@ -329,8 +329,9 @@ class PlotFuns():
       
   def format_distribution_ax(self,ax1):
     ax1.set_xlim((-self.qmax,self.qmax))
-    #ax1.set_xlabel("q")
+    ax1.set_xlabel("q")
     ax1.set_ylim((-0.01,0.65))
+    ax1.set_ylabel(r"$\rho$")
 
   def plot_reference(self,ax1,x,du):
 
@@ -340,7 +341,7 @@ class PlotFuns():
   #@profile
   def plot_drift(self,times,net):
 
-    fig = plt.figure(figsize=(10,8))
+    fig = plt.figure(figsize=(15,8))
     ax = fig.subplots(1,len(times))
   
     for t in range(len(times)):  
@@ -355,9 +356,6 @@ class PlotFuns():
       ax[t].set_ylim((-5,5))
       try:
         xref,duref = self.referencesol.get_quantity(times[t]*(0.2**2), "underdamped drift", data="perturbative underdamped")
-        #self.referencesol.get_reference_data(times[t])
-        #self.plot_reference(ax[t],xref,-duref)
-        #self.plot_reference(ax[t],xref,self.referencesol.duref_net(torch.column_stack((times[t]*torch.ones((xref.shape[0],1),dtype=torch.float32,requires_grad=False),torch.tensor(xref[:,np.newaxis],dtype=torch.float32,requires_grad=False)))).detach())
         ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
                 -0.2*self.evaluate_net_output(self.referencesol.duref_net,times[t]),
                 label="Perturbative N.N.")
@@ -365,9 +363,18 @@ class PlotFuns():
         print("The reference solution file was not found. \n \
                     Please make sure that it has been created by running the scripts in valueref.py or that it has not been moved")
         #break
-
-    plt.legend()
+    
     plt.tight_layout()
+
+    h,l = ax[0].get_legend_handles_labels()
+    #plt.legend()
+    legend = fig.legend(h,l,
+              frameon = False,
+              handlelength = 1,
+              ncols = 2)
+
+    #move the legend
+    legend.set_bbox_to_anchor(bbox=(0.95,0.07))
     plt.savefig(self.subdir+f"/drift.png", bbox_inches='tight')
     plt.close()
 
@@ -391,7 +398,7 @@ class PlotFuns():
     - samples: the output of the evolutions
     """
 
-    fig = plt.figure(figsize=(10,8))
+    fig = plt.figure(figsize=(15,8))
     #get plot location
     ax_pos = fig.add_subplot(121)
     ax_mom = fig.add_subplot(122)
@@ -433,9 +440,14 @@ class PlotFuns():
 
     plt.suptitle(f"t = {plottime}")
 
-    fig.subplots_adjust(bottom=0.3, wspace=0.33)
+    plt.tight_layout()
+    #fig.subplots_adjust(bottom=0.3, wspace=0.33)
+    h,l = ax_mom.get_legend_handles_labels()
+    legend = fig.legend(h,l,frameon=False,handlelength = 1)
 
-    plt.legend()
+    #move the legend
+    legend.set_bbox_to_anchor(bbox=(0.95,0.07))
+    
     #self.make_legend_marginals(fig)
     plt.savefig(self.subdir+"/marginals.png",bbox_inches="tight")
     plt.close()
