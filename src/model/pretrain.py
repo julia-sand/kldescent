@@ -4,8 +4,8 @@ import torch
 
 from src.model.train import Pretrain
 
-def run_pretrain(net, 
-                    path_to_pretrain):
+def run_pretrain(net,refsol=None,
+                    path_to_pretrain=None):
     """
     Trains a neural network to approximate a numerical function given by values in a csv
 
@@ -21,7 +21,7 @@ def run_pretrain(net,
 
     print("Starting pre-training")
     
-    pretrainer = Pretrain(path_to_pretrain)
+    pretrainer = Pretrain(refsol=refsol,path_to_pretrain=path_to_pretrain)
     pretrainer.pretraining(net)
     
     print("Pretraining completed successfully.")

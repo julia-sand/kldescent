@@ -18,8 +18,15 @@ class Pretrain():
     """
     
     #define the training parameters and loop for any pretraining. 
-    def __init__(self,path):
-        self.path = path 
+    def __init__(self,refsol=None,path_to_pretrain=None):
+        
+        
+        if path_to_pretrain is None:
+            self.refsol = refsol 
+            self.path = self.refsol.overdamped_loc        
+        else:
+            self.refsol = None  #overwrites the reference solution and learn straight from the csv
+            self.path = path_to_pretrain 
 
         #set defaults of training process
         self.lr = 0.01 #initial learning rate
@@ -32,17 +39,30 @@ class Pretrain():
         self.clip = 0.1
 
     def get_pretraining_data(self):
-        #load csv and return data 
+        """Loads data from csv 
+        to be used in training the network
+        """ 
 
         arr = np.loadtxt(self.path,
                         delimiter=",", skiprows=1)
         
-        #pdb.set_trace()
         X = torch.tensor(arr[:,0:2], dtype=torch.float32)
-        #X[:,0] /= 0.2**2 #use t0 
+        
 
         y = torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
         
+        return X,y
+
+    def transform_data(self,X,y):
+        """Implements a transformation for the data which can be customised depending on
+        what the pre-training is doing. 
+        """
+
+        if self.refsol is not None:
+
+            X[:,0] /= self.refsol.boundary.params["epsilon"]**2 #use t0 
+            y *= -(self.refsol.boundary.params["epsilon"]/(2**0.5))
+
         return X,y
 
     def pretraining(self,net):   
@@ -52,11 +72,11 @@ class Pretrain():
         optimizer = Adam(net.parameters(), lr=self.lr)
         scheduler = ExponentialLR(optimizer, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
 
-        X,y = self.get_pretraining_data()
-
+        Xtemp,ytemp = self.get_pretraining_data()
+        X,y = self.transform_data(Xtemp,ytemp)
+ 
         for epoch in range(1,self.n_epochs+1):
             
-            #pdb.set_trace()
             #generate random batch 
             idx = torch.randint(low=0,high=X.shape[0],size=(self.minibatch_samples,))
 
@@ -205,4 +225,4 @@ class TrainRho():
         self.rhonet.eval() #return neural net into eval mode
 
 if __name__=="__main__":
-    Pretrain("src/refsolution/UnderdampedHalfNet/refsol.csv").get_pretraining_data()
+    Pretrain(path="src/refsolution/UnderdampedHalfNet/refsol.csv").get_pretraining_data()

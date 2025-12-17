@@ -14,7 +14,7 @@ from ...model.pretrain import run_pretrain
 from ...sde.langevin import *
 from  .marginalhalf import MarginalHalfBridgePerturbation
 
-def perturbative_du_interp(boundary,reference_sol):
+def perturbative_du_interp(reference_sol):
     """Trains a neural network to approximate the perturbatively 
     estimated drift. If a checkpoint is included in the reference solution
     folder, this is loaded instead of training.
@@ -31,16 +31,17 @@ def perturbative_du_interp(boundary,reference_sol):
 
     try: #load checkpoint if available
         mlp_net.load_state_dict(torch.load(reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt", weights_only=True))
-        print("Checkpoint found and loaded")
+        print("Perturbative Solution found and loaded")
     except FileNotFoundError: 
-        print("No checkpoint found. Training from CSV data.")
+        print("No perturbative solution found. Training from CSV data.")
         #train it to learn the csv in the reference solution folder
-        try: 
-            run_pretrain(mlp_net,reference_sol.perturb_underdamped_loc)
-        except FileNotFoundError:
-            #first compute perturbative data 
-            run_pretrain(mlp_net,reference_sol.perturb_underdamped_loc)
+        #try: 
+        run_pretrain(mlp_net,reference_sol)
+        #except FileNotFoundError:
+        #    #first compute perturbative data 
+        #    run_pretrain(mlp_net,reference_sol)
 
+        #save the trained checkpoint
         torch.save(mlp_net.state_dict(),reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt") 
 
     return mlp_net
@@ -82,5 +83,5 @@ if __name__=="__main__":
     #get the reference solution folder
     reference_sol = RefSolution(boundary)
     
-    mlp_net = perturbative_du_interp(boundary,reference_sol)
+    mlp_net = perturbative_du_interp(reference_sol)
     contour(boundary,reference_sol,mlp_net)
