@@ -357,7 +357,7 @@ class PlotFuns():
       try:
         xref,duref = self.referencesol.get_quantity(times[t]*(0.2**2), "underdamped drift", data="perturbative underdamped")
         ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
-                -0.2*self.evaluate_net_output(self.referencesol.duref_net,times[t]),
+                self.evaluate_net_output(self.referencesol.duref_net,times[t]),
                 label="Perturbative N.N.")
       except (FileNotFoundError): 
         print("The reference solution file was not found. \n \

@@ -55,7 +55,7 @@ def run():
         
     if args["pretrain"]: #if a path is provided 
         pretrain.run_pretrain(net,
-                            args["pretrain"])
+                            path_to_pretrain=args["pretrain"])
     
     for epoch in tqdm(range(args["epochs"])):#range(0,args["epochs"]):
         try:

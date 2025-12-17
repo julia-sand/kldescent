@@ -59,7 +59,6 @@ class SDE(SDEBase):
                     terminal_cost=None, 
                     net=None,
                     sde_params=None,
-                    #logger=None,
                     device="cpu"):
         
         SDEBase.__init__(self,boundary_data=boundary_data,sde_params=sde_params)

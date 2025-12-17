@@ -49,7 +49,7 @@ class RefSolution():
 
         try:
             #compute corrections
-            self.duref_net = perturbative_du_interp(self.boundary,self)
+            self.duref_net = perturbative_du_interp(self)
         except FileNotFoundError:
             print("Overdamped results not available. Solving cell problem...")
             #compute overdamped ref solution
@@ -59,7 +59,7 @@ class RefSolution():
             pertsol.save_perturbative()
 
             print("Underdamped Results saved.")
-            self.duref_net = perturbative_du_interp(self.boundary,self)
+            self.duref_net = perturbative_du_interp(self)
         
         self.duref_net.eval()
 
