@@ -12,8 +12,6 @@ from ...model.nn import MLP
 from ...model.pretrain import run_pretrain
 #
 from ...sde.langevin import *
-#from ...viz.checkpoint_plots import compute_rho_girsanov
-#from ...viz.plots import PlotFuns
 from  .marginalhalf import MarginalHalfBridgePerturbation
 
 def perturbative_du_interp(boundary,reference_sol):
