@@ -356,6 +356,7 @@ class PlotFuns():
       ax[t].set_ylim((-5,5))
       try:
         xref,duref = self.referencesol.get_quantity(times[t]*(0.2**2), "underdamped drift", data="perturbative underdamped")
+        ax[t].plot(xref,duref,label="Perturbative")
         ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
                 self.evaluate_net_output(self.referencesol.duref_net,times[t]),
                 label="Perturbative N.N.")
@@ -429,12 +430,16 @@ class PlotFuns():
     #add reference distributions to plots
     ax_pos.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
             self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,num=1000)),
-            color="gray",alpha=0.5)
+            color="gray",alpha=0.1)
     
     ax_mom.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
         self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=0,sigmasq=1),
-                    color="gray",alpha=0.5)
+                    color="gray",alpha=0.1)
   
+    #add perturbative  distributions to plots
+    xref,posref = self.referencesol.get_quantity(self.boundary.params["Tf"],"underdamped marginal", data="perturbative underdamped")   
+    ax_pos.fill_between(xref,posref,color="green",alpha=0.5,zorder=1000)
+
     self.format_distribution_ax(ax_mom)
     self.format_distribution_ax(ax_pos)
 
@@ -539,6 +544,8 @@ class PlotFuns():
         #computes neural network output (forward pass) to use in plotting
         return net(torch.column_stack((time*torch.ones((1000,1),requires_grad=False,dtype=torch.float32)
                                                     ,torch.linspace(-self.qmax,self.qmax,1000,requires_grad=False)))).detach()
+        
+
         
   def position_mean_free_diffusion(self,t_vec,q0,p0):
       return q0 + self.boundary.params["epsilon"]*(1-np.exp(-t_vec))*p0

@@ -1,8 +1,15 @@
 import numpy as np
 
+from scipy.ndimage import median_filter,generic_filter
+import scipy.ndimage as sc
+
+
 class MarginalHalfBridgePerturbation():
     """Class to contain the functions for computing perturbative 
-    corrections from overdamped data
+    corrections from overdamped data for the Marginal Half Bridge;
+    that is, when the terminal cost is specified by the KL divergence between the 
+    realised final distribution and a reference one (the logarithm of their ratio)
+
     args:
         boundary : class
             determines boundary conditions and parameters
@@ -22,42 +29,33 @@ class MarginalHalfBridgePerturbation():
         self.Tf = self.boundary.params["Tf"]
         self.epsilon = self.boundary.params["epsilon"]
         self.Tf2 = self.Tf*(self.epsilon**2)
+        
+        self.qaxis,_ = self.reference.get_quantity(0,"value",arr=self.overdamped_arr)
+        
+    def apply_filter(self,y,mode="nearest"):
+
+        return generic_filter(y,sc.median,size=self.filter_delta,mode=mode)
+
+    def compute_gradient(self,y,x,mode="nearest"):
+ 
+        return self.apply_filter(np.gradient(y,x),mode)
 
     def v00(self,t2):
 
-        x,v00 = self.reference.get_quantity(t2,"value",arr=self.overdamped_arr)
+        _,v00 = self.reference.get_quantity(t2,"value",arr=self.overdamped_arr)
         return v00 
 
     def f00(self,t2):
 
-        x,f00 = self.reference.get_quantity(t2,"marginal",arr=self.overdamped_arr)
+        _,f00 = self.reference.get_quantity(t2,"marginal",arr=self.overdamped_arr)
         return f00
-
-    def dv00(self,t2):
-
-        x,v00 = self.reference.get_quantity(t2,"value",arr=self.overdamped_arr)
-        return np.gradient(v00,x) 
-    
-    def ddv00(self,t2):
-
-        x,v00 = self.reference.get_quantity(t2,"value",arr=self.overdamped_arr)
-        return np.gradient(np.gradient(v00,x) ,x) 
-    
-    def df00(self,t2):
-
-        x,f00 = self.reference.get_quantity(t2,"marginal",arr=self.overdamped_arr)
-        return np.gradient(f00,x) 
-
-    def ddf00(self,t2):
-
-        x,f00 = self.reference.get_quantity(t2,"marginal",arr=self.overdamped_arr)
-        return np.gradient(np.gradient(f00,x),x) 
 
     def v11(self,t0,t2):
         
+        dv00_temp = self.compute_gradient(self.v00(t2),self.qaxis)
         coeff = 1- np.exp(t0-self.Tf)
 
-        return coeff*self.dv00(t2)
+        return coeff*dv00_temp
 
     def DU(self,t0,t2):
         """Finds the perturbative drift for the marginal half bridge
@@ -72,16 +70,23 @@ class MarginalHalfBridgePerturbation():
     
     def f02(self,t0,t2):
         
-        term1 = -t0*self.df00(t2)
-        term2 = self.ddf00(t2)*(t0+np.exp(-t0)-1)
-        term3 = -2*(np.sinh(t0)-t0-(np.cosh(t0)-1)*(1-np.exp(-self.Tf)))*(self.df00(t2)*self.dv00(t2) + self.f00(t2)*self.ddv00(t2))    
+        f00_temp = self.f00(t2)
+        df00_temp = self.compute_gradient(f00_temp,self.qaxis,mode="constant")
+        ddf00_temp = self.compute_gradient(df00_temp,self.qaxis,mode="constant")
+
+        v00_temp = self.v00(t2)
+        dv00_temp = self.compute_gradient(v00_temp,self.qaxis,mode="constant")
+        ddv00_temp = self.compute_gradient(dv00_temp,self.qaxis,mode="constant")
+
+        term1 = -t0*df00_temp
+        term2 = ddf00_temp*(t0+np.exp(-t0)-1)
+        term3 = -2*(np.sinh(t0)-t0-(np.cosh(t0)-1)*(1-np.exp(-self.Tf)))*(df00_temp*dv00_temp + f00_temp*ddv00_temp)    
                 
         return term1 + term2 + term3
 
     def marginal_perturbative(self,t0,t2):
         
         return self.f00(t2) + (self.epsilon**2)*self.f02(t0,t2)
-
 
     def xcorr(self,t0,t2):
         return 0
