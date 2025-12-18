@@ -106,15 +106,35 @@ class RefSolution():
         return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,-1])
 
     def get_quantity(self,time,quantity,data=None,arr=None):
-
-        #time is the time you want the data
+        """
+        args:
+            time : float
+                the time to lookup the data
+            quantity : str
+                what quantity to return from the data table. Choices are: value (overdamped value function); 
+                marginal (overdamped distribution); underdamped drift (perturbative estimate of underdamped DU);
+                and underdamped marginal (perturbative underdamped marginal of the position)
+            data : str 
+                which dataset to use. Choose from overdamped (cell problem solution) or underdamped (saved perturbative solution)        
+            arr : array
+                if the dataset is already loaded in the script, this can be used to return the correct result
+        returns:
+            x : arr 
+                array of shape (n,) of positions
+            y : arr
+                specified quantity evaluated at points x, with shape (n,)
+        """
 
         ##fetch the reference data for halfbridge
         if arr is None: #default overdamped
             arr = self.get_ref_data(data=data)  
-       
+
+        if data=="perturbative underdamped":
+            #divide by eps**2 to get t2 from t0
+            time *= self.boundary.params["epsilon"]**2
+
         ##fetch the reference data approximation data
-        arrtemp = arr[np.where(arr[:,0]==np.round(time,8))] 
+        arrtemp = arr[np.where(arr[:,0]==np.round(time,5))] 
         arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
 
         if quantity =="value":
@@ -125,6 +145,7 @@ class RefSolution():
             idx=-1
         elif quantity =="underdamped marginal":
             idx=-2
+        
         #RETURNS X, DU
         return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx])
 
