@@ -23,7 +23,7 @@ class Pretrain():
         
         if path_to_pretrain is None:
             self.refsol = refsol 
-            self.path = self.refsol.overdamped_loc        
+            self.path = self.refsol.perturb_underdamped_loc#overdamped_loc        
         else:
             self.refsol = None  #overwrites the reference solution and learn straight from the csv
             self.path = path_to_pretrain 
@@ -31,10 +31,10 @@ class Pretrain():
         #set defaults of training process
         self.lr = 0.01 #initial learning rate
         self.gamma = 0.1 #decay rate of learning rate
-        self.step_size = 3000 #frequency of learning rate decay (in epochs)
-        self.n_epochs = 30000 #total number of epochs
+        self.milestone = 3000 #frequency of learning rate decay (in epochs)
+        self.n_epochs = 10000 #total number of epochs
 
-        self.minibatch_samples = 512 #number of datarows to use per parameter update
+        self.minibatch_samples = 2048 #number of datarows to use per parameter update
 
         self.clip = 0.1
 
@@ -55,13 +55,13 @@ class Pretrain():
 
     def transform_data(self,X,y):
         """Implements a transformation for the data which can be customised depending on
-        what the pre-training is doing. 
+        what the pre-training is doing. depends on whether the boundary conditions are 
+        provided or not
         """
 
         if self.refsol is not None:
-
             X[:,0] /= self.refsol.boundary.params["epsilon"]**2 #use t0 
-            y *= -(self.refsol.boundary.params["epsilon"]/(2**0.5))
+            y *= (-(self.refsol.boundary.params["epsilon"]/(2**0.5)))
 
         return X,y
 
@@ -75,7 +75,7 @@ class Pretrain():
         Xtemp,ytemp = self.get_pretraining_data()
         X,y = self.transform_data(Xtemp,ytemp)
  
-        for epoch in range(1,self.n_epochs+1):
+        for epoch in tqdm(range(1,self.n_epochs+1)):
             
             #generate random batch 
             idx = torch.randint(low=0,high=X.shape[0],size=(self.minibatch_samples,))
@@ -87,9 +87,9 @@ class Pretrain():
             loss.backward()
             optimizer.step()       
 
-            if epoch % self.step_size == 0:
+            if epoch % self.milestone == 0:
                 scheduler.step()
-                print(f'Finished epoch {epoch}, loss {loss}')
+                #print(f'Finished epoch {epoch}, loss {loss}')
         
 class Train():
     """
