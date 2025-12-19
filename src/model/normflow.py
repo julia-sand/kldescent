@@ -43,7 +43,7 @@ class CustomBase(nf.distributions.BaseDistribution):
             #return logprob.flatten()
         else:
             logprob = - self.boundary.Uinitial(z[:,0]) - (z[:,1]-1)**2/2 \
-             - 0.5*(torch.log(self.boundary.pi_norm*torch.ones(1,dtype=torch.float32)) + torch.log(4*torch.acos(torch.zeros(1,dtype=torch.float32)))) #hacky way to get pi into pytorch
+             - (torch.log(self.boundary.pi_norm*torch.ones(1,dtype=torch.float32))+0.5*torch.log(4*torch.acos(torch.zeros(1,dtype=torch.float32)))) #hacky way to get pi into pytorch
             
         return logprob.flatten()
             

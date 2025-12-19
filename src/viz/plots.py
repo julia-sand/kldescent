@@ -1,8 +1,6 @@
 import os
 import string
 
-import pdb
-
 import numpy as np 
 from sklearn.neighbors import KernelDensity
 import torch
@@ -437,8 +435,8 @@ class PlotFuns():
                     color="gray",alpha=0.1)
   
     #add perturbative  distributions to plots
-    xref,posref = self.referencesol.get_quantity(self.boundary.params["Tf"],"underdamped marginal", data="perturbative underdamped")   
-    ax_pos.fill_between(xref,posref,color="green",alpha=0.5,zorder=1000)
+    #xref,posref = self.referencesol.get_quantity(self.boundary.params["Tf"],"underdamped marginal", data="perturbative underdamped")   
+    #ax_pos.fill_between(xref,posref,color="green",alpha=0.5,zorder=1000)
 
     self.format_distribution_ax(ax_mom)
     self.format_distribution_ax(ax_pos)
@@ -621,14 +619,20 @@ class PlotFuns():
     ax.set_ylabel(ylabel_text)
     ax.set_xlim((-0.1,t_vec[-1]+0.1))
 
-  def plot_cumulants(self,t_vec,cumulants_nn_plot,cumulants_ref_plot,test_samples):
+  def make_cumulant_fig_gridspec(self,):
 
     # Plotting the cumulants
     fig1 = plt.figure(figsize=(15, 8))#, constrained_layout=True)
 
     # Create a 1x5 grid with different widths for the bottom row
-    gs_cumulants = gridspec.GridSpec(2, 6, width_ratios=[1, 1, 1, 1,1,1], height_ratios=[1, 1])
-            
+    gs_cumulants = fig1.add_gridspec(2, 6, width_ratios=[1, 1, 1, 1,1,1], height_ratios=[1, 1])
+           
+    return fig1,gs_cumulants
+
+  def plot_cumulants(self,t_vec,cumulants_nn_plot,cumulants_ref_plot,test_samples):
+ 
+    fig1,gs_cumulants = self.make_cumulant_fig_gridspec()
+
     # position mean
     self.make_cumulant_subplot(gs_cumulants[0, 0:2],"Position Mean",t_vec,cumulants_nn_plot,cumulants_ref_plot,test_samples)
     self.make_cumulant_subplot(gs_cumulants[0, 2:4],"Position Variance",t_vec,cumulants_nn_plot,cumulants_ref_plot,test_samples)

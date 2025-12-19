@@ -158,7 +158,7 @@ class TrainRho():
 
         self.clip = 0.01 #gradient clipping
 
-        self.rho_epochs = 1024 #total number of training epochs
+        self.rho_epochs = 2048 #total number of training epochs
         self.milestone = 256 #how often to decay learning rate
         self.rho_batch = 512 #size of batch 
 

@@ -64,7 +64,7 @@ def overdamped_argparser():
     parser = CustomArgParse()
 
     parser.add_argument('-bridgetype','--bridgetype', type=str, default="marginal",
-                        help='whether to use the marginal or state distributions in the terminal cost')
+                        help='whether to use the phase space or marginal distributions in the terminal cost')
     
     parser.add_argument('-epochs','--epochs', type=int, default=1,
                         help='Total number of training epochs; relates to number of parameter updates for the drift (du) network')
