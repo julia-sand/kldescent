@@ -12,7 +12,9 @@ def run_pretrain(net,refsol=None,
     args:
         net:
             neural network to be trained
-        path_to_pretrain:
+        refsol : class 
+            sets the path to pretain as the location of the reference solution csv 
+        path_to_pretrain : csv
             path from current working directory to a CSV containing data to be used in the pretraining. The data should have a csv format 
             where the first two entries are the input and the last column should contian the trained values. See RefSolution folder for some examples.  
     returns:
@@ -25,7 +27,6 @@ def run_pretrain(net,refsol=None,
     pretrainer.pretraining(net)
     
     print("Pretraining completed successfully.")
-
 
 if __name__=="__main__":
     run_pretrain()

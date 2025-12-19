@@ -102,7 +102,7 @@ class Histogram(TerminalCost):
         self.nbins = 100
         self.xrange = [-5,5]
 
-    def update_cost_params(self,integrator,*_):
+    def update_cost_params(self,integrator,epoch,*_):
         x = integrator.update_ref_statistics().numpy()
         H, xedges = np.histogram(x[...,0], 
                                             bins=self.nbins,
@@ -110,6 +110,11 @@ class Histogram(TerminalCost):
                                             density=True)
         self.H = H
         self.xedges = xedges
+
+        #plot learned distribution vs histogram
+        plot_loc = self.logger.newpath 
+        plot_histogram(plot_loc,self.H,self.xedges,epoch)
+
         return 
 
     def evaluate_density(self, x):
