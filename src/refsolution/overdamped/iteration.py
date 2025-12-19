@@ -1,3 +1,5 @@
+import warnings #ignore divide by zeros for the boundaries
+
 import numpy as np
 import matplotlib.pyplot as plt 
 
@@ -29,7 +31,6 @@ class CellProblem():
         self.B = self.boundary.bfun(self.boundary.params["Tf"])
         self.beta = 1/np.sqrt(self.A)
         self.M = self.boundary.params["weight"]
-
 
         if bridge_type=="marginal half":
             self.power = (self.M*self.B)/(self.A+self.M*self.B)
@@ -88,26 +89,31 @@ class CellProblem():
         xpsi = xhatphi.copy() #np.zeros_like(xhatphi)
 
         iters = 0
-        while iters < num_iters:
-
-            #compute psi0/phiT
-            psi0 = np.nan_to_num(zchop(self.boundary.q_marginal_final(xhatphi)/hatphiT),posinf=0,neginf=0,nan=0)**self.power
-
-            #integrate psi to Tf
-            xpsi,psiT = integrator(xhatphi,psi0,self.Tf2,self.beta)
-
-            #compute hatphi0 
-            hatphi0 = np.nan_to_num(zchop(self.boundary.q_marginal_initial(xpsi)/psiT),posinf=0,neginf=0,nan=0)
-
-            #integrate phihat to Tf
-            xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
+        
+        with warnings.catch_warnings(): #dont print divide by zero warnings (these are handled in the script)
+            warnings.simplefilter("ignore")
             
-            iters += 1
+            while iters < num_iters:
 
-            self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-            
-            self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-            self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+                #compute psi0/phiT
+                psi0 = np.nan_to_num(zchop(self.boundary.q_marginal_final(xhatphi)/hatphiT),posinf=0,neginf=0,nan=0)**self.power
+
+                #integrate psi to Tf
+                xpsi,psiT = integrator(xhatphi,psi0,self.Tf2,self.beta)
+
+                #compute hatphi0 
+                hatphi0 = np.nan_to_num(zchop(self.boundary.q_marginal_initial(xpsi)/psiT),posinf=0,neginf=0,nan=0)
+
+                #integrate phihat to Tf
+                xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
+                
+                iters += 1
+
+        #plot the final output
+        self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+        
+        self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+        self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
 
         #set new class properties
         self.xhatphi =xhatphi

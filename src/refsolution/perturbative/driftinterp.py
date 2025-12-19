@@ -34,13 +34,10 @@ def perturbative_du_interp(reference_sol):
         print("Perturbative Solution found and loaded")
     except FileNotFoundError: 
         print("No perturbative solution found. Training from CSV data.")
+        
         #train it to learn the csv in the reference solution folder
-        #try: 
         run_pretrain(mlp_net,reference_sol)
-        #except FileNotFoundError:
-        #    #first compute perturbative data 
-        #    run_pretrain(mlp_net,reference_sol)
-
+        
         #save the trained checkpoint
         torch.save(mlp_net.state_dict(),reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt") 
 

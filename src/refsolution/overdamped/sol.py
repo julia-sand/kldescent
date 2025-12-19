@@ -1,4 +1,5 @@
 import os
+import warnings #ignore divide by zeros for the boundaries
 
 import numpy as np
 
@@ -10,11 +11,13 @@ from ..utilfunctions import *
 #Proximal operator solution for fokkerplanck equation
 def compute_rho(phi_t,hatphi_t):
     
-    return phi_t*hatphi_t
+    return np.nan_to_num(phi_t*hatphi_t,nan=0,posinf=0,neginf=0)
 
 def compute_V(phi_t,A,B):
-    
-    return -(A/B)*np.log(phi_t)
+    with warnings.catch_warnings(): #ignore log(0) error as this is handled later
+        warnings.simplefilter("ignore") 
+        
+        return -(A/B)*np.log(phi_t)
 
 
 def get_solution_in_time(cell,integrator,
@@ -88,7 +91,7 @@ def get_solution_in_time(cell,integrator,
 def save_array(arr_out,save_location):
     
     #make dir
-    #os.makedirs(save_location,exist_ok=True)
+    os.makedirs(save_location,exist_ok=True)
 
     np.savetxt(save_location + "/overdamped.csv", arr_out ,fmt="%10.6f",header = "t,q,rho,V",delimiter=',')
     return
@@ -105,6 +108,6 @@ def compute_overdamped(boundary,save_location,bridge_type="marginal half"):
 
 if __name__=="__main__":
     boundary = UnderdampedLandauer()
-    compute_overdamped(boundary,save_location,bridge_type="marginal half")
+    compute_overdamped(boundary,"results",bridge_type="marginal half")
     
     

@@ -32,13 +32,15 @@ class MarginalHalfBridgePerturbation():
         
         self.qaxis,_ = self.reference.get_quantity(0,"value",arr=self.overdamped_arr)
         
+        self.filter_delta = 40 
+        
     def apply_filter(self,y,mode="nearest"):
 
         return generic_filter(y,sc.median,size=self.filter_delta,mode=mode)
 
     def compute_gradient(self,y,x,mode="nearest"):
  
-        return self.apply_filter(np.gradient(y,x),mode)
+        return np.gradient(y,x)#self.apply_filter(np.gradient(y,x),mode)
 
     def v00(self,t2):
 
@@ -75,8 +77,8 @@ class MarginalHalfBridgePerturbation():
         ddf00_temp = self.compute_gradient(df00_temp,self.qaxis,mode="constant")
 
         v00_temp = self.v00(t2)
-        dv00_temp = self.compute_gradient(v00_temp,self.qaxis,mode="constant")
-        ddv00_temp = self.compute_gradient(dv00_temp,self.qaxis,mode="constant")
+        dv00_temp = self.compute_gradient(v00_temp,self.qaxis,mode="nearest")
+        ddv00_temp = self.compute_gradient(dv00_temp,self.qaxis,mode="nearest")
 
         term1 = -t0*df00_temp
         term2 = ddf00_temp*(t0+np.exp(-t0)-1)
