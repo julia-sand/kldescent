@@ -416,6 +416,9 @@ class UnderdampedGaussian(UnderdampedLandauer):
         if logger is not None:
             logger.log_dict(self.gauss_boundary) #add to log
         
+        self.pi_norm = (np.sqrt(2*np.pi)*(self.gauss_boundary["sigmainitial"]))
+        self.pf_norm = (np.sqrt(2*np.pi)*(self.gauss_boundary["sigmafinal"]))
+        
         #self.refsol = GaussRefSolution(folder_name=None)
 
     def overwrite_ref_path(self,new_path):
@@ -445,11 +448,11 @@ class UnderdampedGaussian(UnderdampedLandauer):
             pdf: normalised initial position marginal evaluated at q
         """
 
-        return self.qinitial(q)/(np.sqrt(2*np.pi)*(self.gauss_boundary["sigmainitial"]))
+        return self.qinitial(q)/self.pi_norm
 
     def q_marginal_final(self,q): 
         
-        return self.qfinal(q)/(np.sqrt(2*np.pi)*(self.gauss_boundary["sigmafinal"]))
+        return self.qfinal(q)/self.pf_norm
 
     #generate the initial data
     def generate_samples_q(self,batch_samples,mode):

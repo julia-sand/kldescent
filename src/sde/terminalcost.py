@@ -20,8 +20,8 @@ class TerminalCost():
     """
     Top-level Class for methods for estimating the final value function 
 
-    Terminal cost is the ratio of the final estimated state distribution divided by the log of the 
-    reference state distribution
+    Terminal cost is the ratio of the final estimated distribution in phase space divided by the log of the 
+    reference phase space distribution
     g(q,p) = log(^P(q,p) / Pref)
     """
 
@@ -73,6 +73,12 @@ class GirsanovNet(TerminalCost):
         self.rhotrainer = TrainRho(self.rhonet)
 
     def update_cost_params(self,integrator,epoch):
+        
+        if epoch<1:
+            pass
+        else: #update number of epochs
+            self.rhotrainer.rho_epochs = 512 #less epochs for training later 
+
         #train the rho neural network
         self.rhotrainer.train_loop(integrator)
 
@@ -187,7 +193,7 @@ class NormFlow(TerminalCost):
 
         TerminalCost.__init__(self,boundaryconditions,logger)
         #initialise normalising flow
-        self.rho = RhoNormFlow(boundaryconditions=self.boundary,bridgetype="state")
+        self.rho = RhoNormFlow(boundaryconditions=self.boundary,bridgetype="phase")
 
     def update_cost_params(self,integrator,epoch,*_):
         if epoch<1:
