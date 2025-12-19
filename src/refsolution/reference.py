@@ -33,6 +33,7 @@ class RefSolution():
             folder_name : str
                 if no boundary condition specified, the folder can be set manually using this parameter. 
         """
+        
         self.boundary= boundary
 
         if folder_name is not None: #use this if running the file directly
