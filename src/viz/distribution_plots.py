@@ -5,6 +5,15 @@ import matplotlib.pyplot as plt
 
 plots.update_mpl()
 
+def plot_histogram(plot_loc,hist,xloc,epoch=1):
+    
+    fig = plt.figure(figsize=(15, 15))
+    
+    plt.stairs(hist,xloc)
+    
+    fig.savefig(plot_loc+f"/histogram_{epoch}.png")
+    plt.close()
+
 
 @torch.no_grad
 def make_histogram(plot_loc,x,model,boundary):
