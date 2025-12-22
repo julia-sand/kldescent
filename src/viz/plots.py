@@ -435,8 +435,8 @@ class PlotFuns():
                     color="gray",alpha=0.1)
   
     #add perturbative  distributions to plots
-    #xref,posref = self.referencesol.get_quantity(self.boundary.params["Tf"],"underdamped marginal", data="perturbative underdamped")   
-    #ax_pos.fill_between(xref,posref,color="green",alpha=0.5,zorder=1000)
+    xref,posref = self.referencesol.get_quantity(self.boundary.params["Tf"],"underdamped marginal", data="perturbative underdamped")   
+    ax_pos.fill_between(xref,posref,color="green",alpha=0.5,zorder=1000)
 
     self.format_distribution_ax(ax_mom)
     self.format_distribution_ax(ax_pos)
