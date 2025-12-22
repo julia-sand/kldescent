@@ -3,6 +3,8 @@ import numpy as np
 from scipy.ndimage import median_filter,generic_filter
 import scipy.ndimage as sc
 
+import pdb
+
 
 class MarginalHalfBridgePerturbation():
     """Class to contain the functions for computing perturbative 
@@ -23,7 +25,7 @@ class MarginalHalfBridgePerturbation():
         #load the csv
         self.overdamped_arr = self.reference.get_ref_data(data="overdamped")
 
-        #set up expansion parameters
+        #define parameters
         self.t2vec = np.unique(self.overdamped_arr[:,0])
         self.xnum = int(self.overdamped_arr.shape[0]/len(self.t2vec))
         self.Tf = self.boundary.params["Tf"]
@@ -38,7 +40,7 @@ class MarginalHalfBridgePerturbation():
 
         return generic_filter(y,sc.median,size=self.filter_delta,mode=mode)
 
-    def compute_gradient(self,y,x,mode="nearest"):
+    def compute_gradient(self,y,x):
  
         return np.gradient(y,x)#self.apply_filter(np.gradient(y,x),mode)
 
@@ -71,19 +73,33 @@ class MarginalHalfBridgePerturbation():
         return 2*self.v11(t0,t2)
     
     def f02(self,t0,t2):
-        
-        f00_temp = self.f00(t2)
-        df00_temp = self.compute_gradient(f00_temp,self.qaxis,mode="constant")
-        ddf00_temp = self.compute_gradient(df00_temp,self.qaxis,mode="constant")
-
-        v00_temp = self.v00(t2)
-        dv00_temp = self.compute_gradient(v00_temp,self.qaxis,mode="nearest")
-        ddv00_temp = self.compute_gradient(dv00_temp,self.qaxis,mode="nearest")
-
-        term1 = -t0*df00_temp
-        term2 = ddf00_temp*(t0+np.exp(-t0)-1)
-        term3 = -2*(np.sinh(t0)-t0-(np.cosh(t0)-1)*(1-np.exp(-self.Tf)))*(df00_temp*dv00_temp + f00_temp*ddv00_temp)    
+        #pdb.set_trace()
                 
+        v00_temp = self.v00(t2)
+        dv00_temp = self.apply_filter(self.compute_gradient(v00_temp,self.qaxis),mode="nearest")
+        del v00_temp
+
+        f00_temp = self.apply_filter(self.f00(t2),mode="constant")
+        ddv00_temp = self.apply_filter(self.compute_gradient(dv00_temp,self.qaxis),mode="nearest")
+        prod2 = f00_temp*ddv00_temp
+
+        del ddv00_temp 
+        
+        df00_temp = self.apply_filter(self.compute_gradient(f00_temp,self.qaxis),mode="constant")
+        del f00_temp 
+
+        prod1 = df00_temp*dv00_temp
+        term1 = -t0*df00_temp
+        del dv00_temp
+        
+        ddf00_temp = self.apply_filter(self.compute_gradient(df00_temp,self.qaxis),mode="constant")
+        del df00_temp
+
+        term2 = ddf00_temp*(t0+np.exp(-t0)-1)
+        del ddf00_temp 
+
+        term3 = -2*(np.sinh(t0)-t0-(np.cosh(t0)-1)*(1-np.exp(-self.Tf)))*(prod1 + prod2)    
+            
         return term1 + term2 + term3
 
     def marginal_perturbative(self,t0,t2):
@@ -131,7 +147,7 @@ class MarginalHalfBridgePerturbation():
         """
 
         #preallocate
-        pertcumulants = np.empty((len(t2vec,6)))
+        pertcumulants = np.empty((len(self.t2vec),6))
         
         for t in range(len(self.t2vec)):
             
@@ -146,8 +162,8 @@ class MarginalHalfBridgePerturbation():
         np.savetxt(self.reference.get_ref_path()+"/cumulants.csv",pertcumulants,fmt="%10.6f",header = "t,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
 
 if __name__=="__main__":
-    #from ..reference import RefSolution
-    #from ...sde.boundary import *
+    from ..reference import RefSolution
+    from ...sde.boundary import *
     
     boundary = UnderdampedLandauer()
     reference = RefSolution(boundary=boundary)
