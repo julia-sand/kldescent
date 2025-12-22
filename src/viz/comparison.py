@@ -19,8 +19,8 @@ from .plots import *
 plotter = PlotFuns() #initialise plotter
 
 fig1,gs_cumulants = plotter.make_cumulant_fig_gridspec()
-plotter.plot_free_diffusion_sol(ax,t_vec,cumulant)
-
+#plotter.plot_free_diffusion_sol(ax,t_vec,cumulant)
+t_vec,cumulants,labels,test_samples
 
 self.make_cumulant_subplot(gs_cumulants[0, 0:2],"Position Mean",t_vec,cumulants_nn_plot,cumulants_ref_plot,test_samples)
 self.make_cumulant_subplot(gs_cumulants[0, 2:4],"Position Variance",t_vec,cumulants_nn_plot,cumulants_ref_plot,test_samples)

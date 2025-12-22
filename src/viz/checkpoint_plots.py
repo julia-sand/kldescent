@@ -116,7 +116,8 @@ class PlotUtils():
         
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
         self.plotter.marginal_distribution([xinit,xref],final_plot_time)
-        self.plotter.plot_cumulants(t_vec,cumulants_nn,cumulants_ref,self.data_loaded["testsamples"])
+        fig = self.plotter.plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],["NN estimated","Perturbative"],self.data_loaded["testsamples"])
+        self.plotter.save_fig_(fig,"cumulants")
         self.plotter.save_cumulants_csv(t_vec,cumulants_nn)
 
     def load_du_checkpoint(self):

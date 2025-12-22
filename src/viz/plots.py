@@ -573,48 +573,55 @@ class PlotFuns():
                             alpha=0.5,
                             color="gray")
 
-  def make_cumulant_subplot(self,gs_location,
-                            ylabel_text,
-                            t_vec,
-                            cumulants_nn_plot,
-                            cumulants_ref_plot,test_samples):
-    
-    #x = self.boundary.get_reference_timegrid()
-    #get index:
-    ax = plt.subplot(gs_location)
-
+  def add_freediffusion_cumulants_subplot(self,ax,#gs_location,
+                                      ylabel_text,t_vec,cumulants_ref_plot):
+      
     if ylabel_text=="Position Mean":
       index = 0 
-      ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr=np.sqrt(cumulants_nn_plot[:,2]/test_samples),alpha=0.5)
       self.plot_free_diffusion_sol(ax,t_vec,self.position_mean_free_diffusion(t_vec,cumulants_ref_plot[0,index],cumulants_ref_plot[0,1]))
 
     elif ylabel_text=="Momentum Mean":
       index = 1
-      ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr=np.sqrt(cumulants_nn_plot[:,3]/test_samples),alpha=0.5)
-      self.plot_free_diffusion_sol(ax,t_vec,self.momentum_mean_free_diffusion(t_vec,cumulants_nn_plot[0,index]))
+      self.plot_free_diffusion_sol(ax,t_vec,self.momentum_mean_free_diffusion(t_vec,cumulants_ref_plot[0,index]),label="Free Diffusion")
 
     elif ylabel_text=="Position Variance":
       index = 2 
-      self.plot_free_diffusion_sol(ax,t_vec,self.position_variance_free_diffusion(t_vec,cumulants_ref_plot[0,index],cumulants_ref_plot[0,index+1]))
+      self.plot_free_diffusion_sol(ax,t_vec,self.position_variance_free_diffusion(t_vec,cumulants_ref_plot[0,index],cumulants_ref_plot[0,index+1]),label="Free Diffusion")
+    elif ylabel_text=="Momentum Variance":
+      index = 3 
+      self.plot_free_diffusion_sol(ax,t_vec,self.momentum_variance_free_diffusion(t_vec,cumulants_ref_plot[0,index]),label="Free Diffusion")
+    elif ylabel_text=="Cross Correlation":
+      index = 4 
+      self.plot_free_diffusion_sol(ax,t_vec,self.cross_correlation_free_diffusion(t_vec,cumulants_ref_plot[0,2],cumulants_ref_plot[0,3]),label="Free Diffusion")
+      
+    
+
+  def make_cumulant_subplot(self,ax,#gs_location,
+                            ylabel_text,
+                            t_vec,
+                            cumulants_nn_plot,label,test_samples):
+    
+    if ylabel_text=="Position Mean":
+      index = 0 
+      ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr=np.sqrt(cumulants_nn_plot[:,2]/test_samples),alpha=0.5)
+
+    elif ylabel_text=="Momentum Mean":
+      index = 1
+      ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr=np.sqrt(cumulants_nn_plot[:,3]/test_samples),alpha=0.5)
+
+    elif ylabel_text=="Position Variance":
+      index = 2 
       ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr=cumulants_nn_plot[:,index]*np.sqrt(2/(test_samples-1)),alpha=0.5)
     elif ylabel_text=="Momentum Variance":
       index = 3 
-      self.plot_free_diffusion_sol(ax,t_vec,self.momentum_variance_free_diffusion(t_vec,cumulants_ref_plot[0,index]))
       ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr=cumulants_nn_plot[:,index]*np.sqrt(2/(test_samples-1)),alpha=0.5)
     elif ylabel_text=="Cross Correlation":
       index = 4 
-      self.plot_free_diffusion_sol(ax,t_vec,self.cross_correlation_free_diffusion(t_vec,cumulants_ref_plot[0,2],cumulants_ref_plot[0,3]))
       ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr=np.sqrt((1-cumulants_nn_plot[:,index]**2)/(test_samples-2)),alpha=0.5)
 
-    ax.plot(t_vec, cumulants_nn_plot[:,index], color="orange")
-    ax.plot(t_vec, cumulants_ref_plot[:,index], color=self.c1)
+    ax.plot(t_vec,cumulants_nn_plot[:,index], color="orange")
 
-    #try:
-    #  t,cumulant_vals = self.boundary.get_known_solution_cumulants(ylabel_text)
-    #  ax.plot(t,cumulant_vals,color="green")
-    #except (FileExistsError,FileNotFoundError): #if the known solution is somehow unavailable
-    #  pass
-
+  def format_cumulant_subplot(self,ax,index,ylabel_text,t_vec):
     ax.set_title(self.make_plot_label(index),pad = self.titlepad,x = self.titlex, y = self.titley,zorder = 1000000)
     ax.set_ylabel(ylabel_text)
     ax.set_xlim((-0.1,t_vec[-1]+0.1))
@@ -629,34 +636,55 @@ class PlotFuns():
            
     return fig1,gs_cumulants
 
-  def plot_cumulants(self,t_vec,cumulants_nn_plot,cumulants_ref_plot,test_samples):
- 
+  def plot_cumulants(self,t_vec,cumulants,labels,test_samples):
+    """Plots the cumulants which are computed by the evolutions"""
+
     fig1,gs_cumulants = self.make_cumulant_fig_gridspec()
 
-    # position mean
-    self.make_cumulant_subplot(gs_cumulants[0, 0:2],"Position Mean",t_vec,cumulants_nn_plot,cumulants_ref_plot,test_samples)
-    self.make_cumulant_subplot(gs_cumulants[0, 2:4],"Position Variance",t_vec,cumulants_nn_plot,cumulants_ref_plot,test_samples)
-    self.make_cumulant_subplot(gs_cumulants[0, 4:],"Momentum Mean",t_vec,cumulants_nn_plot,cumulants_ref_plot,test_samples)
-    self.make_cumulant_subplot(gs_cumulants[1,:3],"Momentum Variance",t_vec,cumulants_nn_plot,cumulants_ref_plot,test_samples)
-    self.make_cumulant_subplot(gs_cumulants[1, 3:],"Cross Correlation",t_vec,cumulants_nn_plot,cumulants_ref_plot,test_samples)
-                      
+    for cumulant_vec,legend_label in zip(cumulants,labels):
+
+        self.make_cumulant_subplot(plt.subplot(gs_cumulants[0, 0:2]),"Position Mean",
+                                          t_vec,cumulant_vec,legend_label,
+                                          test_samples)
+        self.add_freediffusion_cumulants_subplot(plt.subplot(gs_cumulants[0, 0:2]),"Position Mean",t_vec,cumulant_vec) 
+
+        self.make_cumulant_subplot(plt.subplot(gs_cumulants[0, 2:4]),"Position Variance",t_vec,cumulant_vec,legend_label,test_samples)
+        self.add_freediffusion_cumulants_subplot(plt.subplot(gs_cumulants[0, 2:4]),"Position Variance",t_vec,cumulant_vec) 
+
+        self.make_cumulant_subplot(plt.subplot(gs_cumulants[0, 4:]),"Momentum Mean",t_vec,cumulant_vec,legend_label,test_samples)
+        self.add_freediffusion_cumulants_subplot(plt.subplot(gs_cumulants[0, 4:]),"Momentum Mean",t_vec,cumulant_vec) 
+
+        self.make_cumulant_subplot(plt.subplot(gs_cumulants[1,:3]),"Momentum Variance",t_vec,cumulant_vec,legend_label,test_samples)
+        self.add_freediffusion_cumulants_subplot(plt.subplot(gs_cumulants[1,:3]),"Momentum Variance",t_vec,cumulant_vec) 
+
+        self.make_cumulant_subplot(plt.subplot(gs_cumulants[1, 3:]),"Cross Correlation",t_vec,cumulant_vec,legend_label,test_samples)
+        self.add_freediffusion_cumulants_subplot(plt.subplot(gs_cumulants[1, 3:]),"Cross Correlation",t_vec,cumulant_vec)                      
+              
+    #add formatting to each subplot
+    for ax in enumerate(fig1.get_axes().flatten()):
+      self.format_cumulant_subplot(ax[1],ax[0],ylabel_text,t_vec)
+    
     plt.tight_layout()
 
     #get legend
-    orange_line = mlines.Line2D([], [],color="orange")
-    blue_line = mlines.Line2D([], [],color=self.c1)
-    green_line = mlines.Line2D([], [],color="green")
-    gray_line = mlines.Line2D([], [],color="gray",linestyle="dashed",alpha=0.5)
+    #orange_line = mlines.Line2D([], [],color="orange")
+    #blue_line = mlines.Line2D([], [],color=self.c1)
+    #green_line = mlines.Line2D([], [],color="green")
+    #gray_line = mlines.Line2D([], [],color="gray",linestyle="dashed",alpha=0.5)
 
-    legend = fig1.legend(handles=[blue_line,orange_line,gray_line],#,green_line],
-              labels = ["Perturbative","Controlled","Free Diffusion"],
+    h,l = ax[1].get_legend_handles_labels()
+    legend = fig1.legend(h,l, #handles=[blue_line,orange_line,gray_line],#,green_line],
+                              #labels = ["Perturbative","Controlled","Free Diffusion"],
               frameon = False,
               handlelength = 1,
               ncols = 3)
 
     #move the legend
     legend.set_bbox_to_anchor(bbox=(0.95,0.07))
-    plt.savefig(self.subdir+f"/cumulants.png", bbox_inches='tight')
+    return fig
+
+  def save_fig_(self,fig,filename):
+    fig.savefig(self.subdir+"/"+filename+".png", bbox_inches='tight')
     plt.close()
 
   def update_final_cumulants(self,cumulants_nn):
