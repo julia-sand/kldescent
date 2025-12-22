@@ -44,6 +44,10 @@ class MarginalHalfBridgePerturbation():
  
         return np.gradient(y,x)#self.apply_filter(np.gradient(y,x),mode)
 
+    def get_t0(self,t2):
+
+        return round(t2/(self.epsilon**2),4)
+
     def v00(self,t2):
 
         _,v00 = self.reference.get_quantity(t2,"value",arr=self.overdamped_arr)
@@ -132,10 +136,10 @@ class MarginalHalfBridgePerturbation():
         for t in range(len(self.t2vec)):
 
             #perturbative drift 
-            pertsol[t*self.xnum:(t+1)*self.xnum,-1] = self.DU(self.t2vec[t]/(self.epsilon**2),self.t2vec[t])
+            pertsol[t*self.xnum:(t+1)*self.xnum,-1] = self.DU(self.get_t0(self.t2vec[t]),self.t2vec[t])
             
             #perturbative marginal
-            pertsol[t*self.xnum:(t+1)*self.xnum,-2] = self.marginal_perturbative(self.t2vec[t]/(self.epsilon**2),self.t2vec[t])
+            pertsol[t*self.xnum:(t+1)*self.xnum,-2] = self.marginal_perturbative(self.get_t0(self.t2vec[t]),self.t2vec[t])
 
         #save pertsol 
         np.savetxt(self.reference.get_ref_path()+"/perturbative_underdamped.csv",pertsol,fmt="%10.6f",header = "t,q,rho,V,f,DU",delimiter=',')
@@ -151,15 +155,15 @@ class MarginalHalfBridgePerturbation():
         
         for t in range(len(self.t2vec)):
             
-            pertcumulants[t,0] = self.t2vec[t]
-            pertcumulants[t,1] = self.posmean(self.t2vec[t])
-            pertcumulants[t,2] = self.mommean(self.t2vec[t])
-            pertcumulants[t,3] = self.posvar(self.t2vec[t])
-            pertcumulants[t,4] = self.momvar(self.t2vec[t])
-            pertcumulants[t,5] = self.xcorr(self.t2vec[t])
+            pertcumulants[t,0] = self.get_t0(self.t2vec[t])
+            pertcumulants[t,1] = self.posmean(self.get_t0(self.t2vec[t]),self.t2vec[t])
+            pertcumulants[t,2] = self.mommean(self.get_t0(self.t2vec[t]),self.t2vec[t])
+            pertcumulants[t,3] = self.posvar(self.get_t0(self.t2vec[t]),self.t2vec[t])
+            pertcumulants[t,4] = self.momvar(self.get_t0(self.t2vec[t]),self.t2vec[t])
+            pertcumulants[t,5] = self.xcorr(self.get_t0(self.t2vec[t]),self.t2vec[t])
 
         #save pertsol 
-        np.savetxt(self.reference.get_ref_path()+"/cumulants.csv",pertcumulants,fmt="%10.6f",header = "t,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
+        np.savetxt(self.reference.get_ref_path()+"/cumulants.csv",pertcumulants,fmt="%10.6f",header = "t0,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
 
 if __name__=="__main__":
     from ..reference import RefSolution
