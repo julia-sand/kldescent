@@ -391,10 +391,14 @@ class PlotFuns():
   ##scatter plot of final distribution 
   def marginal_distribution(self,xs,plottime):
     """
-    Function that plots the scatter plot of the monte carlo approximation of the joint distribution
+    Function that plots the an estimate of the marginal densities
+    computed by sampled points
 
-    input:
-    - samples: the output of the evolutions
+    args:
+      xs : ndarray
+        sampled positions for the position and momentum
+      plottime : float
+        time to plot
     """
 
     fig = plt.figure(figsize=(15,8))
@@ -643,7 +647,22 @@ class PlotFuns():
     return fig1,gs_cumulants
 
   def plot_cumulants(self,t_vec,cumulants,labels,test_samples):
-    """Plots the cumulants which are computed by the evolutions"""
+    """Plots the cumulants which are computed by the evolutions
+    
+    args: 
+      t_vec : ndarray
+        array of times at which cumulants are evaluated
+      cumulants : list
+        list of arrays which are plotted iteratively
+      labels : list
+        list of labels to show in the legend for each of the cumulants plotted
+      test_samples : int
+        number of samples used for computing estimates of the cumulants. Computes error bar estimates 
+
+    returns:
+      fig : figure
+        matplotlib figure with cumulants plotted and legend 
+    """
 
     fig1,gs_cumulants = self.make_cumulant_fig_gridspec()
 
@@ -672,22 +691,16 @@ class PlotFuns():
     
     plt.tight_layout()
 
-    #get legend
-    #orange_line = mlines.Line2D([], [],color="orange")
-    #blue_line = mlines.Line2D([], [],color=self.c1)
-    #green_line = mlines.Line2D([], [],color="green")
-    #gray_line = mlines.Line2D([], [],color="gray",linestyle="dashed",alpha=0.5)
-
     h,l = ax[1].get_legend_handles_labels()
-    legend = fig1.legend(h,l, #handles=[blue_line,orange_line,gray_line],#,green_line],
-                              #labels = ["Perturbative","Controlled","Free Diffusion"],
-              frameon = False,
-              handlelength = 1,
-              ncols = 5,
-              columnspacing=0.4)
+    legend = fig1.legend(h,l, 
+                            frameon = False,
+                            handlelength = 1,
+                            ncols = 5,
+                            columnspacing=0.4)
 
     #move the legend
     legend.set_bbox_to_anchor(bbox=(0.95,0.07))
+    
     return fig1
 
   def save_fig_(self,fig,filename):
