@@ -560,10 +560,10 @@ class PlotFuns():
   def cross_correlation_free_diffusion(self,t_vec,pos_var0,mom_var0):
       return (self.boundary.params["epsilon"]**2)*np.exp(-t_vec)*(1-np.exp(-t_vec))*mom_var0 + self.boundary.params["epsilon"]*(1-2*np.exp(-t_vec)+np.exp(-2*t_vec))
 
-  def save_cumulants_csv(self,t_vec,cumulants_nn):
+  def save_cumulants_csv(self,t_vec,cumulants_nn,cumulants_filename="cumulants"):
 
     a = np.concatenate((t_vec[...,np.newaxis],cumulants_nn),axis=1)
-    np.savetxt(self.subdir+"/cumulants.csv", a, delimiter=",")
+    np.savetxt(self.subdir+"/"+cumulants_filename+".csv", a, delimiter=",")
     return 
 
   def plot_free_diffusion_sol(self,ax,t_vec,cumulant):
@@ -571,7 +571,8 @@ class PlotFuns():
                             linestyle="dashed",
                             zorder=0,
                             alpha=0.5,
-                            color="gray")
+                            color="gray",
+                            label="Free Diffusion")
 
   def add_freediffusion_cumulants_subplot(self,ax,#gs_location,
                                       ylabel_text,t_vec,cumulants_ref_plot):
@@ -582,44 +583,49 @@ class PlotFuns():
 
     elif ylabel_text=="Momentum Mean":
       index = 1
-      self.plot_free_diffusion_sol(ax,t_vec,self.momentum_mean_free_diffusion(t_vec,cumulants_ref_plot[0,index]),label="Free Diffusion")
+      self.plot_free_diffusion_sol(ax,t_vec,self.momentum_mean_free_diffusion(t_vec,cumulants_ref_plot[0,index]))
 
     elif ylabel_text=="Position Variance":
       index = 2 
-      self.plot_free_diffusion_sol(ax,t_vec,self.position_variance_free_diffusion(t_vec,cumulants_ref_plot[0,index],cumulants_ref_plot[0,index+1]),label="Free Diffusion")
+      self.plot_free_diffusion_sol(ax,t_vec,self.position_variance_free_diffusion(t_vec,cumulants_ref_plot[0,index],cumulants_ref_plot[0,index+1]))
     elif ylabel_text=="Momentum Variance":
       index = 3 
-      self.plot_free_diffusion_sol(ax,t_vec,self.momentum_variance_free_diffusion(t_vec,cumulants_ref_plot[0,index]),label="Free Diffusion")
+      self.plot_free_diffusion_sol(ax,t_vec,self.momentum_variance_free_diffusion(t_vec,cumulants_ref_plot[0,index]))
     elif ylabel_text=="Cross Correlation":
       index = 4 
-      self.plot_free_diffusion_sol(ax,t_vec,self.cross_correlation_free_diffusion(t_vec,cumulants_ref_plot[0,2],cumulants_ref_plot[0,3]),label="Free Diffusion")
+      self.plot_free_diffusion_sol(ax,t_vec,self.cross_correlation_free_diffusion(t_vec,cumulants_ref_plot[0,2],cumulants_ref_plot[0,3]))
       
     
-
   def make_cumulant_subplot(self,ax,#gs_location,
                             ylabel_text,
                             t_vec,
                             cumulants_nn_plot,label,test_samples):
-    
+        
     if ylabel_text=="Position Mean":
       index = 0 
-      ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr=np.sqrt(cumulants_nn_plot[:,2]/test_samples),alpha=0.5)
+      yerr=np.sqrt(cumulants_nn_plot[:,2]/test_samples)
 
     elif ylabel_text=="Momentum Mean":
       index = 1
-      ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr=np.sqrt(cumulants_nn_plot[:,3]/test_samples),alpha=0.5)
+      yerr=np.sqrt(cumulants_nn_plot[:,3]/test_samples)
 
     elif ylabel_text=="Position Variance":
       index = 2 
-      ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr=cumulants_nn_plot[:,index]*np.sqrt(2/(test_samples-1)),alpha=0.5)
+      yerr=cumulants_nn_plot[:,index]*np.sqrt(2/(test_samples-1))
+
     elif ylabel_text=="Momentum Variance":
       index = 3 
-      ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr=cumulants_nn_plot[:,index]*np.sqrt(2/(test_samples-1)),alpha=0.5)
+      yerr=cumulants_nn_plot[:,index]*np.sqrt(2/(test_samples-1))
+      
+    
     elif ylabel_text=="Cross Correlation":
       index = 4 
-      ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr=np.sqrt((1-cumulants_nn_plot[:,index]**2)/(test_samples-2)),alpha=0.5)
-
-    ax.plot(t_vec,cumulants_nn_plot[:,index], color="orange")
+      yerr = np.sqrt((1-cumulants_nn_plot[:,index]**2)/(test_samples-2))
+    
+    ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr,alpha=0.8)
+    
+    color = ax.lines[-1].get_color()
+    ax.plot(t_vec,cumulants_nn_plot[:,index], label=label, zorder=1000,color=color)
 
   def format_cumulant_subplot(self,ax,index,ylabel_text,t_vec):
     ax.set_title(self.make_plot_label(index),pad = self.titlepad,x = self.titlex, y = self.titley,zorder = 1000000)
@@ -642,7 +648,7 @@ class PlotFuns():
     fig1,gs_cumulants = self.make_cumulant_fig_gridspec()
 
     for cumulant_vec,legend_label in zip(cumulants,labels):
-
+               
         self.make_cumulant_subplot(plt.subplot(gs_cumulants[0, 0:2]),"Position Mean",
                                           t_vec,cumulant_vec,legend_label,
                                           test_samples)
@@ -661,7 +667,7 @@ class PlotFuns():
         self.add_freediffusion_cumulants_subplot(plt.subplot(gs_cumulants[1, 3:]),"Cross Correlation",t_vec,cumulant_vec)                      
               
     #add formatting to each subplot
-    for ax in enumerate(fig1.get_axes().flatten()):
+    for ax,ylabel_text in zip(enumerate(fig1.get_axes()),["Position Mean","Position Variance","Momentum Mean","Momentum Variance","Cross Correlation"]):
       self.format_cumulant_subplot(ax[1],ax[0],ylabel_text,t_vec)
     
     plt.tight_layout()
@@ -677,11 +683,12 @@ class PlotFuns():
                               #labels = ["Perturbative","Controlled","Free Diffusion"],
               frameon = False,
               handlelength = 1,
-              ncols = 3)
+              ncols = 5,
+              columnspacing=0.4)
 
     #move the legend
     legend.set_bbox_to_anchor(bbox=(0.95,0.07))
-    return fig
+    return fig1
 
   def save_fig_(self,fig,filename):
     fig.savefig(self.subdir+"/"+filename+".png", bbox_inches='tight')

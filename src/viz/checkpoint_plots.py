@@ -14,9 +14,6 @@ from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
 from ..utils.getboundary import *
 from .contour import *
 
-
-
-
 def compute_rho_girsanov(dunet,integrator,x_samples=50,mc_samples=64,Tf=None):
     """
     Computes an estimate of the final joint distribution using girsanov theorem
@@ -119,6 +116,7 @@ class PlotUtils():
         fig = self.plotter.plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],["NN estimated","Perturbative"],self.data_loaded["testsamples"])
         self.plotter.save_fig_(fig,"cumulants")
         self.plotter.save_cumulants_csv(t_vec,cumulants_nn)
+        self.plotter.save_cumulants_csv(t_vec,cumulants_ref,cumulants_filename="ref_cumulants")
 
     def load_du_checkpoint(self):
         self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
