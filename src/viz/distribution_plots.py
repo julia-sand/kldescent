@@ -14,7 +14,6 @@ def plot_histogram(plot_loc,hist,xloc,epoch=1):
     fig.savefig(plot_loc+f"/histogram_{epoch}.png")
     plt.close()
 
-
 @torch.no_grad
 def make_histogram(plot_loc,x,model,boundary):
     
@@ -51,6 +50,7 @@ def make_scatter_plot(plot_loc,x,model,epoch=1,boundary=None):
     #qsamples = boundary.generate_samples(1000,mode="initial")
     
     fig2 = plt.figure(figsize=(15, 15))
+    
     #samples from distributions
     plt.scatter(x_samples[...,0].detach().numpy(),x_samples[...,1].detach().numpy(),color="blue")
     plt.scatter(x[...,0].detach().numpy(),x[...,1].detach().numpy(),color="orange")
@@ -80,7 +80,6 @@ def distribution_plot(plot_loc,model,Tf,epoch=1,boundary=None):
     fig = plt.figure()
     fig.set_figheight(15)
     fig.set_figwidth(25)
-
 
     xout,jointout = zz,pdf_temp.detach().clone().numpy().flatten()
 
