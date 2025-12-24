@@ -32,6 +32,10 @@ class MarginalHalfBridgePerturbation():
         self.epsilon = self.boundary.params["epsilon"]
         self.Tf2 = self.Tf*(self.epsilon**2)
         
+        self.A = self.boundary.afun()
+        self.B = self.boundary.bfun()
+        self.C = 2*(self.boundary.afun() - self.boundary.bfun())
+
         self.qaxis,_ = self.reference.get_quantity(0,"value",arr=self.overdamped_arr)
         
         self.filter_delta = 40 
@@ -61,7 +65,7 @@ class MarginalHalfBridgePerturbation():
     def v11(self,t0,t2):
         
         dv00_temp = self.compute_gradient(self.v00(t2),self.qaxis)
-        coeff = 1- np.exp(t0-self.Tf)
+        coeff = 1 - np.exp(t0-self.Tf)
 
         return coeff*dv00_temp
 
@@ -76,35 +80,33 @@ class MarginalHalfBridgePerturbation():
         
         return 2*self.v11(t0,t2)
     
+
     def f02(self,t0,t2):
-        #pdb.set_trace()
                 
         v00_temp = self.v00(t2)
         dv00_temp = self.apply_filter(self.compute_gradient(v00_temp,self.qaxis),mode="nearest")
         del v00_temp
 
         f00_temp = self.apply_filter(self.f00(t2),mode="constant")
-        ddv00_temp = self.apply_filter(self.compute_gradient(dv00_temp,self.qaxis),mode="nearest")
-        prod2 = f00_temp*ddv00_temp
+        prod1 = f00_temp*dv00_temp
+        del dv00_temp
 
-        del ddv00_temp 
-        
+        dprod1_temp = self.apply_filter(self.compute_gradient(prod1,self.qaxis),mode="constant")
+        del prod1 
+
         df00_temp = self.apply_filter(self.compute_gradient(f00_temp,self.qaxis),mode="constant")
         del f00_temp 
-
-        prod1 = df00_temp*dv00_temp
-        term1 = -t0*df00_temp
-        del dv00_temp
         
         ddf00_temp = self.apply_filter(self.compute_gradient(df00_temp,self.qaxis),mode="constant")
         del df00_temp
 
-        term2 = ddf00_temp*(t0+np.exp(-t0)-1)
+        term1 = ddf00_temp*(-t0*self.A + t0+np.exp(-t0)-1)
         del ddf00_temp 
 
-        term3 = -2*(np.sinh(t0)-t0-(np.cosh(t0)-1)*(1-np.exp(-self.Tf)))*(prod1 + prod2)    
-            
-        return term1 + term2 + term3
+        term2 = 2*dprod1_temp*(-t0*self.B-(np.sinh(t0)-t0-(np.cosh(t0)-1)*(1-np.exp(-self.Tf))))
+        del dprod1_temp
+
+        return term1 + term2
 
     def marginal_perturbative(self,t0,t2):
         

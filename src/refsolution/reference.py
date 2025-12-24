@@ -52,14 +52,20 @@ class RefSolution():
             #compute corrections
             self.duref_net = perturbative_du_interp(self)
         except FileNotFoundError:
-            print("Overdamped results not available. Solving cell problem...")
-            #compute overdamped ref solution
-            compute_overdamped(self.boundary,self.get_ref_path())
-            print("Cell problem completed. Computing Corrections...")
-            pertsol = MarginalHalfBridgePerturbation(boundary,self)
-            pertsol.save_perturbative()
-
-            print("Underdamped Results saved.")
+            try: 
+                print("Perturbative results not available. Computing corrections...")
+                pertsol = MarginalHalfBridgePerturbation(boundary,self)
+                pertsol.save_perturbative()
+            except FileNotFoundError:
+                print("Overdamped results not available. Solving cell problem...")
+                #compute overdamped ref solution
+                compute_overdamped(self.boundary,self.get_ref_path())
+                print("Cell problem completed. Computing Corrections...")
+                
+                pertsol = MarginalHalfBridgePerturbation(boundary,self)
+                pertsol.save_perturbative()
+                print("Underdamped Results saved.")
+                
             self.duref_net = perturbative_du_interp(self)
         
         self.duref_net.eval()
