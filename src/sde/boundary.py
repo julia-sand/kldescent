@@ -396,7 +396,9 @@ class UnderdampedLandauer(OverdampedLandauer):
 
         return (Tf - 1 + np.exp(-Tf))/Tf
 
-    def bfun(self,Tf):
+    def bfun(self,Tf=None):
+        if Tf is None:
+            Tf = self.params["Tf"]
         return 1 - (1-np.exp(-Tf))*(3-np.exp(-Tf))/(2*Tf)
     
 class UnderdampedGaussian(UnderdampedLandauer):
