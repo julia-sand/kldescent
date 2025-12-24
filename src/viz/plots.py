@@ -76,44 +76,6 @@ class PlotFuns():
   def make_plot_label(self,plot_index):
     return "("+string.ascii_lowercase[plot_index]+")"
 
-  #function for plotting
-  def joint_distributions_scatter(self,fig,
-                                  gs_joint_distributions,
-                                  plot_index,
-                                  joint_out,
-                                  x_samples,vmax=0.5):
-    """
-    Function that plots the scatter plot of the monte carlo approximation of the joint distribution
-
-    input:
-    - fig: the figure for plotting
-    - plot_index: location of plot
-    - joint_out: joint distribution as a numpy array
-    - Q: q-coordinate
-    - P: p-coordinate
-    - time
-    - vmax: maximum value for the scatter plots
-    """
-
-    x_ind = int(np.floor(plot_index/3))
-    y_ind = plot_index % 3
-
-    #get plot location
-    ax = fig.add_subplot(gs_joint_distributions[x_ind,y_ind])
-    ax.text(-9,0.4,self.make_plot_label(plot_index),zorder = 200)
-    
-    #add boundary conditions to first plot and format titles
-    if plot_index==0:
-      ax.set_title(f"$t = 0$", loc = "center")
-      ax_pmarginal.fill_between(q_init,np.exp(-(q_init**2)/2)/np.sqrt(np.pi*2),color=self.c2)
-      ax_qmarginal.fill_between(self.boundary.q_marginal_initial(q_init),q_init,color=self.c2)
-    elif plot_index == 5:
-      ax.set_title(f"$t = t_f$", loc = "center")
-      #ax_pmarginal.fill_between(q_init,np.exp(-self.boundary.beta*(q_init**2)/2)/np.sqrt(np.pi*2/self.boundary.beta),color=self.c2)
-      #ax_qmarginal.fill_between(self.boundary.q_marginal_final(q_init),q_init,color=self.c2)
-    else:
-      ax.set_title(f"$t = {plot_title_value} t_f$", loc = "center")
-
   def plot_marginal_joint(self,ax,x0_marginal,x0_init):
 
     ax.plot(x0_init,x0_marginal#/xnorm
@@ -379,17 +341,11 @@ class PlotFuns():
 
   def fit_kde(self,xs):
 
-    try:
-
-      kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(xs[np.isfinite(xs)].reshape(-1,1))
-      return kde.score_samples(np.linspace(-self.qmax,self.qmax,num =1000).reshape(-1,1))
-
-    except ValueError:
-      print("The final density could not be computed because the neural network did not return any finite values.")
-      pass
+    kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(xs[np.isfinite(xs)].reshape(-1,1))
+    return kde.score_samples(np.linspace(-self.qmax,self.qmax,num =1000).reshape(-1,1))
 
   ##scatter plot of final distribution 
-  def marginal_distribution(self,xs,plottime):
+  def marginal_distribution(self,xs,plottime=None):
     """
     Function that plots the an estimate of the marginal densities
     computed by sampled points
@@ -398,65 +354,69 @@ class PlotFuns():
       xs : ndarray
         sampled positions for the position and momentum
       plottime : float
-        time to plot
+        time at which the samples were taken. Defaults to final time from boundary
     """
+    
+    if plottime is None:
+      plottime = self.boundary.params["Tf"]
 
+    #make figure object
     fig = plt.figure(figsize=(15,8))
-    #get plot location
+    
+    #add subplots
     ax_pos = fig.add_subplot(121)
     ax_mom = fig.add_subplot(122)
 
-    #ax_pos.plot(np.linspace(-self.qmax,self.qmax),
-    #          self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax)))
-
-    ax_mom.plot(np.linspace(-self.qmax,self.qmax,),
-              self.normal_distribution(np.linspace(-self.qmax,self.qmax,),mu=0,sigmasq=1),)
-              #np.exp(-np.linspace(-self.qmax,self.qmax,)**2)/np.sqrt(np.pi))
-
+    #add titles
+    fig.suptitle(f"t = {plottime}")
     ax_pos.set_title("Position")
     ax_mom.set_title("Momentum")
+    
+    #set plot limits
+    ax_mom.set_xlim((-self.qmax,self.qmax))
+    ax_pos.set_xlim((-self.qmax,self.qmax))
+    
+    #set iteration properties
     colors = ["orange",self.c1]
     labels = ["Controlled by NN.","Perturbative"]
-    try:
-      for x in enumerate(xs):
-      
-        ax_mom.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,1])), color=colors[x[0]],label=labels[x[0]])
-        ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,0])), color=colors[x[0]],label=labels[x[0]])
-        
-         
-        ax_mom.set_xlim((-self.qmax,self.qmax))
-        ax_pos.set_xlim((-self.qmax,self.qmax))
-    except:
-      pass
 
+    for x in enumerate(xs):
+      
+      #plot kde fitted distributions
+      ax_mom.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,1])), color=colors[x[0]],label=labels[x[0]])
+      ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,0])), color=colors[x[0]],label=labels[x[0]]) 
+      
     #add reference distributions to plots
     ax_pos.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
             self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,num=1000)),
             color="gray",alpha=0.1)
-    
     ax_mom.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
         self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=0,sigmasq=1),
                     color="gray",alpha=0.1)
-  
-    #add perturbative  distributions to plots
-    xref,posref = self.referencesol.get_quantity(self.boundary.params["Tf"],"underdamped marginal", data="perturbative underdamped")   
-    ax_pos.fill_between(xref,posref,color="green",alpha=0.5,zorder=1000)
+    
+    try:
+    
+      #add perturbative  distributions to plots
+      xref,posref = self.referencesol.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped")   
+      ax_pos.fill_between(xref,posref,color="green",alpha=0.5,zorder=1000)
+    
+    except: 
+      pass
 
+    #add formatting
     self.format_distribution_ax(ax_mom)
     self.format_distribution_ax(ax_pos)
-
-    plt.suptitle(f"t = {plottime}")
-
     plt.tight_layout()
-    #fig.subplots_adjust(bottom=0.3, wspace=0.33)
+    
+    #make legend 
     h,l = ax_mom.get_legend_handles_labels()
     legend = fig.legend(h,l,frameon=False,handlelength = 1)
 
     #move the legend
     legend.set_bbox_to_anchor(bbox=(0.95,0.07))
     
-    #self.make_legend_marginals(fig)
-    plt.savefig(self.subdir+"/marginals.png",bbox_inches="tight")
+    #save and close
+    plt.savefig(self.subdir+f"/marginals_Time{plottime}.png",bbox_inches="tight")
     plt.close()
 
   def get_loss_output(self,filename=None):
@@ -542,27 +502,25 @@ class PlotFuns():
 
   ##@profile
   def evaluate_net_output(self,net,time):
-      with torch.no_grad():
+    with torch.no_grad():
         #computes neural network output (forward pass) to use in plotting
-        return net(torch.column_stack((time*torch.ones((1000,1),requires_grad=False,dtype=torch.float32)
+      return net(torch.column_stack((time*torch.ones((1000,1),requires_grad=False,dtype=torch.float32)
                                                     ,torch.linspace(-self.qmax,self.qmax,1000,requires_grad=False)))).detach()
-        
-
-        
+               
   def position_mean_free_diffusion(self,t_vec,q0,p0):
-      return q0 + self.boundary.params["epsilon"]*(1-np.exp(-t_vec))*p0
+    return q0 + self.boundary.params["epsilon"]*(1-np.exp(-t_vec))*p0
 
   def momentum_mean_free_diffusion(self,t_vec,p0):
-      return np.exp(-t_vec)*p0
+    return np.exp(-t_vec)*p0
 
   def position_variance_free_diffusion(self,t_vec,pos_var0,mom_var0):
-      return pos_var0 + (self.boundary.params["epsilon"]**2)*(((1-np.exp(-t_vec))**2)*mom_var0 + 2*t_vec - 3 +4*np.exp(-t_vec) - np.exp(-2*t_vec))
+    return pos_var0 + (self.boundary.params["epsilon"]**2)*(((1-np.exp(-t_vec))**2)*mom_var0 + 2*t_vec - 3 +4*np.exp(-t_vec) - np.exp(-2*t_vec))
 
   def momentum_variance_free_diffusion(self,t_vec,mom_var0):
-      return 1 - np.exp(-2*t_vec) + np.exp(-2*t_vec)*mom_var0
+    return 1 - np.exp(-2*t_vec) + np.exp(-2*t_vec)*mom_var0
 
   def cross_correlation_free_diffusion(self,t_vec,pos_var0,mom_var0):
-      return (self.boundary.params["epsilon"]**2)*np.exp(-t_vec)*(1-np.exp(-t_vec))*mom_var0 + self.boundary.params["epsilon"]*(1-2*np.exp(-t_vec)+np.exp(-2*t_vec))
+    return (self.boundary.params["epsilon"]**2)*np.exp(-t_vec)*(1-np.exp(-t_vec))*mom_var0 + self.boundary.params["epsilon"]*(1-2*np.exp(-t_vec)+np.exp(-2*t_vec))
 
   def save_cumulants_csv(self,t_vec,cumulants_nn,cumulants_filename="cumulants"):
 
@@ -641,13 +599,14 @@ class PlotFuns():
     # Plotting the cumulants
     fig1 = plt.figure(figsize=(15, 8))#, constrained_layout=True)
 
-    # Create a 1x5 grid with different widths for the bottom row
+    # Create a grid 
     gs_cumulants = fig1.add_gridspec(2, 6, width_ratios=[1, 1, 1, 1,1,1], height_ratios=[1, 1])
            
     return fig1,gs_cumulants
 
   def plot_cumulants(self,t_vec,cumulants,labels,test_samples):
-    """Plots the cumulants which are computed by the evolutions
+    """
+    Plots the cumulants which are computed by the evolutions
     
     args: 
       t_vec : ndarray
@@ -721,10 +680,10 @@ class PlotFuns():
       ax, ax_pmarginal,ax_qmarginal = self.scatter_panel_layout(ax,time)
 
       self.joint_distributions_scatter_panel(ax,
-                                                    ax_pmarginal,
-                                                    ax_qmarginal,
-                                                    jointout,
-                                                    xout,time,vmax=0.5)
+                                              ax_pmarginal,
+                                              ax_qmarginal,
+                                              jointout,
+                                              xout,time,vmax=0.5)
 
 if __name__=="__main__":
   

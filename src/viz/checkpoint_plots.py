@@ -113,6 +113,7 @@ class PlotUtils():
         
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
         self.plotter.marginal_distribution([xinit,xref],final_plot_time)
+        
         fig = self.plotter.plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],["NN estimated","Perturbative"],self.data_loaded["testsamples"])
         self.plotter.save_fig_(fig,"cumulants")
         self.plotter.save_cumulants_csv(t_vec,cumulants_nn)
@@ -127,6 +128,13 @@ class PlotUtils():
         self.rhonet = RhoNeuralNetwork(self.data_loaded)
         self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
         #print(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
+
+    def make_intermediate_histograms(self,plottime):
+
+        self.load_du_checkpoint()
+
+        xinit = self.integrator.update_ref_statistics(plottime=plottime)
+        self.plotter.marginal_distribution([xinit.detach().numpy()],plottime)
 
     def checkpoint_plots_rho(self):
         self.load_rho_checkpoint()
@@ -168,7 +176,8 @@ class PlotUtils():
         fig.set_figheight(15)
         fig.set_figwidth(25)
         for ax in enumerate(axs):
-            xout,jointout = compute_rho_girsanov(self.net,self.integrator,mc_samples=self.data_loaded["testsamples"],Tf=times[ax[0]])
+            xout,jointout = self.compute_rho_nn()
+                #compute_rho_girsanov(self.net,self.integrator,mc_samples=self.data_loaded["testsamples"],Tf=times[ax[0]])
 
             self.plotter.plot_joint_panel(ax[1],times[ax[0]],jointout,xout)
         
