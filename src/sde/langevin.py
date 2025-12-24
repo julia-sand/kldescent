@@ -176,7 +176,7 @@ class SDE(SDEBase):
 
         return torch.mean(kldyn).item(), kl_static, mean0, var0 
     
-    def update_ref_statistics(self,testing_samples=None,x0_samples=None):
+    def update_ref_statistics(self,plottime=None,testing_samples=None,x0_samples=None):
         """
         computes samples of the final time to update the g function 
 
@@ -191,6 +191,13 @@ class SDE(SDEBase):
 
         """
 
+        if plottime is None: 
+            plottime = self.boundary.params["Tf"] 
+            t_steps = self.sde_params["tsteps"]
+        else: 
+            #scale number of steps for the fraction of the time
+            t_steps = int(np.floor(self.sde_params["tsteps"]*plottime/self.boundary.params["Tf"]))
+      
         if testing_samples == None: #default to the integrator 
             testing_samples = self.sde_params["testsamples"] 
 
@@ -198,7 +205,7 @@ class SDE(SDEBase):
         
         with torch.no_grad():
 
-            t_vec = torch.linspace(0,self.boundary.params["Tf"],self.sde_params["tsteps"])#self.testing_time_grid()
+            t_vec = torch.linspace(0,plottime,t_steps)#self.testing_time_grid()
 
             if x0_samples == None: #default to the integrator 
                 xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)

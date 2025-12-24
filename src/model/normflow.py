@@ -126,7 +126,6 @@ class RhoNormFlow():
             idx = torch.randint(low=0,high=x.shape[0],size=(self.minibatch_samples,))
             self.train_step(x[idx,:],it,loss_hist)
 
-
     def train_step(self,x,it,loss_hist):
         
         self.optimizer.zero_grad()
