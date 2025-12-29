@@ -141,7 +141,7 @@ class PlotUtils():
         self.make_contour_plot()
         #self.plot_pdf_3d()
     
-    def compute_rho_nn(self,x_samples=None):
+    def compute_rho_nn(self,x_samples=None,*_):
         """
         Generates a statespace grid and evaluates the neural network estimate of the 
         joint probability distribution at final time 
@@ -168,18 +168,19 @@ class PlotUtils():
         
             return xinit.detach().numpy(),pdf_out.detach().numpy()
 
-    def make_contour_plot2(self,):
+    def make_contour_plot2(self,plottimes = [0,2.5,5]):
         
-        times = [0,2.5,5]
+        ncols = int(np.ceil(len(plottimes)/2))
 
-        fig,axs = plt.subplots(ncols=len(times),nrows=1)
+        fig,axs = plt.subplots(ncols=ncols,nrows=2)
         fig.set_figheight(15)
         fig.set_figwidth(25)
-        for ax in enumerate(axs):
-            xout,jointout = self.compute_rho_nn()
+
+        for i in range(len(plottimes)):
+            xout,jointout = self.compute_rho_nn(plottimes=plottimes[i])
                 #compute_rho_girsanov(self.net,self.integrator,mc_samples=self.data_loaded["testsamples"],Tf=times[ax[0]])
 
-            self.plotter.plot_joint_panel(ax[1],times[ax[0]],jointout,xout)
+            self.plotter.plot_joint_panel(ax[i],plottimes[i],jointout,xout)
         
         fig.tight_layout()
         fig.savefig(self.folder+f"/plots_{self.epoch}"+"/contour_distribution.png",bbox_inches="tight")        
