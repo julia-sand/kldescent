@@ -11,6 +11,7 @@ from matplotlib.cm import ScalarMappable
 import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
 import matplotlib.gridspec as gridspec
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from ..refsolution.reference import RefSolution,GaussRefSolution
 
@@ -281,17 +282,15 @@ class PlotFuns():
     ax1.set_xlabel("q")
     #ax1.set_ylim((-1.8,1.8))
 
-  def format_ticks(self,ax):
-    pass
-
   def normal_distribution(self,x,mu=0,sigmasq=1):
+    
     return np.exp(-((x-mu)**2)/(2*sigmasq))/np.sqrt(2*sigmasq*np.pi)
       
   def format_distribution_ax(self,ax1):
     ax1.set_xlim((-self.qmax,self.qmax))
     ax1.set_xlabel("q")
     ax1.set_ylim((-0.01,0.65))
-    ax1.set_ylabel(r"$\rho$")
+    #ax1.set_ylabel(r"$\rho$")
 
   def plot_reference(self,ax1,x,du):
 
@@ -344,8 +343,16 @@ class PlotFuns():
     kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(xs[np.isfinite(xs)].reshape(-1,1))
     return kde.score_samples(np.linspace(-self.qmax,self.qmax,num =1000).reshape(-1,1))
 
+  def make_fig_subplots(self,nrows,ncols):
+
+    fig,axs = plt.subplots(ncols=ncols,nrows=nrows)
+    fig.set_figheight(15)
+    fig.set_figwidth(25)
+
+    return fig,axs
+
   ##scatter plot of final distribution 
-  def marginal_distribution(self,xs,plottime=None):
+  def marginal_distribution(self,ax,xs,plottime=None):
     """
     Function that plots the an estimate of the marginal densities
     computed by sampled points
@@ -359,18 +366,19 @@ class PlotFuns():
     
     if plottime is None:
       plottime = self.boundary.params["Tf"]
-
-    #make figure object
-    fig = plt.figure(figsize=(15,8))
     
-    #add subplots
-    ax_pos = fig.add_subplot(121)
-    ax_mom = fig.add_subplot(122)
+    ax_pos = ax.inset_axes([0,0,0.45,1],sharey=ax)
+    ax_mom = ax.inset_axes([0.55,0,0.45,1],sharey=ax)#divider.append_axes("left", size="50%", pad=0.1, sharey=ax)
+    
+    #remove ax xaxis
+    ax.spines.bottom.set_visible(False)
+    ax.spines.top.set_visible(False)
+    ax.set_xticks([])
 
     #add titles
-    fig.suptitle(f"t = {plottime}")
-    ax_pos.set_title("Position")
-    ax_mom.set_title("Momentum")
+    ax.set_title(f"t = {plottime}")
+    ax_pos.set_ylabel("Position Marginal")
+    ax_mom.set_ylabel("Momentum Marginal")
     
     #set plot limits
     ax_mom.set_xlim((-self.qmax,self.qmax))
@@ -385,39 +393,55 @@ class PlotFuns():
       #plot kde fitted distributions
       ax_mom.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,1])), color=colors[x[0]],label=labels[x[0]])
       ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,0])), color=colors[x[0]],label=labels[x[0]]) 
-      
+    
+    #add perturbative  distributions to plots
+    try:
+         
+      xref,posref = self.referencesol.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped")   
+      ax_pos.fill_between(xref,posref,color="green",alpha=0.5,zorder=1000,label="Perturbative Computed")
+    
+    except FileNotFoundError: 
+      pass
+
     #add reference distributions to plots
     ax_pos.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
             self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,num=1000)),
-            color="gray",alpha=0.1)
+            color="gray",alpha=0.1,label="target")
     ax_mom.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
         self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=0,sigmasq=1),
-                    color="gray",alpha=0.1)
+                    color="gray",alpha=0.1,label="target")
     
-    try:
-    
-      #add perturbative  distributions to plots
-      xref,posref = self.referencesol.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped")   
-      ax_pos.fill_between(xref,posref,color="green",alpha=0.5,zorder=1000)
-    
-    except: 
-      pass
-
     #add formatting
     self.format_distribution_ax(ax_mom)
     self.format_distribution_ax(ax_pos)
-    plt.tight_layout()
+    
+    h,l = ax_pos.get_legend_handles_labels()
+    return h,l
+  
+  def make_marginal_distribution_fig(self,xvals,plottime):
+
+    #make figure object
+    fig,axs = plt.figure(figsize=(15,8))
+    ax = plt.subplot(111)
+
+    h,l = self.marginal_distribution(ax,xvals,plottime)
     
     #make legend 
-    h,l = ax_mom.get_legend_handles_labels()
-    legend = fig.legend(h,l,frameon=False,handlelength = 1)
+    legend = fig.legend(h,l,ncols= 4, 
+                            frameon=False,handlelength = 1)
 
     #move the legend
     legend.set_bbox_to_anchor(bbox=(0.95,0.07))
     
-    #save and close
-    plt.savefig(self.subdir+f"/marginals_Time{plottime}.png",bbox_inches="tight")
+    fig.tight_layout()
+    
+    self.save_fig(fig,f"/marginals_Time_{plottime}.png")
     plt.close()
+
+  def save_fig(self,fig,filename):
+    
+    fig.savefig(self.subdir+filename,bbox_inches="tight")
+    
 
   def get_loss_output(self,filename=None):
     if filename is not None:
@@ -431,7 +455,6 @@ class PlotFuns():
     return arr
 
   def plot_lhat(self,ax,arr,window_size=5):
-
 
     ax.plot(arr[:,0],arr[:,1],label=r"$\hat\mathcal{L}$")
     ax.plot(np.squeeze(arr[:,0])[window_size:-window_size],self.movingaverage(np.squeeze(arr[:,1]),window_size),linestyle="dashed")
@@ -594,15 +617,15 @@ class PlotFuns():
     ax.set_ylabel(ylabel_text)
     ax.set_xlim((-0.1,t_vec[-1]+0.1))
 
-  def make_cumulant_fig_gridspec(self,):
+  def make_fig_gridspec(self,nrows=2,ncols=6):
 
     # Plotting the cumulants
     fig1 = plt.figure(figsize=(15, 8))#, constrained_layout=True)
 
     # Create a grid 
-    gs_cumulants = fig1.add_gridspec(2, 6, width_ratios=[1, 1, 1, 1,1,1], height_ratios=[1, 1])
+    gs = fig1.add_gridspec(2, 6, width_ratios=[1, 1, 1, 1,1,1], height_ratios=[1, 1])
            
-    return fig1,gs_cumulants
+    return fig1,gs
 
   def plot_cumulants(self,t_vec,cumulants,labels,test_samples):
     """
@@ -623,7 +646,7 @@ class PlotFuns():
         matplotlib figure with cumulants plotted and legend 
     """
 
-    fig1,gs_cumulants = self.make_cumulant_fig_gridspec()
+    fig1,gs_cumulants = self.make_fig_gridspec()
 
     for cumulant_vec,legend_label in zip(cumulants,labels):
                
