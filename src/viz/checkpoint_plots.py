@@ -17,7 +17,7 @@ from .contour import *
 def compute_rho_girsanov(dunet,integrator,x_samples=50,mc_samples=64,Tf=None):
     """
     Computes an estimate of the final joint distribution using girsanov theorem
-    under the current drift
+    under the input drift 
     
     args:
         dunet : class 
@@ -71,6 +71,8 @@ class PlotUtils():
             folder = fetch_results_folder_from_cmd()
         else:
             folder = folder 
+        
+        self.folder = folder
 
         boundary_cond,data_loaded = init_params_from_file(folder)
 
@@ -83,17 +85,18 @@ class PlotUtils():
         if epoch is None:
             self.epoch = params["epoch"]
         else:
-            self.epoch=epoch
+            self.epoch = epoch
         
         self.plotter = PlotFuns(boundary_cond)
 
-        self.folder = folder
         self.boundary_cond.overwrite_ref_path(self.folder)
-            
-        #make new folder for the results
+        
+        #make new folder for the results labelled with epoch
         os.makedirs(self.folder+f"/plots_{self.epoch}", exist_ok = True) 
-        self.plotter.setresultsdir(self.folder+f"/plots_{self.epoch}")
-       
+
+        self.resultsdir = self.folder+f"/plots_{self.epoch}"
+        self.plotter.setresultsdir(self.resultsdir)
+
     def checkpoint_plots_du(self):
         """
         Runs the functions to make plots to show the results of the 
@@ -112,7 +115,7 @@ class PlotUtils():
         t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(final_plot_time,self.plotter.referencesol.duref_net)
         
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
-        self.plotter.marginal_distribution([xinit,xref],final_plot_time)
+        self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time)
         
         fig = self.plotter.plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],["NN estimated","Perturbative"],self.data_loaded["testsamples"])
         self.plotter.save_fig_(fig,"cumulants")
@@ -125,16 +128,47 @@ class PlotUtils():
         self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
     def load_rho_checkpoint(self):
-        self.rhonet = RhoNeuralNetwork(self.data_loaded)
-        self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
-        #print(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
+        try:
+            self.rhonet = RhoNeuralNetwork(self.data_loaded)
+            self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
+            #print(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
+        except: #TODO add error catch message 
+            pass 
 
-    def make_intermediate_histograms(self,plottime):
+    def make_intermediate_histograms(self,plottimes):
 
         self.load_du_checkpoint()
+        
 
-        xinit = self.integrator.update_ref_statistics(plottime=plottime)
-        self.plotter.marginal_distribution([xinit.detach().numpy()],plottime)
+        #make figure object
+        fig,axs = self.plotter.make_fig_subplots(ncols=int(np.ceil(len(plottimes)/2)),nrows=2)
+        
+        for plottime in range(len(plottimes)):
+            
+            xvals= self.integrator.update_ref_statistics(plottime=plottimes[i])
+            
+            h,l = self.marginal_distribution(axs[i],xvals.detach().numpy(),plottimes[i])
+            
+        #make legend 
+        legend = fig.legend(h,l,ncols= 4, 
+                                frameon=False,handlelength = 1)
+
+        #move the legend
+        legend.set_bbox_to_anchor(bbox=(0.95,0.07))
+        
+        fig.tight_layout()
+        
+        fig.savefig(self.resultsdir+"/histograms1.png",bbox_inches="tight")     
+        plt.close()
+    
+
+    def fig_intermediate_histograms(self,plottimes=[0,1,2,3,4,5]):
+        
+        fig,gs = self.plotter.make_fig_gridspec() #2x6 gridspec
+
+        for plottime in plottimes:
+            ax = plt.subplot(gs_cumulants[0, 0:2])
+
 
     def checkpoint_plots_rho(self):
         self.load_rho_checkpoint()
@@ -147,12 +181,13 @@ class PlotUtils():
         joint probability distribution at final time 
 
         args:
-            x_samples:
+            x_samples : ndarray
                 number of space discretisation steps
         returns:
-            xout,jointout
-            -2d mesh of points of the statespace
-            -evaluated neural network joint distribution
+            xout : ndarray
+                default mesh of points of the statespace       
+            jointout
+                output of the neural network joint distribution at final time
         """
 
         with torch.no_grad():
@@ -171,19 +206,17 @@ class PlotUtils():
     def make_contour_plot2(self,plottimes = [0,2.5,5]):
         
         ncols = int(np.ceil(len(plottimes)/2))
-
-        fig,axs = plt.subplots(ncols=ncols,nrows=2)
-        fig.set_figheight(15)
-        fig.set_figwidth(25)
+        fig,axs = self.plotter.make_fig_subplots()
 
         for i in range(len(plottimes)):
             xout,jointout = self.compute_rho_nn(plottimes=plottimes[i])
                 #compute_rho_girsanov(self.net,self.integrator,mc_samples=self.data_loaded["testsamples"],Tf=times[ax[0]])
 
-            self.plotter.plot_joint_panel(ax[i],plottimes[i],jointout,xout)
+            self.plotter.plot_joint_panel(axs[i],plottimes[i],jointout,xout)
         
         fig.tight_layout()
-        fig.savefig(self.folder+f"/plots_{self.epoch}"+"/contour_distribution.png",bbox_inches="tight")        
+        fig.savefig(self.resultsdir+"/contour_distribution.png",bbox_inches="tight")     
+            #self.folder+f"/plots_{self.epoch}"+"/contour_distribution.png",bbox_inches="tight")        
 
         plt.close()
 
@@ -199,8 +232,7 @@ class PlotUtils():
 
         ax.plot3D(x, y, z, 'green')
         ax.set_title('3D Line Plot')
-        plt.savefig(self.folder+f"/plots_{self.epoch}"+"/test_3d.png",bbox_inches="tight")        
-
+        plt.savefig(self.resultsdir+"/test_3d.png",bbox_inches="tight")        
 
     def make_contour_plot(self):
         xout,jointout = self.compute_rho_nn(x_samples=20)
@@ -221,11 +253,17 @@ class PlotUtils():
                                                     jointout2,
                                                     xout2,
                                                     time=None,vmax=0.5)
-        fig.savefig(self.folder+f"/plots_{self.epoch}"+"/test8_nn.png",bbox_inches="tight")        
+        fig.savefig(self.resultsdir+"/test8_nn.png",bbox_inches="tight")        
 
         plt.close()
 
-def compute_ref_kl(boundary):
+def compute_ref_dynamic_kl(boundary):
+    """Estimate of the dynamic kl divergence for the Gaussian reference data.
+    Uses the reference position and momentum variance and estimates the integral
+    E_(P) (du)**2 in the interval [0,T]
+    where the (P) is the path measure estimated with a Gaussian at each step 
+    """ 
+    
     times = boundary.get_reference_timegrid()
     klout = np.empty(len(times))
     #mean_t = boundary.get_known_solution_cumulants("Position Mean")
@@ -233,7 +271,7 @@ def compute_ref_kl(boundary):
     for t in enumerate(times):
         xref,duref = boundary.get_reference_data(t[1])
         ptx = plotter.normal_distribution(xref,0,var_t[t[0]])
-        klout[t[0]] = np.trapz(duref*ptx,xref)
+        klout[t[0]] = np.trapz((duref**2)*ptx,xref)
 
     return np.trapz(klout,times)
 

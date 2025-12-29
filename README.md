@@ -1,5 +1,7 @@
-Must be run as a module
+Accompanying code for reproducing methods of ----
+
+To train the neural network
 
 ```
-python -m src.run_overdamped --boundary="LinearOU"
+python -m src.run --boundary="UnderdampedLandauer" 
 ```
