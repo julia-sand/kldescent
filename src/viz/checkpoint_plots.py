@@ -50,17 +50,17 @@ def compute_rho_girsanov(integrator,x_samples=40,mc_samples=64,Tf=None):
     
     return xinit.detach().numpy(),pdf_out.detach().numpy()/mc_samples
 
-
 class PlotUtils():
     """
-    Class which prepares the neural net, boundary and plotting variables to
-    set up the plots
+    Class which prepares collates all requirements, such as the neural net, boundary conditions, reference and perturbative solutions, and plot functions
+    for plotting 
+    
     Functionality:
-    1. init neural networks
-    1a. load checkpoint based on input folder and epoch
-    2. initialises plotter based on boundary conditions either from cmd or parameter file
+    1. sets filepaths to neural network checkpoints and loads them if necessary
+    2. initialises plotter based on boundary conditions given either in parameter file or through cmd 
+    2a. sets matplotlib parameters
     3. sets the location of the reference solution based on input folder
-    4. creates new plots folder in the folder location
+    4. creates results folders
     5. initialises the integrator to use for the the plots
     """
 
@@ -120,7 +120,7 @@ class PlotUtils():
         self.load_perturbative_du_checkpoint()
         
         #self.make_intermediate_histograms(plottimes=plottimes)
-        self.make_contour_plot2(plottimes=plottimes,mc_samples=2048)
+        self.make_contour_plot2(plottimes=plottimes,mc_samples=65536)
         self.plotter.plot_drift(times = plottimes,net=self.net)#[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
 
     def make_sde_plots(self):
@@ -138,6 +138,7 @@ class PlotUtils():
         self.plotter.save_cumulants_csv(t_vec,cumulants_ref,cumulants_filename="ref_cumulants")
 
     def load_perturbative_du_checkpoint(self):
+
         self.net = self.plotter.referencesol.duref_net #NeuralNetwork(self.boundary_cond,self.data_loaded)
         #self.net.load_checkpoint(self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
         self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
@@ -287,6 +288,4 @@ if __name__=="__main__":
 
     plot_utils = PlotUtils()
 
-    plot_utils.perturbative_plots_du()
-    #plot_utils.load_du_checkpoint()
-    #plot_utils.make_contour_plot2()
+    plot_utils.checkpoint_plots_du()

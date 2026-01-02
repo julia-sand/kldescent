@@ -3,6 +3,13 @@ import numpy as np
 
 from ..refsolution.reference import RefSolution
 
+def save_nn_checkpoint(self,net,loc):
+    
+    if isinstance(net, torch.nn.DataParallel):
+        net = net.module
+    
+    torch.save(net.state_dict(),loc) 
+
 class Metrics():
     """
     Class for finding metrics during the training process 
@@ -64,7 +71,8 @@ class Metrics():
                                                 mean0,
                                                 var0)
 
-                    self.logger.save_checkpoint(self.net,epoch)
+                    #save checkpoint 
+                    save_nn_checkpoint(self.net,loc=self.logger.newpath+f"/checkpoints/{self.net.net_name}_checkpoint_{epoch}.pt")
                     #if self.rhonet is not None:
                     #    self.logger.save_checkpoint(self.rhonet,epoch)
             else:
