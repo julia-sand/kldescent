@@ -10,9 +10,8 @@ from torch.nn import DataParallel
 
 import matplotlib.pyplot as plt 
 
-from ...model.nn import MLP
+from ...model.nn import MLP,save_nn_checkpoint
 from ...model.pretrain import run_pretrain
-from ..model.metrics import save_nn_checkpoint
 
 from ...sde.langevin import *
 from  .marginalhalf import MarginalHalfBridgePerturbation
@@ -36,7 +35,7 @@ def perturbative_du_interp(reference_sol):
     try: #load checkpoint if available
         mlp_net.load_state_dict(torch.load(reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt", weights_only=True))
         print("Checkpoint for perturbative Solution found and loaded")
-    except FileNotFoundError: 
+    except (FileNotFoundError,RuntimeError): 
         print("No checkpoint for perturbative solution found. Training from CSV data.")
         
         #train it to learn the csv in the reference solution folder

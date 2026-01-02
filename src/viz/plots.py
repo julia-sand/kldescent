@@ -13,7 +13,6 @@ import matplotlib.lines as mlines
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from ..refsolution.reference import RefSolution,GaussRefSolution
 
 '''
 This file holds all the functions used in plotting.
@@ -41,11 +40,6 @@ class PlotFuns():
     self.boundary = boundary_data
     self.folder = os.path.dirname(__file__)
     
-    if boundary_data is not None:
-      self.referencesol = RefSolution(boundary_data)
-    else: 
-      self.referencesol = None
-
     #borders of xaxis
     self.qmax = 4
     
@@ -174,7 +168,8 @@ class PlotFuns():
                                         ax_pmarginal,
                                         ax_qmarginal,
                                         joint_out,
-                                        xs,time,vmax=0.5):
+                                        xs,time,vmax=0.5,
+                                        refsol=None):
     """
     Plots one panel of the joint distribution, where the 
     center shows the joint and marginals are estimated
@@ -208,9 +203,9 @@ class PlotFuns():
     self.plot_marginal_joint(ax_qmarginal,p_init,qmarg/qnorm)
     self.plot_marginal_joint(ax_pmarginal,pmarg/pnorm,p_init)
 
-    if self.referencesol is not None:
+    if refsol is not None:
       #plot marginals
-      x,ptx = self.referencesol.get_quantity(np.round(time,6),quantity = "marginal",data="perturbative underdamped")
+      x,ptx = refsol.get_quantity(np.round(time,6),quantity = "marginal",data="perturbative underdamped")
       ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed")
 
     #plot joint distribution
@@ -298,7 +293,7 @@ class PlotFuns():
             label="Reference")
 
   #@profile
-  def plot_drift(self,times,net):
+  def plot_drift(self,times,net,refsol=None):
 
     fig,ax = self.make_fig_subplots(nrows=1,ncols=len(times),squeeze=True)#plt.subplots()#plt.figure(figsize=(15,8))
     #ax = plt.subplots()
@@ -313,16 +308,14 @@ class PlotFuns():
     
       ax[t].set_ylabel(r"$\mathbb{U}$")
       ax[t].set_ylim((-5,5))
-      try:
-        xref,duref = self.referencesol.get_quantity(round(times[t],3), "underdamped drift", data="perturbative underdamped")
+      if refsol is not None:
+        xref,duref = refsol.get_quantity(round(times[t],3), "underdamped drift", data="perturbative underdamped")
         ax[t].plot(xref,-0.2*duref/(2**0.5),label="Perturbative")
         ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
-                self.evaluate_net_output(self.referencesol.duref_net,times[t]),
+                self.evaluate_net_output(refsol.duref_net,times[t]),
                 label="Perturbative N.N.")
-      except (FileNotFoundError): 
-        print("The reference solution file was not found. \n \
-                    Please make sure that it has been created by running the scripts in valueref.py or that it has not been moved")
-        #break
+      else:
+        print("No reference solution was found. Plots will not include reference values.")
     
     plt.tight_layout()
 
@@ -352,7 +345,7 @@ class PlotFuns():
     return fig,axs
 
   ##scatter plot of final distribution 
-  def marginal_distribution(self,ax,xs,plottime=None):
+  def marginal_distribution(self,ax,xs,plottime=None,refsol=None):
     """
     Function that plots the an estimate of the marginal densities
     computed by sampled points
@@ -394,15 +387,12 @@ class PlotFuns():
       ax_mom.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,1])), color=colors[x[0]],label=labels[x[0]])
       ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,0])), color=colors[x[0]],label=labels[x[0]]) 
     
-    #add perturbative  distributions to plots
-    try:
+    #add perturbative  distributions to plots if available
+    if refsol is not None:
          
-      xref,posref = self.referencesol.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped")   
+      xref,posref = refsol.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped")   
       ax_pos.fill_between(xref,posref,color="green",alpha=0.5,zorder=1000,label="Perturbative Computed")
     
-    except FileNotFoundError: 
-      pass
-
     #add reference distributions to plots
     ax_pos.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
             self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,num=1000)),

@@ -13,6 +13,7 @@ from ..sde import langevin
 from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
 from ..utils.getboundary import *
 from .contour import *
+from ..refsolution.reference import RefSolution,GaussRefSolution
 
 def compute_rho_girsanov(integrator,x_samples=40,mc_samples=64,Tf=None):
     """
@@ -62,6 +63,7 @@ class PlotUtils():
     3. sets the location of the reference solution based on input folder
     4. creates results folders
     5. initialises the integrator to use for the the plots
+    6. adds reference solutions if they are available
     """
 
     def __init__(self,folder=None,epoch=None):
@@ -78,11 +80,15 @@ class PlotUtils():
 
         boundary_cond,data_loaded = init_params_from_file(folder)
 
-
         params = checkpoint_plot_params() #get checkpoint plot parameters from cmd line
         
         self.boundary_cond = boundary_cond
         self.data_loaded = data_loaded
+
+        if params["mcsamples"]>0:
+            self.mcsamples = params["mcsamples"]
+        else: #use test samples if no value is specified
+            self.mcsamples = self.data_loaded["test_samples"]
         
         if epoch is None:
             self.epoch = params["epoch"]
@@ -92,12 +98,15 @@ class PlotUtils():
         self.plotter = PlotFuns(boundary_cond)
 
         self.boundary_cond.overwrite_ref_path(self.folder)
+            
+        self.referencesol = RefSolution(boundary_cond)
         
         #make new folder for the results labelled with epoch
         os.makedirs(self.folder+f"/plots_{self.epoch}", exist_ok = True) 
 
         self.resultsdir = self.folder+f"/plots_{self.epoch}"
         self.plotter.setresultsdir(self.resultsdir)
+        print(self.resultsdir)
 
     def checkpoint_plots_du(self):
         """
@@ -107,7 +116,7 @@ class PlotUtils():
 
         self.load_du_checkpoint()
 
-        self.plotter.plot_drift(times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
+        self.plotter.plot_drift(times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net,refsol=self.referencesol)
         self.make_sde_plots()
         self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
 
@@ -120,7 +129,7 @@ class PlotUtils():
         self.load_perturbative_du_checkpoint()
         
         #self.make_intermediate_histograms(plottimes=plottimes)
-        self.make_contour_plot2(plottimes=plottimes,mc_samples=65536)
+        self.make_contour_plot2(plottimes=plottimes)
         self.plotter.plot_drift(times = plottimes,net=self.net)#[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
 
     def make_sde_plots(self):
@@ -164,7 +173,7 @@ class PlotUtils():
             
             xvals= self.integrator.update_ref_statistics(plottime=plottimes[i])
             
-            h,l = self.plotter.marginal_distribution(axs[i],[xvals.detach().numpy()],plottimes[i])
+            h,l = self.plotter.marginal_distribution(axs[i],[xvals.detach().numpy()],plottimes[i],refsol=self.referencesol)
             
         #make legend 
         legend = fig.legend(h,l,ncols= 4, 
@@ -255,7 +264,7 @@ class PlotUtils():
                                                     ax_qmarginal,
                                                     jointout,
                                                     xout,
-                                                    time=None,vmax=0.5)
+                                                    time=None,vmax=0.5,refsol=self.referencesol)
         self.plotter.joint_distributions_scatter_panel(ax,
                                                     ax_pmarginal,
                                                     ax_qmarginal,

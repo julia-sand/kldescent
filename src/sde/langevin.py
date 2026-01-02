@@ -129,7 +129,7 @@ class SDE(SDEBase):
         ====
         Parameters:
             duref_net : class
-                neural network approximating the perturbative drift 
+                neural network that gives the drift of a reference process 
           
         Returns:
 

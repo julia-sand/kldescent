@@ -7,6 +7,7 @@ import numpy as np
 import torch
 import yaml
 
+
 class LossLogger():
     '''
     This class deals with making results folder and recording losses and plots. also saving checkpoints

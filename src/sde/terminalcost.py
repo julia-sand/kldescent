@@ -15,7 +15,7 @@ from torch.nn import DataParallel
 
 from .kl import kl_div
 from ..viz.distribution_plots import *
-from ..model.metrics import save_nn_checkpoint
+from ..model.nn import save_nn_checkpoint
 
 class TerminalCost():
     """
