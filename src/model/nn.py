@@ -6,8 +6,14 @@ from torch import nn
 
 from ..utils.parser import du_network_params,rho_network_params,fetch_checkpoint_path
 
+def save_nn_checkpoint(net,loc):
+    
+    if isinstance(net, torch.nn.DataParallel):
+        net = net.module
+    
+    torch.save(net.state_dict(),loc) 
 
-##FROM: https://github.com/miaotianyi 
+##SOURCE: https://github.com/miaotianyi 
 class FourierFeatures(nn.Module):
     def __init__(self, out_features: int,
                  sigma: float = 1.,

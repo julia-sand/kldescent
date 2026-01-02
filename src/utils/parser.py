@@ -39,7 +39,7 @@ def fetch_results_folder_from_cmd():
     # Instantiate the parser
     parser6 = argparse.ArgumentParser()
     
-    parser6.add_argument('-folder','--folder', type=str, default=None,
+    parser6.add_argument('-folder','--folder', type=str, default="results1",
                         help='Folder where to run the plots.')
 
     args6 = parser6.parse_known_args()
@@ -214,7 +214,9 @@ def checkpoint_plot_params():
     parser5 = argparse.ArgumentParser()
     requiredNamed = parser5.add_argument_group('required named arguments')
     requiredNamed.add_argument('-epoch','--epoch', type=int,
-                                help='At which epoch checkpoint to plot. The checkpoint file must be available.')
+                                help='At which epoch checkpoint to plot. A checkpoint file ending in _epoch must be available, otherwise default initialisation is used.')
+    requiredNamed.add_argument('-mcsamples','--mcsamples', type=int,default=0,
+                                help='How many realisations for the mc average for Girsanov contour plots')
     args5 = parser5.parse_known_args()
 
     return vars(args5[0])

@@ -2,13 +2,7 @@ import torch
 import numpy as np 
 
 from ..refsolution.reference import RefSolution
-
-def save_nn_checkpoint(self,net,loc):
-    
-    if isinstance(net, torch.nn.DataParallel):
-        net = net.module
-    
-    torch.save(net.state_dict(),loc) 
+from .model.nn import save_nn_checkpoint
 
 class Metrics():
     """
@@ -55,6 +49,7 @@ class Metrics():
         
             if (epoch % self.logstep == 0): #compute metrics 
                 with torch.no_grad():
+                    
                     #this also updates the ref. cumulants
                     kl_dynamic, kl_static, mean0, var0 =self.integrator.compute_metrics(self.reference_sol.duref_net)
 
