@@ -111,15 +111,14 @@ class PlotUtils():
         self.make_sde_plots()
         self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
 
-    def perturbative_plots_du(self):
+    def perturbative_plots_du(self,plottimes=[0,5]):
         """
         Runs the functions to make plots to show the results of the 
         drift learning
         """
         
-        plottimes= [0,5]
-
         self.load_perturbative_du_checkpoint()
+        
         #self.make_intermediate_histograms(plottimes=plottimes)
         self.make_contour_plot2(plottimes=plottimes,mc_samples=2048)
         self.plotter.plot_drift(times = plottimes,net=self.net)#[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
