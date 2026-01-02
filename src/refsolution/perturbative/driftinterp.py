@@ -6,11 +6,14 @@ contour plots
 """
 
 import torch
+from torch.nn import DataParallel
+
 import matplotlib.pyplot as plt 
 
 from ...model.nn import MLP
 from ...model.pretrain import run_pretrain
-#
+from ..model.metrics import save_nn_checkpoint
+
 from ...sde.langevin import *
 from  .marginalhalf import MarginalHalfBridgePerturbation
 
@@ -28,6 +31,7 @@ def perturbative_du_interp(reference_sol):
 
     #initialise a simple neural net
     mlp_net = MLP()
+    mlp_net = DataParallel(mlp_net)
 
     try: #load checkpoint if available
         mlp_net.load_state_dict(torch.load(reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt", weights_only=True))
@@ -39,7 +43,8 @@ def perturbative_du_interp(reference_sol):
         run_pretrain(mlp_net,reference_sol)
         
         #save the trained checkpoint
-        torch.save(mlp_net.state_dict(),reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt") 
+        #torch.save(mlp_net.state_dict(),reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt") 
+        save_nn_checkpoint(mlp_net,loc=reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt")
 
     return mlp_net
 

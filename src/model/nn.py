@@ -6,6 +6,7 @@ from torch import nn
 
 from ..utils.parser import du_network_params,rho_network_params,fetch_checkpoint_path
 
+
 ##FROM: https://github.com/miaotianyi 
 class FourierFeatures(nn.Module):
     def __init__(self, out_features: int,
@@ -220,7 +221,11 @@ class MLP(nn.Module):
     used for simple regression problems. 
     """
 
-    def __init__(self,checkpointpath=None):
+    def __init__(self,checkpointpath=None,net_name="pert"):
+
+        #identifier to use in saving the checkpoint
+        self.net_name=net_name
+
         self.params = du_network_params()
         neurons = 64 #self.params["duhiddenlayerneurons"]
         super(MLP, self).__init__()

@@ -5,9 +5,6 @@ tests
 *.csv
 *.pt
 CH_OVERDAMPED_KL.ipynb
-steps to reproduce.txt
-core.*
-src/model/tempnn.py
 *.png
 *.txt
 *.dat

@@ -23,14 +23,8 @@ class LossLogger():
     write_data_row()
         #writes a row of data to the csv
     
-    save_checkpoint() 
-        #saves parameters of the neural network into the checkpoints folder  
-    
     get_epoch_folder()
         #makes a folder for the epoch if it doesn't exist and returns the filepath
-    
-    evaluate_net_output()
-        #evaluates a forward pass of the neural network and returns values to be plotted
     
     make_epoch_plots()
         #calls plotter to make correct plots at the epoch
@@ -73,13 +67,6 @@ class LossLogger():
             writer = csv.writer(f)
             writer.writerow([epoch, Lhat, kl_dyn, klval, lr, refmean, refvar])
 
-    def save_checkpoint(self,net,epoch):
-        
-        if isinstance(net, torch.nn.DataParallel):
-            net = net.module
-        
-        torch.save(net.state_dict(),self.newpath+f"/checkpoints/{net.net_name}_checkpoint_{epoch}.pt") 
-
     def get_epoch_folder(self,epoch):
         os.makedirs(self.newpath+f"/epoch{epoch}", exist_ok = True)
         return f"/epoch{epoch}"
@@ -89,7 +76,7 @@ class LossLogger():
 
         self.write_data_row(epoch,lout,kl_dyn,kl_val,lr,mean0,var0) #log
 
-        self.save_checkpoint(net,epoch)
+        #self.save_checkpoint(net,epoch)
 
     def get_results_path(self):
         return self.newpath

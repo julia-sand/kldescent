@@ -15,6 +15,7 @@ from torch.nn import DataParallel
 
 from .kl import kl_div
 from ..viz.distribution_plots import *
+from ..model.metrics import save_nn_checkpoint
 
 class TerminalCost():
     """
@@ -83,7 +84,7 @@ class GirsanovNet(TerminalCost):
         self.rhotrainer.train_loop(integrator)
 
         #save the checkpoint
-        self.logger.save_checkpoint(self.rhonet,epoch)
+        save_nn_checkpoint(self.rhonet,loc=self.logger.newpath+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{epoch}.pt")
 
     def get_logpdf(self,x):
         return torch.nan_to_num(self.rhonet(x,condition="log"))
