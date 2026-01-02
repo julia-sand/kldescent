@@ -8,13 +8,13 @@ import torch
 import numpy as np
 
 from ..model.nn import RhoNeuralNetwork,NeuralNetwork
-from .plots import PlotFuns
+from .plots import PlotFuns,update_mpl
 from ..sde import langevin
 from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
 from ..utils.getboundary import *
 from .contour import *
 
-def compute_rho_girsanov(dunet,integrator,x_samples=50,mc_samples=64,Tf=None):
+def compute_rho_girsanov(integrator,x_samples=40,mc_samples=64,Tf=None):
     """
     Computes an estimate of the final joint distribution using girsanov theorem
     under the input drift 
@@ -38,7 +38,7 @@ def compute_rho_girsanov(dunet,integrator,x_samples=50,mc_samples=64,Tf=None):
     """
     
     #generate xmesh
-    Q,P = generate_mesh(x_samples,qmax=6)
+    Q,P = generate_mesh(x_samples,qmax=4)
     xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
     
     #intiialise pdf 
@@ -66,6 +66,8 @@ class PlotUtils():
 
     def __init__(self,folder=None,epoch=None):
         
+        update_mpl()
+
         #get folder and load boundary data and params from file
         if folder is None:
             folder = fetch_results_folder_from_cmd()
@@ -107,6 +109,20 @@ class PlotUtils():
 
         self.plotter.plot_drift(times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
         self.make_sde_plots()
+        self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
+
+    def perturbative_plots_du(self):
+        """
+        Runs the functions to make plots to show the results of the 
+        drift learning
+        """
+        
+        plottimes= [0,5]
+
+        self.load_perturbative_du_checkpoint()
+        #self.make_intermediate_histograms(plottimes=plottimes)
+        self.make_contour_plot2(plottimes=plottimes,mc_samples=2048)
+        self.plotter.plot_drift(times = plottimes,net=self.net)#[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
 
     def make_sde_plots(self):
             
@@ -122,32 +138,33 @@ class PlotUtils():
         self.plotter.save_cumulants_csv(t_vec,cumulants_nn)
         self.plotter.save_cumulants_csv(t_vec,cumulants_ref,cumulants_filename="ref_cumulants")
 
+    def load_perturbative_du_checkpoint(self):
+        self.net = self.plotter.referencesol.duref_net #NeuralNetwork(self.boundary_cond,self.data_loaded)
+        #self.net.load_checkpoint(self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
+        self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
+
     def load_du_checkpoint(self):
         self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
         self.net.load_checkpoint(self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
         self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
     def load_rho_checkpoint(self):
-        try:
-            self.rhonet = RhoNeuralNetwork(self.data_loaded)
-            self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
-            #print(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
-        except: #TODO add error catch message 
-            pass 
-
-    def make_intermediate_histograms(self,plottimes):
-
-        self.load_du_checkpoint()
         
+        self.rhonet = RhoNeuralNetwork(self.data_loaded)
+        self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
+            
+    def make_intermediate_histograms(self,plottimes):
 
         #make figure object
         fig,axs = self.plotter.make_fig_subplots(ncols=int(np.ceil(len(plottimes)/2)),nrows=2)
         
-        for plottime in range(len(plottimes)):
+        axs = axs.flatten()
+
+        for i in range(len(plottimes)):
             
             xvals= self.integrator.update_ref_statistics(plottime=plottimes[i])
             
-            h,l = self.marginal_distribution(axs[i],xvals.detach().numpy(),plottimes[i])
+            h,l = self.plotter.marginal_distribution(axs[i],[xvals.detach().numpy()],plottimes[i])
             
         #make legend 
         legend = fig.legend(h,l,ncols= 4, 
@@ -158,19 +175,11 @@ class PlotUtils():
         
         fig.tight_layout()
         
-        fig.savefig(self.resultsdir+"/histograms1.png",bbox_inches="tight")     
+        fig.savefig(self.resultsdir+"/histograms_all.png",bbox_inches="tight")     
         plt.close()
     
-
-    def fig_intermediate_histograms(self,plottimes=[0,1,2,3,4,5]):
-        
-        fig,gs = self.plotter.make_fig_gridspec() #2x6 gridspec
-
-        for plottime in plottimes:
-            ax = plt.subplot(gs_cumulants[0, 0:2])
-
-
     def checkpoint_plots_rho(self):
+        
         self.load_rho_checkpoint()
         self.make_contour_plot()
         #self.plot_pdf_3d()
@@ -203,18 +212,18 @@ class PlotUtils():
         
             return xinit.detach().numpy(),pdf_out.detach().numpy()
 
-    def make_contour_plot2(self,plottimes = [0,2.5,5]):
+    def make_contour_plot2(self,plottimes = [0,1,2,3,4,5],mc_samples=512):
         
         ncols = int(np.ceil(len(plottimes)/2))
-        fig,axs = self.plotter.make_fig_subplots()
+        fig,axs = self.plotter.make_fig_subplots(ncols=ncols,nrows=2)
+        axs = axs.flatten()
 
         for i in range(len(plottimes)):
-            xout,jointout = self.compute_rho_nn(plottimes=plottimes[i])
-                #compute_rho_girsanov(self.net,self.integrator,mc_samples=self.data_loaded["testsamples"],Tf=times[ax[0]])
+            xout,jointout = compute_rho_girsanov(self.integrator,x_samples=50,mc_samples=mc_samples,Tf=plottimes[i])
 
             self.plotter.plot_joint_panel(axs[i],plottimes[i],jointout,xout)
         
-        fig.tight_layout()
+        fig.subplots_adjust(hspace=1.1,wspace=1)
         fig.savefig(self.resultsdir+"/contour_distribution.png",bbox_inches="tight")     
             #self.folder+f"/plots_{self.epoch}"+"/contour_distribution.png",bbox_inches="tight")        
 
@@ -279,6 +288,6 @@ if __name__=="__main__":
 
     plot_utils = PlotUtils()
 
-    plot_utils.checkpoint_plots_du()
+    plot_utils.perturbative_plots_du()
     #plot_utils.load_du_checkpoint()
     #plot_utils.make_contour_plot2()
