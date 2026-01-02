@@ -157,7 +157,7 @@ class PlotFuns():
    
     ax.set_xlabel(r"$p$")
     ax_qmarginal.set_xlabel(r"$\rho_t(q)$")
-    ax_qmarginal.set_xlim(right=-0.01)
+    ax_qmarginal.set_xlim(right=-0.01,left = 0.6)
 
     ax.set_ylabel(r"$q$")
     ax_pmarginal.set_ylabel(r"$\rho_t(p)$")
@@ -195,7 +195,6 @@ class PlotFuns():
     
     #pdb.set_trace()
     joint_out_temp = np.nan_to_num(joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n)))),nan=0,posinf=0,neginf=0)
-    #Q = xs[...,[0]].reshape((int(np.sqrt(n)),int(np.sqrt(n))))
     p_init = np.unique(xs)#np.sort(Q[[0],:].flatten()) #one axis 
     dx = np.abs(p_init[1]-p_init[0])
 
@@ -233,6 +232,7 @@ class PlotFuns():
     cb.ax.set_xlabel("Joint Distribution")
 
   def make_legend(self,fig):
+    
     #create the legend 
     blue_line = mlines.Line2D([], [],color=self.c1)
     #orange_line = mlines.Line2D([], [],color="orange",lw=self.lw)
@@ -276,7 +276,7 @@ class PlotFuns():
     #legend.set_bbox_to_anchor(bbox=(0.85,-0.25))
 
   def format_drift_ax(self,ax1,time):
-    ax1.set_xlim((-self.qmax,self.qmax))
+    ax1.set_xlim((-10,10))#self.qmax,self.qmax))
     #ax1.set_xlim((-2,2))
     ax1.set_title(f"t={time}")
     ax1.set_xlabel("q")
@@ -300,8 +300,8 @@ class PlotFuns():
   #@profile
   def plot_drift(self,times,net):
 
-    fig = plt.figure(figsize=(15,8))
-    ax = fig.subplots(1,len(times))
+    fig,ax = self.make_fig_subplots(nrows=1,ncols=len(times),squeeze=True)#plt.subplots()#plt.figure(figsize=(15,8))
+    #ax = plt.subplots()
   
     for t in range(len(times)):  
       
@@ -343,9 +343,9 @@ class PlotFuns():
     kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(xs[np.isfinite(xs)].reshape(-1,1))
     return kde.score_samples(np.linspace(-self.qmax,self.qmax,num =1000).reshape(-1,1))
 
-  def make_fig_subplots(self,nrows,ncols):
+  def make_fig_subplots(self,nrows,ncols,squeeze=True):
 
-    fig,axs = plt.subplots(ncols=ncols,nrows=nrows)
+    fig,axs = plt.subplots(ncols=ncols,nrows=nrows,squeeze=squeeze)
     fig.set_figheight(15)
     fig.set_figwidth(25)
 
@@ -367,8 +367,8 @@ class PlotFuns():
     if plottime is None:
       plottime = self.boundary.params["Tf"]
     
-    ax_pos = ax.inset_axes([0,0,0.45,1],sharey=ax)
-    ax_mom = ax.inset_axes([0.55,0,0.45,1],sharey=ax)#divider.append_axes("left", size="50%", pad=0.1, sharey=ax)
+    ax_pos = ax.inset_axes([0,0,0.48,1],sharey=ax)
+    ax_mom = ax.inset_axes([0.52,0,0.48,1],sharey=ax)#divider.append_axes("left", size="50%", pad=0.1, sharey=ax)
     
     #remove ax xaxis
     ax.spines.bottom.set_visible(False)
@@ -414,6 +414,10 @@ class PlotFuns():
     #add formatting
     self.format_distribution_ax(ax_mom)
     self.format_distribution_ax(ax_pos)
+
+    #move the yaxis labels to opposite side for mom plot
+    ax_mom.yaxis.tick_right()
+    ax_mom.yaxis.set_label_position("right")
     
     h,l = ax_pos.get_legend_handles_labels()
     return h,l
@@ -421,10 +425,10 @@ class PlotFuns():
   def make_marginal_distribution_fig(self,xvals,plottime):
 
     #make figure object
-    fig,axs = plt.figure(figsize=(15,8))
-    ax = plt.subplot(111)
+    fig = plt.figure(figsize=(15,8))#self.make_fig_subplots(nrows=1,ncols=1)#plt.figure(figsize=(15,8))
+    ax0 = plt.subplot(1,1,1)
 
-    h,l = self.marginal_distribution(ax,xvals,plottime)
+    h,l = self.marginal_distribution(ax0,xvals,plottime)
     
     #make legend 
     legend = fig.legend(h,l,ncols= 4, 
