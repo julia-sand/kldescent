@@ -32,13 +32,11 @@ def run():
     boundaryconditions = getattr(boundaries,args["boundary"])(logger=metrics_logger)
     
     net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
-
+    net = DataParallel(net) #use data paralisation to speed up evaluations
+    
     #log the params
     metrics_logger.log_dict(net.params)
 
-    #use data paralisation to speed up evaluations
-    net = DataParallel(net)
-   
     terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,metrics_logger)
     
     #intialise sde integration 
@@ -46,7 +44,6 @@ def run():
     
     #log integration parameters
     metrics_logger.log_dict(integrator.sde_params)
-    
     
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
