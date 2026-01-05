@@ -30,12 +30,11 @@ def perturbative_du_interp(reference_sol):
 
     #initialise a simple neural net
     mlp_net = MLP()
-    mlp_net = DataParallel(mlp_net)
 
     try: #load checkpoint if available
         mlp_net.load_state_dict(torch.load(reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt", weights_only=True))
         print("Checkpoint for perturbative Solution found and loaded")
-    except (FileNotFoundError,RuntimeError): 
+    except FileNotFoundError: 
         print("No checkpoint for perturbative solution found. Training from CSV data.")
         
         #train it to learn the csv in the reference solution folder
@@ -44,6 +43,8 @@ def perturbative_du_interp(reference_sol):
         #save the trained checkpoint
         #torch.save(mlp_net.state_dict(),reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt") 
         save_nn_checkpoint(mlp_net,loc=reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt")
+    
+    mlp_net = DataParallel(mlp_net)
 
     return mlp_net
 
