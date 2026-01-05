@@ -183,7 +183,8 @@ class PlotUtils():
         
         fig.tight_layout()
         
-        fig.savefig(self.resultsdir+"/histograms_all.png",bbox_inches="tight")     
+        #fig.savefig(self.resultsdir+"/histograms_all.png",bbox_inches="tight")     
+        self.plotter.save_fig_(fig,"histograms_all")
         plt.close()
     
     def checkpoint_plots_rho(self):
@@ -232,9 +233,11 @@ class PlotUtils():
             self.plotter.plot_joint_panel(axs[i],plottimes[i],jointout,xout,refsol=self.referencesol)
         
         fig.subplots_adjust(hspace=1.1,wspace=1)
-        fig.savefig(self.resultsdir+"/contour_distribution.png",bbox_inches="tight")     
+        h,l = self.plotter.get_inset_handles_labels(axs[0])
+        self.plotter.make_legend(fig,h,l)
+        self.plotter.save_fig_(fig,"contour_distribution")
+        #fig.savefig(self.resultsdir+"/contour_distribution.png",bbox_inches="tight")     
             #self.folder+f"/plots_{self.epoch}"+"/contour_distribution.png",bbox_inches="tight")        
-
         plt.close()
 
     def plot_pdf_3d(self):

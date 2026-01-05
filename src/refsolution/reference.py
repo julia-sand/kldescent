@@ -154,7 +154,9 @@ class RefSolution():
             idx=-2
         
         #RETURNS X, DU
-        return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx])
+        
+        return np.squeeze(arrtemp[:,1]),((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
+        #np.squeeze(arrtemp[:,idx])
 
     def du_ref(self,q,time):
 
