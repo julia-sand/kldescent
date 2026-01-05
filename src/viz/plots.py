@@ -12,7 +12,7 @@ import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-
+from matplotlib.axes import Axes
 
 '''
 This file holds all the functions used in plotting.
@@ -151,7 +151,7 @@ class PlotFuns():
    
     ax.set_xlabel(r"$p$")
     ax_qmarginal.set_xlabel(r"$\rho_t(q)$")
-    ax_qmarginal.set_xlim(right=-0.01,left = 0.6)
+    ax_qmarginal.set_xlim(right=-0.01)
 
     ax.set_ylabel(r"$q$")
     ax_pmarginal.set_ylabel(r"$\rho_t(p)$")
@@ -190,7 +190,7 @@ class PlotFuns():
     
     #pdb.set_trace()
     joint_out_temp = np.nan_to_num(joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n)))),nan=0,posinf=0,neginf=0)
-    p_init = np.unique(xs)#np.sort(Q[[0],:].flatten()) #one axis 
+    p_init = np.unique(xs) #np.sort(Q[[0],:].flatten()) #one axis 
     dx = np.abs(p_init[1]-p_init[0])
 
     #compute marginals
@@ -205,12 +205,12 @@ class PlotFuns():
 
     if refsol is not None:
       #plot marginals
-      x,ptx = refsol.get_quantity(np.round(time,6),quantity = "marginal",data="perturbative underdamped")
-      ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed")
+      x,ptx = refsol.get_quantity(np.round(time,6),quantity = "underdamped marginal",data="perturbative underdamped")
+      ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Perturbative Calculated")
 
     #plot joint distribution
     ax.scatter(xs[...,0]/(qnorm*pnorm),xs[...,1]/(qnorm*pnorm),c=joint_out_temp.T.flatten()
-              ,cmap="Blues",norm="log",vmin=0.001,vmax=vmax)
+              ,cmap="Blues",norm="log",vmin=0.0001,vmax=vmax)
     
   def make_colourbar(self,fig,vmax):
     #adds a colour
@@ -226,49 +226,17 @@ class PlotFuns():
 
     cb.ax.set_xlabel("Joint Distribution")
 
-  def make_legend(self,fig):
+  def make_legend(self,fig,handles,labels): 
     
-    #create the legend 
-    blue_line = mlines.Line2D([], [],color=self.c1)
-    #orange_line = mlines.Line2D([], [],color="orange",lw=self.lw)
-    #green_line = mlines.Line2D([], [],color="green",lw=self.lw,linestyle="dashed")
-    blue_patch = mpatches.Patch(color = self.c2, alpha=1)
-
-    legend = fig.legend(handles=[blue_line,
-                                  #orange_line,
-                                  #green_line,
-                                  blue_patch],
-                        labels = ["Marginal Distributions",
-                                  #"Perturbative Prediction",
-                                  #"Gaussian Prediction",
-                                  "Assigned Boundary Conditions"],
-            frameon = False,
-            handlelength = 2,
-            ncols = 2,
-            bbox_to_anchor=(0.75,0.2))
+    legend = fig.legend(handles,labels,
+                        frameon = False,
+                        handlelength = 1,
+                        ncols = 3,
+                        bbox_to_anchor=(0.5, 0.1),
+                        loc='lower center')
 
     #move the legend
     legend.set_bbox_to_anchor(bbox=(0.85,0.25))
-
-  def make_legend_marginals(self,fig):
-    #create the legend 
-    blue_line = mlines.Line2D([], [],color=self.c1)
-    orange_line = mlines.Line2D([], [],color="orange")
-    green_line = mlines.Line2D([], [],color="green")
-    
-    legend = fig.legend(handles=[blue_line,
-                                  orange_line,
-                                  green_line],
-                        labels = ["Reference",
-                                  "Controlled by NN.",
-                                  "Free Diffusion"],
-            frameon = False,
-            handlelength = 1,
-            ncols = 3,bbox_to_anchor=(0.5, 0.1),
-            loc='lower center')
-
-    #move the legend
-    #legend.set_bbox_to_anchor(bbox=(0.85,-0.25))
 
   def format_drift_ax(self,ax1,time):
     ax1.set_xlim((-10,10))#self.qmax,self.qmax))
@@ -328,7 +296,7 @@ class PlotFuns():
 
     #move the legend
     legend.set_bbox_to_anchor(bbox=(0.95,0.07))
-    plt.savefig(self.subdir+f"/drift.png", bbox_inches='tight')
+    self.save_fig_(fig,"drift")
     plt.close()
 
   def fit_kde(self,xs):
@@ -429,13 +397,8 @@ class PlotFuns():
     
     fig.tight_layout()
     
-    self.save_fig(fig,f"/marginals_Time_{plottime}.png")
+    self.save_fig_(fig,f"/marginals_Time_{plottime}")#.png")
     plt.close()
-
-  def save_fig(self,fig,filename):
-    
-    fig.savefig(self.subdir+filename,bbox_inches="tight")
-    
 
   def get_loss_output(self,filename=None):
     if filename is not None:
@@ -495,19 +458,19 @@ class PlotFuns():
 
   def plot_loss_metrics(self,filename=None):
 
-    plt.figure(figsize=(15,8))
+    fig = plt.figure(figsize=(15,8))
 
     arr = self.get_loss_output(filename)
 
-    ax1 = plt.subplot(131)
-    ax2 = plt.subplot(132)
-    ax3 = plt.subplot(133)
+    ax1 = fig.subplot(131)
+    ax2 = fig.subplot(132)
+    ax3 = fig.subplot(133)
     try:
       self.plot_lhat(ax1,arr)
       self.plot_dynamic_kl(ax2,arr)
       self.plot_static_kl(ax3,arr)
       plt.tight_layout()
-      plt.savefig(self.folder+"/losses.png", bbox_inches='tight')
+      self.save_fig_(fig,"losses")
       plt.close()
     
     except IndexError:
@@ -681,6 +644,8 @@ class PlotFuns():
 
   def save_fig_(self,fig,filename):
     fig.savefig(self.subdir+"/"+filename+".png", bbox_inches='tight')
+    #fig.savefig(self.subdir+"/"+filename+".pdf",format="eps", bbox_inches='tight')
+    #fig.savefig(self.subdir+"/"+filename+".eps",format="pdf", bbox_inches='tight')
     plt.close()
 
   def update_final_cumulants(self,cumulants_nn):
@@ -692,6 +657,14 @@ class PlotFuns():
   def movingaverage(self, data, window_size):
       data_means = np.convolve(data, np.ones(int(window_size))/float(window_size), 'same')
       return data_means[window_size:-window_size]
+              
+  def get_inset_handles_labels(self,ax): #fetch inset axes
+      
+      axis_temp = next((c for c in ax.get_children() if isinstance(c, Axes)), None)
+      #[c for c in ax.get_children() if isinstance(c, Axes)]
+      h,l = axis_temp.get_legend_handles_labels()
+
+      return h,l
 
   def plot_joint_panel(self,ax,time,jointout,xout,refsol=None):
       ax, ax_pmarginal,ax_qmarginal = self.scatter_panel_layout(ax,time)
