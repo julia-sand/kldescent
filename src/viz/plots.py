@@ -73,8 +73,8 @@ class PlotFuns():
 
   def plot_marginal_joint(self,ax,x0_marginal,x0_init):
 
-    ax.plot(x0_init,x0_marginal#/xnorm
-                      ,color=self.c1)
+    ax.plot(x0_init,x0_marginal
+                      ,color=self.c1,label="Girsanov")
 
   def get_norm(self,x,y):
     idx = np.argsort(x)
@@ -84,10 +84,10 @@ class PlotFuns():
     
     if time==0:
       ax_qmarginal.fill_between(
-                self.boundary.q_marginal_initial(np.linspace(-self.qmax,self.qmax,)),np.linspace(-self.qmax,self.qmax,),color="orange")
+                self.boundary.q_marginal_initial(np.linspace(-self.qmax,self.qmax,)),np.linspace(-self.qmax,self.qmax,),color="orange",label="Assigned Initial Distribution")
       
       ax_pmarginal.fill_between(np.linspace(-self.qmax,self.qmax,),
-                self.normal_distribution(np.linspace(-self.qmax,self.qmax,),0,1),color="orange")
+                self.normal_distribution(np.linspace(-self.qmax,self.qmax,),0,1),color="orange",label="Assigned Initial/Target Final")
     
     elif time==self.boundary.params["Tf"]:
       ax_qmarginal.fill_between(
@@ -228,15 +228,12 @@ class PlotFuns():
 
   def make_legend(self,fig,handles,labels): 
     
-    legend = fig.legend(handles,labels,
+    fig.legend(handles,labels,
                         frameon = False,
                         handlelength = 1,
-                        ncols = 3,
-                        bbox_to_anchor=(0.5, 0.1),
-                        loc='lower center')
-
-    #move the legend
-    legend.set_bbox_to_anchor(bbox=(0.85,0.25))
+                        ncols = len(labels),
+                        bbox_to_anchor=(1,0),
+                        bbox_transform=fig.transFigure)
 
   def format_drift_ax(self,ax1,time):
     ax1.set_xlim((-10,10))#self.qmax,self.qmax))
@@ -448,11 +445,6 @@ class PlotFuns():
 
 
     ax.plot(arr[:,0],-arr[:,-1]*10,label=r"$\eta$")
-    #plt.plot(arr[:,0],arr[:,2],label=r"K.L. Divergence")
-
-    #set axis labels
-    #ax.set_xlabel("epochs")
-    #ax.set_ylabel(r"Effective Loss, $\hat\mathcal{L}$")
     
     return     
 
@@ -469,8 +461,10 @@ class PlotFuns():
       self.plot_lhat(ax1,arr)
       self.plot_dynamic_kl(ax2,arr)
       self.plot_static_kl(ax3,arr)
+      
       plt.tight_layout()
       self.save_fig_(fig,"losses")
+      
       plt.close()
     
     except IndexError:
@@ -657,14 +651,36 @@ class PlotFuns():
   def movingaverage(self, data, window_size):
       data_means = np.convolve(data, np.ones(int(window_size))/float(window_size), 'same')
       return data_means[window_size:-window_size]
-              
-  def get_inset_handles_labels(self,ax): #fetch inset axes
-      
-      axis_temp = next((c for c in ax.get_children() if isinstance(c, Axes)), None)
-      #[c for c in ax.get_children() if isinstance(c, Axes)]
-      h,l = axis_temp.get_legend_handles_labels()
 
-      return h,l
+  def get_all_subplot_handles_labels(self,fig):
+
+    d0 = {}
+    for ax in fig.axes:
+      dtemp = self.get_inset_handles_labels(ax) #returns dictionary of labels and handles
+      d0.update(dtemp)
+
+    return d0.values(),d0.keys()
+
+
+  def get_inset_handles_labels(self,ax): 
+      """Finds the handles and labels for data plotted on inset axes of ax and returns the 
+      unique labels that can be used in a legend. 
+      """
+      
+      #fetch all inset axes for ax
+      axes_temp = [c for c in ax.get_children() if isinstance(c, Axes)]
+      
+      print(axes_temp[0].get_legend_handles_labels())
+      
+      #return all labels and handles for each inset ax as dictionary
+      labels_handles = {}
+      
+      for c in axes_temp:
+        handles,labels = c.get_legend_handles_labels() 
+        ltemp = {label: handle for handle, label in zip(handles,labels)}
+        labels_handles.update(ltemp)
+        
+      return labels_handles #labels_handles.values(),labels_handles.keys()
 
   def plot_joint_panel(self,ax,time,jointout,xout,refsol=None):
       ax, ax_pmarginal,ax_qmarginal = self.scatter_panel_layout(ax,time)
