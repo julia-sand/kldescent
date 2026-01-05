@@ -86,9 +86,9 @@ class PlotUtils():
         self.data_loaded = data_loaded
 
         if params["mcsamples"]>0:
-            self.mcsamples = params["mcsamples"]
+            self.mc_samples = params["mcsamples"]
         else: #use test samples if no value is specified
-            self.mcsamples = self.data_loaded["test_samples"]
+            self.mc_samples = self.data_loaded["test_samples"]
         
         if epoch is None:
             self.epoch = params["epoch"]
@@ -106,7 +106,6 @@ class PlotUtils():
 
         self.resultsdir = self.folder+f"/plots_{self.epoch}"
         self.plotter.setresultsdir(self.resultsdir)
-        print(self.resultsdir)
 
     def checkpoint_plots_du(self):
         """
@@ -130,13 +129,13 @@ class PlotUtils():
         
         #self.make_intermediate_histograms(plottimes=plottimes)
         self.make_contour_plot2(plottimes=plottimes)
-        self.plotter.plot_drift(times = plottimes,net=self.net)#[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
+        self.plotter.plot_drift(times = plottimes,net=self.net,refsol=self.referencesol)#[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
 
     def make_sde_plots(self):
             
         final_plot_time = self.boundary_cond.params["Tf"]
         
-        t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(final_plot_time,self.plotter.referencesol.duref_net)
+        t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(final_plot_time,self.referencesol.duref_net)
         
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
         self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time)
@@ -148,7 +147,7 @@ class PlotUtils():
 
     def load_perturbative_du_checkpoint(self):
 
-        self.net = self.plotter.referencesol.duref_net #NeuralNetwork(self.boundary_cond,self.data_loaded)
+        self.net = self.referencesol.duref_net #NeuralNetwork(self.boundary_cond,self.data_loaded)
         #self.net.load_checkpoint(self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
         self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
@@ -221,16 +220,16 @@ class PlotUtils():
         
             return xinit.detach().numpy(),pdf_out.detach().numpy()
 
-    def make_contour_plot2(self,plottimes = [0,1,2,3,4,5],mc_samples=512):
+    def make_contour_plot2(self,plottimes = [0,1,2,3,4,5]):
         
         ncols = int(np.ceil(len(plottimes)/2))
         fig,axs = self.plotter.make_fig_subplots(ncols=ncols,nrows=2)
         axs = axs.flatten()
 
         for i in range(len(plottimes)):
-            xout,jointout = compute_rho_girsanov(self.integrator,x_samples=50,mc_samples=mc_samples,Tf=plottimes[i])
+            xout,jointout = compute_rho_girsanov(self.integrator,x_samples=50,mc_samples=self.mc_samples,Tf=plottimes[i])
 
-            self.plotter.plot_joint_panel(axs[i],plottimes[i],jointout,xout)
+            self.plotter.plot_joint_panel(axs[i],plottimes[i],jointout,xout,refsol=self.referencesol)
         
         fig.subplots_adjust(hspace=1.1,wspace=1)
         fig.savefig(self.resultsdir+"/contour_distribution.png",bbox_inches="tight")     

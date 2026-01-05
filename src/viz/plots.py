@@ -693,14 +693,14 @@ class PlotFuns():
       data_means = np.convolve(data, np.ones(int(window_size))/float(window_size), 'same')
       return data_means[window_size:-window_size]
 
-  def plot_joint_panel(self,ax,time,jointout,xout):
+  def plot_joint_panel(self,ax,time,jointout,xout,refsol=None):
       ax, ax_pmarginal,ax_qmarginal = self.scatter_panel_layout(ax,time)
 
       self.joint_distributions_scatter_panel(ax,
                                               ax_pmarginal,
                                               ax_qmarginal,
                                               jointout,
-                                              xout,time,vmax=0.5)
+                                              xout,time,vmax=0.5,refsol=refsol)
 
 if __name__=="__main__":
   
