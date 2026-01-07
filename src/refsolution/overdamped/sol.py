@@ -8,7 +8,7 @@ from ..heatintegrators import *
 from .iteration import CellProblem
 from ..utilfunctions import * 
 
-#Proximal operator solution for fokkerplanck equation
+
 def compute_rho(phi_t,hatphi_t):
     
     return np.nan_to_num(phi_t*hatphi_t,nan=0,posinf=0,neginf=0)
@@ -21,8 +21,8 @@ def compute_V(phi_t,A,B):
 
 
 def get_solution_in_time(cell,integrator,
-                            xnum = 1000,
-                            tnum = 11):
+                                xnum = 1000,
+                                tnum = 11):
     """
     Evaluate the schrödinger factors along the time horizon and use them to compute 
     the probability distribution and value function in the horizon [0,Tf2]
@@ -43,7 +43,7 @@ def get_solution_in_time(cell,integrator,
     """
 
     #define a grid for q
-    q = np.linspace(-4,4,num=xnum)
+    q = np.linspace(-cell.qmax,cell.qmax,num=xnum)
 
     #define timepoints to save solution 
     #time points in the slow time (t2)
@@ -55,14 +55,13 @@ def get_solution_in_time(cell,integrator,
     #preallocate arrays
     arr_out = np.empty((tnum*xnum,4))
 
-    #preallocate for phi 
+    #preallocate arrays and set 
     phi_out = np.empty((tnum,len(cell.xhatphi),2))
     phi_out[0,:,0] = cell.xhatphi
-    phi_out[0,:,1] = cell.psi0  
+    phi_out[0,:,1] = cell.psi0 
     
-
     for t in range(1,tnum):
-
+        
         #compute one step of the proximal recursion
         xphi_Tt,phi_Ttemp = integrator(phi_out[t-1,:,0],phi_out[t-1,:,1],dt,cell.beta,num_steps=int(np.floor(100/tnum)))
         
@@ -70,9 +69,9 @@ def get_solution_in_time(cell,integrator,
         phi_out[t,:,0] = xphi_Tt
         phi_out[t,:,1] = phi_Ttemp
 
-
     #iterate over times to compute the solution at each timepoint
     xhatphi_t,hatphi_temp = cell.xpsi.copy(),cell.hatphi0.copy()
+    
     for t in range(tnum):
 
         #interpolate 

@@ -64,7 +64,7 @@ class RefSolution():
                 
                 pertsol = MarginalHalfBridgePerturbation(boundary,self)
                 pertsol.save_perturbative()
-                print("Underdamped Results saved.")
+                print("Perturbative Results saved.")
                 
             self.duref_net = perturbative_du_interp(self)
         
@@ -98,20 +98,6 @@ class RefSolution():
         except FileNotFoundError:
             return np.linspace(0,time)
     
-    def get_reference_du(self,time):
-
-        #time is the time you want the data
-
-        ##fetch the reference data for halfbridge
-        arr = self.get_ref_data()  
-       
-        ##fetch the reference data approximation data
-        arrtemp = arr[np.where(arr[:,0]==np.round(time,8))] 
-        arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
-
-        #RETURNS X, DU
-        return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,-1])
-
     def get_quantity(self,time,quantity,data=None,arr=None):
         """
         args:
@@ -137,7 +123,7 @@ class RefSolution():
             arr = self.get_ref_data(data=data)  
 
         if data=="perturbative underdamped":
-            #divide by eps**2 to get t2 from t0
+            #multiply by eps**2 to get t2 from t0 
             time *= self.boundary.params["epsilon"]**2
 
         ##fetch the reference data approximation data
@@ -153,10 +139,7 @@ class RefSolution():
         elif quantity =="underdamped marginal":
             idx=-2
         
-        #RETURNS X, DU
-        
-        return np.squeeze(arrtemp[:,1]),((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
-        #np.squeeze(arrtemp[:,idx])
+        return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,2]) #((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
 
     def du_ref(self,q,time):
 

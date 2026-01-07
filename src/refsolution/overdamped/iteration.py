@@ -45,7 +45,8 @@ class CellProblem():
             self.refsol = Gaussian_Overdamped_Ref(boundary)
             #
         else:            
-            pass#self.qmax = 6
+            pass #self.qmax = 6
+
         self.qmax = self.boundary.qmax
         
         self.q = np.linspace(-self.qmax,self.qmax) #for plotting 
@@ -116,12 +117,12 @@ class CellProblem():
         self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
 
         #set new class properties
-        self.xhatphi =xhatphi
-        self.xpsi = xpsi 
-        self.hatphiT = hatphiT
-        self.psiT = psiT
-        self.hatphi0 = hatphi0
-        self.psi0 = psi0
+        self.xhatphi = zchop(xhatphi)
+        self.xpsi = zchop(xpsi) 
+        self.hatphiT = zchop(hatphiT)
+        self.psiT = zchop(psiT)
+        self.hatphi0 = zchop(hatphi0)
+        self.psi0 = zchop(psi0)
 
         return 
 

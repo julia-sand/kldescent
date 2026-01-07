@@ -41,7 +41,7 @@ class PlotFuns():
     self.folder = os.path.dirname(__file__)
     
     #borders of xaxis
-    self.qmax = 4
+    self.qmax = 8
     
     #colors
     self.c1 = "#1f78b4" #darkblue
@@ -87,14 +87,14 @@ class PlotFuns():
                 self.boundary.q_marginal_initial(np.linspace(-self.qmax,self.qmax,)),np.linspace(-self.qmax,self.qmax,),color="orange",label="Assigned Initial Distribution")
       
       ax_pmarginal.fill_between(np.linspace(-self.qmax,self.qmax,),
-                self.normal_distribution(np.linspace(-self.qmax,self.qmax,),0,1),color="orange",label="Assigned Initial/Target Final")
+                self.normal_distribution(np.linspace(-self.qmax,self.qmax,),0,1),color="orange",label="Assigned Initial Distribution")
     
     elif time==self.boundary.params["Tf"]:
       ax_qmarginal.fill_between(
-                self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,)),np.linspace(-self.qmax,self.qmax,),color="orange")
+                self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,)),np.linspace(-self.qmax,self.qmax,),color="orange",label="Target Final Distribution")
       
       ax_pmarginal.fill_between(np.linspace(-self.qmax,self.qmax,),
-                self.normal_distribution(np.linspace(-self.qmax,self.qmax,),0,1),color="orange")
+                self.normal_distribution(np.linspace(-self.qmax,self.qmax,),0,1),color="darkorange",label="Target Final Distribution")
     
     else: 
       pass
@@ -115,10 +115,12 @@ class PlotFuns():
     ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
     ax_qmarginal = ax.inset_axes([-0.65, 0, 0.6, 1])
     ax_qmarginal.invert_xaxis()
-    ax_qmarginal.set_ylim((-self.qmax,self.qmax))
 
+    #set x axis limits
+    ax.set_ylim((-self.qmax,self.qmax))
+    ax.set_xlim((-self.qmax,self.qmax))
+    ax_qmarginal.set_ylim((-self.qmax,self.qmax))
     ax_pmarginal.set_xlim((-self.qmax,self.qmax))
-    
 
     if self.boundary is not None:
       self.add_boundary_conditions_scatter_panel(ax_pmarginal,ax_qmarginal,time)
@@ -159,7 +161,7 @@ class PlotFuns():
     ax_pmarginal.set_ylim(bottom=-0.01)
 
     ax.set_aspect('equal', adjustable='box')
-    ax.set_xticks([-2.5,0,2.5])
+    #ax.set_xticks([-2.5,0,2.5])
     
     return ax, ax_pmarginal,ax_qmarginal
 
@@ -265,9 +267,9 @@ class PlotFuns():
   
     for t in range(len(times)):  
       
-      ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
-              self.evaluate_net_output(net,times[t]),
-                label="N.N.")
+      #ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
+      #        self.evaluate_net_output(net,times[t]),
+      #          label="N.N.")
       
       self.format_drift_ax(ax[t],times[t])
     
@@ -276,9 +278,9 @@ class PlotFuns():
       if refsol is not None:
         xref,duref = refsol.get_quantity(round(times[t],3), "underdamped drift", data="perturbative underdamped")
         ax[t].plot(xref,-0.2*duref/(2**0.5),label="Perturbative")
-        ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
-                self.evaluate_net_output(refsol.duref_net,times[t]),
-                label="Perturbative N.N.")
+        #ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
+        #        self.evaluate_net_output(refsol.duref_net,times[t]),
+        #        label="Perturbative N.N.")
       else:
         print("No reference solution was found. Plots will not include reference values.")
     
@@ -669,9 +671,7 @@ class PlotFuns():
       
       #fetch all inset axes for ax
       axes_temp = [c for c in ax.get_children() if isinstance(c, Axes)]
-      
-      print(axes_temp[0].get_legend_handles_labels())
-      
+           
       #return all labels and handles for each inset ax as dictionary
       labels_handles = {}
       
