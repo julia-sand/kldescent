@@ -21,7 +21,7 @@ def mcintegrator(x0,y0,
             initial values at x0, used to interpolate the intial function
         Tf : float
             final time t
-        num_tsteps : float
+        num_steps : float
             number of timesteps
         mcsamples : int
             number of MonteCarlo trajectories
@@ -33,10 +33,11 @@ def mcintegrator(x0,y0,
     Generator = np.random.default_rng(seed=42)
     
     num_qsamples = x0.shape[0]
-    #pdb.set_trace()
+
     qax = x0.copy()
     
     def phifinal(qT,x0,y0):
+        
         idx = np.argsort(x0)
         return np.interp(qT,x0[idx],zchop(y0[idx]))
 
@@ -47,6 +48,7 @@ def mcintegrator(x0,y0,
         np.sqrt(2*t_vec[1]/beta)*np.sum(Generator.standard_normal((num_qsamples,mc_samples,num_steps)),axis=2)
     #traj = np.flip(traj,axis = 1) #flip along columns
     yT = np.mean(phifinal(traj,qax,y0),axis=1) 
+
     return x0, yT
 
 def proximal_fpk(x0,y0,

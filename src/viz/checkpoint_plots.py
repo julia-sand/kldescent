@@ -233,8 +233,12 @@ class PlotUtils():
             self.plotter.plot_joint_panel(axs[i],plottimes[i],jointout,xout,refsol=self.referencesol)
         
         fig.subplots_adjust(hspace=1.1,wspace=1,bottom=0.08)
+        
+        #add legend
         h,l = self.plotter.get_all_subplot_handles_labels(fig)
         self.plotter.make_legend(fig,h,l)
+        self.plotter.make_colourbar(fig,vmax=0.5)
+        
         self.plotter.save_fig_(fig,"contour_distribution")
         
         plt.close()
