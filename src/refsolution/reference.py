@@ -139,7 +139,7 @@ class RefSolution():
         elif quantity =="underdamped marginal":
             idx=-2
         
-        return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,2]) #((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
+        return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx]) #((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
 
     def du_ref(self,q,time):
 

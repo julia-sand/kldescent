@@ -408,7 +408,7 @@ class UnderdampedGaussian(UnderdampedLandauer):
                         logger=None):
         Boundaries.__init__(self,params,logger)
         self.sigma0 = np.sqrt(2)
-        self.qmax = 18
+        self.qmax = 25
 
         if gauss_params is not None: #read from file if available
             self.gauss_boundary = gauss_params

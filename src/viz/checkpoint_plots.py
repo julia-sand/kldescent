@@ -228,6 +228,7 @@ class PlotUtils():
         axs = axs.flatten()
 
         for i in range(len(plottimes)):
+            print("hello")
             xout,jointout = compute_rho_girsanov(self.integrator,x_samples=50,mc_samples=self.mc_samples,Tf=plottimes[i])
 
             self.plotter.plot_joint_panel(axs[i],plottimes[i],jointout,xout,refsol=self.referencesol)
