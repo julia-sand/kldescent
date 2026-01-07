@@ -110,8 +110,7 @@ class MarginalHalfBridgePerturbation():
 
     def marginal_perturbative(self,t0,t2):
         
-        return self.f02(t0,t2)
-        #self.f00(t2) + (self.epsilon**2)*self.f02(t0,t2)
+        return self.f00(t2) + (self.epsilon**2)*self.f02(t0,t2)
 
     def xcorr(self,t0,t2):
         return 0

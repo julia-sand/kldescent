@@ -29,12 +29,12 @@ class Pretrain():
             self.path = path_to_pretrain 
 
         #set defaults of training process
-        self.lr = 0.01 #initial learning rate
+        self.lr = 0.1 #initial learning rate
         self.gamma = 0.1 #decay rate of learning rate
-        self.milestone = 3000 #frequency of learning rate decay (in epochs)
+        self.milestone = 2000 #frequency of learning rate decay (in epochs)
         self.n_epochs = 10000 #total number of epochs
 
-        self.minibatch_samples = 2048 #number of datarows to use per parameter update
+        self.minibatch_samples = 512 #number of datarows to use per parameter update
 
         self.clip = 0.1
 
@@ -82,7 +82,7 @@ class Pretrain():
 
             optimizer.zero_grad()
             y_pred = net(X[idx,:])
-            loss = loss_fn(y_pred, y[idx])
+            loss = loss_fn(y_pred,y[idx])
             #clip_grad_norm_(net.parameters(), self.clip)
             loss.backward()
             optimizer.step()       

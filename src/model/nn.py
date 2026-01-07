@@ -228,21 +228,32 @@ class MLP(nn.Module):
     """
 
     def __init__(self,checkpointpath=None,net_name="pert"):
+        """Initialises a neural network called mlp.
+        This is a two layer feed forward network with 128 neurons per layer
+        It can be used to conveniently interpolate functions from a csv
+
+        args:
+            checkpoint_path : str
+
+            net_name : str
+                descriptive identifier for loading saved checkpoints
+        """
+
 
         #identifier to use in saving the checkpoint
         self.net_name=net_name
 
         self.params = du_network_params()
-        neurons = 64 #self.params["duhiddenlayerneurons"]
+        neurons = 128 #self.params["duhiddenlayerneurons"]
         super(MLP, self).__init__()
         self.flatten = nn.Flatten()
         self.linear_stack = nn.Sequential(
             nn.Linear(2, neurons ),  #two inputs
-            nn.Tanh(),
+            nn.GELU(),
             nn.Linear(neurons , neurons),   #hidden layer
-            nn.Tanh(),
+            nn.GELU(),
             nn.Linear(neurons , neurons),   #hidden layer
-            nn.Tanh(),
+            nn.GELU(),
             nn.Linear(neurons , 1)     #one output
         )    
         self.initialize_weights()   

@@ -8,17 +8,16 @@ from ..heatintegrators import *
 from .iteration import CellProblem
 from ..utilfunctions import * 
 
-
 def compute_rho(phi_t,hatphi_t):
     
     return np.nan_to_num(phi_t*hatphi_t,nan=0,posinf=0,neginf=0)
 
 def compute_V(phi_t,A,B):
+    
     with warnings.catch_warnings(): #ignore log(0) error as this is handled later
         warnings.simplefilter("ignore") 
         
         return -(A/B)*np.log(phi_t)
-
 
 def get_solution_in_time(cell,integrator,
                                 xnum = 1000,
@@ -99,7 +98,7 @@ def compute_overdamped(boundary,save_location,bridge_type="marginal half"):
     
     cell = CellProblem(boundary,save_location,bridge_type=bridge_type)
     cell.iteration(integrator=mcintegrator,
-                    num_iters=25)
+                    num_iters=20)
 
     arr = get_solution_in_time(cell,integrator=mcintegrator)
 
