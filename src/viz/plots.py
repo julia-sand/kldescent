@@ -122,9 +122,6 @@ class PlotFuns():
     ax_qmarginal.set_ylim((-self.qmax,self.qmax))
     ax_pmarginal.set_xlim((-self.qmax,self.qmax))
 
-    if self.boundary is not None:
-      self.add_boundary_conditions_scatter_panel(ax_pmarginal,ax_qmarginal,time)
-
     ###ticks formatting and labelling
     ax_pmarginal.yaxis.tick_right()
     ax.yaxis.tick_right()
@@ -143,6 +140,7 @@ class PlotFuns():
         length =5,
         pad = -3,
         labelleft=False)
+    
     ax_qmarginal.tick_params(
         axis='y',          # changes apply to the y-axis
         which='both',      #both major and minor ticks
@@ -153,16 +151,19 @@ class PlotFuns():
    
     ax.set_xlabel(r"$p$")
     ax_qmarginal.set_xlabel(r"$\rho_t(q)$")
-    ax_qmarginal.set_xlim(right=-0.01)
+    ax_qmarginal.set_xlim(right=-0.01,left=0.6)
 
     ax.set_ylabel(r"$q$")
     ax_pmarginal.set_ylabel(r"$\rho_t(p)$")
     ax.yaxis.set_label_position("right")
-    ax_pmarginal.set_ylim(bottom=-0.01)
+    ax_pmarginal.set_ylim(bottom=-0.01,top=0.6)
 
     ax.set_aspect('equal', adjustable='box')
     #ax.set_xticks([-2.5,0,2.5])
     
+    if self.boundary is not None:
+      self.add_boundary_conditions_scatter_panel(ax_pmarginal,ax_qmarginal,time)
+
     return ax, ax_pmarginal,ax_qmarginal
 
   def joint_distributions_scatter_panel(self,
