@@ -244,11 +244,14 @@ class MLP(nn.Module):
         self.net_name=net_name
 
         self.params = du_network_params()
-        neurons = 128 #self.params["duhiddenlayerneurons"]
+        neurons = 16 #self.params["duhiddenlayerneurons"]
+        
         super(MLP, self).__init__()
         self.flatten = nn.Flatten()
         self.linear_stack = nn.Sequential(
             nn.Linear(2, neurons ),  #two inputs
+            nn.GELU(),
+            nn.Linear(neurons , neurons),   #hidden layer
             nn.GELU(),
             nn.Linear(neurons , neurons),   #hidden layer
             nn.GELU(),
