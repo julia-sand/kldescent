@@ -109,7 +109,7 @@ class OverdampedFullLandauer(Boundaries):
 
     def Ufinal(self,q):
 
-        return ((q**2-1)**2)/4
+        return ((q**2-1)**2)/12
 
     def scorefinal(self,q):
         #negative log-gradient of the final distribution 
@@ -166,7 +166,7 @@ class OverdampedLandauer(OverdampedFullLandauer):
         self.qmax = 6
 
     def Uinitial(self,q):
-        return ((q-1)**4)/4
+        return ((q-1)**4)/12
 
     def qinitial(self,q):
 
@@ -421,7 +421,6 @@ class UnderdampedGaussian(UnderdampedLandauer):
         self.pi_norm = (np.sqrt(2*np.pi)*(self.gauss_boundary["sigmainitial"]))
         self.pf_norm = (np.sqrt(2*np.pi)*(self.gauss_boundary["sigmafinal"]))
         
-        #self.refsol = GaussRefSolution(folder_name=None)
 
     def overwrite_ref_path(self,new_path):
         

@@ -99,7 +99,7 @@ class PlotUtils():
 
         self.boundary_cond.overwrite_ref_path(self.folder)
             
-        self.referencesol = RefSolution(boundary_cond)
+        self.referencesol = RefSolution(boundary_cond,folder_name=self.folder)
         
         #make new folder for the results labelled with epoch
         os.makedirs(self.folder+f"/plots_{self.epoch}", exist_ok = True) 
