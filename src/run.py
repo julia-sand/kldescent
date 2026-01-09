@@ -31,12 +31,14 @@ def run():
     #initialise the model using parsed boundary conditions
     boundaryconditions = getattr(boundaries,args["boundary"])(logger=metrics_logger)
     
+    
     net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
-    net = DataParallel(net) #use data paralisation to speed up evaluations
     
     #log the params
     metrics_logger.log_dict(net.params)
-
+    
+    net = DataParallel(net) #use data paralisation to speed up evaluations
+    
     terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,metrics_logger)
     
     #intialise sde integration 
@@ -66,16 +68,14 @@ def run():
             metric_.update_metrics(epoch+1, loss_out)
             
             #make plots
-            plot_utils = PlotUtils(metrics_logger.get_results_path(),epoch)
+            #plot_utils = PlotUtils(metrics_logger.get_results_path(),epoch)
 
-            plot_utils.checkpoint_plots_du()
-            plot_utils.make_contour_plot()
+            #plot_utils.checkpoint_plots_du()
+            #plot_utils.make_contour_plot()
 
         except ValueError:
             print("The training has resulted in NaN loss and therefore failed. Please retry.")
             raise
-        
     
-
 if __name__=="__main__":
     run()

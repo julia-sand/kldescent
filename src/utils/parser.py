@@ -129,9 +129,6 @@ def boundary_params():
     boundary_params.add_argument('-g','--g', type=float, default=0,
                         help='constant')
 
-    boundary_params.add_argument('-refsolution','--refsolution', type=str, default="",
-                        help='filepath to csv with reference solution')
-
     args2 = boundary_params.parse_known_args(boundary_params.argfile)
 
     return vars(args2[0])

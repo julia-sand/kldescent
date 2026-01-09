@@ -2,7 +2,7 @@ import torch
 import numpy as np 
 
 from ..refsolution.reference import RefSolution
-from .model.nn import save_nn_checkpoint
+from ..model.nn import save_nn_checkpoint
 
 class Metrics():
     """

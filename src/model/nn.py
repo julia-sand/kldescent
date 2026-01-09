@@ -241,7 +241,7 @@ class MLP(nn.Module):
 
 
         #identifier to use in saving the checkpoint
-        self.net_name=net_name
+        self.net_name = net_name
 
         self.params = du_network_params()
         neurons = 16 #self.params["duhiddenlayerneurons"]

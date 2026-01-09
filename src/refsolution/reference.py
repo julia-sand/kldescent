@@ -3,6 +3,7 @@ import os
 import numpy as np 
 
 from ..sde.boundary import *
+from ..utils.parser import fetch_results_folder_from_cmd
 from .overdamped.gauss import Gaussian_Overdamped_Ref
 from .utilfunctions import *
 from .perturbative.driftinterp import perturbative_du_interp
@@ -39,7 +40,7 @@ class RefSolution():
         if folder_name is not None: #use this if running the file directly
             self.folder_name = folder_name
         else:
-            self.folder_name = f"{self.boundary.__class__.__name__}"
+            self.folder_name = fetch_results_folder_from_cmd() #f"{self.boundary.__class__.__name__}"
                 
         os.makedirs(self.get_ref_path(),exist_ok=True)
 
@@ -73,7 +74,7 @@ class RefSolution():
     def get_ref_path(self):
         #returns the folder where the reference solution is expected to be
 
-        return os.path.dirname(__file__) + "/" + self.folder_name
+        return self.folder_name# os.path.dirname(__file__) + "/" + self.folder_name
     
     def get_ref_data(self,data=None):
         """"
