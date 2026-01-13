@@ -84,7 +84,7 @@ class GirsanovNet(TerminalCost):
         self.rhotrainer.train_loop(integrator)
 
         #save the checkpoint
-        save_nn_checkpoint(self.rhonet,loc=self.logger.newpath+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{epoch}.pt")
+        save_nn_checkpoint(self.rhonet,loc=self.logger.newpath+f"/checkpoints/{self.rhonet.module.net_name}_checkpoint_{epoch}.pt")
 
     def get_logpdf(self,x):
         return torch.nan_to_num(self.rhonet(x,condition="log"))
@@ -194,7 +194,7 @@ class NormFlow(TerminalCost):
 
         TerminalCost.__init__(self,boundaryconditions,logger)
         #initialise normalising flow
-        self.rho = RhoNormFlow(boundaryconditions=self.boundary,bridgetype="phase")
+        self.rho = RhoNormFlow(boundaryconditions=self.boundary,bridgetype="half")
 
     def update_cost_params(self,integrator,epoch,*_):
         if epoch<1:

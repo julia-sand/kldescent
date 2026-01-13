@@ -30,8 +30,7 @@ def run():
 
     #initialise the model using parsed boundary conditions
     boundaryconditions = getattr(boundaries,args["boundary"])(logger=metrics_logger)
-    
-    
+        
     net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
     
     #log the params
@@ -68,9 +67,10 @@ def run():
             metric_.update_metrics(epoch+1, loss_out)
             
             #make plots
-            #plot_utils = PlotUtils(metrics_logger.get_results_path(),epoch)
+            plot_utils = PlotUtils(metrics_logger.get_results_path(),epoch)
 
-            #plot_utils.checkpoint_plots_du()
+            plot_utils.checkpoint_plots_du()
+            plot_utils.make_girsanov_net_plots()
             #plot_utils.make_contour_plot()
 
         except ValueError:

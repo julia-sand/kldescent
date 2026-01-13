@@ -12,15 +12,32 @@ class Metrics():
         update_metrics
     """
 
-    def __init__(self, net, integrator, logstep, logger):
-        
+    def __init__(self, net, integrator, logstep, logger, use_perturbative_metrics=False):
+        """
+        Initialises class parameters
+        args:
+            net : class
+
+            integrator : 
+
+            logstep :
+            logger : 
+            use_perturbative_metrics : Bool. 
+                Default False. 
+                Set to true to use the perturbative solution as the 
+        """
         self.integrator = integrator
         self.net = net
 
         self.logstep = logstep #how frequently to save results
         self.logger = logger
         
-        self.reference_sol = RefSolution(integrator.boundary)
+        if use_perturbative_metrics:
+
+            self.reference_sol = RefSolution(integrator.boundary,folder_name=self.logger.newpath)
+            self.refnet = self.reference_sol.duref_net 
+        else: 
+            self.refnet = None 
 
         self.update_metrics(0, 0)
 
@@ -51,7 +68,7 @@ class Metrics():
                 with torch.no_grad():
                     
                     #this also updates the ref. cumulants
-                    kl_dynamic, kl_static, mean0, var0 =self.integrator.compute_metrics(self.reference_sol.duref_net)
+                    kl_dynamic, kl_static, mean0, var0 =self.integrator.compute_metrics(self.refnet)
 
                     if trainer is not None:
                         lr_rate = trainer.scheduler.get_last_lr()[0]
@@ -67,7 +84,7 @@ class Metrics():
                                                 var0)
 
                     #save checkpoint 
-                    save_nn_checkpoint(self.net,loc=self.logger.newpath+f"/checkpoints/{self.net.net_name}_checkpoint_{epoch}.pt")
+                    save_nn_checkpoint(self.net,loc=self.logger.newpath+f"/checkpoints/{self.net.module.net_name}_checkpoint_{epoch}.pt")
                     #if self.rhonet is not None:
                     #    self.logger.save_checkpoint(self.rhonet,epoch)
             else:

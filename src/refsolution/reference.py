@@ -9,6 +9,7 @@ from .utilfunctions import *
 from .perturbative.driftinterp import perturbative_du_interp
 from .perturbative.marginalhalf import MarginalHalfBridgePerturbation
 from .overdamped.sol import compute_overdamped
+from ..model.nn import MLP,NeuralNetwork
 
 class RefSolution():
     """
@@ -49,9 +50,13 @@ class RefSolution():
         self.perturb_underdamped_loc = self.get_ref_path()+"/perturbative_underdamped.csv"
         self.ref_loc = self.get_ref_path()+"/refsol.csv"
 
+
+        #initialise a simple neural net
+        mlp_net = NeuralNetwork(self.boundary) #MLP()
+
         try:
             #compute corrections
-            self.duref_net = perturbative_du_interp(self)
+            self.duref_net = perturbative_du_interp(self,mlp_net)
         except FileNotFoundError:
             try: 
                 print("Perturbative results not available. Computing corrections...")
@@ -74,7 +79,7 @@ class RefSolution():
     def get_ref_path(self):
         #returns the folder where the reference solution is expected to be
 
-        return self.folder_name# os.path.dirname(__file__) + "/" + self.folder_name
+        return self.folder_name # os.path.dirname(__file__) + "/" + self.folder_name
     
     def get_ref_data(self,data=None):
         """"

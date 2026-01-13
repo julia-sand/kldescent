@@ -42,7 +42,7 @@ class LossLogger():
 
         ##make a directory for the results in  the place the file is run
         dirname = os.getcwd()
-        run_id = time.strftime("%Y%m%d-%H%M%S")
+        run_id = "temp_girsanov"#time.strftime("%Y%m%d-%H%M%S")
 
         self.newpath = os.path.join(dirname,f'results/{run_id}')
         os.makedirs(self.newpath, exist_ok = True)

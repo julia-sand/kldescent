@@ -268,17 +268,17 @@ class PlotFuns():
   
     for t in range(len(times)):  
       
-      #ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
-      #        self.evaluate_net_output(net,times[t]),
-      #          label="N.N.")
+      ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
+              self.evaluate_net_output(net,times[t]),
+                label="N.N.")
       
       self.format_drift_ax(ax[t],times[t])
     
       ax[t].set_ylabel(r"$\mathbb{U}$")
       ax[t].set_ylim((-5,5))
       if refsol is not None:
-        xref,duref = refsol.get_quantity(round(times[t],3), "underdamped drift", data="perturbative underdamped")
-        ax[t].plot(xref,-0.2*duref/(2**0.5),label="Perturbative")
+        #xref,duref = refsol.get_quantity(round(times[t],3), "underdamped drift", data="perturbative underdamped")
+        #ax[t].plot(xref,-0.2*duref/(2**0.5),label="Perturbative")
         ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
                 self.evaluate_net_output(refsol.duref_net,times[t]),
                 label="Perturbative N.N.")
