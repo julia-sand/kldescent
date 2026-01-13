@@ -1,7 +1,6 @@
 import os
 import yaml 
 
-import pdb
 from mpl_toolkits import mplot3d
 
 import torch
@@ -88,7 +87,7 @@ class PlotUtils():
         if params["mcsamples"]>0:
             self.mc_samples = params["mcsamples"]
         else: #use test samples if no value is specified
-            self.mc_samples = self.data_loaded["test_samples"]
+            self.mc_samples = self.data_loaded["testsamples"]
         
         if epoch is None:
             self.epoch = params["epoch"]
@@ -159,8 +158,12 @@ class PlotUtils():
     def load_rho_checkpoint(self):
         
         self.rhonet = RhoNeuralNetwork(self.data_loaded)
-        self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
+        self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch-1}.pt")
             
+    def make_girsanov_net_plots(self,):
+        self.load_rho_checkpoint()
+        self.make_contour_plot()
+
     def make_intermediate_histograms(self,plottimes):
 
         #make figure object
@@ -260,7 +263,6 @@ class PlotUtils():
 
     def make_contour_plot(self):
         xout,jointout = self.compute_rho_nn(x_samples=20)
-        xout2,jointout2 = self.compute_rho_girsanov(x_samples=20)
         
         fig,ax = plt.subplots()
         ax, ax_pmarginal,ax_qmarginal = self.plotter.scatter_panel_layout(ax)
@@ -270,16 +272,15 @@ class PlotUtils():
                                                     ax_qmarginal,
                                                     jointout,
                                                     xout,
-                                                    time=None,vmax=0.5,refsol=self.referencesol)
-        self.plotter.joint_distributions_scatter_panel(ax,
-                                                    ax_pmarginal,
-                                                    ax_qmarginal,
-                                                    jointout2,
-                                                    xout2,
-                                                    time=None,vmax=0.5)
-        fig.savefig(self.resultsdir+"/test8_nn.png",bbox_inches="tight")        
-
+                                                    time=self.boundary_cond.params["Tf"],vmax=0.5,refsol=self.referencesol)
+        
+        self.plotter.make_legend(fig,h,l)
+        self.plotter.make_colourbar(fig,vmax=0.5)
+        
+        self.plotter.save_fig_(fig,"contour_distribution")
+        
         plt.close()
+        
 
 def compute_ref_dynamic_kl(boundary):
     """Estimate of the dynamic kl divergence for the Gaussian reference data.

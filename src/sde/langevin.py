@@ -129,10 +129,17 @@ class SDE(SDEBase):
         ====
         Parameters:
             duref_net : class
-                neural network that gives the drift of a reference process 
+                neural network that gives the drift of a reference process. If none, a free diffusion (DU=0) is used as the reference. 
           
         Returns:
-
+            kldyn : float
+                Dynamic KL divergence computed along trajectories. 
+            kl_static : float
+                Estimate of KL divergence between target final and reached final distribution
+            mean0 : float
+                Estimated sample mean of the final achieved distribution
+            var0 : float 
+                Estimated sample variance of the final achieved distribution
         ====
         """
 
@@ -153,8 +160,10 @@ class SDE(SDEBase):
             dw = self.generate_innovation(dt,testing_samples)
 
             with torch.no_grad():
-
-                du_ref = duref_net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1)),xinit_ref[:,0,None])))
+                if duref_net is not None:
+                    du_ref = duref_net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1)),xinit_ref[:,0,None])))
+                else: 
+                    du_ref = torch.zeros_like(xinit_ref[:,0,None],dtype=torch.float32,requires_grad=False)
 
                 du_bar = self.net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
                                                         ,xinit[...,[0]]))).detach()
