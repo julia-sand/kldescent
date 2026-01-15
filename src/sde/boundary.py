@@ -109,7 +109,7 @@ class OverdampedFullLandauer(Boundaries):
 
     def Ufinal(self,q):
 
-        return ((q**2-1)**2)/12
+        return ((q**2-1)**2)*12
 
     def scorefinal(self,q):
         #negative log-gradient of the final distribution 
@@ -166,7 +166,7 @@ class OverdampedLandauer(OverdampedFullLandauer):
         self.qmax = 6
 
     def Uinitial(self,q):
-        return ((q-1)**4)/12
+        return ((q-1)**4)*12
 
     def qinitial(self,q):
 
