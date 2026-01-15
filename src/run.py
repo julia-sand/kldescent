@@ -67,7 +67,7 @@ def run():
             metric_.update_metrics(epoch+1, loss_out)
             
             #make plots
-            plot_utils = PlotUtils(metrics_logger.get_results_path(),epoch)
+            plot_utils = PlotUtils(folder = metrics_logger.get_results_path(),epoch=epoch)
 
             plot_utils.checkpoint_plots_du()
             plot_utils.make_girsanov_net_plots()

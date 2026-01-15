@@ -4,6 +4,7 @@ import yaml
 from mpl_toolkits import mplot3d
 
 import torch
+from torch.nn import DataParallel
 import numpy as np
 
 from ..model.nn import RhoNeuralNetwork,NeuralNetwork
@@ -147,12 +148,14 @@ class PlotUtils():
     def load_perturbative_du_checkpoint(self):
 
         self.net = self.referencesol.duref_net #NeuralNetwork(self.boundary_cond,self.data_loaded)
+        self.net = DataParallel(self.net)
         #self.net.load_checkpoint(self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
         self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
     def load_du_checkpoint(self):
         self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
         self.net.load_checkpoint(self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
+        self.net = DataParallel(self.net)
         self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
     def load_rho_checkpoint(self):
@@ -274,6 +277,7 @@ class PlotUtils():
                                                     xout,
                                                     time=self.boundary_cond.params["Tf"],vmax=0.5,refsol=self.referencesol)
         
+        h,l = self.plotter.get_all_subplot_handles_labels(fig)
         self.plotter.make_legend(fig,h,l)
         self.plotter.make_colourbar(fig,vmax=0.5)
         

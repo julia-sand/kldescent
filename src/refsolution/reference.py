@@ -72,7 +72,7 @@ class RefSolution():
                 pertsol.save_perturbative()
                 print("Perturbative Results saved.")
                 
-            self.duref_net = perturbative_du_interp(self)
+            self.duref_net = perturbative_du_interp(self,mlp_net)
         
         self.duref_net.eval()
 

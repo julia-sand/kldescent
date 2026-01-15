@@ -200,8 +200,8 @@ class RhoNeuralNetwork(nn.Module):
             #nn.ReLU(),
             )  
 
-
     def forward(self, x0, condition=""):   #how the model should evaluate
+        
         if condition=="log": 
             return self.NNx(x0)
         else:
