@@ -79,7 +79,6 @@ class MarginalHalfBridgePerturbation():
         """
         
         return 2*self.v11(t0,t2)
-    
 
     def f02(self,t0,t2):
                 

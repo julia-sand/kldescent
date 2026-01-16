@@ -9,9 +9,9 @@ from ..utilfunctions import *
 
 class CellProblem():
 
-    def __init__(self,boundary,save_location,bridge_type="marginal half"):
+    def __init__(self,boundary,save_location,bridge_type="marginal"):
         """
-        class for solving the cell problem, which is a 'halfbridge' problem
+        class for solving the cell problem, which is a 'marginal halfbridge' problem
 
         args: 
             boundary : class

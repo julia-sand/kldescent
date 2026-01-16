@@ -41,11 +41,12 @@ def mcintegrator(x0,y0,
         idx = np.argsort(x0)
         return np.interp(qT,x0[idx],zchop(y0[idx]))
 
-    t_vec = np.linspace(0,Tf,num_steps) #time vector
-    
+    dt_temp = Tf/num_steps #compute size of timestep
+
     #generate trajectories
     traj =  np.tile(qax[:,np.newaxis],(1,mc_samples)) + \
-        np.sqrt(2*t_vec[1]/beta)*np.sum(Generator.standard_normal((num_qsamples,mc_samples,num_steps)),axis=2)
+        np.sqrt(2*dt_temp/beta)*np.sum(Generator.standard_normal((num_qsamples,mc_samples,num_steps)),axis=2)
+    
     #traj = np.flip(traj,axis = 1) #flip along columns
     yT = np.mean(phifinal(traj,qax,y0),axis=1) 
 
