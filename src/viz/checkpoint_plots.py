@@ -128,7 +128,7 @@ class PlotUtils():
         self.load_perturbative_du_checkpoint()
         
         #self.make_intermediate_histograms(plottimes=plottimes)
-        self.make_contour_plot2(plottimes=plottimes)
+        #self.make_contour_plot2(plottimes=plottimes)
         self.plotter.plot_drift(times = plottimes,net=self.net,refsol=self.referencesol)#[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
 
     def make_sde_plots(self):

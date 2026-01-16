@@ -1,6 +1,7 @@
 """
 trains a simple neural network to interpolate the estimated
 perturbative drift from the csv
+
 When called directly also computes the solution of the fokker planck and plots
 contour plots
 """

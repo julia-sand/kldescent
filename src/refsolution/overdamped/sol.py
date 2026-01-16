@@ -62,7 +62,7 @@ def get_solution_in_time(cell,integrator,
     for t in range(1,tnum):
         
         #compute one step of the proximal recursion
-        xphi_Tt,phi_Ttemp = integrator(phi_out[t-1,:,0],phi_out[t-1,:,1],dt,cell.beta,num_steps=int(np.floor(100/tnum)))
+        xphi_Tt,phi_Ttemp = integrator(phi_out[t-1,:,0],phi_out[t-1,:,1],dt,cell.beta,num_steps=1)
         
         #save phi_(T-t)
         phi_out[t,:,0] = xphi_Tt
@@ -94,13 +94,15 @@ def save_array(arr_out,save_location):
     np.savetxt(save_location + "/overdamped.csv", arr_out ,fmt="%10.6f",header = "t,q,rho,V",delimiter=',')
     return
 
-def compute_overdamped(boundary,save_location,bridge_type="marginal half"):
+def compute_overdamped(boundary,save_location,bridge_type="marginal"):
     
     cell = CellProblem(boundary,save_location,bridge_type=bridge_type)
     cell.iteration(integrator=mcintegrator,
                     num_iters=20)
 
-    arr = get_solution_in_time(cell,integrator=mcintegrator)
+    arr = get_solution_in_time(cell,integrator=mcintegrator,
+                            xnum=10000,
+                            tnum=100)
 
     save_array(arr,save_location)
 

@@ -25,7 +25,7 @@ class RefSolution():
             reference drift for integration
     """
 
-    def __init__(self, boundary=None, folder_name=None):
+    def __init__(self, boundary=None, folder_name=None, bridge_type="marginal"):
         """
         Initialises parameters and directs to the reference solutions. 
         If no reference solution is available in the folder, then computes the reference solution
@@ -50,23 +50,33 @@ class RefSolution():
         self.perturb_underdamped_loc = self.get_ref_path()+"/perturbative_underdamped.csv"
         self.ref_loc = self.get_ref_path()+"/refsol.csv"
 
-
         #initialise a simple neural net
         mlp_net = NeuralNetwork(self.boundary) #MLP()
+
+        #get perturbative sol 
 
         try:
             #compute corrections
             self.duref_net = perturbative_du_interp(self,mlp_net)
         except FileNotFoundError:
+
             try: 
                 print("Perturbative results not available. Computing corrections...")
-                pertsol = MarginalHalfBridgePerturbation(boundary,self)
+
+                #initialise correct bridge type
+                pertsol = self.get_perturbative_calculations(bridge_type)
                 pertsol.save_perturbative()
+            
             except FileNotFoundError:
                 print("Overdamped results not available. Solving cell problem...")
                 #compute overdamped ref solution
+
                 compute_overdamped(self.boundary,self.get_ref_path())
+
                 print("Cell problem completed. Computing Corrections...")
+                
+                #initialise correct bridge type
+                pertsol = self.get_perturbative_calculations(bridge_type)
                 
                 pertsol = MarginalHalfBridgePerturbation(boundary,self)
                 pertsol.save_perturbative()
@@ -75,6 +85,21 @@ class RefSolution():
             self.duref_net = perturbative_du_interp(self,mlp_net)
         
         self.duref_net.eval()
+
+    def get_perturbative_calculations(self,bridge_type):
+        """initialise the class to compute the perturbative solution 
+        depending on the bridge type
+        args: 
+            bridge_type : str
+                "marginal", "half" 
+        """
+
+        if bridge_type == "marginal":
+            pertsol = MarginalHalfBridgePerturbation(self.boundary,self)
+        else:  #update this to compute the half bridge solution
+            pertsol = MarginalHalfBridgePerturbation(self.boundary,self)
+
+        return pertsol
 
     def get_ref_path(self):
         #returns the folder where the reference solution is expected to be
