@@ -23,7 +23,7 @@ class Pretrain():
         
         if path_to_pretrain is None:
             self.refsol = refsol 
-            self.path = self.refsol.perturb_underdamped_loc#overdamped_loc        
+            self.path = self.refsol.perturb_underdamped_loc #overdamped_loc        
         else:
             self.refsol = None  #overwrites the reference solution and learn straight from the csv
             self.path = path_to_pretrain 

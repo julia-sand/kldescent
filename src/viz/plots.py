@@ -358,9 +358,9 @@ class PlotFuns():
     #add perturbative  distributions to plots if available
     if refsol is not None:
          
-      xref,posref = refsol.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped")   
-      ax_pos.fill_between(xref,posref,color="green",alpha=0.5,zorder=1000,label="Perturbative Computed")
-    
+      #xref,posref = refsol.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped")   
+      #ax_pos.fill_between(xref,posref,color="green",alpha=0.5,zorder=1000,label="Perturbative Computed")
+      pass
     #add reference distributions to plots
     ax_pos.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
             self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,num=1000)),
