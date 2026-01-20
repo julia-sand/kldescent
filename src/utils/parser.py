@@ -39,7 +39,7 @@ def fetch_results_folder_from_cmd():
     # Instantiate the parser
     parser6 = argparse.ArgumentParser()
     
-    parser6.add_argument('-folder','--folder', type=str, default="results1",
+    parser6.add_argument('-folder','--folder', type=str, default="results2",
                         help='Folder where to run the plots.')
 
     args6 = parser6.parse_known_args()

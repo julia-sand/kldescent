@@ -158,7 +158,7 @@ class RefSolution():
             time *= self.boundary.params["epsilon"]**2
 
         ##fetch the reference data approximation data
-        arrtemp = arr[np.where(arr[:,0]==np.round(time,5))] 
+        arrtemp = arr[np.where(arr[:,0]==np.round(time,6))] 
         arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
 
         if quantity =="value":

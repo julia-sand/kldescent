@@ -32,9 +32,9 @@ class CellProblem():
         self.beta = 1/np.sqrt(self.A)
         self.M = self.boundary.params["weight"]
 
-        if bridge_type=="marginal half":
+        if bridge_type in ["marginal","half"]:
             self.power = (self.M*self.B)/(self.A+self.M*self.B)
-        elif bridge_type=="full":
+        elif bridge_type == "full":
             self.power = 1
         else:
             self.power = 1
@@ -128,10 +128,8 @@ class CellProblem():
 
     def plot_factors_HATPHI(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
 
-        #plt.scatter(xhatphi,normalise(xhatphi,hatphiT), label="t=T")
-        #plt.scatter(xhatphi,hatphi0, label="t=0")
         plt.scatter(xpsi,hatphiT, label="t=T")
-        try:
+        try: #plot known solution for gaussians
             plt.plot(self.q,normalise(self.q,self.refsol.hatphi_t(self.q,self.Tf2)),linestyle="dashed",color="blue",alpha=0.5)
             plt.plot(self.q,normalise(self.q,self.refsol.hatphi_t(self.q,0)),linestyle="dashed",color="blue",alpha=0.5)
         except:
@@ -146,9 +144,8 @@ class CellProblem():
         
         plt.scatter(xhatphi,psi0, label="t=0",zorder=100)
         plt.scatter(xpsi,psiT, label="t=T",zorder=100)
-        #plt.scatter(xpsi,normalise(xpsi,psiT), label="t=0")
 
-        try:
+        try: #plot known solution for gaussians
             plt.plot(self.q,normalise(self.q,self.refsol.phi_t(self.q,self.Tf2)),linestyle="dashed",color="blue",alpha=0.5)
             plt.plot(self.q,normalise(self.q,self.refsol.phi_t(self.q,0)),linestyle="dashed",color="orange",alpha=0.5)
         except:

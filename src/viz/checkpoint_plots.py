@@ -85,11 +85,14 @@ class PlotUtils():
         self.boundary_cond = boundary_cond
         self.data_loaded = data_loaded
 
-        if params["mcsamples"]>0:
-            self.mc_samples = params["mcsamples"]
-        else: #use test samples if no value is specified
-            self.mc_samples = self.data_loaded["testsamples"]
-        
+        try:
+            if params["mcsamples"]>0:
+                self.mc_samples = params["mcsamples"]
+            else: #use test samples if no value is specified
+                self.mc_samples = self.data_loaded["testsamples"]
+        except TypeError:
+            self.mc_samples = 20 #overwrite if not passed or no loaded data   
+
         if epoch is None:
             self.epoch = params["epoch"]
         else:
@@ -119,7 +122,7 @@ class PlotUtils():
         self.make_sde_plots()
         self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
 
-    def perturbative_plots_du(self,plottimes=[0,5]):
+    def perturbative_plots_du(self,plottimes=[0,1,1.2,2,2.4,3,3.8,4,4.7,5]):
         """
         Runs the functions to make plots to show the results of the 
         evolution under perturbative drift 
@@ -128,8 +131,8 @@ class PlotUtils():
         self.load_perturbative_du_checkpoint()
         
         #self.make_intermediate_histograms(plottimes=plottimes)
-        #self.make_contour_plot2(plottimes=plottimes)
-        self.plotter.plot_drift(times = plottimes,net=self.net,refsol=self.referencesol)#[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
+        self.make_contour_plot2(plottimes=[0,5])
+        self.plotter.plot_drift(times = plottimes,net=self.net,refsol=self.referencesol) #[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
 
     def make_sde_plots(self):
             

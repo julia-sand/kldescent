@@ -86,12 +86,23 @@ def get_solution_in_time(cell,integrator,
              
     return np.nan_to_num(arr_out,nan=0,posinf=0,neginf=0)
 
-def save_array(arr_out,save_location):
-    
-    #make dir
-    os.makedirs(save_location,exist_ok=True)
 
-    np.savetxt(save_location + "/overdamped.csv", arr_out ,fmt="%10.6f",header = "t,q,rho,V",delimiter=',')
+def save_array(arr_out,save_location,filename="overdamped",header="t,q,rho,V"):
+    """saves an array as a csv to the given location
+    args: 
+        arr : ndarray
+            array to save
+        save_location : str
+            filepath relative to where the code is run
+        filename : str
+            name of the file
+        header : str 
+            comment to add at the top of the csv
+    """
+
+    #make dir if does not exist
+    os.makedirs(save_location,exist_ok=True)
+    np.savetxt(save_location+"/"+filename+".csv", arr_out ,fmt="%10.6f",header = header,delimiter=',')
     return
 
 def compute_overdamped(boundary,save_location,bridge_type="marginal"):
@@ -101,9 +112,11 @@ def compute_overdamped(boundary,save_location,bridge_type="marginal"):
                     num_iters=20)
 
     arr = get_solution_in_time(cell,integrator=mcintegrator,
-                            xnum=10000,
-                            tnum=100)
+                            xnum=1000,
+                            tnum=11)
 
+    arr  = zchop(arr,tol=1e-6)
+    
     save_array(arr,save_location)
 
 if __name__=="__main__":
