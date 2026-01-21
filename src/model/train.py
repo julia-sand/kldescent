@@ -46,6 +46,9 @@ class Pretrain():
         arr = np.loadtxt(self.path,
                         delimiter=",", skiprows=1)
         
+        #remove zero probability areas
+        #arr = arrtemp[np.where(arrtemp[:,2]>0)] 
+
         X = torch.tensor(arr[:,0:2], dtype=torch.float32)
         
 
