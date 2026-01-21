@@ -141,7 +141,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
                 sets the input and output locations
         """
 
-        Perturbation.__init__(boundary,reference)
+        Perturbation.__init__(self,boundary,reference)
 
         return
 
@@ -163,7 +163,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
         coeff = 1 - np.exp(t0-self.Tf)
 
         temp = np.zeros(self.xnum)
-        temp[idx] = self.d_(self.apply_filter(self.v00(t2)[idx]),self.qaxis[idx])
+        temp[idx] = self.d_(self.apply_filter(self.v00(t2)),self.qaxis)
 
         return 2*coeff*temp
 
@@ -196,7 +196,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
     def f02(self,t0,t2):
 
         coeff2 = (-t0*self.A + t0 + np.exp(-t0) - 1)
-        coeff3 = 
+        coeff3 = -2*np.sinh(t0) + (1-np.exp(-self.Tf))*((t0/self.Tf)*(3-np.exp(-self.Tf))+2*(np.cosh(t0)-1))
         #-2*t0*self.B - 2*(np.sinh(t0)-t0-(np.cosh(t0)-1)*(1-np.exp(-self.Tf)))
 
         idx = self.get_rhomask(t2)
