@@ -345,6 +345,11 @@ class PlotFuns():
     ax_mom.set_xlim((-self.qmax,self.qmax))
     ax_pos.set_xlim((-self.qmax,self.qmax))
     
+    #add perturbative analytic predictions distributions to plots if available
+    if refsol is not None:
+      xref,posref = refsol.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped")   
+      ax_pos.fill_between(xref,posref,color="green",alpha=0.5,label="Perturbative Analytic Prediction")
+      
     #set iteration properties
     colors = ["orange",self.c1]
     labels = ["Controlled by NN.","Perturbative"]
@@ -355,13 +360,7 @@ class PlotFuns():
       ax_mom.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,1])), color=colors[x[0]],label=labels[x[0]])
       ax_pos.plot(np.linspace(-self.qmax,self.qmax,num=1000), np.exp(self.fit_kde(x[1][:,0])), color=colors[x[0]],label=labels[x[0]]) 
     
-    #add perturbative  distributions to plots if available
-    if refsol is not None:
-         
-      #xref,posref = refsol.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped")   
-      #ax_pos.fill_between(xref,posref,color="green",alpha=0.5,zorder=1000,label="Perturbative Computed")
-      pass
-    #add reference distributions to plots
+    #add target boundary distributions to plots
     ax_pos.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
             self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,num=1000)),
             color="gray",alpha=0.1,label="target")
@@ -377,8 +376,8 @@ class PlotFuns():
     ax_mom.yaxis.tick_right()
     ax_mom.yaxis.set_label_position("right")
     
-    h,l = ax_pos.get_legend_handles_labels()
-    return h,l
+    #h,l = ax_pos.get_legend_handles_labels()
+    return 
   
   def make_marginal_distribution_fig(self,xvals,plottime):
 
@@ -386,8 +385,10 @@ class PlotFuns():
     fig = plt.figure(figsize=(15,8))#self.make_fig_subplots(nrows=1,ncols=1)#plt.figure(figsize=(15,8))
     ax0 = plt.subplot(1,1,1)
 
-    h,l = self.marginal_distribution(ax0,xvals,plottime)
+    self.marginal_distribution(ax0,xvals,plottime)
     
+    h,l = self.get_all_subplot_handles_labels(fig)
+
     #make legend 
     legend = fig.legend(h,l,ncols= 4, 
                             frameon=False,handlelength = 1)

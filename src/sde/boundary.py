@@ -117,12 +117,10 @@ class OverdampedFullLandauer(Boundaries):
 
     def qfinal(self,q):
         #unnormalised final reference marginal distribution
-
         return np.exp(-self.Ufinal(q)) 
 
     def q_marginal_final(self,q): 
         #normalised final reference distribution of the configuration
-        
         return self.qfinal(q)/self.pf_norm
 
     #generate the initial data
@@ -132,7 +130,6 @@ class OverdampedFullLandauer(Boundaries):
         #from where to sample the q marginals
         if mode=="initial":
             out = np.zeros((batch_samples,1))
-            #q_marginal = self.q_marginal_initial
 
         elif mode=="final": 
 
@@ -145,7 +142,6 @@ class OverdampedFullLandauer(Boundaries):
        
     def gfun(self,q):
         #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
-
         return (self.Ufinal(q) - (q**2)/2)
  
     def f(self,q,t):
@@ -154,7 +150,6 @@ class OverdampedFullLandauer(Boundaries):
 
     def euler_maruyama_step(self,xn,du_bar,dt,dw,t):
         #takes one step forward in the euler maruyama discretisation
-        
         return xn + (self.sigma0*du_bar)*dt + self.sigma0*dw
 
 class OverdampedLandauer(OverdampedFullLandauer):

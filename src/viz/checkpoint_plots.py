@@ -7,11 +7,11 @@ import torch
 from torch.nn import DataParallel
 import numpy as np
 
-from ..model.nn import RhoNeuralNetwork,NeuralNetwork
+from ..model.nn import RhoNeuralNetwork,NeuralNetwork,load_checkpoint
 from .plots import PlotFuns,update_mpl
 from ..sde import langevin
 from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
-from ..utils.getboundary import *
+from ..utils.getboundary import init_params_from_file
 from .contour import *
 from ..refsolution.reference import RefSolution,GaussRefSolution
 
@@ -102,7 +102,8 @@ class PlotUtils():
 
         self.boundary_cond.overwrite_ref_path(self.folder)
             
-        self.referencesol = RefSolution(boundary_cond,folder_name=self.folder)
+        self.referencesol = None
+        
         
         #make new folder for the results labelled with epoch
         os.makedirs(self.folder+f"/plots_{self.epoch}", exist_ok = True) 
@@ -110,6 +111,25 @@ class PlotUtils():
         self.resultsdir = self.folder+f"/plots_{self.epoch}"
         self.plotter.setresultsdir(self.resultsdir)
 
+    def load_perturbative_du_checkpoint(self):
+        
+        #initialise refsol
+        self.referencesol = RefSolution(boundary_cond,folder_name=self.folder)
+        self.net = self.referencesol.duref_net #NeuralNetwork(self.boundary_cond,self.data_loaded)
+        self.net = DataParallel(self.net)
+        self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
+
+    def load_du_checkpoint(self):
+        self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
+        load_checkpoint(self.net,self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
+        self.net = DataParallel(self.net)
+        self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
+
+    def load_rho_checkpoint(self):
+        
+        self.rhonet = RhoNeuralNetwork(self.data_loaded)
+        load_checkpoint(self.rhonet,self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
+            
     def checkpoint_plots_du(self):
         """
         Runs the functions to make plots to show the results of the 
@@ -117,12 +137,18 @@ class PlotUtils():
         """
 
         self.load_du_checkpoint()
+        self.load_ref_solution()
 
         self.plotter.plot_drift(times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net,refsol=self.referencesol)
         self.make_sde_plots()
         self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
 
-    def perturbative_plots_du(self,plottimes=[0,1,1.2,2,2.4,3,3.8,4,4.7,5]):
+    def load_ref_solution(self):
+        """initialise the reference solution and add to the class""" 
+        self.referencesol = RefSolution(self.boundary_cond,folder_name=self.folder)
+        return 
+
+    def perturbative_plots_du(self,plottimes):
         """
         Runs the functions to make plots to show the results of the 
         evolution under perturbative drift 
@@ -131,11 +157,11 @@ class PlotUtils():
         self.load_perturbative_du_checkpoint()
         
         #self.make_intermediate_histograms(plottimes=plottimes)
-        self.make_contour_plot2(plottimes=[0,5])
         self.plotter.plot_drift(times = plottimes,net=self.net,refsol=self.referencesol) #[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
+        self.make_contour_plot2(plottimes=[0,5])
 
     def make_sde_plots(self):
-            
+        
         final_plot_time = self.boundary_cond.params["Tf"]
         
         t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(final_plot_time,self.referencesol.duref_net)
@@ -148,24 +174,6 @@ class PlotUtils():
         self.plotter.save_cumulants_csv(t_vec,cumulants_nn)
         self.plotter.save_cumulants_csv(t_vec,cumulants_ref,cumulants_filename="ref_cumulants")
 
-    def load_perturbative_du_checkpoint(self):
-
-        self.net = self.referencesol.duref_net #NeuralNetwork(self.boundary_cond,self.data_loaded)
-        self.net = DataParallel(self.net)
-        #self.net.load_checkpoint(self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
-        self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
-
-    def load_du_checkpoint(self):
-        self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
-        self.net.load_checkpoint(self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
-        self.net = DataParallel(self.net)
-        self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
-
-    def load_rho_checkpoint(self):
-        
-        self.rhonet = RhoNeuralNetwork(self.data_loaded)
-        self.rhonet.load_checkpoint(self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch-1}.pt")
-            
     def make_girsanov_net_plots(self,):
         self.load_rho_checkpoint()
         self.make_contour_plot()
@@ -179,10 +187,17 @@ class PlotUtils():
 
         for i in range(len(plottimes)):
             
-            xvals= self.integrator.update_ref_statistics(plottime=plottimes[i])
+            self.integrator.net = self.net#referencesol.duref_net
+            x_du = self.integrator.update_ref_statistics(plottime=plottimes[i])
             
-            h,l = self.plotter.marginal_distribution(axs[i],[xvals.detach().numpy()],plottimes[i],refsol=self.referencesol)
+            #UPDATE NET FOR INTEGRATOR
+            self.integrator.net = self.referencesol.duref_net
+            x_ref = self.integrator.update_ref_statistics(plottime=plottimes[i])
+                        
+            self.plotter.marginal_distribution(axs[i],[x_du.detach().numpy(),x_ref.detach().numpy()],plottimes[i],refsol=self.referencesol)
             
+        h,l = self.plotter.get_all_subplot_handles_labels(fig)
+        
         #make legend 
         legend = fig.legend(h,l,ncols= 4, 
                                 frameon=False,handlelength = 1)
@@ -294,6 +309,15 @@ def compute_ref_dynamic_kl(boundary):
     Uses the reference position and momentum variance and estimates the integral
     E_(P) (du)**2 in the interval [0,T]
     where the (P) is the path measure estimated with a Gaussian at each step 
+    
+    ##TODO: update this for non-gaussian
+    
+    args:
+        refsolution : class
+            specify the reference solution for comparison
+    returns: 
+        kldyn : float
+            estimate of the kl divergence computed for the reference solution  
     """ 
     
     times = boundary.get_reference_timegrid()
