@@ -129,7 +129,7 @@ class RefSolution():
         except FileNotFoundError:
             return np.linspace(0,time)
     
-    def get_quantity(self,time,quantity,data=None,arr=None):
+    def get_quantity(self,time,quantity,data=None,arr=None,time_type="t2"):
         """
         args:
             time : float
@@ -153,7 +153,7 @@ class RefSolution():
         if arr is None: #default overdamped
             arr = self.get_ref_data(data=data)  
 
-        if data=="perturbative underdamped":
+        if time_type=="t0":
             #multiply by eps**2 to get t2 from t0 
             time *= self.boundary.params["epsilon"]**2
 

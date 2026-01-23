@@ -80,8 +80,9 @@ if __name__=="__main__":
     from ...sde.boundary import *
     
     boundary = UnderdampedLandauer()
+
     #get the reference solution folder
-    reference_sol = RefSolution(boundary)
+    reference_sol = RefSolution(boundary,folder="results_temp2")
     
     mlp_net = perturbative_du_interp(reference_sol)
     contour(boundary,reference_sol,mlp_net)

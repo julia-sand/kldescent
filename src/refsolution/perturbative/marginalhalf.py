@@ -233,7 +233,7 @@ if __name__=="__main__":
     from ...sde.boundary import *
     
     boundary = UnderdampedLandauer()
-    reference = RefSolution(boundary=boundary)
+    reference = RefSolution(boundary=boundary,folder_name="results_temp2")
     pertsol = MarginalHalfBridgePerturbation(boundary,reference)
     pertsol.save_perturbative()
     pertsol.save_perturbative_cumulants()
