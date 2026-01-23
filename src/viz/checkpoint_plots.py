@@ -149,8 +149,7 @@ class PlotUtils():
         return 
 
     def perturbative_plots_du(self,plottimes):
-        """
-        Runs the functions to make plots to show the results of the 
+        """        Run the functions to make plots to show the results of the 
         evolution under perturbative drift 
         """
         
@@ -161,22 +160,32 @@ class PlotUtils():
         self.make_contour_plot2(plottimes=[0,5])
 
     def make_sde_plots(self):
-        
+        """Make plots and save results of sde integration 
+        1. compute final point clouds
+        2. make final time marginal distribution plot
+        3. compute cumulants along trajectories 
+        4. make cumulant plots
+        5. save csv of reference and computed csvs. 
+        """
+
+
         final_plot_time = self.boundary_cond.params["Tf"]
         
         t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(final_plot_time,self.referencesol.duref_net)
         
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
-        self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time)
+        self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,refsol=self.referencesol)
         
         fig = self.plotter.plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],["NN estimated","Perturbative"],self.data_loaded["testsamples"])
         self.plotter.save_fig_(fig,"cumulants")
         self.plotter.save_cumulants_csv(t_vec,cumulants_nn)
         self.plotter.save_cumulants_csv(t_vec,cumulants_ref,cumulants_filename="ref_cumulants")
+        plt.close("all")
 
     def make_girsanov_net_plots(self,):
         self.load_rho_checkpoint()
         self.make_contour_plot()
+        plt.close("all")
 
     def make_intermediate_histograms(self,plottimes):
 
@@ -216,6 +225,8 @@ class PlotUtils():
         self.load_rho_checkpoint()
         self.make_contour_plot()
         #self.plot_pdf_3d()
+        plt.close("all")
+
     
     def compute_rho_nn(self,x_samples=None,*_):
         """
@@ -281,8 +292,11 @@ class PlotUtils():
         ax.plot3D(x, y, z, 'green')
         ax.set_title('3D Line Plot')
         plt.savefig(self.resultsdir+"/test_3d.png",bbox_inches="tight")        
+        plt.close("all")
 
     def make_contour_plot(self):
+        """plot the learned distribution at final time"""
+        
         xout,jointout = self.compute_rho_nn(x_samples=20)
         
         fig,ax = plt.subplots()
@@ -311,7 +325,7 @@ def compute_ref_dynamic_kl(boundary):
     where the (P) is the path measure estimated with a Gaussian at each step 
     
     ##TODO: update this for non-gaussian
-    
+
     args:
         refsolution : class
             specify the reference solution for comparison

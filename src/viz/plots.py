@@ -208,7 +208,7 @@ class PlotFuns():
 
     if refsol is not None:
       #plot marginals
-      x,ptx = refsol.get_quantity(np.round(time,6),quantity = "underdamped marginal",data="perturbative underdamped")
+      x,ptx = refsol.get_quantity(np.round(time,6),quantity = "underdamped marginal",data="perturbative underdamped",time_type="t0")
       ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Perturbative Calculated")
 
     #plot joint distribution
@@ -277,7 +277,7 @@ class PlotFuns():
       ax[t].set_ylabel(r"$\mathbb{U}$")
       ax[t].set_ylim((-5,5))
       if refsol is not None:
-        xref,duref = refsol.get_quantity(round(times[t],3), "underdamped drift", data="perturbative underdamped")
+        xref,duref = refsol.get_quantity(round(times[t],3), "underdamped drift", data="perturbative underdamped",time_type="t0")
         ax[t].plot(xref,-0.2*duref/(2**0.5),label="Perturbative")
         ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
                 self.evaluate_net_output(refsol.duref_net,times[t]),
@@ -347,8 +347,10 @@ class PlotFuns():
     
     #add perturbative analytic predictions distributions to plots if available
     if refsol is not None:
-      xref,posref = refsol.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped")   
+      xref,posref = refsol.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped",time_type="t0")   
       ax_pos.fill_between(xref,posref,color="green",alpha=0.5,label="Perturbative Analytic Prediction")
+      xref,posref = refsol.get_quantity(plottime,"marginal", data="overdamped",time_type="t0")   
+      ax_pos.fill_between(xref,posref,color="yellow",alpha=0.5,label="Overdamped boundary conditions",zorder=10000)
       
     #set iteration properties
     colors = ["orange",self.c1]
@@ -379,13 +381,13 @@ class PlotFuns():
     #h,l = ax_pos.get_legend_handles_labels()
     return 
   
-  def make_marginal_distribution_fig(self,xvals,plottime):
+  def make_marginal_distribution_fig(self,xvals,plottime,refsol=None):
 
     #make figure object
     fig = plt.figure(figsize=(15,8))#self.make_fig_subplots(nrows=1,ncols=1)#plt.figure(figsize=(15,8))
     ax0 = plt.subplot(1,1,1)
 
-    self.marginal_distribution(ax0,xvals,plottime)
+    self.marginal_distribution(ax0,xvals,plottime,refsol)
     
     h,l = self.get_all_subplot_handles_labels(fig)
 
