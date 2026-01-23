@@ -61,7 +61,7 @@ def get_solution_in_time(cell,integrator,
     
     for t in range(1,tnum):
         
-        #compute one step of the proximal recursion
+        #compute one step phi evolution 
         xphi_Tt,phi_Ttemp = integrator(phi_out[t-1,:,0],phi_out[t-1,:,1],dt,cell.beta,num_steps=1)
         
         #save phi_(T-t)
@@ -81,7 +81,7 @@ def get_solution_in_time(cell,integrator,
                                                             normalise(q,compute_rho(phi_t,hatphi_t)),
                                                             compute_V(phi_t,cell.A,cell.B)))
 
-        #compute one step of the proximal recursion
+        #compute next step of the hatphi evolution 
         xhatphi_t,hatphi_temp = integrator(xhatphi_t,hatphi_temp,dt,cell.beta,num_steps=int(np.floor(1000/tnum)))
              
     return np.nan_to_num(arr_out,nan=0,posinf=0,neginf=0)
