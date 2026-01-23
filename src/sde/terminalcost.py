@@ -84,7 +84,7 @@ class GirsanovNet(TerminalCost):
         self.rhotrainer.train_loop(integrator)
 
         #save the checkpoint
-        save_nn_checkpoint(self.rhonet,loc=self.logger.newpath+f"/checkpoints/{self.rhonet.module.net_name}_checkpoint_{epoch}.pt")
+        save_nn_checkpoint(self.rhonet,loc=self.logger.newpath+f"/checkpoints/{self.rhonet.module.net_name}_checkpoint_{epoch+1}.pt")
 
     def get_logpdf(self,x):
         return torch.nan_to_num(self.rhonet(x,condition="log"))

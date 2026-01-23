@@ -313,7 +313,7 @@ class SDE(SDEBase):
 
         with torch.no_grad():
 
-            t_vec = self.generate_time_grid(Tf,tsteps=16)
+            t_vec = self.generate_time_grid(Tf,tsteps=self.sde_params["tsteps"])#tsteps=16)
 
             #preallocate girsanov integrals
             girs = torch.zeros((num_samples,1),requires_grad=False,dtype=torch.float32)

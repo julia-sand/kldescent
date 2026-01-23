@@ -6,6 +6,23 @@ from torch import nn
 
 from ..utils.parser import du_network_params,rho_network_params,fetch_checkpoint_path
 
+
+def load_checkpoint(net,checkpointpath):
+    try:
+        net.load_state_dict(torch.load(checkpointpath, weights_only=True))
+        print(net.net_name+": Checkpoint loaded successfully.")    
+    except FileNotFoundError:
+        print("The checkpoint file at "+checkpointpath+" was not found")
+        print("Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch to load when using a default with --folder. For loading a specific checkpoint file with a different filename, use the --checkpointpath option.")
+        print("Continuing with default initialisation")
+        pass
+        #raise FileNotFoundError
+    except AttributeError:
+        print("Checkpoint could not be loaded. Checkpoint format not compatible with initialised network. Continuing with default initialisation-")
+        #raise AttributeError
+        pass
+
+
 def save_nn_checkpoint(net,loc):
     
     if isinstance(net, torch.nn.DataParallel):
@@ -135,7 +152,7 @@ class NeuralNetwork(nn.Module):
 
         self.checkpoint_path = fetch_checkpoint_path()
         if self.checkpoint_path is not None: #automatically loads a checkpoint from the command line
-            self.load_checkpoint(self.checkpoint_path)
+            load_checkpoint(self,self.checkpoint_path)
             print(f"Checkpoint at {self.checkpoint_path} loaded successfully.")
 
     def forward(self, input_vec):   #how the model should evaluate
@@ -158,22 +175,6 @@ class NeuralNetwork(nn.Module):
                 #if m.bias is not None:
                 #    torch.nn.init.xavier_uniform_(m.bias, gain=1)
 
-    def load_checkpoint(self,checkpointpath):
-        #prefix = os.path.relpath(os.curdir, start=os.path.dirname(__file__))
-        #os.getcwd() + "/" + checkpointpath
-        try:
-            self.load_state_dict(torch.load(checkpointpath, weights_only=True))
-            print("DU: Checkpoint loaded successfully.")    
-        except FileNotFoundError:
-            print("The checkpoint file in the given was not found.  \n \
-                    Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch to load when using a default with --folder. For loading a specific checkpoint file with a different filename, use the --checkpointpath option.")
-            print("Continuing with default initialisation")
-            pass
-            #raise FileNotFoundError
-        except AttributeError:
-            print("Checkpoint could not be loaded. Checkpoint format not compatible with initialised network. Continuing with default initialisation-")
-            #raise AttributeError
-            pass
 
 class RhoNeuralNetwork(nn.Module):
     """
@@ -206,21 +207,6 @@ class RhoNeuralNetwork(nn.Module):
             return self.NNx(x0)
         else:
             return torch.exp(self.NNx(x0))
-
-    def load_checkpoint(self,checkpointpath):
-        try:
-            self.load_state_dict(torch.load(checkpointpath, weights_only=True))
-            print("RHO: Checkpoint loaded successfully.")    
-        except FileNotFoundError:
-            print("The checkpoint file in the given was not found.  \n \
-                    Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch to load when using a default with --folder. For loading a specific checkpoint file with a different filename, use the --checkpointpath option.")
-            print("Continuing with default initialisation")
-            pass
-            #raise FileNotFoundError
-        except AttributeError:
-            print("Checkpoint could not be loaded. Checkpoint format not compatible with initialised network. Continuing with default initialisation-")
-            #raise AttributeError
-            pass
 
 class MLP(nn.Module):
     """Defines a simple flexible model

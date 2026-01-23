@@ -86,9 +86,7 @@ class MLE(TerminalCost):
         return -((x[...,[0]]-self.pos_mean0)**2)/(2*self.pos_var0)
 
 class Histogram(TerminalCost):
-    """
-    Find the final probabilities from an estimated histogram
-    """
+    """Find the final probabilities from an estimated histogram"""
 
     def __init__(self,boundaryconditions,logger):
 

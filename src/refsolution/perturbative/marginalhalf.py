@@ -163,7 +163,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
         coeff = 1 - np.exp(t0-self.Tf)
 
         temp = np.zeros(self.xnum)
-        temp[idx] = self.d_(self.apply_filter(self.v00(t2)),self.qaxis)
+        temp = self.d_(self.apply_filter(self.v00(t2)),self.qaxis)
 
         return 2*coeff*temp
 

@@ -96,8 +96,8 @@ class Pretrain():
         
 class Train():
     """
-    Defines the parameters of the training process and 
-    the training step
+    Defines the parameters of the training process and the training steps
+    for the neural network learning the non-perturbative drift.
     """
 
     def __init__(self, net, integrator):
