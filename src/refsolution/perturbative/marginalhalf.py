@@ -3,6 +3,8 @@ import numpy as np
 from scipy.ndimage import median_filter,generic_filter
 import scipy.ndimage as sc
 
+import pdb
+
 class Perturbation():
 
     def __init__(self,boundary,reference):
@@ -147,7 +149,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
     def DU(self,t0,t2):
         """
-        Computes the perturbative drift for the marginal half bridge
+        Compute the perturbative drift for the marginal half bridge
         args:
             t0 : float
                 fast time
@@ -194,6 +196,8 @@ class MarginalHalfBridgePerturbation(Perturbation):
         return f02_temp 
 
     def f02(self,t0,t2):
+        
+        #pdb.set_trace()
 
         coeff2 = (-t0*self.A + t0 + np.exp(-t0) - 1)
         coeff3 = -2*np.sinh(t0) + (1-np.exp(-self.Tf))*((t0/self.Tf)*(3-np.exp(-self.Tf))+2*(np.cosh(t0)-1))
@@ -233,7 +237,7 @@ if __name__=="__main__":
     from ...sde.boundary import *
     
     boundary = UnderdampedLandauer()
-    reference = RefSolution(boundary=boundary,folder_name="results_temp2")
+    reference = RefSolution(boundary=boundary,folder_name="results_temp5")
     pertsol = MarginalHalfBridgePerturbation(boundary,reference)
     pertsol.save_perturbative()
     pertsol.save_perturbative_cumulants()
