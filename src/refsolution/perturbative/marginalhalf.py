@@ -7,13 +7,14 @@ import pdb
 
 class Perturbation():
 
-    def __init__(self,boundary,reference):
+    def __init__(self,boundary,overdamped_arr,ref_path):
         
         self.boundary = boundary
-        self.reference = reference
+        
+        self.ref_path = ref_path
 
         #load the csv
-        self.overdamped_arr = self.reference.get_ref_data(data="overdamped")
+        self.overdamped_arr = overdamped_arr
 
         #define parameters
         self.t2vec = np.unique(self.overdamped_arr[:,0])
@@ -25,7 +26,8 @@ class Perturbation():
         self.B = self.boundary.bfun()
         self.C = 2*(self.A - self.B) # (self.boundary.afun() - self.boundary.bfun())
 
-        self.qaxis,_ = self.reference.get_quantity(0,"value",arr=self.overdamped_arr)
+        self.qaxis = np.unique(overdamped_arr[:,1])
+        #self.reference.get_quantity(0,"value",arr=self.overdamped_arr)
         self.xnum = len(self.qaxis) #int(self.overdamped_arr.shape[0]/len(self.t2vec))
 
         self.filter_delta = 40 
@@ -44,50 +46,20 @@ class Perturbation():
         return round(t2/(self.epsilon**2),6)
 
     def v00(self,t2):
-
-        _,v00 = self.reference.get_quantity(t2,"value",arr=self.overdamped_arr)
-        
-        return v00 
+       
+        return np.squeeze(self.overdamped_arr[np.where(self.overdamped_arr[:,0]==t2),-1]) #v00 
 
     def f00(self,t2):
 
-        _,f00 = self.reference.get_quantity(t2,"marginal",arr=self.overdamped_arr)
-        return f00
+        #_,f00 = self.reference.get_quantity(t2,"marginal",arr=self.overdamped_arr)
+        return np.squeeze(self.overdamped_arr[np.where(self.overdamped_arr[:,0]==t2),2]) 
 
     def d_(self,y,x):
 
         return self.apply_filter(np.gradient(y,x))
 
-    def DU(self,t0,t2):
-        
-        return 0
-
-    def f02(self,t0,t2):
-
-        return 0
-        
-    def marginal_perturbative(self,t0,t2):
-        
-        return 0
-
-    def xcorr(self,t0,t2):
-        return 0
-
-    def momvar(self,t0,t2):
-        return 0
-
-    def posvar(self,t0,t2):
-        return 0
-
-    def mommean(self,t0,t2):
-        return 0
-
-    def posmean(self,t0,t2):
-        return 0
-
     def save_perturbative(self,):
-        """
-        compute perturbative drift and marginal distribution of the 
+        """Compute perturbative drift and marginal distribution of the 
         position using analytic expressions.
         Results are added to a csv and saved
         """
@@ -103,7 +75,7 @@ class Perturbation():
             pertsol[t*self.xnum:(t+1)*self.xnum,-2] = self.marginal_perturbative(self.get_t0(self.t2vec[t]),self.t2vec[t])
 
         #save pertsol 
-        np.savetxt(self.reference.get_ref_path()+"/perturbative_underdamped.csv",pertsol,fmt="%10.6f",header = "t,q,rho,V,f,DU",delimiter=',')
+        np.savetxt(self.ref_path+"/perturbative_underdamped.csv",pertsol,fmt="%10.6f",header = "t,q,rho,V,f,DU",delimiter=',')
         
     def save_perturbative_cumulants(self,):
         """
@@ -123,7 +95,7 @@ class Perturbation():
             pertcumulants[t,5] = self.xcorr(self.get_t0(self.t2vec[t]),self.t2vec[t])
 
         #save pertsol 
-        np.savetxt(self.reference.get_ref_path()+"/cumulants.csv",pertcumulants,fmt="%10.6f",header = "t0,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
+        np.savetxt(self.ref_path+"/cumulants.csv",pertcumulants,fmt="%10.6f",header = "t0,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
 
 class MarginalHalfBridgePerturbation(Perturbation):
     """Class to contain the functions for computing perturbative 
@@ -133,7 +105,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
     """
 
-    def __init__(self,boundary,reference):
+    def __init__(self,boundary,overdamped_arr,ref_path):
         """
         initialises the class         
         args:
@@ -143,7 +115,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
                 sets the input and output locations
         """
 
-        Perturbation.__init__(self,boundary,reference)
+        Perturbation.__init__(self,boundary,overdamped_arr,ref_path)
 
         return
 
@@ -155,8 +127,9 @@ class MarginalHalfBridgePerturbation(Perturbation):
                 fast time
             t2 : float
                 slow time
-            dv00 : ndarray
-                gradient of V00
+        return:
+            du : ndarray
+                analytic prediction of drift 
         """
         
         #get idx 
@@ -211,11 +184,13 @@ class MarginalHalfBridgePerturbation(Perturbation):
         term2 = self.f02_term2(t0,t2,idx,f00_arr)
         term3 = self.f02_term3(t0,t2,idx,v00_arr,f00_arr)
         
+        print(np.max(np.abs(coeff2*term2 + coeff3*term3)))
         return coeff2*term2 + coeff3*term3
         
     def marginal_perturbative(self,t0,t2):
         
         return self.f00(t2) + (self.epsilon**2)*self.f02(t0,t2)
+        #self.f00(t2) + (self.epsilon**2)*self.f02(t0,t2)
 
     def xcorr(self,t0,t2):
         return 0
@@ -237,7 +212,7 @@ if __name__=="__main__":
     from ...sde.boundary import *
     
     boundary = UnderdampedLandauer()
-    reference = RefSolution(boundary=boundary,folder_name="results_temp5")
+    reference = RefSolution(boundary=boundary,folder_name="results_temp6")
     pertsol = MarginalHalfBridgePerturbation(boundary,reference)
     pertsol.save_perturbative()
     pertsol.save_perturbative_cumulants()

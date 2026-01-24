@@ -54,7 +54,6 @@ class RefSolution():
         mlp_net = NeuralNetwork(self.boundary) #MLP()
 
         #get perturbative sol 
-
         try:
             #compute corrections
             self.duref_net = perturbative_du_interp(self,mlp_net)
@@ -78,7 +77,7 @@ class RefSolution():
                 #initialise correct bridge type
                 pertsol = self.get_perturbative_calculations(bridge_type)
                 
-                pertsol = MarginalHalfBridgePerturbation(boundary,self)
+                #pertsol = MarginalHalfBridgePerturbation(boundary,overdamped_arr = self.reference.get_ref_data(data="overdamped"),)
                 pertsol.save_perturbative()
                 print("Perturbative Results saved.")
                 
@@ -94,10 +93,12 @@ class RefSolution():
                 "marginal", "half" 
         """
 
+        overdamped_arr = self.get_ref_data(data="overdamped")
+
         if bridge_type == "marginal":
-            pertsol = MarginalHalfBridgePerturbation(self.boundary,self)
+            pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.get_ref_path())
         else:  #update this to compute the half bridge solution
-            pertsol = MarginalHalfBridgePerturbation(self.boundary,self)
+            pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.get_ref_path())
 
         return pertsol
 

@@ -63,7 +63,7 @@ def overdamped_argparser():
     # Instantiate the parser
     parser = CustomArgParse()
 
-    parser.add_argument('-bridgetype','--bridgetype', type=str, default="marginal",
+    parser.add_argument('-bridgetype','--bridgetype', type=str, default="half",
                         help='whether to use the phase space or marginal distributions in the terminal cost')
     
     parser.add_argument('-epochs','--epochs', type=int, default=1,
