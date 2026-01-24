@@ -348,9 +348,9 @@ class PlotFuns():
     #add perturbative analytic predictions distributions to plots if available
     if refsol is not None:
       xref,posref = refsol.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped",time_type="t0")   
-      ax_pos.fill_between(xref,posref,color="green",alpha=0.5,label="Perturbative Analytic Prediction")
+      ax_pos.plot(xref,posref,color="green",alpha=0.5,label="Perturbative Analytic Prediction")
       xref,posref = refsol.get_quantity(plottime,"marginal", data="overdamped",time_type="t0")   
-      ax_pos.fill_between(xref,posref,color="yellow",alpha=0.5,label="Overdamped boundary conditions",zorder=10000)
+      ax_pos.plot(xref,posref,color="yellow",alpha=0.5,label="Overdamped boundary conditions",zorder=10000)
       
     #set iteration properties
     colors = ["orange",self.c1]

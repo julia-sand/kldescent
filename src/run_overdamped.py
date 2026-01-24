@@ -44,7 +44,7 @@ def run():
 
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
-    metrics = train.Metrics(None, net, integrator, args["logstep"],metrics_logger)
+    metrics = train.Metrics(None, net, integrator,metrics_logger)
 
     for epoch in range(1,args["epochs"]+1):
         try:
@@ -58,7 +58,6 @@ def run():
         except slurmhandler.TimeLimitException: #TODO check this works?
             print(f"The training must be stopped because SLURM is about to kill the job. Training ended at epoch {epoch}")
             metrics_logger.save_checkpoint(net,epoch)
-
 
     plot_utils = PlotUtils(metrics_logger.get_results_path(),epoch=args["epochs"])
 

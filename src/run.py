@@ -49,7 +49,7 @@ def run():
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
 
-    metric_ = metrics.Metrics(net,integrator, args["logstep"], metrics_logger)    
+    metric_ = metrics.Metrics(net,integrator, metrics_logger,use_perturbative_metrics=False)    
         
     if args["pretrain"]: #if a path is provided 
         pretrain.run_pretrain(net,
@@ -63,16 +63,18 @@ def run():
 
             #update the drift nn with the current learned final distribution  
             loss_out = trainer.train_step()
+                
+            if epoch % args["logstep"]:
 
-            #update metrics and save checkpoints
-            metric_.update_metrics(epoch+1, loss_out)
-            
-            #make plots
-            plot_utils = PlotUtils(folder = metrics_logger.get_results_path(),epoch=epoch+1)
+                #update metrics and save checkpoints
+                metric_.update_metrics(epoch+1, loss_out)
+                                
+                #make plots
+                plot_utils = PlotUtils(folder = metrics_logger.get_results_path(),epoch=epoch+1)
 
-            plot_utils.checkpoint_plots_du()
-            plot_utils.make_girsanov_net_plots()
-            #plot_utils.make_contour_plot()
+                plot_utils.checkpoint_plots_du()
+                plot_utils.make_girsanov_net_plots()
+                #plot_utils.make_contour_plot()
 
         except ValueError:
             print("The training has resulted in NaN loss and therefore failed. Please retry.")

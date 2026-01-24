@@ -12,7 +12,7 @@ class Metrics():
         update_metrics
     """
 
-    def __init__(self, net, integrator, logstep, logger, use_perturbative_metrics=False):
+    def __init__(self, net, integrator, logger, use_perturbative_metrics=False):
         """
         Initialises class parameters
         args:
@@ -20,7 +20,6 @@ class Metrics():
 
             integrator : 
 
-            logstep :
             logger : 
             use_perturbative_metrics : Bool. 
                 Default False. 
@@ -29,7 +28,6 @@ class Metrics():
         self.integrator = integrator
         self.net = net
 
-        self.logstep = logstep #how frequently to save results
         self.logger = logger
         
         if use_perturbative_metrics:
@@ -64,32 +62,26 @@ class Metrics():
             if np.isnan(loss_out):
                 raise ValueError('Loss function is NaN. Terminating training process')
         
-            if (epoch % self.logstep == 0): #compute metrics 
-                with torch.no_grad():
-                    
-                    #this also updates the ref. cumulants
-                    kl_dynamic, kl_static, mean0, var0 =self.integrator.compute_metrics(self.refnet)
+            with torch.no_grad():
+                
+                #this also updates the ref. cumulants
+                kl_dynamic, kl_static, mean0, var0 = self.integrator.compute_metrics(self.refnet)
 
-                    if trainer is not None:
-                        lr_rate = trainer.scheduler.get_last_lr()[0]
-                    else:
-                        lr_rate = 0
+                if trainer is not None:
+                    lr_rate = trainer.scheduler.get_last_lr()[0]
+                else:
+                    lr_rate = 0
 
-                    self.logger.write_data_row(epoch,
-                                                loss_out,
-                                                kl_dynamic,
-                                                kl_static,
-                                                lr_rate, #,
-                                                mean0,
-                                                var0)
+                self.logger.write_data_row(epoch,
+                                            loss_out,
+                                            kl_dynamic,
+                                            kl_static,
+                                            lr_rate, #,
+                                            mean0,
+                                            var0)
 
-                    #save checkpoint 
-                    save_nn_checkpoint(self.net,loc=self.logger.newpath+f"/checkpoints/{self.net.module.net_name}_checkpoint_{epoch}.pt")
-                    #if self.rhonet is not None:
-                    #    self.logger.save_checkpoint(self.rhonet,epoch)
-            else:
-                pass
-            #else: 
-            #    with torch.no_grad():
-            #        self.integrator.update_ref_statistics()
-                    #pass
+                #save checkpoint 
+                save_nn_checkpoint(self.net,loc=self.logger.newpath+f"/checkpoints/{self.net.module.net_name}_checkpoint_{epoch}.pt")
+                #if self.rhonet is not None:
+                #    self.logger.save_checkpoint(self.rhonet,epoch)
+            
