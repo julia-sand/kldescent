@@ -42,7 +42,6 @@ class Metrics():
     def update_metrics(self, epoch, loss_out, trainer=None):
         """
         Function for computing metrics
-            -logs the metrics at logstep
             - checks for nan loss
             TODO (fix logic)- updates the metrics for final distribution, gaussian reference. 
         args:
