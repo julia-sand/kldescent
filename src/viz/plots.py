@@ -166,6 +166,38 @@ class PlotFuns():
 
     return ax, ax_pmarginal,ax_qmarginal
 
+  def compute_marginals_from_joint(self,xs,joint_out):
+    r"""Compute normalised q and p marginals from joint distribution data
+    args:
+      xs : ndarray
+      joint_out : ndarray
+        see joint_distributions_scatter_panel
+    returns: 
+      pinit : ndarray
+        set of q coordinates
+      qmargnorm : ndarray
+        normalised position marginal
+      pmargnorm : ndarray
+        normalised momentum marginal
+
+
+      """
+
+    n = joint_out.shape[0]
+    
+    joint_out_temp = np.nan_to_num(joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n)))),nan=0,posinf=0,neginf=0)
+    p_init = np.unique(xs) 
+
+    #compute marginals
+    qmarg = np.trapz(joint_out_temp,x = p_init,axis=0)#np.sum(joint_out_temp,axis=0) #np.trapz(joint_out_temp,x = p_init,axis=0)
+    pmarg = np.trapz(joint_out_temp,x = p_init,axis=1)
+    
+    #compute normalisation
+    qnorm = self.get_norm(p_init, qmarg)
+    pnorm = self.get_norm(p_init, pmarg)
+
+    return p_init,qmarg/qnorm, pmarg/pnorm
+
   def joint_distributions_scatter_panel(self,
                                         ax,
                                         ax_pmarginal,
@@ -183,28 +215,17 @@ class PlotFuns():
       joint_out: arr
         joint distribution (n**2,1) as a numpy array
       xs: arr
-        2d input data shaped (n**2,2) as numpy arr
+        2d input data shaped (n**2,2) as numpy arr (q,p). Assume that the input values of x are generated
+        using meshgrid, and so have the same values of q and p
       vmax: float
         maximum value for the scatter plots color scale
     """
-
-    #pdb.set_trace()
-    n = joint_out.shape[0]
     
-    #pdb.set_trace()
-    joint_out_temp = np.nan_to_num(joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n)))),nan=0,posinf=0,neginf=0)
-    p_init = np.unique(xs) #np.sort(Q[[0],:].flatten()) #one axis 
-    dx = np.abs(p_init[1]-p_init[0])
-
-    #compute marginals
-    qmarg = np.trapz(joint_out_temp,x = p_init,axis=0)#np.sum(joint_out_temp,axis=0) #np.trapz(joint_out_temp,x = p_init,axis=0)
-    pmarg = np.trapz(joint_out_temp,x = p_init,axis=1)
-    qnorm = self.get_norm(p_init, qmarg)
-    pnorm = self.get_norm(p_init, pmarg)
+    p_init_out,qmarg_norm,pmarg_norm = self.compute_marginals_from_joint(joint_out)
 
     #plot and format marginals
-    self.plot_marginal_joint(ax_qmarginal,p_init,qmarg/qnorm)
-    self.plot_marginal_joint(ax_pmarginal,pmarg/pnorm,p_init)
+    self.plot_marginal_joint(ax_qmarginal,p_init_out,qmarg_norm)
+    self.plot_marginal_joint(ax_pmarginal,pmarg_norm,p_init_out)
 
     if refsol is not None:
       #plot marginals
@@ -400,8 +421,9 @@ class PlotFuns():
     
     fig.tight_layout()
     
-    self.save_fig_(fig,f"/marginals_Time_{plottime}")#.png")
-    plt.close()
+    return fig,ax0  
+    
+
 
   def get_loss_output(self,filename=None):
     if filename is not None:
@@ -667,15 +689,16 @@ class PlotFuns():
 
     return d0.values(),d0.keys()
 
-
+  def get_inset_axes(self,ax):
+    return [c for c in ax.get_children() if isinstance(c, Axes)]
+      
   def get_inset_handles_labels(self,ax): 
-      """Finds the handles and labels for data plotted on inset axes of ax and returns the 
-      unique labels that can be used in a legend. 
-      """
+      """Find the handles and labels for data plotted on inset axes of ax and returns the 
+      unique labels that can be used in a legend. """
       
       #fetch all inset axes for ax
-      axes_temp = [c for c in ax.get_children() if isinstance(c, Axes)]
-           
+      axes_temp = self.get_inset_axes(ax)
+
       #return all labels and handles for each inset ax as dictionary
       labels_handles = {}
       

@@ -254,9 +254,6 @@ class LinearOU(Boundaries):
 
         return self.A*q
 
-    def get_reference_timegrid(self,time=None):
-         
-        return None
 
     def euler_maruyama_step(self,xn,du_bar,dt,dw,t):
         """
@@ -344,12 +341,6 @@ class UnderdampedLandauer(OverdampedLandauer):
         return np.column_stack((self.generate_samples_q(batch_samples,mode)
                                 ,self.Generator.standard_normal(size=(batch_samples,1))))
     
-   
-    def get_reference_timegrid(self,time=None):
-        if time is None:
-            time = self.params["Tf"]
-        return np.linspace(0,time)
-
     def f(self,x,t):
 
         return 0

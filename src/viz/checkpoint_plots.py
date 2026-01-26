@@ -168,23 +168,47 @@ class PlotUtils():
         5. save csv of reference and computed csvs. 
         """
 
-
         final_plot_time = self.boundary_cond.params["Tf"]
         
         t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(final_plot_time,self.referencesol.duref_net)
         
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
-        self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,refsol=self.referencesol)
         
+        #marginal distribution fig
+        fig,ax0 = self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,refsol=self.referencesol)
+        
+        #add rhonet results to plot
+
+        
+        self.plotter.save_fig_(fig,f"marginal_time_{final_plot_time}")
+        
+        #cumulant figs and csv 
         fig = self.plotter.plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],["NN estimated","Perturbative"],self.data_loaded["testsamples"])
         self.plotter.save_fig_(fig,"cumulants")
         self.plotter.save_cumulants_csv(t_vec,cumulants_nn)
         self.plotter.save_cumulants_csv(t_vec,cumulants_ref,cumulants_filename="ref_cumulants")
+        
         plt.close("all")
+
+    def add_rhonet_results_to_marginalax(self,fig,ax0):
+        
+        self.load_rho_checkpoint()
+        xs,joint_out = compute_rho_nn()
+
+        pinit,qmargnorm,pmargnorm = self.plotter.compute_marginals_from_joint(xs,joint_out)
+
+        
+        ax0
+
+
+
+
+
 
     def make_girsanov_net_plots(self,):
         self.load_rho_checkpoint()
         self.make_contour_plot()
+       
         plt.close("all")
 
     def make_intermediate_histograms(self,plottimes):
@@ -319,7 +343,7 @@ class PlotUtils():
         plt.close()
         
 
-def compute_ref_dynamic_kl(boundary):
+def compute_ref_dynamic_kl(refsolution):
     """Estimate of the dynamic kl divergence for the Gaussian reference data.
     Uses the reference position and momentum variance and estimates the integral
     E_(P) (du)**2 in the interval [0,T]
@@ -335,7 +359,7 @@ def compute_ref_dynamic_kl(boundary):
             estimate of the kl divergence computed for the reference solution  
     """ 
     
-    times = boundary.get_reference_timegrid()
+    times = refsolution.get_reference_timegrid() #boundary.get_reference_timegrid()
     klout = np.empty(len(times))
     #mean_t = boundary.get_known_solution_cumulants("Position Mean")
     var_t = boundary.get_known_solution_cumulants("Position Variance")

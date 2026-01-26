@@ -40,18 +40,6 @@ class SDEBase():
         #generate a step of brownian motion
         return np.sqrt(dt)*torch.randn((size,1),requires_grad=False,dtype=torch.float32)
 
-    def testing_time_grid(self,final_time=None):
-
-        if final_time==None:
-            final_time = self.boundary.params["Tf"]
-        
-        #get an equally spaced time grid which can be used with the reference solution
-        time_grid = self.boundary.get_reference_timegrid()
-        if time_grid is not None:
-            return time_grid
-        else:
-            return np.linspace(0,final_time,self.sde_params["tsteps"])
-
 class SDE(SDEBase):
 
     def __init__(self,
@@ -144,7 +132,7 @@ class SDE(SDEBase):
         """
 
         self.net.eval()
-        t_vec = self.generate_time_grid()#self.testing_time_grid()
+        t_vec = self.generate_time_grid()
         testing_samples = self.sde_params["testsamples"] #4000 #reduced number of samples in computing the loss metrics
 
         #initialise x values as samples from assigned initial distribution
@@ -214,7 +202,7 @@ class SDE(SDEBase):
         
         with torch.no_grad():
 
-            t_vec = torch.linspace(0,plottime,t_steps)#self.testing_time_grid()
+            t_vec = torch.linspace(0,plottime,t_steps)
 
             if x0_samples == None: #default to the integrator 
                 xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
@@ -256,7 +244,7 @@ class SDE(SDEBase):
         """
             
         #pdb.set_trace()
-        t_vec = self.boundary.get_reference_timegrid(final_time)
+        t_vec = self.generate_time_grid()
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["testsamples"],"initial"),requires_grad=False,dtype=torch.float32)
