@@ -44,7 +44,7 @@ class LossLogger():
         dirname = os.getcwd()
         run_id = "test2"#time.strftime("%Y%m%d-%H%M%S")
 
-        self.newpath = os.path.join(dirname,'results_temp6')#f'results/{run_id}')
+        self.newpath = os.path.join(dirname,'results_temp8')#f'results/{run_id}')
         os.makedirs(self.newpath, exist_ok = True)
         os.makedirs(self.newpath+"/checkpoints", exist_ok = True) #add checkpoints folder
         print("Output Directory created successfully.")   

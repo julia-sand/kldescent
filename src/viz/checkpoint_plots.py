@@ -247,13 +247,14 @@ class PlotUtils():
         
             if x_samples==None:
                 self.data_loaded["testsamples"]
+
             #generate xmesh
             Q,P = generate_mesh(x_samples,qmax=6)
             xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
             
             #torch.tensor(self.boundary_cond.generate_samples(x_samples,"initial"),dtype=torch.float32,requires_grad=False)
             pdf_out = self.rhonet(xinit.detach().clone())
-        
+            print(pdf_out)
             return xinit.detach().numpy(),pdf_out.detach().numpy()
 
     def make_contour_plot2(self,plottimes = [0,1,2,3,4,5]):

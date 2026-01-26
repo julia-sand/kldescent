@@ -39,9 +39,7 @@ class Pretrain():
         self.clip = 0.1 #size of gradient clipping
 
     def get_pretraining_data(self):
-        """Loads data from csv 
-        to be used in training the network
-        """ 
+        """Load data from csv to be used in training the network""" 
 
         arr = np.loadtxt(self.path,
                         delimiter=",", skiprows=1)
@@ -51,15 +49,28 @@ class Pretrain():
 
         X = torch.tensor(arr[:,0:2], dtype=torch.float32)
         
-
         y = torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
         
         return X,y
 
     def transform_data(self,X,y):
-        """Implements a transformation for the data which can be customised depending on
-        what the pre-training is doing. depends on whether the boundary conditions are 
-        provided or not
+        r"""Implement a transformation for the data which can be customised depending on
+        what the pre-training is doing. 
+        
+        This is based on the transformation
+        (**) \mathbb{U}_t(q_t) = -\frac{\varepsilon}{2}\partial U_t(q_t)
+        See the paper for more details.
+
+        args:
+            X : ndarray
+                (t,q) coordinates 
+            y : ndarray
+                du(t,q)
+        returns:
+            X : ndarray
+                same as input
+            y : ndarray
+                left hand side of (**) 
         """
 
         if self.refsol is not None:
