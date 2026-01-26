@@ -124,12 +124,9 @@ class RefSolution():
         return arr 
 
     def get_reference_timegrid(self,time=None):
-        try: 
-            arr = self.get_ref_data()
-            return np.unique(arr[:,0])
-        except FileNotFoundError:
-            return np.linspace(0,time)
-    
+        arr = self.get_ref_data()
+        return np.unique(arr[:,0])
+        
     def get_quantity(self,time,quantity,data=None,arr=None,time_type="t2"):
         """
         args:
