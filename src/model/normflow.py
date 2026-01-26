@@ -139,7 +139,7 @@ class RhoNormFlow():
             self.optimizer.step()
             
         else:
-            raise BaseException 
+            raise ValueError('Loss function is NaN. Terminating training process')
             # Log loss
             #loss_hist = np.append(loss_hist, loss.to('cpu').data.numpy())
         
