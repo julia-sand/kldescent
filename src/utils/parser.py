@@ -75,7 +75,7 @@ def overdamped_argparser():
     parser.add_argument('-logstep','--logstep', type=int, default=1,
                         help='Frequency to save checkpoints and compute loss metrics')
     
-    parser.add_argument('-boundary','--boundary', type=str, default="UnderdampedGaussian",
+    parser.add_argument('-boundary','--boundary', type=str, default="UnderdampedLandauer",
                         help='which set of boundary conditions to use. See Sde.Boundary for options')
     
     parser.add_argument('-terminalcost','--terminalcost', type=str, default="GirsanovNet",
