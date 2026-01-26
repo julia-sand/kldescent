@@ -166,6 +166,14 @@ class PlotFuns():
 
     return ax, ax_pmarginal,ax_qmarginal
 
+  def reshape_joint(self,joint_out):
+    """reshape joint distribution for plotting"""
+    
+    n = joint_out.shape[0]
+    
+    return np.nan_to_num(joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n)))),nan=0,posinf=0,neginf=0)
+    
+
   def compute_marginals_from_joint(self,xs,joint_out):
     r"""Compute normalised q and p marginals from joint distribution data
     args:
@@ -182,10 +190,9 @@ class PlotFuns():
 
 
       """
-
-    n = joint_out.shape[0]
     
-    joint_out_temp = np.nan_to_num(joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n)))),nan=0,posinf=0,neginf=0)
+    joint_out_temp = self.reshape_joint(joint_out)
+    
     p_init = np.unique(xs) 
 
     #compute marginals
@@ -196,7 +203,7 @@ class PlotFuns():
     qnorm = self.get_norm(p_init, qmarg)
     pnorm = self.get_norm(p_init, pmarg)
 
-    return p_init,qmarg/qnorm, pmarg/pnorm
+    return p_init,qmarg/qnorm, pmarg/pnorm,qnorm*pnorm
 
   def joint_distributions_scatter_panel(self,
                                         ax,
@@ -221,7 +228,7 @@ class PlotFuns():
         maximum value for the scatter plots color scale
     """
     
-    p_init_out,qmarg_norm,pmarg_norm = self.compute_marginals_from_joint(joint_out)
+    p_init_out,qmarg_norm,pmarg_norm,normall = self.compute_marginals_from_joint(xs,joint_out)
 
     #plot and format marginals
     self.plot_marginal_joint(ax_qmarginal,p_init_out,qmarg_norm)
@@ -233,7 +240,7 @@ class PlotFuns():
       ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Perturbative Calculated")
 
     #plot joint distribution
-    ax.scatter(xs[...,0]/(qnorm*pnorm),xs[...,1]/(qnorm*pnorm),c=joint_out_temp.T.flatten()
+    ax.scatter(xs[...,0]/normall,xs[...,1]/normall,c=self.reshape_joint(joint_out).T.flatten()
               ,cmap="Blues",norm="log",vmin=0.0001,vmax=vmax)
     
   def make_colourbar(self,fig,vmax):
@@ -421,7 +428,7 @@ class PlotFuns():
     
     fig.tight_layout()
     
-    return fig,ax0  
+    return fig  
     
 
 

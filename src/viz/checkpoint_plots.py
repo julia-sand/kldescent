@@ -15,7 +15,7 @@ from ..utils.getboundary import init_params_from_file
 from .contour import *
 from ..refsolution.reference import RefSolution,GaussRefSolution
 
-def compute_rho_girsanov(integrator,x_samples=40,mc_samples=64,Tf=None):
+def compute_rho_girsanov(x_samples=40,integrator=None,mc_samples=64,Tf=None):
     """
     Computes an estimate of the final joint distribution using girsanov theorem
     under the input drift 
@@ -175,11 +175,7 @@ class PlotUtils():
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
         
         #marginal distribution fig
-        fig,ax0 = self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,refsol=self.referencesol)
-        
-        #add rhonet results to plot
-
-        
+        fig = self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,refsol=self.referencesol)
         self.plotter.save_fig_(fig,f"marginal_time_{final_plot_time}")
         
         #cumulant figs and csv 
@@ -190,25 +186,46 @@ class PlotUtils():
         
         plt.close("all")
 
-    def add_rhonet_results_to_marginalax(self,fig,ax0):
-        
+    def make_rhonet_marginals_plot(self):
+        """Make plot and add legend"""
+        fig = self.plot_rhonet_marginals()
+
+        h,l = self.plotter.get_all_subplot_handles_labels(fig)
+
+        self.plotter.make_legend(fig,h,l)
+
+        fig.tight_layout()
+        self.plotter.save_fig_(fig,"rho_marginals")
+        plt.close("all")
+
+    def plot_rhonet_marginals(self):
+        """compute rho data and plot"""
+
         self.load_rho_checkpoint()
-        xs,joint_out = compute_rho_nn()
 
-        pinit,qmargnorm,pmargnorm = self.plotter.compute_marginals_from_joint(xs,joint_out)
+        #generate empty figure
+        fig = self.plotter.make_marginal_distribution_fig(xvals=[],plottime=self.boundary_cond.params["Tf"])
 
+        ax0 = fig.get_axes()
+        ax_list = self.plotter.get_inset_axes(ax0[0])
         
-        ax0
+        for compute_rho_fun,label in zip([self.compute_rho_nn,compute_rho_girsanov],["girsanovnet","mc"]):
+            xs,joint_out = compute_rho_fun(x_samples=20,integrator=self.integrator)
 
-
-
-
-
+            pinit,qmargnorm,pmargnorm,_ = self.plotter.compute_marginals_from_joint(xs,joint_out)
+            
+            ax_list[0].plot(pinit,qmargnorm,label=label)
+            ax_list[1].plot(pinit,pmargnorm,label=label) 
+       
+        return fig
 
     def make_girsanov_net_plots(self,):
+        
         self.load_rho_checkpoint()
+        self.load_du_checkpoint()
         self.make_contour_plot()
        
+        self.make_rhonet_marginals_plot()
         plt.close("all")
 
     def make_intermediate_histograms(self,plottimes):
@@ -252,7 +269,7 @@ class PlotUtils():
         plt.close("all")
 
     
-    def compute_rho_nn(self,x_samples=None,*_):
+    def compute_rho_nn(self,x_samples=None,**kwargs):
         """
         Generates a statespace grid and evaluates the neural network estimate of the 
         joint probability distribution at final time 
@@ -278,7 +295,7 @@ class PlotUtils():
             
             #torch.tensor(self.boundary_cond.generate_samples(x_samples,"initial"),dtype=torch.float32,requires_grad=False)
             pdf_out = self.rhonet(xinit.detach().clone())
-            print(pdf_out)
+
             return xinit.detach().numpy(),pdf_out.detach().numpy()
 
     def make_contour_plot2(self,plottimes = [0,1,2,3,4,5]):
@@ -361,8 +378,9 @@ def compute_ref_dynamic_kl(refsolution):
     
     times = refsolution.get_reference_timegrid() #boundary.get_reference_timegrid()
     klout = np.empty(len(times))
-    #mean_t = boundary.get_known_solution_cumulants("Position Mean")
+
     var_t = boundary.get_known_solution_cumulants("Position Variance")
+
     for t in enumerate(times):
         xref,duref = boundary.get_reference_data(t[1])
         ptx = plotter.normal_distribution(xref,0,var_t[t[0]])
