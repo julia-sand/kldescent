@@ -172,7 +172,7 @@ class TrainRho():
 
         self.clip = 0.01 #gradient clipping
 
-        self.rho_epochs = 1#2048 #total number of training epochs
+        self.rho_epochs = 2048 #total number of training epochs
         self.milestone = 512 #how often to decay learning rate
         self.rho_batch = 128 #size of batch 
 
@@ -199,12 +199,21 @@ class TrainRho():
 
         ypred = self.rhonet(x0)
         Lhat = self.loss(ypred,yobs)
-        #clip_grad_norm_(self.rhonet.parameters(), self.clip)
+        clip_grad_norm_(self.rhonet.parameters(), self.clip)
 
-        ##training##
-        Lhat.backward()
-        optimiser.step()
+
         
+        
+        # Do backprop and optimizer step
+        if ~(torch.isnan(Lhat) | torch.isinf(Lhat)):
+            ##training##
+            Lhat.backward()
+            optimiser.step()
+            
+        else:
+            raise ValueError('Girsanov net: Loss function is NaN. Terminating training process')
+            # Log loss
+
         return #loss_out
 
 
