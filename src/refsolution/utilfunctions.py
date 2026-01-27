@@ -8,7 +8,7 @@ def interpolate_(q,xs,phis):
 
 def normalise(x,y):
     idx = np.argsort(x)
-    return y.copy()/np.trapz(y[idx],x[idx])
+    return y.copy()/np.trapezoid(y[idx],x[idx])
 
 def zchop(x,tol=1e-10):
    
