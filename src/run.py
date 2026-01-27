@@ -2,7 +2,6 @@ import os
 
 import numpy as np
 import torch
-from torch.nn import DataParallel
 from tqdm import tqdm
 
 from src.model import *
@@ -35,8 +34,6 @@ def run():
     
     #log the params
     metrics_logger.log_dict(net.params)
-    
-    net = DataParallel(net) #use data paralisation to speed up evaluations
     
     terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,metrics_logger)
     
