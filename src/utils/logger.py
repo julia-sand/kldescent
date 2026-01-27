@@ -14,13 +14,12 @@ class LossLogger():
 
     Attributes
     ----------
-    plotter: 
+    
 
     Methods
     -------
     __init__()
        
-    
     write_data_row()
         #writes a row of data to the csv
     
@@ -29,22 +28,19 @@ class LossLogger():
     
     make_epoch_plots()
         #calls plotter to make correct plots at the epoch
-
     '''
-
     
     def __init__(self):
-        """
-        creates a timestamped results folder  
-        adds a subfolder for checkpoints
-        initialises a csv to record loss values
+        """Create a timestamped results folder  
+        Add a subfolder for checkpoints
+        Initialise a csv to record loss values
         """
 
         ##make a directory for the results in  the place the file is run
         dirname = os.getcwd()
-        run_id = "test2"#time.strftime("%Y%m%d-%H%M%S")
+        run_id = time.strftime("%Y%m%d-%H%M%S")
 
-        self.newpath = os.path.join(dirname,'results_girs_test1')#f'results/{run_id}')
+        self.newpath = os.path.join(dirname,f'results/{run_id}')
         os.makedirs(self.newpath, exist_ok = True)
         os.makedirs(self.newpath+"/checkpoints", exist_ok = True) #add checkpoints folder
         print("Output Directory created successfully.")   
