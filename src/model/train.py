@@ -186,14 +186,14 @@ class TrainRho():
 
         return yobs
 
-
     def train_step(self,optimiser,integrator):  
 
         #reset gradients 
         optimiser.zero_grad()
         
         #initialise x values 
-        x0 = (-5 - 5)*torch.rand(self.rho_batch, 2, dtype=torch.float32,requires_grad=True) + 5
+        x0 = torch.tensor(integrator.boundary.generate_samples(self.rho_batch,mode="initial"),dtype=torch.float32,requires_grad=True) 
+        # (-5 - 5)*torch.rand(self.rho_batch, 2, dtype=torch.float32,requires_grad=True) + 5
 
         yobs = self.generate_training_data(x0,integrator)
 

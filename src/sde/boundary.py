@@ -125,7 +125,18 @@ class OverdampedFullLandauer(Boundaries):
 
     #generate the initial data
     def generate_samples(self,batch_samples,mode):
-        ##sample points from the intial distribution for q 
+        r"""sample points from the intial distribution for q 
+        
+        args:
+            batch_samples : int
+                number of samples to take
+            mode : str
+                initial or final. Return
+
+        return 
+            out : ndarray
+                samples in the shape (batch_samples,1) from the final distribution if mode=="final", else zeros in shape(batch_samples,)
+        """
 
         #from where to sample the q marginals
         if mode=="initial":
@@ -172,9 +183,18 @@ class OverdampedLandauer(OverdampedFullLandauer):
         return self.qinitial(q)/(self.pi_norm)
 
     def generate_samples(self,batch_samples,mode):
+        r"""sample points from the intial distribution for q 
         
-        ##sample points from the intial distribution for q 
-        #output as a tensor
+        args:
+            batch_samples : int
+                number of samples to take
+            mode : str
+                initial or final
+
+        return 
+            out : ndarray
+                samples in the shape (batch_samples,) from the initial or final distribution 
+        """
 
         #from where to sample the q marginals
         if mode=="initial":
@@ -209,9 +229,18 @@ class LinearOU(Boundaries):
         return np.exp(-(q**2)/2)/np.sqrt(2*np.pi)
 
     def generate_samples(self,batch_samples,mode):
+        r"""sample points from the intial distribution for q 
         
-        ##sample points from the intial distribution for q 
-        #output as a tensor
+        args:
+            batch_samples : int
+                number of samples to take
+            mode : str
+                initial or final
+
+        return 
+            out : ndarray
+                samples in the shape (batch_samples,1) from the initial or final distribution 
+        """
 
         #from where to sample the q marginals
         if mode=="initial":
@@ -298,16 +327,16 @@ class UnderdampedLandauer(OverdampedLandauer):
 
     #generate the initial data
     def generate_samples_q(self,batch_samples,mode):
-        """
-        sample points from the assigned configuration (position) distributions
+        r"""Sample points from the assigned configuration (position) distributions
+        
         args:
             batch_samples : int
                 number of samples to take of position 
             mode : str
                 either "initial" or "final" whether to take from the initial or final distributions
         returns:
-            xout : array 
-            samples from "mode" distribution with shape(batch_samples,)    
+            xout : ndarray 
+                samples from "mode" distribution with shape (batch_samples,)    
         """
 
         #from where to sample the q marginals
@@ -325,8 +354,7 @@ class UnderdampedLandauer(OverdampedLandauer):
        
     #generate the initial data
     def generate_samples(self,batch_samples,mode):
-        """
-        sample points from the assigned state distirbutions
+        r"""Sample points from the assigned state distirbutions
 
         args:
             batch_samples : int
@@ -334,7 +362,7 @@ class UnderdampedLandauer(OverdampedLandauer):
             mode : str
                 either "initial" or "final" whether to take from the initial or final distributions
         returns:
-            xout : array 
+            xout : ndarray 
                 samples from "mode" distribution with shape(batch_samples,2)    
         """
 
@@ -443,9 +471,18 @@ class UnderdampedGaussian(UnderdampedLandauer):
 
     #generate the initial data
     def generate_samples_q(self,batch_samples,mode):
+        r"""Sample points from the intial or final distributions for q (position)
         
-        ##sample points from the intial distribution for q 
-        #output as a tensor
+        args:
+            batch_samples : int
+                number of samples to take
+            mode : str
+                initial or final
+
+        return 
+            out : ndarray
+                samples in the shape (batch_samples,) from the initial or final distribution 
+        """
 
         #from where to sample the q marginals
         if mode=="initial":

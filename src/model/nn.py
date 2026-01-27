@@ -6,7 +6,6 @@ from torch import nn
 
 from ..utils.parser import du_network_params,rho_network_params,fetch_checkpoint_path
 
-
 def load_checkpoint(net,checkpointpath):
     try:
         net.load_state_dict(torch.load(checkpointpath, weights_only=True))
@@ -192,11 +191,9 @@ class RhoNeuralNetwork(nn.Module):
         super(RhoNeuralNetwork, self).__init__()
         self.NNx = nn.Sequential(
             nn.Linear(2, self.params["rhohiddenlayerneurons"] ),  #input x
-            nn.GELU(),
+            nn.ReLU(),
             nn.Linear(self.params["rhohiddenlayerneurons"] ,self.params["rhohiddenlayerneurons"] ),   #64 outputs
-            nn.GELU(),
-            nn.Linear(self.params["rhohiddenlayerneurons"] ,self.params["rhohiddenlayerneurons"] ),   #64 outputs
-            nn.GELU(),
+            nn.ReLU(),
             nn.Linear(self.params["rhohiddenlayerneurons"] , 1),   #64 outputs
             #nn.ReLU(),
             )  

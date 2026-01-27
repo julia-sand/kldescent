@@ -65,7 +65,7 @@ def contour(plotter,net):
     fig.set_figheight(15)
     fig.set_figwidth(25)
     for ax in enumerate(axs):
-        xout,jointout = compute_rho_girsanov(net,integrator1,mc_samples=1000,Tf=times[ax[0]])
+        xout,jointout = compute_rho_girsanov(integrator=integrator1,mc_samples=1000,Tf=times[ax[0]])
 
         plotter.plot_joint_panel(ax[1],times[ax[0]],jointout,xout)
     
