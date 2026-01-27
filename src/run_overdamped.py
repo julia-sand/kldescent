@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import torch
-from torch.nn import DataParallel
+#from torch.nn import DataParallel
 
 #import pdb
 #from memory_profiler import profile
@@ -32,7 +32,7 @@ def run():
         net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
 
     metrics_logger.log_dict(net.params)
-    net = DataParallel(net)
+    #net = DataParallel(net)
 
     if args["pretrain"]: #TODO this needs updating
         from model.pretrain import run_pretrain

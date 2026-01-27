@@ -81,7 +81,7 @@ class Metrics():
                                             var0)
 
                 #save checkpoint 
-                save_nn_checkpoint(self.net,loc=self.logger.newpath+f"/checkpoints/{self.net.module.net_name}_checkpoint_{epoch}.pt")
+                save_nn_checkpoint(self.net,loc=self.logger.newpath+f"/checkpoints/{self.net.net_name}_checkpoint_{epoch}.pt")
                 #if self.rhonet is not None:
                 #    self.logger.save_checkpoint(self.rhonet,epoch)
             

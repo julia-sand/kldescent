@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import torch
-from torch.nn import DataParallel
+#from torch.nn import DataParallel
 from tqdm import tqdm
 
 from src.model import *
@@ -40,7 +40,7 @@ def run():
     #TODO: add refsol to top level
     refsolution_ = RefSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
   
-    net = DataParallel(net) #use data paralisation to speed up evaluations
+    #net = DataParallel(net) #use data paralisation to speed up evaluations
     
     terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,metrics_logger)
     

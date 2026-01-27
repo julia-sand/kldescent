@@ -7,7 +7,7 @@ contour plots
 """
 
 import torch
-from torch.nn import DataParallel
+#from torch.nn import DataParallel
 
 import matplotlib.pyplot as plt 
 
@@ -40,7 +40,7 @@ def perturbative_du_interp(reference_sol,mlp_net):
         #torch.save(mlp_net.state_dict(),reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt") 
         save_nn_checkpoint(mlp_net,loc=reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt")
     
-    mlp_net = DataParallel(mlp_net)
+    #mlp_net = DataParallel(mlp_net)
 
     return mlp_net
 

@@ -24,8 +24,8 @@ def load_checkpoint(net,checkpointpath):
 
 def save_nn_checkpoint(net,loc):
     
-    if isinstance(net, torch.nn.DataParallel):
-        net = net.module
+    #if isinstance(net, torch.nn.DataParallel):
+    #    net = net.module
     
     torch.save(net.state_dict(),loc) 
 

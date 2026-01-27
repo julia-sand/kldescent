@@ -11,7 +11,7 @@ Methods
 
 import numpy as np 
 import torch
-from torch.nn import DataParallel
+#from torch.nn import DataParallel
 
 from .kl import kl_div
 from ..viz.distribution_plots import *
@@ -66,10 +66,10 @@ class GirsanovNet(TerminalCost):
 
         TerminalCost.__init__(self,boundaryconditions,logger)
         
-        rhonet = RhoNeuralNetwork() 
+        self.rhonet = RhoNeuralNetwork() 
         
-        self.rhonet = DataParallel(rhonet) 
-        self.logger.log_dict(self.rhonet.module.params)
+        #self.rhonet = DataParallel(rhonet) 
+        self.logger.log_dict(self.rhonet.params)
         
         #initialise a trainer class for rho
         self.rhotrainer = TrainRho(self.rhonet)
@@ -85,7 +85,7 @@ class GirsanovNet(TerminalCost):
         self.rhotrainer.train_loop(integrator)
 
         #save the checkpoint
-        save_nn_checkpoint(self.rhonet,loc=self.logger.newpath+f"/checkpoints/{self.rhonet.module.net_name}_checkpoint_{epoch+1}.pt")
+        save_nn_checkpoint(self.rhonet,loc=self.logger.newpath+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{epoch+1}.pt")
 
     def get_logpdf(self,x):
         return torch.nan_to_num(self.rhonet(x,condition="log"))

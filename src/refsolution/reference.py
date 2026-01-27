@@ -7,7 +7,7 @@ from ..utils.parser import fetch_results_folder_from_cmd
 from .overdamped.gauss import Gaussian_Overdamped_Ref
 from .utilfunctions import *
 from .perturbative.driftinterp import perturbative_du_interp
-from .perturbative.perturbation import MarginalHalfBridgePerturbation,HalfBridgePerturbation
+from .perturbative.corrections import MarginalHalfBridgePerturbation,HalfBridgePerturbation
 from .overdamped.sol import compute_overdamped
 from ..model.nn import MLP,NeuralNetwork
 
@@ -77,7 +77,6 @@ class RefSolution():
                 #initialise correct bridge type
                 pertsol = self.get_perturbative_calculations(bridge_type)
                 
-                #pertsol = MarginalHalfBridgePerturbation(boundary,overdamped_arr = self.reference.get_ref_data(data="overdamped"),)
                 pertsol.save_perturbative()
                 print("Perturbative Results saved.")
                 
