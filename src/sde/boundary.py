@@ -99,8 +99,8 @@ class OverdampedFullLandauer(Boundaries):
     
     def __init__(self,params=None,logger=None):
         Boundaries.__init__(self,params,logger)
-        self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
-        #self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
+        self.pf_norm = np.trapezoid(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
+        #self.pi_norm = np.trapezoid(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
         self.qmax = 6
 
     def overwrite_ref_path(self,new_path):
@@ -167,8 +167,8 @@ class OverdampedLandauer(OverdampedFullLandauer):
 
     def __init__(self,params=None,logger=None):
         OverdampedFullLandauer.__init__(self,params,logger)
-        #self.pf_norm = np.trapz(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
-        self.pi_norm = np.trapz(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
+        #self.pf_norm = np.trapezoid(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
+        self.pi_norm = np.trapezoid(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
         self.qmax = 6
 
     def Uinitial(self,q):
