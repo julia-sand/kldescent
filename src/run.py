@@ -72,7 +72,7 @@ def run():
                 #make plots
                 plot_utils = PlotUtils(folder = metrics_logger.get_results_path(),epoch=epoch+1)
 
-                #plot_utils.checkpoint_plots_du()
+                plot_utils.checkpoint_plots_du()
                 plot_utils.make_girsanov_net_plots()
                 #plot_utils.make_contour_plot()
 

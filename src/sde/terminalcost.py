@@ -58,6 +58,7 @@ class GirsanovNet(TerminalCost):
         
         args:
             boundaryconditions: class
+            logger : class
         """
         
         from ..model.nn import RhoNeuralNetwork

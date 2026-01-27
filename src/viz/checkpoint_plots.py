@@ -39,7 +39,7 @@ def compute_rho_girsanov(x_samples=40,integrator=None,mc_samples=64,Tf=None):
     """
     
     #generate xmesh
-    Q,P = generate_mesh(x_samples,qmax=4)
+    Q,P = generate_mesh(x_samples,qmax=5)
     xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
     
     #intiialise pdf 
@@ -306,7 +306,7 @@ class PlotUtils():
 
         for i in range(len(plottimes)):
 
-            xout,jointout = compute_rho_girsanov(self.integrator,x_samples=50,mc_samples=self.mc_samples,Tf=plottimes[i])
+            xout,jointout = compute_rho_girsanov(integrator=self.integrator,x_samples=50,mc_samples=self.mc_samples,Tf=plottimes[i])
 
             self.plotter.plot_joint_panel(axs[i],plottimes[i],jointout,xout,refsol=self.referencesol)
         
