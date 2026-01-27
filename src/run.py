@@ -69,11 +69,12 @@ def run():
                 #update metrics and save checkpoints
                 metric_.update_metrics(epoch+1, loss_out)
                                 
-                #make plots
-                plot_utils = PlotUtils(folder = metrics_logger.get_results_path(),epoch=epoch+1)
+                #uncomment to make plots
+                #!! creating plots will run perturbative calculations
+                #plot_utils = PlotUtils(folder = metrics_logger.get_results_path(),epoch=epoch+1)
 
-                plot_utils.checkpoint_plots_du()
-                plot_utils.make_girsanov_net_plots()
+                #plot_utils.checkpoint_plots_du()
+                #plot_utils.make_girsanov_net_plots()
                 #plot_utils.make_contour_plot()
 
         except ValueError:
