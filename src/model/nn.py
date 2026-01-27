@@ -104,6 +104,7 @@ class FourierFeatures(nn.Module):
         t = torch.cat((t.sin(), t.cos()), dim=-1)
         return t
 
+@torch.compile
 class NeuralNetwork(nn.Module):
     def __init__(self,boundary,nn_params=None):
         
