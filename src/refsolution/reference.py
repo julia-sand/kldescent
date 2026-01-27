@@ -7,7 +7,7 @@ from ..utils.parser import fetch_results_folder_from_cmd
 from .overdamped.gauss import Gaussian_Overdamped_Ref
 from .utilfunctions import *
 from .perturbative.driftinterp import perturbative_du_interp
-from .perturbative.marginalhalf import MarginalHalfBridgePerturbation
+from .perturbative.perturbation import MarginalHalfBridgePerturbation,HalfBridgePerturbation
 from .overdamped.sol import compute_overdamped
 from ..model.nn import MLP,NeuralNetwork
 
@@ -25,7 +25,7 @@ class RefSolution():
             reference drift for integration
     """
 
-    def __init__(self, boundary=None, folder_name=None, bridge_type="marginal"):
+    def __init__(self, bridge_type="marginal", boundary=None, folder_name=None):
         """
         Initialises parameters and directs to the reference solutions. 
         If no reference solution is available in the folder, then computes the reference solution
@@ -97,8 +97,10 @@ class RefSolution():
 
         if bridge_type == "marginal":
             pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.get_ref_path())
-        else:  #update this to compute the half bridge solution
-            pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.get_ref_path())
+        elif bridge_type == "half":  #update this to compute the half bridge solution
+            pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.get_ref_path())
+        else: 
+            pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.get_ref_path())
 
         return pertsol
 
@@ -178,8 +180,6 @@ class RefSolution():
             return np.interp(q,qref,duref,left=duref[0],right=duref[-1])
         except:
             return np.zeros_like(q)
-
-
 
 class GaussRefSolution(RefSolution):
     """

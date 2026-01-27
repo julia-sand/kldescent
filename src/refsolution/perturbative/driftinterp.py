@@ -14,8 +14,6 @@ import matplotlib.pyplot as plt
 from ...model.nn import save_nn_checkpoint
 from ...model.pretrain import run_pretrain
 
-from ...sde.langevin import *
-from  .marginalhalf import MarginalHalfBridgePerturbation
 
 def perturbative_du_interp(reference_sol,mlp_net):
     """Trains a neural network to approximate the perturbatively 
@@ -55,6 +53,8 @@ def contour(plotter,net):
         net : class
             trained neural net estimating a drift. 
     """
+    
+    from ...sde.langevin import *
 
     #plotter = PlotFuns(boundary,referencesol=reference_sol)
     integrator1 = SDE(boundary,net=net)

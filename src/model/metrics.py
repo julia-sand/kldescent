@@ -12,7 +12,7 @@ class Metrics():
         update_metrics
     """
 
-    def __init__(self, net, integrator, logger, use_perturbative_metrics=False):
+    def __init__(self, net, integrator, logger, refsol=None):
         """
         Initialises class parameters
         args:
@@ -30,12 +30,13 @@ class Metrics():
 
         self.logger = logger
         
-        if use_perturbative_metrics:
+        if refsol is not None:
 
-            self.reference_sol = RefSolution(integrator.boundary,folder_name=self.logger.newpath)
+            self.reference_sol = refsol #RefSolution(integrator.boundary,folder_name=self.logger.newpath)
             self.refnet = self.reference_sol.duref_net 
         else: 
-            self.refnet = None 
+            pass
+            #self.refnet = None 
 
         self.update_metrics(0, 0)
 

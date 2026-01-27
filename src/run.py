@@ -11,6 +11,7 @@ import src.sde.boundary as boundaries
 from src.utils import *
 from src.viz.checkpoint_plots import *
 import src.model.pretrain as pretrain
+from src.refsolution.reference import *
 
 def run():
 
@@ -30,12 +31,15 @@ def run():
 
     #initialise the model using parsed boundary conditions
     boundaryconditions = getattr(boundaries,args["boundary"])(logger=metrics_logger)
-        
+       
     net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
     
     #log the params
     metrics_logger.log_dict(net.params)
     
+    #TODO: add refsol to top level
+    refsolution_ = RefSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
+  
     net = DataParallel(net) #use data paralisation to speed up evaluations
     
     terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,metrics_logger)
@@ -49,8 +53,8 @@ def run():
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
 
-    metric_ = metrics.Metrics(net,integrator, metrics_logger,use_perturbative_metrics=False)    
-        
+    metric_ = metrics.Metrics(net,integrator, metrics_logger,refsol=reference_)    
+
     if args["pretrain"]: #if a path is provided 
         pretrain.run_pretrain(net,
                             path_to_pretrain=args["pretrain"])
@@ -71,7 +75,7 @@ def run():
                                 
                 #uncomment to make plots
                 #!! creating plots will run perturbative calculations
-                #plot_utils = PlotUtils(folder = metrics_logger.get_results_path(),epoch=epoch+1)
+                #plot_utils = PlotUtils(refsol=reference_,epoch=epoch+1)
 
                 #plot_utils.checkpoint_plots_du()
                 #plot_utils.make_girsanov_net_plots()

@@ -102,7 +102,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
     corrections from overdamped data for the Marginal Half Bridge:
     when the terminal cost is specified by the KL divergence between the 
     realised final distribution and a reference one (the logarithm of their ratio)
-
+    for the position marginal distribution
     """
 
     def __init__(self,boundary,overdamped_arr,ref_path):
@@ -186,6 +186,69 @@ class MarginalHalfBridgePerturbation(Perturbation):
         
         print(np.max(np.abs(coeff2*term2 + coeff3*term3)))
         return coeff2*term2 + coeff3*term3
+        
+    def marginal_perturbative(self,t0,t2):
+        
+        return self.f00(t2) + (self.epsilon**2)*self.f02(t0,t2)
+        #self.f00(t2) + (self.epsilon**2)*self.f02(t0,t2)
+
+    def xcorr(self,t0,t2):
+        return 0
+
+    def momvar(self,t0,t2):
+        return 0
+
+    def posvar(self,t0,t2):
+        return 0
+
+    def mommean(self,t0,t2):
+        return 0
+
+    def posmean(self,t0,t2):
+        return 0
+
+
+class HalfBridgePerturbation(Perturbation):
+    """Class to contain the functions for computing perturbative 
+    corrections from overdamped data for the Half Bridge:
+    when the terminal cost is specified by the KL divergence between the 
+    realised final distribution and a reference one (the logarithm of their ratio)
+    for the full phase space distribution
+    """
+
+    def __init__(self,boundary,overdamped_arr,ref_path):
+        """
+        initialises the class         
+        args:
+            boundary : class
+                determines boundary conditions and parameters
+            reference : class
+                sets the input and output locations
+        """
+
+        Perturbation.__init__(self,boundary,overdamped_arr,ref_path)
+
+        return
+
+    def DU(self,t0,t2):
+        """
+        Compute the perturbative drift for the marginal half bridge
+        args:
+            t0 : float
+                fast time
+            t2 : float
+                slow time
+        return:
+            du : ndarray
+                analytic prediction of drift 
+        """
+        
+        return 0
+
+
+    def f02(self,t0,t2):
+        
+        return 0
         
     def marginal_perturbative(self,t0,t2):
         

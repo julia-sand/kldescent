@@ -13,7 +13,7 @@ from ..sde import langevin
 from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
 from ..utils.getboundary import init_params_from_file
 from .contour import *
-from ..refsolution.reference import RefSolution,GaussRefSolution
+#from ..refsolution.reference import RefSolution,GaussRefSolution
 
 def compute_rho_girsanov(x_samples=40,integrator=None,mc_samples=64,Tf=None):
     """
@@ -66,7 +66,7 @@ class PlotUtils():
     6. adds reference solutions if they are available
     """
 
-    def __init__(self,folder=None,epoch=None):
+    def __init__(self,refsol=None,folder=None,epoch=None):
         
         update_mpl()
 
@@ -102,9 +102,8 @@ class PlotUtils():
 
         self.boundary_cond.overwrite_ref_path(self.folder)
             
-        self.referencesol = None
-        
-        
+        self.referencesol = refsol
+                
         #make new folder for the results labelled with epoch
         os.makedirs(self.folder+f"/plots_{self.epoch}", exist_ok = True) 
 
@@ -112,12 +111,14 @@ class PlotUtils():
         self.plotter.setresultsdir(self.resultsdir)
 
     def load_perturbative_du_checkpoint(self):
-        
-        #initialise refsol
-        self.referencesol = RefSolution(boundary_cond,folder_name=self.folder)
-        self.net = self.referencesol.duref_net #NeuralNetwork(self.boundary_cond,self.data_loaded)
-        self.net = DataParallel(self.net)
-        self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
+
+        if self.referencesol is None:
+            #initialise refsol
+            self.referencesol = RefSolution(boundary_cond,folder_name=self.folder)
+            self.net = self.referencesol.duref_net #NeuralNetwork(self.boundary_cond,self.data_loaded)
+
+            self.net = DataParallel(self.net)
+            self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
     def load_du_checkpoint(self):
         self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
@@ -145,7 +146,10 @@ class PlotUtils():
 
     def load_ref_solution(self):
         """initialise the reference solution and add to the class""" 
-        self.referencesol = RefSolution(self.boundary_cond,folder_name=self.folder)
+        
+        if self.referencesol is None:
+            self.referencesol = RefSolution(self.boundary_cond,folder_name=self.folder)
+        
         return 
 
     def perturbative_plots_du(self,plottimes):
