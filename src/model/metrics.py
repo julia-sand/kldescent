@@ -79,8 +79,12 @@ class Metrics():
                                             mean0,
                                             var0)
 
+                if isinstance(self.net, torch.nn.DataParallel):
+                    net_name = self.net.module.net_name
+                else:
+                    net_name = self.net.net_name
                 #save checkpoint 
-                save_nn_checkpoint(self.net,loc=self.logger.newpath+f"/checkpoints/{self.net.module.net_name}_checkpoint_{epoch}.pt")
+                save_nn_checkpoint(self.net,loc=self.logger.newpath+f"/checkpoints/{net_name}_checkpoint_{epoch}.pt")
                 #if self.rhonet is not None:
                 #    self.logger.save_checkpoint(self.rhonet,epoch)
             
