@@ -12,6 +12,7 @@ from src.viz.checkpoint_plots import *
 import src.model.pretrain as pretrain
 
 def run():
+    print(f"{torch.get_num_threads()} threads and {torch.get_num_interop_threads()} interop threads being used by torch")
 
     #create a log file and results directory
     metrics_logger = logger.LossLogger()
