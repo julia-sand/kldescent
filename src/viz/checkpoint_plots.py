@@ -384,9 +384,9 @@ def compute_ref_dynamic_kl(refsolution):
     for t in enumerate(times):
         xref,duref = boundary.get_reference_data(t[1])
         ptx = plotter.normal_distribution(xref,0,var_t[t[0]])
-        klout[t[0]] = np.trapz((duref**2)*ptx,xref)
+        klout[t[0]] = np.trapezoid((duref**2)*ptx,xref)
 
-    return np.trapz(klout,times)
+    return np.trapezoid(klout,times)
 
 if __name__=="__main__":
 

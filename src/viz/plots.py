@@ -78,7 +78,7 @@ class PlotFuns():
 
   def get_norm(self,x,y):
     idx = np.argsort(x)
-    return np.trapz(y[idx],x[idx])
+    return np.trapezoid(y[idx],x[idx])
 
   def add_boundary_conditions_scatter_panel(self,ax_pmarginal,ax_qmarginal,time):
     
@@ -196,8 +196,8 @@ class PlotFuns():
     p_init = np.unique(xs) 
 
     #compute marginals
-    qmarg = np.trapz(joint_out_temp,x = p_init,axis=0)#np.sum(joint_out_temp,axis=0) #np.trapz(joint_out_temp,x = p_init,axis=0)
-    pmarg = np.trapz(joint_out_temp,x = p_init,axis=1)
+    qmarg = np.trapezoid(joint_out_temp,x = p_init,axis=0)#np.sum(joint_out_temp,axis=0) #np.trapezoid(joint_out_temp,x = p_init,axis=0)
+    pmarg = np.trapezoid(joint_out_temp,x = p_init,axis=1)
     
     #compute normalisation
     qnorm = self.get_norm(p_init, qmarg)
