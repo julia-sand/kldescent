@@ -23,13 +23,11 @@ def load_checkpoint(net,checkpointpath):
 
 
 def save_nn_checkpoint(net,loc):
-    
-    #if isinstance(net, torch.nn.DataParallel):
-    #    net = net.module
-    
+        
     torch.save(net.state_dict(),loc) 
 
 ##SOURCE: https://github.com/miaotianyi 
+@torch.compile
 class FourierFeatures(nn.Module):
     def __init__(self, out_features: int,
                  sigma: float = 1.,
@@ -175,7 +173,7 @@ class NeuralNetwork(nn.Module):
                 #if m.bias is not None:
                 #    torch.nn.init.xavier_uniform_(m.bias, gain=1)
 
-
+@torch.compile
 class RhoNeuralNetwork(nn.Module):
     """
     Neural Network object for parametrising the form of the probability distribution 
@@ -206,6 +204,7 @@ class RhoNeuralNetwork(nn.Module):
         else:
             return torch.exp(self.NNx(x0))
 
+@torch.compile
 class MLP(nn.Module):
     """Defines a simple flexible model
     used for simple regression problems. 

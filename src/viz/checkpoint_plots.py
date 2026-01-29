@@ -4,7 +4,6 @@ import yaml
 from mpl_toolkits import mplot3d
 
 import torch
-#from torch.nn import DataParallel
 import numpy as np
 
 from ..model.nn import RhoNeuralNetwork,NeuralNetwork,load_checkpoint
@@ -117,13 +116,11 @@ class PlotUtils():
             self.referencesol = RefSolution(boundary_cond,folder_name=self.folder)
             self.net = self.referencesol.duref_net #NeuralNetwork(self.boundary_cond,self.data_loaded)
 
-            #self.net = DataParallel(self.net)
             self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
     def load_du_checkpoint(self):
         self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
         load_checkpoint(self.net,self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
-        #self.net = DataParallel(self.net)
         self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
     def load_rho_checkpoint(self):

@@ -11,7 +11,6 @@ Methods
 
 import numpy as np 
 import torch
-#from torch.nn import DataParallel
 
 from .kl import kl_div
 from ..viz.distribution_plots import *
@@ -68,7 +67,6 @@ class GirsanovNet(TerminalCost):
         
         self.rhonet = RhoNeuralNetwork() 
         
-        #self.rhonet = DataParallel(rhonet) 
         self.logger.log_dict(self.rhonet.params)
         
         #initialise a trainer class for rho

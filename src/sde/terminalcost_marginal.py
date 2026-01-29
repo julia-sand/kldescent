@@ -9,7 +9,6 @@ Methods
 
 import numpy as np 
 import torch
-#from torch.nn import DataParallel
 
 from ..viz.distribution_plots import *
 
