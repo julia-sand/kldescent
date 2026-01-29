@@ -1,0 +1,27 @@
+[project]
+name = "kldescent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "matplotlib",
+    "matplotlib-inline",
+    "numpy",
+    "pyyaml",
+    "scikit-image",
+    "scikit-learn",
+    "scipy",
+    "tqdm",
+    "torch",
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
