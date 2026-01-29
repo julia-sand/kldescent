@@ -142,7 +142,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
         return 2*coeff*temp
 
-    def f02_term3(self,t0,t2,idx,v00_arr,f00_arr):
+    def f02_term3(self,idx,v00_arr,f00_arr):
 
         #preallocate
         f02_temp = np.zeros(self.xnum)
@@ -155,7 +155,8 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
         return f02_temp 
 
-    def f02_term2(self,t0,t2,idx,f00_arr):
+    def f02_term2(self,idx,f00_arr):
+        """Compute second deriv of f00_arr"""
 
         #preallocate
         f02_temp = np.zeros(self.xnum)
@@ -168,10 +169,23 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
         return f02_temp 
 
+
+    def d_f00(self,t0,t2,idx,f00_arr):
+        """Compute gradient of f00_arr"""
+
+        #preallocate
+        f02_temp = np.zeros(self.xnum)
+
+        #compute gradient 
+        f02_temp[idx] = self.d_(f00_arr,self.qaxis[idx]) 
+
+        #take gradient
+        #f02_temp[idx] = self.d_(f02_temp[idx],self.qaxis[idx])
+
+        return f02_temp 
+
     def f02(self,t0,t2):
         
-        #pdb.set_trace()
-
         coeff2 = (-t0*self.A + t0 + np.exp(-t0) - 1)
         coeff3 = -2*np.sinh(t0) + (1-np.exp(-self.Tf))*((t0/self.Tf)*(3-np.exp(-self.Tf))+2*(np.cosh(t0)-1))
         #-2*t0*self.B - 2*(np.sinh(t0)-t0-(np.cosh(t0)-1)*(1-np.exp(-self.Tf)))
@@ -181,16 +195,45 @@ class MarginalHalfBridgePerturbation(Perturbation):
         v00_arr = self.apply_filter(self.v00(t2)[idx])
         f00_arr = self.apply_filter(self.f00(t2)[idx],mode="constant")
         
-        term2 = self.f02_term2(t0,t2,idx,f00_arr)
-        term3 = self.f02_term3(t0,t2,idx,v00_arr,f00_arr)
+        term2 = self.f02_term2(idx,f00_arr)
+        term3 = self.f02_term3(idx,v00_arr,f00_arr)
         
-        print(np.max(np.abs(coeff2*term2 + coeff3*term3)))
         return coeff2*term2 + coeff3*term3
+    
+
+    def f02_new(self,t0,t2):
+        """Compute the f02 correction. 
+        Uses the later version with a,b functions and only f00"""
+        
+        coeff2 = -(t0-(self.little_b(t0)/self.little_b(self.Tf)))
+        coeff3 = (self.little_a(t0) - (self.little_a(self.Tf)*self.little_b(t0)/self.little_b(self.Tf)))
+        #-2*np.sinh(t0) + (1-np.exp(-self.Tf))*((t0/self.Tf)*(3-np.exp(-self.Tf))+2*(np.cosh(t0)-1))
+
+        idx = self.get_rhomask(t2)
+
+        f00_arr = self.apply_filter(self.f00(t2)[idx],mode="constant")
+        
+        d_f00_2 = self.d_f00(idx,f00_arr)
+        d_f00_3 = self.d_f00(idx,d_f00_2)
+        
+        return coeff2*d_f00_2 + coeff3*d_f00_3
         
     def marginal_perturbative(self,t0,t2):
         
-        return self.f00(t2) + (self.epsilon**2)*self.f02(t0,t2)
+        return self.f00(t2) + (self.epsilon**2)*self.f02_new(t0,t2)
         #self.f00(t2) + (self.epsilon**2)*self.f02(t0,t2)
+
+    def little_a(self,t):
+        return t - 1 + np.exp(-t)
+
+    def little_b(self,t):
+        return np.sinh(t)-t-(np.cosh(t)-1)*(1-np.exp(-self.Tf))
+
+    def little_adot(self,t):
+        return 1 - np.exp(-t)
+
+    def little_bdot(self,t):
+        return np.cosh(t)-1-(np.sinh(t))*(1-np.exp(-self.Tf))
 
     def xcorr(self,t0,t2):
         return 0

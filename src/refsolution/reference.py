@@ -70,7 +70,7 @@ class RefSolution():
                 print("Overdamped results not available. Solving cell problem...")
                 #compute overdamped ref solution
 
-                compute_overdamped(self.boundary,self.get_ref_path())
+                compute_overdamped(self.boundary,self.get_ref_path(),bridge_type=bridge_type)
 
                 print("Cell problem completed. Computing Corrections...")
                 

@@ -1,8 +1,8 @@
 matplotlib==3.10.1
 matplotlib-inline==0.1.7
-numpy==1.26.4
-scikit-image==0.25.2
-scikit-learn==1.6.1
+nflows==0.14
+normflows==1.7.3
+numpy==2.4.1
 scipy==1.13.1
-torch==2.6.0+cu124
+torch==2.10.0
 tqdm==4.67.1
