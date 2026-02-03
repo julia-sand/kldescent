@@ -9,9 +9,6 @@ dependencies = [
     "matplotlib-inline",
     "numpy",
     "pyyaml",
-    "scikit-image",
-    "scikit-learn",
-    "scipy",
     "tqdm",
     "torch",
 ]

@@ -1,9 +1,6 @@
 import numpy as np
 
-from scipy.ndimage import median_filter,generic_filter
-import scipy.ndimage as sc
-
-import pdb
+#import pdb
 
 class Perturbation():
 
@@ -34,7 +31,9 @@ class Perturbation():
         
     def apply_filter(self,y,mode="nearest"):
        
-        return generic_filter(y,sc.median,size=self.filter_delta,mode=mode)
+        #apply convolution with moving averages
+        return np.convolve(y,np.ones(self.filter_delta)[::-1],'same')
+        #generic_filter(y,sc.median,size=self.filter_delta,mode=mode)
  
     def get_rhomask(self,t2):
         

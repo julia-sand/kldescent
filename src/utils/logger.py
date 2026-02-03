@@ -7,6 +7,7 @@ import numpy as np
 import torch
 import yaml
 
+from .parser import fetch_results_folder_from_cmd
 
 class LossLogger():
     '''
@@ -36,11 +37,17 @@ class LossLogger():
         Initialise a csv to record loss values
         """
 
-        ##make a directory for the results in  the place the file is run
-        dirname = os.getcwd()
-        run_id = "20260129-112014"#f"{time.strftime("%Y%m%d-%H%M%S")}"
+        #check if there is a results folder to use 
+        self.newpath = fetch_results_folder_from_cmd()
 
-        self.newpath = os.path.join(dirname,'results/'+run_id)
+        if self.newpath is None:
+            ##make a directory for the results in
+            # the place the file is run
+            dirname = os.getcwd()
+            run_id = f"{time.strftime("%Y%m%d-%H%M%S")}"
+
+            self.newpath = os.path.join(dirname,'results/'+run_id)
+        
         os.makedirs(self.newpath, exist_ok = True)
         os.makedirs(self.newpath+"/checkpoints", exist_ok = True) #add checkpoints folder
         print("Output Directory created successfully.")   

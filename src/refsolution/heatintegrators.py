@@ -1,8 +1,6 @@
 import numpy as np
-import scipy.spatial.distance as sci
 
 from .utilfunctions import *
-
 
 def mcintegrator(x0,y0,
                     Tf,
@@ -63,6 +61,8 @@ def proximal_fpk(x0,y0,
     1908.00533 "Gradient Flow Algorithms for Density Propagation in Stochastic Systems"; Caluya&Halder,2019.
     
     Integrates a simple heat equation model 
+    
+    !!Important. Check scipy compatability before using. 
     args:
         x0 : arr
             array size (n,) of samples from starting distribution
@@ -88,6 +88,8 @@ def proximal_fpk(x0,y0,
             evaluated solution (unnormalised) at each point in x_end
     """
     
+    import scipy.spatial.distance as sci
+
     #set up sampler
     Generator = np.random.default_rng(seed=42)
     
