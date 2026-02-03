@@ -13,7 +13,9 @@ import src.model.pretrain as pretrain
 from src.refsolution.reference import *
 
 def run():
-
+    
+    print(f"{torch.get_num_threads()} threads and {torch.get_num_interop_threads()} interop threads being used by torch")
+    
     #create a log file and results directory
     metrics_logger = logger.LossLogger()
 
@@ -50,7 +52,7 @@ def run():
     #initialise trainer & ref solution computation
     trainer = train.Train(net,integrator) 
 
-    metric_ = metrics.Metrics(net,integrator, metrics_logger,refsol=reference_)    
+    metric_ = metrics.Metrics(net,integrator, metrics_logger,refsol=refsolution_)    
 
     if args["pretrain"]: #if a path is provided 
         pretrain.run_pretrain(net,
@@ -72,7 +74,7 @@ def run():
                                 
                 #uncomment to make plots
                 #!! creating plots will run perturbative calculations
-                #plot_utils = PlotUtils(refsol=reference_,epoch=epoch+1)
+                #plot_utils = PlotUtils(refsol=refsolution_,epoch=epoch+1)
 
                 #plot_utils.checkpoint_plots_du()
                 #plot_utils.make_girsanov_net_plots()

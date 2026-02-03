@@ -52,7 +52,7 @@ def contour(plotter,net):
             trained neural net estimating a drift. 
     """
     
-    from ...sde.langevin import *
+    #from ...sde.langevin import *
 
     #plotter = PlotFuns(boundary,referencesol=reference_sol)
     integrator1 = SDE(boundary,net=net)

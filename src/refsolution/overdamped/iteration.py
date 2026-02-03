@@ -28,13 +28,13 @@ class CellProblem():
         self.Tf2 = self.boundary.params["Tf"]*(self.boundary.params["epsilon"]**2)
         
         self.M = self.boundary.params["weight"]
-
+        self.A = self.boundary.afun(self.boundary.params["Tf"])
+        self.B = self.boundary.bfun(self.boundary.params["Tf"])
+        self.beta = 1/np.sqrt(self.A)
+        
         if bridge_type =="marginal":
             
-            self.A = self.boundary.afun(self.boundary.params["Tf"])
-            self.B = self.boundary.bfun(self.boundary.params["Tf"])
-            self.beta = 1/np.sqrt(self.A)
-            
+             
             self.power = (self.M*self.B)/(self.A+self.M*self.B)
         elif bridge_type == "half":
             self.power = 1
