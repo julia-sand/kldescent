@@ -304,6 +304,7 @@ class PlotFuns():
     
       ax[t].set_ylabel(r"$\mathbb{U}$")
       ax[t].set_ylim((-5,5))
+      
       if refsol is not None:
         #xref,duref = refsol.get_quantity(round(times[t],3), "underdamped drift", data="perturbative underdamped",time_type="t0")
         #ax[t].plot(xref,-0.2*duref/(2**0.5),label="Perturbative")
@@ -613,7 +614,7 @@ class PlotFuns():
            
     return fig1,gs
 
-  def plot_cumulants(self,t_vec,cumulants,labels,test_samples):
+  def plot_cumulants(self,t_vec,cumulants,labels,test_samples,refsol=None):
     """
     Plots the cumulants which are computed by the evolutions
     
@@ -626,6 +627,8 @@ class PlotFuns():
         list of labels to show in the legend for each of the cumulants plotted
       test_samples : int
         number of samples used for computing estimates of the cumulants. Computes error bar estimates 
+      refsol : class
+        include preturbative predictions for cumulants
 
     returns:
       fig : figure

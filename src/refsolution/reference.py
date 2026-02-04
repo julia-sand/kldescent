@@ -49,8 +49,9 @@ class RefSolution():
         self.overdamped_loc = self.get_ref_path()+"/overdamped.csv"
         self.perturb_underdamped_loc = self.get_ref_path()+"/perturbative_underdamped.csv"
         self.ref_loc = self.get_ref_path()+"/refsol.csv"
-
-        #initialise a simple neural net
+        self.perturbative_cumulants_loc = self.get_ref_path()+"/perturbative_cumulants.csv"
+        
+        #initialise a simple neural net to approximate the drift 
         mlp_net = NeuralNetwork(self.boundary) #MLP()
 
         #get perturbative sol 
@@ -65,7 +66,8 @@ class RefSolution():
                 #initialise correct bridge type
                 pertsol = self.get_perturbative_calculations(bridge_type)
                 pertsol.save_perturbative()
-            
+                pertsol.save_perturbative_cumulants()
+
             except FileNotFoundError:
                 print("Overdamped results not available. Solving cell problem...")
                 #compute overdamped ref solution
@@ -78,6 +80,7 @@ class RefSolution():
                 pertsol = self.get_perturbative_calculations(bridge_type)
                 
                 pertsol.save_perturbative()
+                pertsol.save_perturbative_cumulants()
                 print("Perturbative Results saved.")
                 
             self.duref_net = perturbative_du_interp(self,mlp_net)
@@ -97,21 +100,20 @@ class RefSolution():
         if bridge_type == "marginal":
             pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.get_ref_path())
         elif bridge_type == "half":  #update this to compute the half bridge solution
-            pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.get_ref_path())
+            
+            pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.get_ref_path())
         else: 
             pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.get_ref_path())
 
         return pertsol
 
     def get_ref_path(self):
-        #returns the folder where the reference solution is expected to be
+        """return the folder where the reference solution files are"""
 
         return self.folder_name # os.path.dirname(__file__) + "/" + self.folder_name
     
     def get_ref_data(self,data=None):
-        """"
-        Returns an array for reference solution is expected to be
-        """
+        """Return an array for reference solution"""
         
         if data == "overdamped":
             arr = np.loadtxt(open(self.overdamped_loc),
@@ -130,6 +132,7 @@ class RefSolution():
         
     def get_quantity(self,time,quantity,data=None,arr=None,time_type="t2"):
         """
+        Get quantities to plot for the reference solution 
         args:
             time : float
                 the time to lookup the data
@@ -180,32 +183,11 @@ class RefSolution():
         except:
             return np.zeros_like(q)
 
-class GaussRefSolution(RefSolution):
-    """
-    Extends the base class adding analytic solutions for gaussian boundary conditions
-    """
-
-    def __init__(self,boundary=None,folder_name=None):   
-        
-        RefSolution.__init__(boundary,folder_name)
-        
-        #only for gaussian
-        self.refsol_phi = Gaussian_Overdamped_Ref(self.boundary)
-
-        #locate the cumulants 
-        self.cumulants_loc = self.get_ref_path()+"/refcumulants.csv"   
-
-
-    def get_ref_cumulants_file(self):
+    def get_ref_cumulants_array(self):
         #returns the folder where the reference solution is expected to be
         arr = np.loadtxt(open(self.cumulants_path),
                         delimiter=",",skiprows=1) 
         return arr 
-
-    def get_ref_drift_gaussian(self,time):
-        arr = self.get_ref_data()
-        
-        return np.linspace(-4,4),-(np.squeeze(arr[np.where(arr[:,0]==time),-1]) + np.squeeze(arr[np.where(arr[:,0]==time),-2])*np.linspace(-4,4))
 
     def get_known_solution_cumulants(self,cumulant_type):
         arr = self.get_ref_cumulants_file() 
@@ -223,9 +205,32 @@ class GaussRefSolution(RefSolution):
             else:
                 temp = np.zeros_like(np.squeeze(arr[:,0]))
         except IndexError:
+            print("Perturbative prediction for "+cumulant_type+" not available.")
             return np.zeros_like(np.squeeze(arr[:,0])),np.zeros_like(np.squeeze(arr[:,0]))
 
         return np.squeeze(arr[:,0]),temp
+
+
+class GaussRefSolution(RefSolution):
+    """
+    Extends the base class adding analytic solutions for gaussian boundary conditions
+    """
+
+    def __init__(self,boundary=None,folder_name=None):   
+        
+        RefSolution.__init__(boundary,folder_name)
+        
+        #only for gaussian
+        self.refsol_phi = Gaussian_Overdamped_Ref(self.boundary)
+
+        #locate the cumulants 
+        self.cumulants_loc = self.get_ref_path()+"/refcumulants.csv"   
+
+
+    def get_ref_drift_gaussian(self,time):
+        arr = self.get_ref_data()
+        
+        return np.linspace(-4,4),-(np.squeeze(arr[np.where(arr[:,0]==time),-1]) + np.squeeze(arr[np.where(arr[:,0]==time),-2])*np.linspace(-4,4))
 
 def plot_data(reference_,quantity,data):
     

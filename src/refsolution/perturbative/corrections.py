@@ -29,32 +29,36 @@ class Perturbation():
 
         self.filter_delta = 40 
         
-    def apply_filter(self,y,mode="nearest"):
-       
+    def apply_filter(self,y):
+        """convolve with box filter"""
+        out = np.convolve(y,(1/self.filter_delta)*np.ones(self.filter_delta),'same')
         #apply convolution with moving averages
-        return np.convolve(y,np.ones(self.filter_delta)[::-1],'same')
-        #generic_filter(y,sc.median,size=self.filter_delta,mode=mode)
- 
+        return out
+
     def get_rhomask(self,t2):
+        """return index where rho is non zero at time t2"""
         
-        #return index where probability mass is sufficiently large
         return np.where(self.f00(t2)>0)
 
     def get_t0(self,t2):
+        """find t0 from t2"""
 
         return round(t2/(self.epsilon**2),6)
 
     def v00(self,t2):
-       
+        """fetch value function at time t2"""
+
         return np.squeeze(self.overdamped_arr[np.where(self.overdamped_arr[:,0]==t2),-1]) #v00 
 
     def f00(self,t2):
+        """fetch rho at time t2"""
 
-        #_,f00 = self.reference.get_quantity(t2,"marginal",arr=self.overdamped_arr)
         return np.squeeze(self.overdamped_arr[np.where(self.overdamped_arr[:,0]==t2),2]) 
 
     def d_(self,y,x):
-
+        """compute the gradient dy/dx and smooth 
+        y and x must have same length"""
+        
         return self.apply_filter(np.gradient(y,x))
 
     def save_perturbative(self,):
@@ -94,7 +98,7 @@ class Perturbation():
             pertcumulants[t,5] = self.xcorr(self.get_t0(self.t2vec[t]),self.t2vec[t])
 
         #save pertsol 
-        np.savetxt(self.ref_path+"/cumulants.csv",pertcumulants,fmt="%10.6f",header = "t0,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
+        np.savetxt(self.ref_path+"/perturbative_cumulants.csv",pertcumulants,fmt="%10.6f",header = "t0,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
 
 class MarginalHalfBridgePerturbation(Perturbation):
     """Class to contain the functions for computing perturbative 
@@ -137,7 +141,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
         coeff = 1 - np.exp(t0-self.Tf)
 
         temp = np.zeros(self.xnum)
-        temp = self.d_(self.apply_filter(self.v00(t2)),self.qaxis)
+        temp[idx] = self.d_(self.apply_filter(self.v00(t2)[idx]),self.qaxis[idx])
 
         return 2*coeff*temp
 
@@ -169,7 +173,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
         return f02_temp 
 
 
-    def d_f00(self,t0,t2,idx,f00_arr):
+    def d_f00(self,idx,f00_arr):
         """Compute gradient of f00_arr"""
 
         #preallocate
@@ -177,9 +181,6 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
         #compute gradient 
         f02_temp[idx] = self.d_(f00_arr,self.qaxis[idx]) 
-
-        #take gradient
-        #f02_temp[idx] = self.d_(f02_temp[idx],self.qaxis[idx])
 
         return f02_temp 
 
@@ -192,7 +193,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
         idx = self.get_rhomask(t2)
 
         v00_arr = self.apply_filter(self.v00(t2)[idx])
-        f00_arr = self.apply_filter(self.f00(t2)[idx],mode="constant")
+        f00_arr = self.apply_filter(self.f00(t2)[idx])
         
         term2 = self.f02_term2(idx,f00_arr)
         term3 = self.f02_term3(idx,v00_arr,f00_arr)
@@ -206,36 +207,55 @@ class MarginalHalfBridgePerturbation(Perturbation):
         
         coeff2 = -(t0-(self.little_b(t0)/self.little_b(self.Tf)))
         coeff3 = (self.little_a(t0) - (self.little_a(self.Tf)*self.little_b(t0)/self.little_b(self.Tf)))
-        #-2*np.sinh(t0) + (1-np.exp(-self.Tf))*((t0/self.Tf)*(3-np.exp(-self.Tf))+2*(np.cosh(t0)-1))
 
         idx = self.get_rhomask(t2)
 
-        f00_arr = self.apply_filter(self.f00(t2)[idx],mode="constant")
+        f00_arr = self.apply_filter(self.f00(t2)[idx])
         
         d_f00_2 = self.d_f00(idx,f00_arr)
-        d_f00_3 = self.d_f00(idx,d_f00_2)
+        d_f00_3 = self.d_f00(idx,d_f00_2[idx])
         
         return coeff2*d_f00_2 + coeff3*d_f00_3
         
     def marginal_perturbative(self,t0,t2):
         
         return self.f00(t2) + (self.epsilon**2)*self.f02_new(t0,t2)
-        #self.f00(t2) + (self.epsilon**2)*self.f02(t0,t2)
 
-    def little_a(self,t):
-        return t - 1 + np.exp(-t)
+    def little_a(self,t0):
+        return t0 - 1 + np.exp(-t0)
 
-    def little_b(self,t):
-        return np.sinh(t)-t-(np.cosh(t)-1)*(1-np.exp(-self.Tf))
+    def little_b(self,t0):
+        return np.sinh(t0)-t0-(np.cosh(t0)-1)*(1-np.exp(-self.Tf))
 
-    def little_adot(self,t):
-        return 1 - np.exp(-t)
+    def little_adot(self,t0):
+        return 1 - np.exp(-t0)
 
-    def little_bdot(self,t):
-        return np.cosh(t)-1-(np.sinh(t))*(1-np.exp(-self.Tf))
+    def little_bdot(self,t0):
+        return np.cosh(t0)-1-(np.sinh(t0))*(1-np.exp(-self.Tf))
 
-    def xcorr(self,t0,t2):
-        return 0
+    def integral_log_rho(self,t2):
+        
+        idx = self.get_rhomask(t2)
+
+        #get rho 
+        f00_arr = self.apply_filter(self.f00(t2)[idx])
+        
+        #preallocate
+        rho00 = np.zeros(self.xnum)
+        rho00[idx] = -(self.d_(f00_arr,self.qaxis[idx])**2)/f00_arr
+        
+        #add ddrho
+        rho00 += self.f02_term2(idx,f00_arr)
+        
+        return np.trapezoid(rho00,self.qaxis)
+
+    def big_b(self,t0):
+        
+        coeff = self.little_a(self.Tf)/self.little_b(self.Tf)
+        term1 = (np.sinh(t0)+self.little_bdot(t0))*(1+coeff)*np.exp(-t0)
+        term2 = np.exp(-self.Tf)*(np.exp(-2*t0)-np.exp(t0))/3
+        term3 = coeff*(np.exp(-self.Tf)*np.sinh(t0)+np.exp(-2*self.Tf)*(1-np.cosh(2*t0))/4)
+        return coeff*(term1+term2-term3)
 
     def momvar(self,t0,t2):
         return 0
@@ -244,13 +264,18 @@ class MarginalHalfBridgePerturbation(Perturbation):
         return 0
 
     def mommean(self,t0,t2):
-        return 0
+        """compute momentum mean"""
+        return 1 - 2*(self.epsilon**2)*self.big_b(t0)*self.integral_log_rho(t2)
 
     def posmean(self,t0,t2):
+        """compute position mean"""
         return 0
 
+    def xcorr(self,t0,t2):
+        """compute cross correllation"""
+        return -self.epsilon*(self.little_bdot(t0)*self.little_a(self.Tf)/self.little_b(self.Tf)- self.little_adot(t0))
 
-class HalfBridgePerturbation(Perturbation):
+class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
     """Class to contain the functions for computing perturbative 
     corrections from overdamped data for the Half Bridge:
     when the terminal cost is specified by the KL divergence between the 
@@ -268,9 +293,9 @@ class HalfBridgePerturbation(Perturbation):
                 sets the input and output locations
         """
 
-        Perturbation.__init__(self,boundary,overdamped_arr,ref_path)
+        #MarginalHalfBridgePerturbation.__init__(self,boundary,overdamped_arr,ref_path)
 
-        return
+        raise(NotImplementedError)
 
     def DU(self,t0,t2):
         """

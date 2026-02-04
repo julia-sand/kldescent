@@ -96,7 +96,7 @@ class PlotUtils():
             self.epoch = params["epoch"]
         else:
             self.epoch = epoch
-        
+       
         self.plotter = PlotFuns(boundary_cond)
 
         self.boundary_cond.overwrite_ref_path(self.folder)
@@ -119,8 +119,10 @@ class PlotUtils():
             self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
     def load_du_checkpoint(self):
+        
         self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
         load_checkpoint(self.net,self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
+        
         self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
     def load_rho_checkpoint(self):
@@ -136,10 +138,10 @@ class PlotUtils():
 
         self.load_du_checkpoint()
         self.load_ref_solution()
-
+       
         self.plotter.plot_drift(times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net,refsol=self.referencesol)
-        self.make_sde_plots()
-        self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
+        #self.make_sde_plots()
+        #self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
 
     def load_ref_solution(self):
         """initialise the reference solution and add to the class""" 
@@ -147,7 +149,6 @@ class PlotUtils():
         if self.referencesol is None:
             self.referencesol = RefSolution(self.boundary_cond,folder_name=self.folder)
         
-        return 
 
     def perturbative_plots_du(self,plottimes):
         """        Run the functions to make plots to show the results of the 
@@ -180,7 +181,10 @@ class PlotUtils():
         self.plotter.save_fig_(fig,f"marginal_time_{final_plot_time}")
         
         #cumulant figs and csv 
-        fig = self.plotter.plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],["NN estimated","Perturbative"],self.data_loaded["testsamples"])
+        fig = self.plotter.plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],
+                                                ["NN estimated","Perturbative"],
+                                                self.data_loaded["testsamples"],
+                                                refsol=self.referencesol)
         self.plotter.save_fig_(fig,"cumulants")
         self.plotter.save_cumulants_csv(t_vec,cumulants_nn)
         self.plotter.save_cumulants_csv(t_vec,cumulants_ref,cumulants_filename="ref_cumulants")
@@ -224,7 +228,7 @@ class PlotUtils():
         
         self.load_rho_checkpoint()
         self.load_du_checkpoint()
-        self.make_contour_plot()
+        #self.make_contour_plot()
        
         self.make_rhonet_marginals_plot()
         plt.close("all")

@@ -74,10 +74,10 @@ def run():
                                 
                 #uncomment to make plots
                 #!! creating plots will run perturbative calculations
-                #plot_utils = PlotUtils(refsol=refsolution_,epoch=epoch+1)
+                plot_utils = PlotUtils(refsol=refsolution_,epoch=epoch+1)
 
-                #plot_utils.checkpoint_plots_du()
-                #plot_utils.make_girsanov_net_plots()
+                plot_utils.checkpoint_plots_du()
+                plot_utils.make_girsanov_net_plots()
                 #plot_utils.make_contour_plot()
 
         except ValueError:

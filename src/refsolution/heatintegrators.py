@@ -62,7 +62,7 @@ def proximal_fpk(x0,y0,
     
     Integrates a simple heat equation model 
     
-    !!Important. Check scipy compatability before using. 
+    !!Important. Check scipy compatability before using this function. 
     args:
         x0 : arr
             array size (n,) of samples from starting distribution

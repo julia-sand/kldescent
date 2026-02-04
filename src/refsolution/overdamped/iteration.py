@@ -31,18 +31,30 @@ class CellProblem():
         self.A = self.boundary.afun(self.boundary.params["Tf"])
         self.B = self.boundary.bfun(self.boundary.params["Tf"])
         self.beta = 1/np.sqrt(self.A)
+
+        ###TOBE REMOVED FOR TESTING ONLY!!
+        bridge_type ="marginal"
+        #####################################
         
         if bridge_type =="marginal":
-            
-             
+                         
             self.power = (self.M*self.B)/(self.A+self.M*self.B)
+
         elif bridge_type == "half":
+            
             self.power = 1
         elif bridge_type == "full":
+
+            #to be updated 
+            self.A = 1
+            self.B = 1
+            self.beta = 1/np.sqrt(self.A)
+        
             self.power = 1
         else:
+            
             self.power = 1
-            print("Bridge type not found. Default values used.")
+            print("Bridge type not found. Default value used.")
 
         #only initialise when using gaussian boundaries
         if "Gauss" in str(self.boundary.__class__.__name__):
