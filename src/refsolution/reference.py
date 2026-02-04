@@ -183,26 +183,27 @@ class RefSolution():
         except:
             return np.zeros_like(q)
 
-    def get_ref_cumulants_array(self):
+    def get_perturbative_cumulants_array(self):
         #returns the folder where the reference solution is expected to be
-        arr = np.loadtxt(open(self.cumulants_path),
+        arr = np.loadtxt(open(self.perturbative_cumulants_loc),
                         delimiter=",",skiprows=1) 
         return arr 
 
-    def get_known_solution_cumulants(self,cumulant_type):
-        arr = self.get_ref_cumulants_file() 
+    def get_perturbative_cumulant(self,cumulant_type):
+        arr = self.get_perturbative_cumulants_array() 
         try:  
             if cumulant_type == "Position Variance": 
-                temp = np.squeeze(arr[:,1])#np.squeeze(arr[:,4])
+                temp = np.squeeze(arr[:,3])
             elif cumulant_type == "Momentum Variance":
-                temp = np.squeeze(arr[:,3])#np.squeeze(arr[:,6])
+                temp = np.squeeze(arr[:,4])
             elif cumulant_type == "Cross Correlation":
-                temp = np.squeeze(arr[:,2])#np.squeeze(arr[:,5])
+                temp = np.squeeze(arr[:,5])
             elif cumulant_type == "Momentum Mean":
-                temp = np.squeeze(arr[:,8])
+                temp = np.squeeze(arr[:,2])
             elif cumulant_type == "Position Mean":
-                temp = np.squeeze(arr[:,7])
+                temp = np.squeeze(arr[:,1])
             else:
+                print("Perturbative prediction for "+cumulant_type+" not available.")
                 temp = np.zeros_like(np.squeeze(arr[:,0]))
         except IndexError:
             print("Perturbative prediction for "+cumulant_type+" not available.")
@@ -222,10 +223,6 @@ class GaussRefSolution(RefSolution):
         
         #only for gaussian
         self.refsol_phi = Gaussian_Overdamped_Ref(self.boundary)
-
-        #locate the cumulants 
-        self.cumulants_loc = self.get_ref_path()+"/refcumulants.csv"   
-
 
     def get_ref_drift_gaussian(self,time):
         arr = self.get_ref_data()

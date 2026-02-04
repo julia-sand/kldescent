@@ -28,6 +28,12 @@ class Perturbation():
         self.xnum = len(self.qaxis) #int(self.overdamped_arr.shape[0]/len(self.t2vec))
 
         self.filter_delta = 40 
+
+        #compute muvec for cumulants 
+        self.mu_1_vec = np.zeros_like(self.t2vec)
+        self.mu_2_vec = np.zeros_like(self.t2vec)
+        self.dmu_1_vec = np.zeros_like(self.t2vec)
+        self.dmu_2_vec = np.zeros_like(self.t2vec)
         
     def apply_filter(self,y):
         """convolve with box filter"""
@@ -61,6 +67,24 @@ class Perturbation():
         
         return self.apply_filter(np.gradient(y,x))
 
+    def mu_1_t2(self,t2):
+
+        return np.trapezoid(self.qaxis*self.f00(t2),self.qaxis)
+
+    def mu_2_t2(self,t2):
+
+        return np.trapezoid((self.qaxis**2)*self.f00(t2),self.qaxis)
+
+    def compute_mu_vecs(self):
+        """compute mu expressions for cumulant calculations"""
+
+        for t2 in enumerate(t2vec):
+            self.mu_1_vec[t2[0]] = self.mu_1_t2(t2[1])
+            self.mu_2_vec[t2[0]] = self.mu_2_t2(t2[1])
+
+        self.dmu_1_vec = np.gradient(mu_1_vec,t2vec)
+        self.dmu_2_vec = np.gradient(mu_1_vec,t2vec)
+
     def save_perturbative(self,):
         """Compute perturbative drift and marginal distribution of the 
         position using analytic expressions.
@@ -85,17 +109,20 @@ class Perturbation():
         computes estiamtes of the perturbative cumulants and saves as a csv
         """
 
-        #preallocate
+        #preallocate array
         pertcumulants = np.empty((len(self.t2vec),6))
         
+        #compute mu vectors in time. 
+        self.compute_mu_vecs()
+
         for t in range(len(self.t2vec)):
             
             pertcumulants[t,0] = self.get_t0(self.t2vec[t])
-            pertcumulants[t,1] = self.posmean(self.get_t0(self.t2vec[t]),self.t2vec[t])
+            pertcumulants[t,1] = self.posmean(self.get_t0(self.t2vec[t]),self.t2vec[t],t)
             pertcumulants[t,2] = self.mommean(self.get_t0(self.t2vec[t]),self.t2vec[t])
-            pertcumulants[t,3] = self.posvar(self.get_t0(self.t2vec[t]),self.t2vec[t])
+            pertcumulants[t,3] = self.posvar(self.get_t0(self.t2vec[t]),self.t2vec[t],t)
             pertcumulants[t,4] = self.momvar(self.get_t0(self.t2vec[t]),self.t2vec[t])
-            pertcumulants[t,5] = self.xcorr(self.get_t0(self.t2vec[t]),self.t2vec[t])
+            pertcumulants[t,5] = self.xcorr(self.get_t0(self.t2vec[t]),self.t2vec[t],pertcumulants[t,1],pertcumulants[t,2])
 
         #save pertsol 
         np.savetxt(self.ref_path+"/perturbative_cumulants.csv",pertcumulants,fmt="%10.6f",header = "t0,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
@@ -258,22 +285,25 @@ class MarginalHalfBridgePerturbation(Perturbation):
         return coeff*(term1+term2-term3)
 
     def momvar(self,t0,t2):
-        return 0
-
-    def posvar(self,t0,t2):
-        return 0
+        return 1 - 2*(self.epsilon**2)*self.big_b(t0)*self.integral_log_rho(t2)
+        
+    def posvar(self,t0,t2,t2_idx):
+        term1 = (self.mu_2_t2[t2_idx]-(self.mu_1_t2[t2_idx]**2))
+        term2 = 2*(self.little_a(t0)-(self.little_b(t0)/self.little_b(Tf))*self.little_a(self.Tf))
+        term3 = (t0-(self.little_b(t0)/self.little_b(Tf))*self.Tf)*(self.dmu_2_vec[t2_idx]+2*self.mu_1_vec[t2_idx]*self.dmu_1_vec[t2_idx])
+        return term1 + (self.epsilon**2)*(term2-term3)
 
     def mommean(self,t0,t2):
         """compute momentum mean"""
-        return 1 - 2*(self.epsilon**2)*self.big_b(t0)*self.integral_log_rho(t2)
-
-    def posmean(self,t0,t2):
-        """compute position mean"""
         return 0
 
-    def xcorr(self,t0,t2):
+    def posmean(self,t0,t2,t2_idx):
+        """compute position mean"""
+        return self.mu_1_vec[t2_idx] - self.dmu_1_vec[t2_idx]*(self.epsilon**2)*(t0 - self.Tf*(self.little_b(t0)/self.little_b(self.Tf)))
+
+    def xcorr(self,t0,t2,posmean,mommean):
         """compute cross correllation"""
-        return -self.epsilon*(self.little_bdot(t0)*self.little_a(self.Tf)/self.little_b(self.Tf)- self.little_adot(t0))
+        return -self.epsilon*(self.little_bdot(t0)*self.little_a(self.Tf)/self.little_b(self.Tf)- self.little_adot(t0)) - (posmean*mommean)
 
 class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
     """Class to contain the functions for computing perturbative 
@@ -322,13 +352,20 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
         return self.f00(t2) + (self.epsilon**2)*self.f02(t0,t2)
         #self.f00(t2) + (self.epsilon**2)*self.f02(t0,t2)
 
-    def xcorr(self,t0,t2):
-        return 0
+    def xcorr(self,t0,t2,posmean,mommean):
+        return 0 -(posmean*mommean)
 
     def momvar(self,t0,t2):
         return 0
 
-    def posvar(self,t0,t2):
+    def posvar(self,t0,t2,t2_idx):
+        """Compute position variance
+        args: 
+        t0 : fast time
+        t2 : slow time
+        t2_idx : index of t2
+        """
+
         return 0
 
     def mommean(self,t0,t2):

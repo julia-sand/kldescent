@@ -140,8 +140,9 @@ class PlotUtils():
         self.load_ref_solution()
        
         self.plotter.plot_drift(times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net,refsol=self.referencesol)
-        #self.make_sde_plots()
+        self.make_sde_plots()
         #self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
+        
 
     def load_ref_solution(self):
         """initialise the reference solution and add to the class""" 
@@ -161,6 +162,21 @@ class PlotUtils():
         self.plotter.plot_drift(times = plottimes,net=self.net,refsol=self.referencesol) #[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
         self.make_contour_plot2(plottimes=[0,5])
 
+    def make_cumulant_plot(self,t_vec,cumulants_nn,cumulants_ref):
+
+        if t_vec is None:
+            t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(self.boundary_cond.params["Tf"],self.referencesol.duref_net)
+        
+        #cumulant figs and csv 
+        fig = self.plotter.plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],
+                                                ["NN estimated","Perturbative"],
+                                                self.data_loaded["testsamples"],
+                                                refsol=self.referencesol)
+        self.plotter.save_fig_(fig,"cumulants")
+        self.plotter.save_cumulants_csv(t_vec,cumulants_nn)
+        self.plotter.save_cumulants_csv(t_vec,cumulants_ref,cumulants_filename="ref_cumulants")
+        
+
     def make_sde_plots(self):
         """Make plots and save results of sde integration 
         1. compute final point clouds
@@ -176,18 +192,11 @@ class PlotUtils():
         
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
         
+        self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref)
+
         #marginal distribution fig
         fig = self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,refsol=self.referencesol)
         self.plotter.save_fig_(fig,f"marginal_time_{final_plot_time}")
-        
-        #cumulant figs and csv 
-        fig = self.plotter.plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],
-                                                ["NN estimated","Perturbative"],
-                                                self.data_loaded["testsamples"],
-                                                refsol=self.referencesol)
-        self.plotter.save_fig_(fig,"cumulants")
-        self.plotter.save_cumulants_csv(t_vec,cumulants_nn)
-        self.plotter.save_cumulants_csv(t_vec,cumulants_ref,cumulants_filename="ref_cumulants")
         
         plt.close("all")
 

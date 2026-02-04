@@ -38,7 +38,6 @@ def make_histogram(plot_loc,x,model,boundary):
     fig2.savefig(plot_loc+"/histogram.png")
     plt.close()
 
-
 @torch.no_grad
 def make_scatter_plot(plot_loc,x,model,epoch=1,boundary=None):
     

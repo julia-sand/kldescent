@@ -588,18 +588,26 @@ class PlotFuns():
     elif ylabel_text=="Momentum Variance":
       index = 3 
       yerr=cumulants_nn_plot[:,index]*np.sqrt(2/(test_samples-1))
-      
-    
+          
     elif ylabel_text=="Cross Correlation":
       index = 4 
       yerr = np.sqrt((1-cumulants_nn_plot[:,index]**2)/(test_samples-2))
     
-    ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr,alpha=0.8)
-    
+    else:
+      print(ylabel_text+" not found")
+
+    try:
+      ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr,alpha=0.8)
+    except UnboundLocalError:
+      pass
+
     color = ax.lines[-1].get_color()
     ax.plot(t_vec,cumulants_nn_plot[:,index], label=label, zorder=1000,color=color)
 
+    return ax
+
   def format_cumulant_subplot(self,ax,index,ylabel_text,t_vec):
+    
     ax.set_title(self.make_plot_label(index),pad = self.titlepad,x = self.titlex, y = self.titley,zorder = 1000000)
     ax.set_ylabel(ylabel_text)
     ax.set_xlim((-0.1,t_vec[-1]+0.1))
@@ -636,33 +644,39 @@ class PlotFuns():
     """
 
     fig1,gs_cumulants = self.make_fig_gridspec()
+    
+    #cumulant labels
+    cumulant_names = ["Position Mean",
+                      "Position Variance",
+                      "Momentum Mean",
+                      "Momentum Variance",
+                      "Cross Correlation"]
+
+    #define plot locations
+    axs = [plt.subplot(gs_cumulants[0, 0:2]),
+            plt.subplot(gs_cumulants[0, 2:4]),
+            plt.subplot(gs_cumulants[0, 4:]),
+            plt.subplot(gs_cumulants[1,:3]),
+            plt.subplot(gs_cumulants[1, 3:])]
 
     for cumulant_vec,legend_label in zip(cumulants,labels):
-               
-        self.make_cumulant_subplot(plt.subplot(gs_cumulants[0, 0:2]),"Position Mean",
-                                          t_vec,cumulant_vec,legend_label,
-                                          test_samples)
-        self.add_freediffusion_cumulants_subplot(plt.subplot(gs_cumulants[0, 0:2]),"Position Mean",t_vec,cumulant_vec) 
 
-        self.make_cumulant_subplot(plt.subplot(gs_cumulants[0, 2:4]),"Position Variance",t_vec,cumulant_vec,legend_label,test_samples)
-        self.add_freediffusion_cumulants_subplot(plt.subplot(gs_cumulants[0, 2:4]),"Position Variance",t_vec,cumulant_vec) 
+        for ax, cumulant in zip(axs,enumerate(cumulant_names)):
 
-        self.make_cumulant_subplot(plt.subplot(gs_cumulants[0, 4:]),"Momentum Mean",t_vec,cumulant_vec,legend_label,test_samples)
-        self.add_freediffusion_cumulants_subplot(plt.subplot(gs_cumulants[0, 4:]),"Momentum Mean",t_vec,cumulant_vec) 
+          self.make_cumulant_subplot(ax,cumulant[1],
+                                            t_vec,cumulant_vec,legend_label,
+                                            test_samples)
+          self.add_freediffusion_cumulants_subplot(ax,cumulant[1],t_vec,cumulant_vec) 
 
-        self.make_cumulant_subplot(plt.subplot(gs_cumulants[1,:3]),"Momentum Variance",t_vec,cumulant_vec,legend_label,test_samples)
-        self.add_freediffusion_cumulants_subplot(plt.subplot(gs_cumulants[1,:3]),"Momentum Variance",t_vec,cumulant_vec) 
-
-        self.make_cumulant_subplot(plt.subplot(gs_cumulants[1, 3:]),"Cross Correlation",t_vec,cumulant_vec,legend_label,test_samples)
-        self.add_freediffusion_cumulants_subplot(plt.subplot(gs_cumulants[1, 3:]),"Cross Correlation",t_vec,cumulant_vec)                      
-              
-    #add formatting to each subplot
-    for ax,ylabel_text in zip(enumerate(fig1.get_axes()),["Position Mean","Position Variance","Momentum Mean","Momentum Variance","Cross Correlation"]):
-      self.format_cumulant_subplot(ax[1],ax[0],ylabel_text,t_vec)
+          if refsol is not None:
+            t_vectemp, cumulant_temp = refsol.get_perturbative_cumulant(cumulant[1])
+            ax.plot(t_vectemp, cumulant_temp,label="Perturbative_prediction")
+          
+          self.format_cumulant_subplot(ax,cumulant[0],cumulant[1],t_vec)
     
     plt.tight_layout()
 
-    h,l = ax[1].get_legend_handles_labels()
+    h,l = axs[0].get_legend_handles_labels()
     legend = fig1.legend(h,l, 
                             frameon = False,
                             handlelength = 1,
