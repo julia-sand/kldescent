@@ -175,7 +175,7 @@ class PlotUtils():
         self.plotter.save_fig_(fig,"cumulants")
         self.plotter.save_cumulants_csv(t_vec,cumulants_nn)
         self.plotter.save_cumulants_csv(t_vec,cumulants_ref,cumulants_filename="ref_cumulants")
-        
+        plt.close("all")
 
     def make_sde_plots(self):
         """Make plots and save results of sde integration 
@@ -279,7 +279,7 @@ class PlotUtils():
         
         self.load_rho_checkpoint()
         self.make_contour_plot()
-        #self.plot_pdf_3d()
+
         plt.close("all")
 
     

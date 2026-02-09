@@ -73,6 +73,8 @@ class MLE(TerminalCost):
         self.pos_var0 = 1
 
     def update_cost_params(self,integrator,*_):
+        """update the cumulants for the current final distribution"""
+
         #compute x vals
         x = integrator.update_ref_statistics()
 
@@ -99,6 +101,8 @@ class Histogram(TerminalCost):
         self.xrange = [-5,5]
 
     def update_cost_params(self,integrator,epoch,*_):
+        """compute a histogram for the final distribution"""
+
         x = integrator.update_ref_statistics().numpy()
         H, xedges = np.histogram(x[...,0], 
                                             bins=self.nbins,
@@ -143,7 +147,8 @@ class NormFlow(TerminalCost):
         self.rho = RhoNormFlow(boundaryconditions=self.boundary,bridgetype="marginal")
 
     def update_cost_params(self,integrator,*_):
-        
+        """train a normalising flow to approximate the final distribution"""
+
         #get initial samples
         x0 = torch.tensor(self.boundary.generate_samples(integrator.sde_params["testsamples"] ,"initial"),requires_grad=False,dtype=torch.float32)
         

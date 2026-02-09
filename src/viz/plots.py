@@ -669,9 +669,12 @@ class PlotFuns():
           self.add_freediffusion_cumulants_subplot(ax,cumulant[1],t_vec,cumulant_vec) 
 
           if refsol is not None:
-            t_vectemp, cumulant_temp = refsol.get_perturbative_cumulant(cumulant[1])
-            ax.plot(t_vectemp, cumulant_temp,label="Perturbative_prediction")
-          
+            try: 
+              t_vectemp, cumulant_temp = refsol.get_perturbative_cumulant(cumulant[1])
+              ax.plot(t_vectemp, cumulant_temp,label="Perturbative_prediction")
+            except FileNotFoundError:
+              pass 
+
           self.format_cumulant_subplot(ax,cumulant[0],cumulant[1],t_vec)
     
     plt.tight_layout()

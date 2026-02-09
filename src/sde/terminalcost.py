@@ -73,11 +73,12 @@ class GirsanovNet(TerminalCost):
         self.rhotrainer = TrainRho(self.rhonet)
 
     def update_cost_params(self,integrator,epoch):
-        
-        if epoch<1:
-            pass
-        else: #update number of epochs
-            self.rhotrainer.rho_epochs = 512 #less epochs for training later 
+        """train girsanov net to find the final distribution"""
+
+        #if epoch<1:
+        #    pass
+        #else: #update number of epochs
+        #    self.rhotrainer.rho_epochs = 1024 #less epochs for training later 
 
         #train the rho neural network
         self.rhotrainer.train_loop(integrator)
@@ -87,7 +88,6 @@ class GirsanovNet(TerminalCost):
 
     def get_logpdf(self,x):
         return torch.nan_to_num(self.rhonet(x,condition="log"))
-
 
 class MLE(TerminalCost):
     """
@@ -113,6 +113,8 @@ class MLE(TerminalCost):
         self.cc0 = 0 
 
     def update_cost_params(self,integrator,*_):
+        """update the cumulants for approximating the final distribution with a gaussian"""
+
         #compute x vals
         x = integrator.update_ref_statistics()
 
@@ -148,6 +150,8 @@ class Histogram(TerminalCost):
         self.xedges = None 
 
     def update_cost_params(self,integrator,*_):
+        """make histogram of the final distribution"""
+
         x = integrator.update_ref_statistics().numpy()
         H, yedges, xedges = np.histogram2d(x[...,1], x[...,0], 
                                             bins=500,
@@ -196,6 +200,8 @@ class NormFlow(TerminalCost):
         self.rho = RhoNormFlow(boundaryconditions=self.boundary,bridgetype="half")
 
     def update_cost_params(self,integrator,epoch,*_):
+        """Train the normalising flow to approximate the final distribution"""
+
         if epoch<1:
             pass
         else: #update number of epochs

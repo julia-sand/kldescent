@@ -16,15 +16,18 @@ def load_checkpoint(net,checkpointpath):
         print("Continuing with default initialisation")
         pass
         #raise FileNotFoundError
+    except RuntimeError:
+        
+
     except AttributeError:
         print("Checkpoint could not be loaded. Checkpoint format not compatible with initialised network. Continuing with default initialisation-")
         #raise AttributeError
         pass
 
-
 def save_nn_checkpoint(net,loc):
         
     torch.save(net.state_dict(),loc) 
+
 
 ##SOURCE: https://github.com/miaotianyi 
 #@torch.compile
@@ -190,6 +193,8 @@ class RhoNeuralNetwork(nn.Module):
         super(RhoNeuralNetwork, self).__init__()
         self.NNx = nn.Sequential(
             nn.Linear(2, self.params["rhohiddenlayerneurons"] ),  #input x
+            nn.ReLU(),
+            nn.Linear(self.params["rhohiddenlayerneurons"] ,self.params["rhohiddenlayerneurons"] ),   #64 outputs
             nn.ReLU(),
             nn.Linear(self.params["rhohiddenlayerneurons"] ,self.params["rhohiddenlayerneurons"] ),   #64 outputs
             nn.ReLU(),

@@ -165,7 +165,7 @@ class TrainRho():
 
         self.rhonet = rhonet 
 
-        self.lr = 0.001 #initial learning rate
+        self.lr = 0.01 #initial learning rate
         #self.integrator = integrator
 
         self.gamma = 0.1 #rate of learning rate decrease.
@@ -174,7 +174,7 @@ class TrainRho():
 
         self.rho_epochs = 2048 #total number of training epochs
         self.milestone = 512 #how often to decay learning rate
-        self.rho_batch = 128 #size of batch 
+        self.rho_batch = 64 #size of batch 
 
         self.loss = torch.nn.MSELoss()
 
@@ -195,15 +195,12 @@ class TrainRho():
         x0 = torch.tensor(integrator.boundary.generate_samples(self.rho_batch,mode="initial"),dtype=torch.float32,requires_grad=True) 
         # (-5 - 5)*torch.rand(self.rho_batch, 2, dtype=torch.float32,requires_grad=True) + 5
 
-        yobs = self.generate_training_data(x0,integrator)
+        yobs = self.generate_training_data(x0.clone().detach(),integrator)
 
         ypred = self.rhonet(x0)
         Lhat = self.loss(ypred,yobs)
         clip_grad_norm_(self.rhonet.parameters(), self.clip)
-
-
-        
-        
+             
         # Do backprop and optimizer step
         if ~(torch.isnan(Lhat) | torch.isinf(Lhat)):
             ##training##
@@ -212,7 +209,6 @@ class TrainRho():
             
         else:
             raise ValueError('Girsanov net: Loss function is NaN. Terminating training process')
-            # Log loss
 
         return #loss_out
 
@@ -230,7 +226,9 @@ class TrainRho():
         
         #reset optimiser and scheduler for each train loop
         optimiser = Adam(self.rhonet.parameters(), lr=self.lr)
-        scheduler = ExponentialLR(optimiser, gamma=self.gamma)
+        scheduler = CosineAnnealingLR(optimiser, 
+                            T_max=100, eta_min=1e-10)
+                            #ExponentialLR(optimiser, gamma=self.gamma)
         self.rhonet.train() #set neural net into train mode
         
         with tqdm(total=int(round(rho_epochs/self.milestone)), bar_format="{postfix[0]} {postfix[1][value]:>8.2g}",
@@ -240,7 +238,7 @@ class TrainRho():
                 for __ in range(self.milestone):
                     self.train_step(optimiser,integrator) #repeat training step
             
-                scheduler.step() #decrease learning rate
+                    scheduler.step() #decrease learning rate
                 
                 t.postfix[1]["value"] = rho_epoch
                 t.update()

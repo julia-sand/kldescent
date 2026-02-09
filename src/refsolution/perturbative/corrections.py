@@ -78,12 +78,12 @@ class Perturbation():
     def compute_mu_vecs(self):
         """compute mu expressions for cumulant calculations"""
 
-        for t2 in enumerate(t2vec):
+        for t2 in enumerate(self.t2vec):
             self.mu_1_vec[t2[0]] = self.mu_1_t2(t2[1])
             self.mu_2_vec[t2[0]] = self.mu_2_t2(t2[1])
 
-        self.dmu_1_vec = np.gradient(mu_1_vec,t2vec)
-        self.dmu_2_vec = np.gradient(mu_1_vec,t2vec)
+        self.dmu_1_vec = np.gradient(self.mu_1_vec,self.t2vec)
+        self.dmu_2_vec = np.gradient(self.mu_1_vec,self.t2vec)
 
     def save_perturbative(self,):
         """Compute perturbative drift and marginal distribution of the 
@@ -168,7 +168,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
         coeff = 1 - np.exp(t0-self.Tf)
 
         temp = np.zeros(self.xnum)
-        temp[idx] = self.d_(self.apply_filter(self.v00(t2)[idx]),self.qaxis[idx])
+        temp = self.d_(self.apply_filter(self.v00(t2)),self.qaxis)
 
         return 2*coeff*temp
 
@@ -199,7 +199,6 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
         return f02_temp 
 
-
     def d_f00(self,idx,f00_arr):
         """Compute gradient of f00_arr"""
 
@@ -227,12 +226,11 @@ class MarginalHalfBridgePerturbation(Perturbation):
         
         return coeff2*term2 + coeff3*term3
     
-
     def f02_new(self,t0,t2):
         """Compute the f02 correction. 
         Uses the later version with a,b functions and only f00"""
         
-        coeff2 = -(t0-(self.little_b(t0)/self.little_b(self.Tf)))
+        coeff2 = -(t0-self.Tf*(self.little_b(t0)/self.little_b(self.Tf)))
         coeff3 = (self.little_a(t0) - (self.little_a(self.Tf)*self.little_b(t0)/self.little_b(self.Tf)))
 
         idx = self.get_rhomask(t2)
@@ -288,9 +286,9 @@ class MarginalHalfBridgePerturbation(Perturbation):
         return 1 - 2*(self.epsilon**2)*self.big_b(t0)*self.integral_log_rho(t2)
         
     def posvar(self,t0,t2,t2_idx):
-        term1 = (self.mu_2_t2[t2_idx]-(self.mu_1_t2[t2_idx]**2))
-        term2 = 2*(self.little_a(t0)-(self.little_b(t0)/self.little_b(Tf))*self.little_a(self.Tf))
-        term3 = (t0-(self.little_b(t0)/self.little_b(Tf))*self.Tf)*(self.dmu_2_vec[t2_idx]+2*self.mu_1_vec[t2_idx]*self.dmu_1_vec[t2_idx])
+        term1 = (self.mu_2_vec[t2_idx]-(self.mu_1_vec[t2_idx]**2))
+        term2 = 2*(self.little_a(t0)-(self.little_b(t0)/self.little_b(self.Tf))*self.little_a(self.Tf))
+        term3 = (t0-(self.little_b(t0)/self.little_b(self.Tf))*self.Tf)*(self.dmu_2_vec[t2_idx]+2*self.mu_1_vec[t2_idx]*self.dmu_1_vec[t2_idx])
         return term1 + (self.epsilon**2)*(term2-term3)
 
     def mommean(self,t0,t2):
@@ -347,11 +345,6 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
         
         return 0
         
-    def marginal_perturbative(self,t0,t2):
-        
-        return self.f00(t2) + (self.epsilon**2)*self.f02(t0,t2)
-        #self.f00(t2) + (self.epsilon**2)*self.f02(t0,t2)
-
     def xcorr(self,t0,t2,posmean,mommean):
         return 0 -(posmean*mommean)
 

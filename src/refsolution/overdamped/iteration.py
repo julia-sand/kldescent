@@ -56,6 +56,9 @@ class CellProblem():
             self.power = 1
             print("Bridge type not found. Default value used.")
 
+        ###REMOVE ####TESTING WITH MARGinal HALF BRIDGE ONLY 
+        self.power = (self.M*self.B)/(self.A+self.M*self.B)
+
         #only initialise when using gaussian boundaries
         if "Gauss" in str(self.boundary.__class__.__name__):
             self.refsol = Gaussian_Overdamped_Ref(boundary)
