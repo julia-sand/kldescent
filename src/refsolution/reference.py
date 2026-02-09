@@ -26,10 +26,12 @@ class RefSolution():
     """
 
     def __init__(self, bridge_type="marginal", boundary=None, folder_name=None):
-        """
+        r"""
         Initialises parameters and directs to the reference solutions. 
         If no reference solution is available in the folder, then computes the reference solution
         args:
+            bridge_type : str
+                type of bridge. Choose from "marginal" or "half". 
             boundary : class
                 specifies the boundary conditions
             folder_name : str
@@ -58,6 +60,10 @@ class RefSolution():
         try:
             #compute corrections
             self.duref_net = perturbative_du_interp(self,mlp_net)
+        
+        except BaseException:
+            self.duref_net = perturbative_du_interp(self,mlp_net)
+        
         except FileNotFoundError:
 
             try: 
@@ -144,6 +150,8 @@ class RefSolution():
                 which dataset to use. Choose from overdamped (cell problem solution) or underdamped (saved perturbative solution)        
             arr : array
                 if the dataset is already loaded in the script, this can be used to return the correct result
+            time_type : str
+                if "t0", change it first to t2. 
         returns:
             x : arr 
                 array of shape (n,) of positions

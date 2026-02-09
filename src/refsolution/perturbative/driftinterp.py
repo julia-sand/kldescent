@@ -10,7 +10,7 @@ import torch
 
 import matplotlib.pyplot as plt 
 
-from ...model.nn import save_nn_checkpoint
+from ...model.nn import save_nn_checkpoint,load_checkpoint
 from ...model.pretrain import run_pretrain
 
 
@@ -26,19 +26,18 @@ def perturbative_du_interp(reference_sol,mlp_net):
             controls how the reference solution is saved
     """
 
-    try: #load checkpoint if available
-        mlp_net.load_state_dict(torch.load(reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt", weights_only=True))
+    try:
+        #mlp_net.load_state_dict(torch.load(reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt", weights_only=True))
+        load_checkpoint(mlp_net,reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt")
         print("Checkpoint for perturbative Solution found and loaded")
-    except FileNotFoundError: 
-        print("No checkpoint for perturbative solution found. Training from CSV data.")
-        
+    except BaseException:
         #train it to learn the csv in the reference solution folder
         run_pretrain(mlp_net,reference_sol)
-        
+
         #save the trained checkpoint
         #torch.save(mlp_net.state_dict(),reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt") 
         save_nn_checkpoint(mlp_net,loc=reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt")
-    
+
 
     return mlp_net
 

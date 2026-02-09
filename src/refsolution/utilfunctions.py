@@ -1,5 +1,6 @@
-import numpy as np 
+"""Useful functions used in computing perturbative corrections"""
 
+import numpy as np 
 
 def interpolate_(q,xs,phis):
     idx = np.argsort(xs)

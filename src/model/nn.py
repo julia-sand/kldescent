@@ -14,15 +14,14 @@ def load_checkpoint(net,checkpointpath):
         print("The checkpoint file at "+checkpointpath+" was not found")
         print("Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch to load when using a default with --folder. For loading a specific checkpoint file with a different filename, use the --checkpointpath option.")
         print("Continuing with default initialisation")
-        pass
-        #raise FileNotFoundError
+        raise BaseException
     except RuntimeError:
-        
-
+        print("The format of the checkpoint file at "+checkpointpath+" did not match the initialised network.")
+        print("Continuing with default initialisation")
+        raise BaseException
     except AttributeError:
         print("Checkpoint could not be loaded. Checkpoint format not compatible with initialised network. Continuing with default initialisation-")
-        #raise AttributeError
-        pass
+        raise BaseException
 
 def save_nn_checkpoint(net,loc):
         
@@ -153,8 +152,12 @@ class NeuralNetwork(nn.Module):
 
         self.checkpoint_path = fetch_checkpoint_path()
         if self.checkpoint_path is not None: #automatically loads a checkpoint from the command line
-            load_checkpoint(self,self.checkpoint_path)
-            print(f"Checkpoint at {self.checkpoint_path} loaded successfully.")
+            try: 
+                load_checkpoint(self,self.checkpoint_path)
+                print(f"Checkpoint at {self.checkpoint_path} loaded successfully.")
+            except BaseException:
+                #print(f"Checkpoint at {self.checkpoint_path} loaded successfully.")
+                pass
 
     def forward(self, input_vec):   #how the model should evaluate
         #pdb.set_trace()
