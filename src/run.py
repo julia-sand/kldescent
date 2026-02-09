@@ -38,9 +38,11 @@ def run():
     #log the params
     metrics_logger.log_dict(net.params)
     
-    #TODO: add refsol to top level
-    refsolution_ = RefSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
-  
+    if "Gauss" in str(getattr(boundaries,args["boundary"])):
+        refsolution_ = GaussRefSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
+    else:
+        refsolution_ = RefSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
+
     terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,metrics_logger)
     
     #intialise sde integration 

@@ -62,6 +62,7 @@ class RefSolution():
             self.duref_net = perturbative_du_interp(self,mlp_net)
         
         except BaseException:
+            #train from default initialisation 
             self.duref_net = perturbative_du_interp(self,mlp_net)
         
         except FileNotFoundError:
@@ -221,9 +222,7 @@ class RefSolution():
 
 
 class GaussRefSolution(RefSolution):
-    """
-    Extends the base class adding analytic solutions for gaussian boundary conditions
-    """
+    """Compile the gaussian versions of the reference solutions"""
 
     def __init__(self,boundary=None,folder_name=None):   
         
@@ -232,11 +231,42 @@ class GaussRefSolution(RefSolution):
         #only for gaussian
         self.refsol_phi = Gaussian_Overdamped_Ref(self.boundary)
 
+        #solve BVP for gaussian 
+        bvp1 = GaussBVP(boundary=self.boundary)
+        sol1 = bvp1.get_sol()
+        bvp1.save_csvs(sol1,self.get_ref_path()) #save the csv 
+        
+        #set different filename for underdamped cumulants 
+        self.perturbative_cumulants_loc = self.get_ref_path()+"/underdamped_cumulants.csv"
+
     def get_ref_drift_gaussian(self,time):
         arr = self.get_ref_data()
         
         return np.linspace(-4,4),-(np.squeeze(arr[np.where(arr[:,0]==time),-1]) + np.squeeze(arr[np.where(arr[:,0]==time),-2])*np.linspace(-4,4))
 
+    def get_perturbative_cumulant(self,cumulant_type):
+        arr = self.get_perturbative_cumulants_array() 
+        try:  
+            if cumulant_type == "Position Variance": 
+                temp = np.squeeze(arr[:,1])
+            elif cumulant_type == "Momentum Variance":
+                temp = np.squeeze(arr[:,3])
+            elif cumulant_type == "Cross Correlation":
+                temp = np.squeeze(arr[:,2])
+            elif cumulant_type == "Momentum Mean":
+                temp = np.zeros_like(np.squeeze(arr[:,0]))
+            elif cumulant_type == "Position Mean":
+                temp = np.zeros_like(np.squeeze(arr[:,0]))
+            else:
+                print("Perturbative prediction for "+cumulant_type+" not available.")
+                temp = np.zeros_like(np.squeeze(arr[:,0]))
+        except IndexError:
+            print("Perturbative prediction for "+cumulant_type+" not available.")
+            return np.zeros_like(np.squeeze(arr[:,0])),np.zeros_like(np.squeeze(arr[:,0]))
+
+        return np.squeeze(arr[:,0]),temp
+
+        
 def plot_data(reference_,quantity,data):
     
     times = [0,0.06,0.12,0.2]

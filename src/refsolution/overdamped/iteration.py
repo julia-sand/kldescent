@@ -42,7 +42,9 @@ class CellProblem():
 
         elif bridge_type == "half":
             
-            self.power = 1
+            self.power = (self.M*self.B)/(self.A+self.M*self.B)
+            #1
+
         elif bridge_type == "full":
 
             #to be updated 

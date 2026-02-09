@@ -14,3 +14,23 @@ def normalise(x,y):
 def zchop(x,tol=1e-10):
    
     return np.where(np.abs(x)<tol,0,x)
+
+
+
+def save_array(arr_out,save_location,filename="overdamped",header="t,q,rho,V"):
+    """saves an array as a csv to the given location
+    args: 
+        arr : ndarray
+            array to save
+        save_location : str
+            filepath relative to where the code is run
+        filename : str
+            name of the file
+        header : str 
+            comment to add at the top of the csv
+    """
+
+    #make dir if does not exist
+    os.makedirs(save_location,exist_ok=True)
+    np.savetxt(save_location+"/"+filename+".csv", arr_out ,fmt="%10.6f",header = header,delimiter=',')
+    return
