@@ -3,7 +3,7 @@
 import numpy as np 
 from scipy.integrate import solve_bvp 
 
-from utilfunctions import save_array
+from .utilfunctions import save_array
 
 #from ..utils.parser import gaussian_params,boundary_params
 
@@ -20,7 +20,8 @@ class GaussBVP():
         return (1/self.boundary.gauss_boundary["sigmafinal"]**2) - (1/(QT*(1-self.rho_final(QT,CT,PT)**2)))
 
     def final_v12(self,QT,CT,PT):
-        return np.sqrt(1/(PT*QT))*self.rho_final(QT,CT,PT)/(1-self.rho_final(QT,CT,PT)**2)
+        return (CT/(QT*PT))/(1-self.rho_final(QT,CT,PT)**2)
+        #np.sqrt(1/(PT*QT))*self.rho_final(QT,CT,PT)/(1-self.rho_final(QT,CT,PT)**2)
 
     def final_v22(self,QT,CT,PT):
         return 1 - (1/(PT*(1-self.rho_final(QT,CT,PT)**2)))
@@ -58,16 +59,15 @@ class GaussBVP():
         
         t_vec = np.linspace(0,self.boundary.params["Tf"],num=tnum)
 
-        arr_to_save = np.vstack([t_vec,               #time
-                    sol1.sol(t_vec)[0], #v11
-                    sol1.sol(t_vec)[1], #v12
-                    sol1.sol(t_vec)[2]]) #v22
+        arr_to_save = np.concatenate((t_vec[:,np.newaxis],  #time
+                    sol1.sol(t_vec)[0][:,np.newaxis],  #v11
+                    sol1.sol(t_vec)[1][:,np.newaxis],  #v12
+                    sol1.sol(t_vec)[2][:,np.newaxis]),axis=1) #v22
                     
-        cumulants_to_save =  np.vstack([t_vec,           
-                                sol1.sol(t_vec)[3],#c11 / pos var
-                                sol1.sol(t_vec)[4],#c12 / xcorr
-                                sol1.sol(t_vec)[5] #c22 / mom var
-                                ])
+        cumulants_to_save =  np.hstack((t_vec[:,np.newaxis],           
+                                sol1.sol(t_vec)[3][:,np.newaxis],  #c11 / pos var
+                                sol1.sol(t_vec)[4][:,np.newaxis],  #c12 / xcorr
+                                sol1.sol(t_vec)[5][:,np.newaxis])) #c22 / mom var                
 
         save_array(arr_to_save, save_location, filename="underdamped",header="t,v11,v12,v22")
         save_array(cumulants_to_save, save_location, filename="underdamped_cumulants",header="t,c11,c12,c22")
@@ -81,7 +81,9 @@ if __name__=="__main__":
 
     bvp1 = GaussBVP(boundary=UnderdampedGaussian())
     sol1 = bvp1.get_sol()
+    bvp1.save_csvs(sol1,".")
 
+    #plot the solution 
     x_plot = np.linspace(0, 5, 100)
     for i in range(6):
         y_plot_a = sol1.sol(x_plot)[i]
