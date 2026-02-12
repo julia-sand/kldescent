@@ -253,7 +253,7 @@ class GaussRefSolution(BaseRefSolution):
         
         arr = self.get_underdamped_drift_array()
         
-        return np.squeeze(arr[np.where(arr[:,0]==time),-1])
+        return -self.boundary.params["epsilon"]*np.squeeze(arr[np.where(arr[:,0]==time),-1])/(2**0.5)
 
     def get_underdamped_drift_array(self):
         """load csv of gaussian underdamped drift"""

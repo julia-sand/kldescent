@@ -315,7 +315,7 @@ class PlotFuns():
                 label="Perturbative N.N.")
         else:
             ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
-                -0.2/(2**0.5)*refsol.du_ref(times[t],np.linspace(-self.qmax,self.qmax,1000)),
+                refsol.du_ref(times[t],np.linspace(-self.qmax,self.qmax,1000)),
                 label="Underdamped")
       else:
         print("No reference solution was given. Plots will not include reference values.")
