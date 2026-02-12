@@ -65,7 +65,7 @@ class Metrics():
             with torch.no_grad():
                 
                 #this also updates the ref. cumulants
-                kl_dynamic, kl_static, mean0, var0 = self.integrator.compute_metrics(self.refnet)
+                kl_dynamic, kl_static, mean0, var0 = self.integrator.compute_metrics(self.reference_sol)
 
                 if trainer is not None:
                     lr_rate = trainer.scheduler.get_last_lr()[0]

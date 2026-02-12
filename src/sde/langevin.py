@@ -109,16 +109,15 @@ class SDE(SDEBase):
         return Lhat
     
     #@profile
-    def compute_metrics(self,duref_net=None):
+    def compute_metrics(self,reference_sol=None):
         """
         Computes sample evolutions of the dynamics and saves the metrics for 
         recording the training process
 
         ====
         Parameters:
-            duref_net : class
-                neural network that gives the drift of a reference process. If none, a free diffusion (DU=0) is used as the reference. 
-          
+            reference_sol : class
+                reference_solution 
         Returns:
             kldyn : float
                 Dynamic KL divergence computed along trajectories. 
@@ -132,8 +131,12 @@ class SDE(SDEBase):
         """
 
         self.net.eval()
-        t_vec = self.generate_time_grid()
-        testing_samples = self.sde_params["testsamples"] #4000 #reduced number of samples in computing the loss metrics
+        if reference_sol.duref_net is not None:
+            t_vec = self.generate_time_grid()
+        else: 
+            t_vec = reference_sol.get_underdamped_tgrid()
+                
+        testing_samples = self.sde_params["testsamples"] #reduced number of samples in computing the loss metrics
 
         #initialise x values as samples from assigned initial distribution
         xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
@@ -148,10 +151,11 @@ class SDE(SDEBase):
             dw = self.generate_innovation(dt,testing_samples)
 
             with torch.no_grad():
-                if duref_net is not None:
-                    du_ref = duref_net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1)),xinit_ref[:,0,None])))
+                if reference_sol.duref_net is not None:
+                    du_ref = reference_sol.duref_net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1)),xinit_ref[:,0,None])))
                 else: 
-                    du_ref = torch.zeros_like(xinit_ref[:,0,None],dtype=torch.float32,requires_grad=False)
+                    du_ref = reference_sol.get_ref_drift_gaussian(t_vec[i])*xinit[...,[0]]
+                    #torch.zeros_like(xinit_ref[:,0,None],dtype=torch.float32,requires_grad=False)
 
                 du_bar = self.net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
                                                         ,xinit[...,[0]]))).detach()
@@ -233,18 +237,32 @@ class SDE(SDEBase):
                                               np.correlate(temp[...,0],temp[...,1])[0]/(len(temp[...,0]))]]),axis=0)#cross corr
 
     def compute_sde(self,
-                        final_time,duref_net=None):
+                        final_time,reference_sol=None):
         """
-        Computes the SDE while saving cumulants 
+        Compute the evolution of the SDE while saving cumulants 
 
         ====
         args:
           final_time: when to stop the integration for intermediate time plots
         ====
+        returns:
+          t_vec : ndarray
+            times of evolution
+          xinit.numpy() : ndarray
+            point cloud of final positions under nn evolution
+          xref.numpy() : ndarray
+            point cloud of final positions under ref evolution
+          cumulants_nn : ndarray
+            cumulants computed during nn evolution
+          cumulants_ref : ndarray
+            cumulants computed during ref evolution
         """
             
         #pdb.set_trace()
-        t_vec = self.generate_time_grid()
+        if reference_sol.duref_net is not None:
+            t_vec = self.generate_time_grid()
+        else:
+            t_vec = reference_sol.get_underdamped_tgrid()
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["testsamples"],"initial"),requires_grad=False,dtype=torch.float32)
@@ -265,7 +283,10 @@ class SDE(SDEBase):
 
                 du = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["testsamples"],1),dtype=torch.float32)
                                                         ,xinit[...,[0]])))
-                duref = duref_net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["testsamples"],1)),xref[:,0,None])))
+                if reference_sol.duref_net is not None:
+                    duref = reference_sol.duref_net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["testsamples"],1)),xref[:,0,None])))
+                else:
+                    duref = reference_sol.get_ref_drift_gaussian(t_vec[i])*xinit[...,[0]]
 
                 xinit = self.boundary.euler_maruyama_step(xinit,du,dt,dw1,t_vec[i])
                 xref = self.boundary.euler_maruyama_step(xref,duref,dt,dw2,t_vec[i])
@@ -327,7 +348,6 @@ class SDE(SDEBase):
 
         return pdfout
     
-
 if __name__=="__main__":
     from src.model import nn
     from src.sde.boundary import UnderdampedHalfGaussian

@@ -13,3 +13,4 @@ timeprofile.py
 *.pdf
 core.*
 scratch
+gauss_*

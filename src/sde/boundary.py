@@ -22,7 +22,7 @@ from ..utils.parser import boundary_params, gaussian_params
 
 class Boundaries():
     """
-    A class used to store different boundary conditions
+    Base class to store different boundary conditions
 
     Attributes
     ----------
@@ -34,11 +34,6 @@ class Boundaries():
         the file name of the default reference solution. 
     sigma0 : float
         sets the value of the volatility
-
-    Methods
-    -------
-    get_ref_path()
-        Returns the default location of reference solutions.
     """
 
     def __init__(self,params=None,logger=None):

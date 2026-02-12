@@ -143,7 +143,6 @@ class PlotUtils():
         self.make_sde_plots()
         #self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
         
-
     def load_ref_solution(self):
         """initialise the reference solution and add to the class""" 
         
@@ -152,9 +151,7 @@ class PlotUtils():
         
 
     def perturbative_plots_du(self,plottimes):
-        """        Run the functions to make plots to show the results of the 
-        evolution under perturbative drift 
-        """
+        """make plots to show the results of the evolution under perturbative drift"""
         
         self.load_perturbative_du_checkpoint()
         
@@ -165,7 +162,7 @@ class PlotUtils():
     def make_cumulant_plot(self,t_vec,cumulants_nn,cumulants_ref):
 
         if t_vec is None:
-            t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(self.boundary_cond.params["Tf"],self.referencesol.duref_net)
+            t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(self.boundary_cond.params["Tf"],self.referencesol)
         
         #cumulant figs and csv 
         fig = self.plotter.plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],
@@ -188,7 +185,7 @@ class PlotUtils():
 
         final_plot_time = self.boundary_cond.params["Tf"]
         
-        t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(final_plot_time,self.referencesol.duref_net)
+        t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(final_plot_time,self.referencesol)
         
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
         

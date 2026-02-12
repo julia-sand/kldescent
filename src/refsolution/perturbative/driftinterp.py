@@ -28,15 +28,17 @@ def perturbative_du_interp(reference_sol,mlp_net):
 
     try:
         #mlp_net.load_state_dict(torch.load(reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt", weights_only=True))
-        load_checkpoint(mlp_net,reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt")
+        load_checkpoint(mlp_net,reference_sol.folder_name+f"/perturbative_underdamped_drift.pt")
         print("Checkpoint for perturbative Solution found and loaded")
+    
     except BaseException:
-        #train it to learn the csv in the reference solution folder
+        #this means that the checkpoint file could not be loaded
+        #because checkpoint doesnt exist or is incompatible with initialised network
+        #run training again to learn the csv in the reference solution folder
         run_pretrain(mlp_net,reference_sol)
 
         #save the trained checkpoint
-        #torch.save(mlp_net.state_dict(),reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt") 
-        save_nn_checkpoint(mlp_net,loc=reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt")
+        save_nn_checkpoint(mlp_net,loc=reference_sol.folder_name+f"/perturbative_underdamped_drift.pt")
 
 
     return mlp_net

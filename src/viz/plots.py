@@ -315,7 +315,7 @@ class PlotFuns():
                 label="Perturbative N.N.")
         else:
             ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
-                refsol.du_ref(times[t],np.linspace(-self.qmax,self.qmax,1000)),
+                -0.2/(2**0.5)*refsol.du_ref(times[t],np.linspace(-self.qmax,self.qmax,1000)),
                 label="Underdamped")
       else:
         print("No reference solution was given. Plots will not include reference values.")
@@ -383,12 +383,12 @@ class PlotFuns():
     #add perturbative analytic predictions distributions to plots if available
     if refsol is not None:
       xref,posref = refsol.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped",time_type="t0")   
-      ax_pos.plot(xref,posref,color="green",alpha=0.5,label="Perturbative Analytic Prediction")
+      ax_pos.plot(xref,posref,color="green",alpha=0.5,label="Underdamped Analytic Prediction")
       #xref,posref = refsol.get_quantity(plottime,"marginal", data="overdamped",time_type="t0")   
       #ax_pos.plot(xref,posref,color="yellow",alpha=0.5,label="Overdamped boundary conditions",zorder=10000)
       
     #set iteration properties
-    colors = ["orange",self.c1]
+    colors = [self.c1,"orange"]
     labels = ["Controlled by NN.","Perturbative"]
 
     for x in enumerate(xs):

@@ -61,30 +61,30 @@ def run():
                             path_to_pretrain=args["pretrain"])
     
     for epoch in tqdm(range(args["epochs"])):#range(0,args["epochs"]):
-        try:
+        #try:
 
-            #update the terminal cost with current final distribution
-            terminal_cost.update_cost_params(integrator,epoch)
+        #update the terminal cost with current final distribution
+        terminal_cost.update_cost_params(integrator,epoch)
 
-            #update the drift nn with the current learned final distribution  
-            loss_out = trainer.train_step()
-                
-            if (epoch-1) % args["logstep"] == 0:
+        #update the drift nn with the current learned final distribution  
+        loss_out = trainer.train_step()
+            
+        if (epoch-1) % args["logstep"] == 0:
 
-                #update metrics and save checkpoints
-                metric_.update_metrics(epoch+1, loss_out)
-                                
-                #uncomment to make plots
-                #!! creating plots will run perturbative calculations
-                plot_utils = PlotUtils(refsol=refsolution_,epoch=epoch+1)
+            #update metrics and save checkpoints
+            metric_.update_metrics(epoch+1, loss_out)
+                            
+            #uncomment to make plots
+            #!! creating plots will run perturbative calculations
+            plot_utils = PlotUtils(refsol=refsolution_,epoch=epoch+1)
 
-                plot_utils.checkpoint_plots_du()
-                plot_utils.make_girsanov_net_plots()
-                #plot_utils.make_contour_plot()
+            plot_utils.checkpoint_plots_du()
+            #plot_utils.make_girsanov_net_plots()
+            #plot_utils.make_contour_plot()
 
-        except ValueError:
-            print("The training has resulted in NaN loss and therefore failed. Please retry.")
-            raise
+        #except ValueError:
+            #print("The training has resulted in NaN loss and therefore failed. Please retry.")
+            #raise
     
 if __name__=="__main__":
     run()

@@ -253,7 +253,7 @@ class GaussRefSolution(BaseRefSolution):
         
         arr = self.get_underdamped_drift_array()
         
-        return arr[np.where(arr[:,0]==time),-1]
+        return np.squeeze(arr[np.where(arr[:,0]==time),-1])
 
     def get_underdamped_drift_array(self):
         """load csv of gaussian underdamped drift"""
@@ -266,6 +266,10 @@ class GaussRefSolution(BaseRefSolution):
         arr = np.loadtxt(open(self.underdamped_cumulants_loc),
                         delimiter=",",skiprows=1) 
         return arr
+    
+    def get_underdamped_tgrid(self):
+        arr = self.get_underdamped_cumulants_array()
+        return np.squeeze(arr[:,0])
 
     def get_perturbative_cumulant(self,cumulant_type):
         arr = self.get_underdamped_cumulants_array() 
@@ -291,8 +295,60 @@ class GaussRefSolution(BaseRefSolution):
 
         v1 = self.get_ref_drift_gaussian(t)
         
-        return q*v1 #+ v0
+        return np.squeeze(q*v1) #+ v0
  
+  
+    def get_quantity(self,time,quantity,data=None,arr=None,time_type="t0"):
+        """
+        Get quantities to plot for the reference solution 
+        args:
+            time : float
+                the time to lookup the data
+            quantity : str
+                what quantity to return from the data table. Choices are: value (overdamped value function); 
+                marginal (overdamped distribution); underdamped drift (perturbative estimate of underdamped DU);
+                and underdamped marginal (perturbative underdamped marginal of the position)
+            data : str 
+                which dataset to use. Choose from overdamped (cell problem solution) or underdamped (saved perturbative solution)        
+            arr : array
+                if the dataset is already loaded in the script, this can be used to return the correct result
+            time_type : str
+                if "t0", change it first to t2. 
+        returns:
+            x : arr 
+                array of shape (n,) of positions
+            y : arr
+                specified quantity evaluated at points x, with shape (n,)
+        """
+
+        ##fetch the reference data for halfbridge
+        #if arr is None: #default overdamped
+        #    arr = self.get_ref_data(data=data)  
+
+        qtemp = np.linspace(-6,6,1000)
+
+        if quantity =="value":
+            return qtemp,np.zeros_like(qtemp)
+
+        elif quantity =="marginal":
+            return qtemp,np.zeros_like(qtemp)
+
+        elif quantity =="underdamped drift":
+            return qtemp,self.du_ref(time,qtemp)
+
+        elif quantity =="underdamped marginal":
+            #arr_ = self.get_underdamped_cumulants_array()
+            
+            t_vec,pos_var = self.get_perturbative_cumulant("Position Variance")
+            #_,cc = self.get_perturbative_cumulant("Cross Correlation")
+            #_,mom_var = self.get_perturbative_cumulant("Momentum Variance")
+            
+            return qtemp,np.exp(-(qtemp**2)/(2*pos_var[np.where(t_vec==time)]))/(np.sqrt(2*np.pi*pos_var[np.where(t_vec==time)]))
+        
+        #return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx]) #((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
+
+
+
 def plot_data(reference_,quantity,data):
     
     times = [0,0.06,0.12,0.2]
@@ -308,7 +364,7 @@ def plot_data(reference_,quantity,data):
         
     fig.tight_layout()
 
-    fig.savefig(reference_.get_ref_path()+f"/{data}_{quantity}.png",bbox_inches="tight")        
+    fig.savefig(reference_.folder_name+f"/{data}_{quantity}.png",bbox_inches="tight")        
 
 if __name__=="__main__":
     import matplotlib.pyplot as plt

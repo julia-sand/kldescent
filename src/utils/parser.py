@@ -95,7 +95,7 @@ def integrator_params():
     #subparser = parser.add_subparsers()
 
     integrator_params.add_argument('-batchsamples','--batchsamples', type=int, 
-                        default=128,
+                        default=64,
                         help='Number of sample trajectories to take of the diffusion')
 
     integrator_params.add_argument('-tsteps','--tsteps', type=int, default=20,
