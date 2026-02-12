@@ -38,7 +38,7 @@ def run():
     #log the params
     metrics_logger.log_dict(net.params)
     
-    if "Gauss" in str(getattr(boundaries,args["boundary"])):
+    if "Gauss" in args["boundary"]:
         refsolution_ = GaussRefSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
     else:
         refsolution_ = RefSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())

@@ -14,26 +14,25 @@ class GaussBVP():
         self.epsilon = self.boundary.params["epsilon"]
 
     def rho_final(self,QT,CT,PT):
-        return CT/np.sqrt(QT*PT)
+        return 0#CT/np.sqrt(QT*PT)
 
     def final_v11(self,QT,CT,PT):
-        return (1/self.boundary.gauss_boundary["sigmafinal"]**2) - (1/(QT*(1-self.rho_final(QT,CT,PT)**2)))
+        return (1/self.boundary.gauss_boundary["sigmafinal"]**2) #- (1/(QT*(1-self.rho_final(QT,CT,PT)**2)))
 
     def final_v12(self,QT,CT,PT):
-        return (CT/(QT*PT))/(1-self.rho_final(QT,CT,PT)**2)
+        return 0#(CT/(QT*PT))/(1-self.rho_final(QT,CT,PT)**2)
         #np.sqrt(1/(PT*QT))*self.rho_final(QT,CT,PT)/(1-self.rho_final(QT,CT,PT)**2)
 
     def final_v22(self,QT,CT,PT):
         return 1 - (1/(PT*(1-self.rho_final(QT,CT,PT)**2)))
 
-
     def evolution(self, x, y):
         
-        return np.vstack((2*(y[1]**2) - 2*((y[4]*y[2]/y[3])**2), 
-                            y[1] + 2*y[2]*y[1] -self.epsilon*y[0] + 2*y[4]*(y[2]**2)/y[3],
+        return np.vstack((-2*(y[1]**2) +2*((y[4]*y[2]/y[3])**2), 
+                            y[1] - 2*y[2]*y[1] - self.epsilon*y[0] - 2*y[4]*(y[2]**2)/y[3],
                             2.0*(y[2]-y[1]*self.epsilon),
                             2.0*self.epsilon*y[4],
-                            self.epsilon*y[5] - 2*y[3]*y[1] - y[4] - 2*y[2]*y[4],
+                            self.epsilon*y[5] + 2*y[3]*y[1] - y[4] + 2*y[2]*y[4],
                             2 - 2*y[5] - 4*y[4]*y[1] - ((4*(y[4]**2)*y[2])/(y[3]))))
             
     def bc(self, ya, yb):
@@ -46,12 +45,12 @@ class GaussBVP():
 
     def get_sol(self,):
         
-        t_vec = np.linspace(0,self.boundary.params["Tf"],num=1000)
+        t_vec = np.linspace(0,self.boundary.params["Tf"],num=10000)
 
         #initial guess
         y0 = np.ones((6, t_vec.size))
         
-        sol1 = solve_bvp(self.evolution, self.bc, t_vec, y0)
+        sol1 = solve_bvp(self.evolution, self.bc, t_vec, y0,verbose=2)
 
         return sol1 
 
@@ -60,9 +59,9 @@ class GaussBVP():
         t_vec = np.linspace(0,self.boundary.params["Tf"],num=tnum)
 
         arr_to_save = np.concatenate((t_vec[:,np.newaxis],  #time
-                    sol1.sol(t_vec)[0][:,np.newaxis],  #v11
-                    sol1.sol(t_vec)[1][:,np.newaxis],  #v12
-                    sol1.sol(t_vec)[2][:,np.newaxis]),axis=1) #v22
+                                sol1.sol(t_vec)[0][:,np.newaxis],  #v11
+                                sol1.sol(t_vec)[1][:,np.newaxis],  #v12
+                                sol1.sol(t_vec)[2][:,np.newaxis]),axis=1) #v22
                     
         cumulants_to_save =  np.hstack((t_vec[:,np.newaxis],           
                                 sol1.sol(t_vec)[3][:,np.newaxis],  #c11 / pos var

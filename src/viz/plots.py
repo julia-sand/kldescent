@@ -308,9 +308,15 @@ class PlotFuns():
       if refsol is not None:
         #xref,duref = refsol.get_quantity(round(times[t],3), "underdamped drift", data="perturbative underdamped",time_type="t0")
         #ax[t].plot(xref,-0.2*duref/(2**0.5),label="Perturbative")
-        ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
+        
+        if refsol.duref_net is not None:
+		        ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
                 self.evaluate_net_output(refsol.duref_net,times[t]),
                 label="Perturbative N.N.")
+        else:
+            ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
+                refsol.du_ref(times[t],np.linspace(-self.qmax,self.qmax,1000)),
+                label="Underdamped")
       else:
         print("No reference solution was given. Plots will not include reference values.")
     

@@ -14,6 +14,7 @@ from ..model.nn import MLP,NeuralNetwork
 class BaseRefSolution():
 
     def __init__(self, bridge_type="marginal", boundary=None, folder_name=None):
+        
         self.boundary = boundary
 
         if folder_name is not None: #use this if running the file directly
@@ -21,13 +22,13 @@ class BaseRefSolution():
         else:
             self.folder_name = fetch_results_folder_from_cmd() #f"{self.boundary.__class__.__name__}"
                 
-        os.makedirs(self.get_ref_path(),exist_ok=True)
+        os.makedirs(self.folder_name,exist_ok=True)
 
         #sets reference file locations
-        self.overdamped_loc = self.get_ref_path()+"/overdamped.csv"
-        self.perturb_underdamped_loc = self.get_ref_path()+"/perturbative_underdamped.csv"
-        self.ref_loc = self.get_ref_path()+"/refsol.csv"
-        self.perturbative_cumulants_loc = self.get_ref_path()+"/perturbative_cumulants.csv"
+        self.overdamped_loc = self.folder_name+"/overdamped.csv"
+        self.perturb_underdamped_loc = self.folder_name+"/perturbative_underdamped.csv"
+        self.ref_loc = self.folder_name+"/refsol.csv"
+        self.perturbative_cumulants_loc = self.folder_name+"/perturbative_cumulants.csv"
 
     def get_perturbative_calculations(self,bridge_type,overdamped_arr):
         """initialise the class to compute the perturbative solution 
@@ -38,15 +39,15 @@ class BaseRefSolution():
         """
 
         if bridge_type == "marginal":
-            pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.get_ref_path())
+            pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name())
         
         elif bridge_type == "half":  #update this to compute the half bridge solution
             
-            pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.get_ref_path())
+            pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name())
         
         else: 
         
-            pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.get_ref_path())
+            pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name())
 
         return pertsol
 
@@ -77,7 +78,7 @@ class RefSolution(BaseRefSolution):
                 if no boundary condition specified, the folder can be set manually using this parameter. 
         """
         
-        BaseRefSolution.__init__(bridge_type,boundary,folder_name)
+        BaseRefSolution.__init__(self,bridge_type,boundary,folder_name)
         self.initialise_net(bridge_type)
 
     def initialise_net(self,bridge_type):
@@ -126,7 +127,6 @@ class RefSolution(BaseRefSolution):
             self.duref_net = perturbative_du_interp(self,mlp_net)
         
         self.duref_net.eval()
-
 
     def get_ref_path(self):
         """return the folder where the reference solution files are"""
@@ -229,33 +229,40 @@ class RefSolution(BaseRefSolution):
 class GaussRefSolution(BaseRefSolution):
     """Compile the gaussian versions of the reference solutions"""
 
-    def __init__(self,boundary=None,folder_name=None):   
+    def __init__(self,bridge_type="half",boundary=None,folder_name=None):   
         
-        BaseRefSolution.__init__(boundary,folder_name)
+        BaseRefSolution.__init__(self,bridge_type="half",boundary=boundary,folder_name=folder_name)
         
         #only for gaussian
         self.refsol_phi = Gaussian_Overdamped_Ref(self.boundary)
 
         #set different filename for underdamped cumulants 
-        self.underdamped_cumulants_loc = self.get_ref_path()+"/underdamped_cumulants.csv"
-        self.underdamped_loc = self.get_ref_path()+"/underdamped.csv"
+        self.underdamped_cumulants_loc = self.folder_name+"/underdamped_cumulants.csv"
+        self.underdamped_loc = self.folder_name+"/underdamped.csv"
+        self.duref_net = None
 
     def solve_bvp_gaussian(self,):
 
         #solve BVP for gaussian 
         bvp1 = GaussBVP(boundary=self.boundary)
         sol1 = bvp1.get_sol()
-        bvp1.save_csvs(sol1,self.get_ref_path()) #save the csv 
+        bvp1.save_csvs(sol1,self.folder_name) #save the csv 
         
     def get_ref_drift_gaussian(self,time):
-        """Return linear and constant coefficient of gaussian ref drift"""
+        """Return linear coefficient of gaussian ref drift"""
         
-        arr = self.get_ref_data(data="underdamped")
+        arr = self.get_underdamped_drift_array()
         
-        return np.squeeze(arr[np.where(arr[:,0]==time),-2]),np.squeeze(arr[np.where(arr[:,0]==time),-1])
+        return arr[np.where(arr[:,0]==time),-1]
+
+    def get_underdamped_drift_array(self):
+        """load csv of gaussian underdamped drift"""
+        arr = np.loadtxt(open(self.underdamped_loc),
+                        delimiter=",",skiprows=1) 
+        return arr
 
     def get_underdamped_cumulants_array(self):
-        #returns the folder where the reference solution is expected to be
+        """load csv of gaussian underdamped cumulants"""
         arr = np.loadtxt(open(self.underdamped_cumulants_loc),
                         delimiter=",",skiprows=1) 
         return arr
@@ -264,11 +271,11 @@ class GaussRefSolution(BaseRefSolution):
         arr = self.get_underdamped_cumulants_array() 
 
         if cumulant_type == "Position Variance": 
-            temp = np.squeeze(arr[:,1])
+            temp = np.squeeze(arr[:,4])
         elif cumulant_type == "Momentum Variance":
-            temp = np.squeeze(arr[:,3])
+            temp = np.squeeze(arr[:,6])
         elif cumulant_type == "Cross Correlation":
-            temp = np.squeeze(arr[:,2])
+            temp = np.squeeze(arr[:,5])
         elif cumulant_type == "Momentum Mean":
             temp = np.zeros_like(np.squeeze(arr[:,0]))
         elif cumulant_type == "Position Mean":
@@ -279,12 +286,12 @@ class GaussRefSolution(BaseRefSolution):
         
         return np.squeeze(arr[:,0]),temp
        
-    def du_ref(self,t_q_coordinate):
+    def du_ref(self,t,q):
         """Return drift for t,q coordinate"""
 
-        v1,v0 = self.get_ref_drift_gaussian(t_q_coordinate[0,0])
+        v1 = self.get_ref_drift_gaussian(t)
         
-        return t_q_coordinate[:,1,None]*v1 + v0
+        return q*v1 #+ v0
  
 def plot_data(reference_,quantity,data):
     
