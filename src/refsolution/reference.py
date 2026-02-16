@@ -13,7 +13,7 @@ from ..model.nn import MLP,NeuralNetwork
 
 class BaseRefSolution():
 
-    def __init__(self, bridge_type="marginal", boundary=None, folder_name=None):
+    def __init__(self, bridge_type="half", boundary=None, folder_name=None):
         
         self.boundary = boundary
 
@@ -65,7 +65,7 @@ class RefSolution(BaseRefSolution):
             reference drift for integration
     """
 
-    def __init__(self, bridge_type="marginal", boundary=None, folder_name=None):
+    def __init__(self, bridge_type="half", boundary=None, folder_name=None):
         r"""
         Initialises parameters and directs to the reference solutions. 
         If no reference solution is available in the folder, then computes the reference solution
@@ -253,7 +253,7 @@ class GaussRefSolution(BaseRefSolution):
         
         arr = self.get_underdamped_drift_array()
         
-        return -self.boundary.params["epsilon"]*np.squeeze(arr[np.where(arr[:,0]==time),-1])/(2**0.5)
+        return self.boundary.params["epsilon"]*np.squeeze(arr[np.where(arr[:,0]==time),-1])/(2**0.5)
 
     def get_underdamped_drift_array(self):
         """load csv of gaussian underdamped drift"""
@@ -311,9 +311,9 @@ class GaussRefSolution(BaseRefSolution):
             data : str 
                 which dataset to use. Choose from overdamped (cell problem solution) or underdamped (saved perturbative solution)        
             arr : array
-                if the dataset is already loaded in the script, this can be used to return the correct result
+                if the dataset is already loaded in the script, this can be used passed to the function 
             time_type : str
-                if "t0", change it first to t2. 
+                if "t0", rescale the time to t2. 
         returns:
             x : arr 
                 array of shape (n,) of positions

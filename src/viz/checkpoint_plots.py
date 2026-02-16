@@ -12,7 +12,7 @@ from ..sde import langevin
 from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
 from ..utils.getboundary import init_params_from_file
 from .contour import *
-#from ..refsolution.reference import RefSolution,GaussRefSolution
+from ..refsolution.reference import RefSolution,GaussRefSolution
 
 def compute_rho_girsanov(x_samples=40,integrator=None,mc_samples=64,Tf=None):
     """
@@ -145,10 +145,14 @@ class PlotUtils():
         
     def load_ref_solution(self):
         """initialise the reference solution and add to the class""" 
-        
+
         if self.referencesol is None:
-            self.referencesol = RefSolution(self.boundary_cond,folder_name=self.folder)
-        
+            if "Gauss" in f"{self.boundary_cond.__class__.__name__}":  
+                self.referencesol = GaussRefSolution(boundary=self.boundary_cond,folder_name=self.folder)
+            
+            else:
+                self.referencesol = RefSolution(boundary=self.boundary_cond,folder_name=self.folder)
+            
 
     def perturbative_plots_du(self,plottimes):
         """make plots to show the results of the evolution under perturbative drift"""
@@ -400,6 +404,7 @@ def compute_ref_dynamic_kl(refsolution):
     return np.trapezoid(klout,times)
 
 if __name__=="__main__":
+
 
     plot_utils = PlotUtils()
 

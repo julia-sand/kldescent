@@ -14,13 +14,13 @@ class GaussBVP():
         self.epsilon = self.boundary.params["epsilon"]
 
     def rho_final(self,QT,CT,PT):
-        return 0#CT/np.sqrt(QT*PT)
+        return CT/np.sqrt(QT*PT)
 
     def final_v11(self,QT,CT,PT):
         return (1/self.boundary.gauss_boundary["sigmafinal"]**2) #- (1/(QT*(1-self.rho_final(QT,CT,PT)**2)))
 
     def final_v12(self,QT,CT,PT):
-        return 0#(CT/(QT*PT))/(1-self.rho_final(QT,CT,PT)**2)
+        return (CT/(QT*PT))/(1-self.rho_final(QT,CT,PT)**2)
         #np.sqrt(1/(PT*QT))*self.rho_final(QT,CT,PT)/(1-self.rho_final(QT,CT,PT)**2)
 
     def final_v22(self,QT,CT,PT):

@@ -60,7 +60,7 @@ class SDE(SDEBase):
 
         ====
         Parameters
-        - net: neural network for parametrising the drift
+
         ====
         """
         
