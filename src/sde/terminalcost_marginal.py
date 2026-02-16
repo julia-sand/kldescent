@@ -44,7 +44,7 @@ class GirsanovNet(TerminalCost):
     """
     Estimate the final cost with a neural network trained on the final distribution
     Note this is only available for full final distribution
-    Class is used to catch the error explicitly
+    This class is used only to catch the error explicitly
     """
 
     def __init__(self,*_):

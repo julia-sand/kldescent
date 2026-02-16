@@ -1,3 +1,5 @@
+"""Implement the integration of SDE processes"""
+
 import numpy as np 
 import torch
 
@@ -134,9 +136,9 @@ class SDE(SDEBase):
 
             self.net.eval()
             if reference_sol.duref_net is not None:
-                t_vec = self.generate_time_grid()
+                t_vec = self.generate_time_grid() #use random time grid
             else: 
-                t_vec = reference_sol.get_underdamped_tgrid()
+                t_vec = reference_sol.get_underdamped_tgrid() #use fixed times from csv
                     
             testing_samples = self.sde_params["testsamples"] #reduced number of samples in computing the loss metrics
 

@@ -541,7 +541,8 @@ class PlotFuns():
   def save_cumulants_csv(self,t_vec,cumulants_nn,cumulants_filename="cumulants"):
 
     a = np.concatenate((t_vec[...,np.newaxis],cumulants_nn),axis=1)
-    np.savetxt(self.subdir+"/"+cumulants_filename+".csv", a, delimiter=",")
+    #np.savetxt(self.subdir+"/"+cumulants_filename+".csv", a, delimiter=",")
+    np.savetxt(self.subdir+"/"+cumulants_filename+".csv", a ,fmt="%10.6f",header = "t,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
     return 
 
   def plot_free_diffusion_sol(self,ax,t_vec,cumulant):
