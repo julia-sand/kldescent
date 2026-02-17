@@ -10,6 +10,7 @@ from .perturbative.driftinterp import perturbative_du_interp
 from .perturbative.corrections import MarginalHalfBridgePerturbation,HalfBridgePerturbation
 from .overdamped.sol import compute_overdamped
 from ..model.nn import MLP,NeuralNetwork
+from .gaussian import GaussBVP
 
 class BaseRefSolution():
 
@@ -241,13 +242,18 @@ class GaussRefSolution(BaseRefSolution):
         self.underdamped_loc = self.folder_name+"/underdamped.csv"
         self.duref_net = None
 
+        #self.solve_bvp_gaussian()
+
     def solve_bvp_gaussian(self,):
 
         #solve BVP for gaussian 
-        bvp1 = GaussBVP(boundary=self.boundary)
+        bvp1 = GaussBVP(sigmainitial = self.boundary.gauss_boundary["sigmainitial"],
+                        sigmafinal = self.boundary.gauss_boundary["sigmafinal"],
+                        epsilon = self.boundary.params["epsilon"],
+                        Tf = self.boundary.params["Tf"])
         sol1 = bvp1.get_sol()
         bvp1.save_csvs(sol1,self.folder_name) #save the csv 
-        
+    
     def get_ref_drift_gaussian(self,time):
         """Return linear coefficient of gaussian ref drift"""
         
@@ -259,16 +265,30 @@ class GaussRefSolution(BaseRefSolution):
 
     def get_underdamped_drift_array(self):
         """load csv of gaussian underdamped drift"""
-        arr = np.loadtxt(open(self.underdamped_loc),
+        try:
+            arr = np.loadtxt(open(self.underdamped_loc),
+                        delimiter=",",skiprows=1) 
+        except FileNotFoundError:
+            print("Reference solution not found. Integrating First order system...")
+            self.solve_bvp_gaussian()
+            arr = np.loadtxt(open(self.underdamped_loc),
                         delimiter=",",skiprows=1) 
         return arr
 
     def get_underdamped_cumulants_array(self):
         """load csv of gaussian underdamped cumulants"""
-        arr = np.loadtxt(open(self.underdamped_cumulants_loc),
+        try:   
+            arr = np.loadtxt(open(self.underdamped_cumulants_loc),
                         delimiter=",",skiprows=1) 
+        
+        except FileNotFoundError:
+            print("Reference solution not found. Integrating First order system...")
+            self.solve_bvp_gaussian()
+            arr = np.loadtxt(open(self.underdamped_loc),
+                        delimiter=",",skiprows=1) 
+        
         return arr
-    
+        
     def get_underdamped_tgrid(self):
         arr = self.get_underdamped_cumulants_array()
         return np.squeeze(arr[:,0])
@@ -348,8 +368,6 @@ class GaussRefSolution(BaseRefSolution):
             return qtemp,np.exp(-(qtemp**2)/(2*pos_var[np.where(t_vec==time)]))/(np.sqrt(2*np.pi*pos_var[np.where(t_vec==time)]))
         
         #return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx]) #((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
-
-
 
 def plot_data(reference_,quantity,data):
     

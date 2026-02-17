@@ -9,15 +9,20 @@ from .utilfunctions import save_array
 
 class GaussBVP():
 
-    def __init__(self,boundary):
-        self.boundary = boundary
-        self.epsilon = self.boundary.params["epsilon"]
-
+    def __init__(self,sigmainitial,
+                      sigmafinal,
+                      epsilon,
+                      Tf):
+        self.sigmainitial = sigmainitial
+        self.sigmafinal = sigmafinal
+        self.epsilon = epsilon
+        self.Tf = Tf 
+        
     def rho_final(self,QT,CT,PT):
-        return CT/np.sqrt(QT*PT)
+        return 0#CT/np.sqrt(QT*PT)
 
     def final_v11(self,QT,CT,PT):
-        return (1/self.boundary.gauss_boundary["sigmafinal"]**2) #- (1/(QT*(1-self.rho_final(QT,CT,PT)**2)))
+        return (1/self.sigmafinal**2) #- (1/(QT*(1-self.rho_final(QT,CT,PT)**2)))
 
     def final_v12(self,QT,CT,PT):
         return (CT/(QT*PT))/(1-self.rho_final(QT,CT,PT)**2)
@@ -36,7 +41,7 @@ class GaussBVP():
                             2 - 2*y[5] - 4*y[4]*y[1] - ((4*(y[4]**2)*y[2])/(y[3]))))
             
     def bc(self, ya, yb):
-        return np.array([ya[3] - self.boundary.gauss_boundary["sigmainitial"]**2,  #initial sigma
+        return np.array([ya[3] - self.sigmainitial**2,  #initial sigma
                             ya[4] , #initial cross corr
                             ya[5] - 1, #initial mom var
                             yb[0] - self.final_v11(yb[3],yb[4],yb[5]),#final value funs
@@ -45,7 +50,7 @@ class GaussBVP():
 
     def get_sol(self,):
         
-        t_vec = np.linspace(0,self.boundary.params["Tf"],num=10000)
+        t_vec = np.linspace(0,self.Tf,num=10000)
 
         #initial guess
         y0 = np.ones((6, t_vec.size))
@@ -60,7 +65,7 @@ class GaussBVP():
 
     def save_csvs(self,sol1,save_location,tnum=1000):
         
-        t_vec = np.linspace(0,self.boundary.params["Tf"],num=tnum)
+        t_vec = np.linspace(0,self.Tf,num=tnum)
 
         arr_to_save = np.concatenate((t_vec[:,np.newaxis],  #time
                                 sol1.sol(t_vec)[0][:,np.newaxis],  #v11
