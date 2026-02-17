@@ -252,9 +252,9 @@ class GaussRefSolution(BaseRefSolution):
         """Return linear coefficient of gaussian ref drift"""
         
         arr = self.get_underdamped_drift_array()
-        v1 = self.boundary.params["epsilon"]*np.squeeze(arr[np.where(arr[:,0]==time),-1])/(2**0.5)
-        print(v1)
-        return v1
+        v1 = self.boundary.params["epsilon"]*np.squeeze(arr[np.where(arr[:,0]==time),-1])#/(2**0.5)
+
+        return -v1
         #self.boundary.params["epsilon"]*np.squeeze(arr[np.where(arr[:,0]==time),-1])/(2**0.5)
 
     def get_underdamped_drift_array(self):

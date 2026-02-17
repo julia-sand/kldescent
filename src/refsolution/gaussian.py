@@ -54,6 +54,10 @@ class GaussBVP():
 
         return sol1 
 
+    def get_u2(self,sol1,t):
+
+        return 2*sol1.sol(t)[1] + 2*(sol1.sol(t)[4]*sol1.sol(t)[2])/sol1.sol(t)[3]
+
     def save_csvs(self,sol1,save_location,tnum=1000):
         
         t_vec = np.linspace(0,self.boundary.params["Tf"],num=tnum)
@@ -61,7 +65,8 @@ class GaussBVP():
         arr_to_save = np.concatenate((t_vec[:,np.newaxis],  #time
                                 sol1.sol(t_vec)[0][:,np.newaxis],  #v11
                                 sol1.sol(t_vec)[1][:,np.newaxis],  #v12
-                                sol1.sol(t_vec)[2][:,np.newaxis]),axis=1) #v22
+                                sol1.sol(t_vec)[2][:,np.newaxis],
+                                self.get_u2(sol1,t_vec)[:,np.newaxis]),axis=1) #v22
                     
         cumulants_to_save =  np.hstack((t_vec[:,np.newaxis],           
                                 sol1.sol(t_vec)[3][:,np.newaxis],  #c11 / pos var

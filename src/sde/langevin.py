@@ -229,9 +229,7 @@ class SDE(SDEBase):
         return xinit
 
     def save_cumulants(self,save_array,temp):
-      """
-      appends the computed cumulants to a new array
-      """
+      """Append the computed cumulants to a new array"""
       
       return np.append(save_array,np.array([[np.nanmean(temp[...,0]),
                                               np.nanmean(temp[...,1]),
