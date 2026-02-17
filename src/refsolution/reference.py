@@ -297,11 +297,11 @@ class GaussRefSolution(BaseRefSolution):
         arr = self.get_underdamped_cumulants_array() 
 
         if cumulant_type == "Position Variance": 
-            temp = np.squeeze(arr[:,4])
+            temp = np.squeeze(arr[:,1])
         elif cumulant_type == "Momentum Variance":
-            temp = np.squeeze(arr[:,6])
+            temp = np.squeeze(arr[:,3])
         elif cumulant_type == "Cross Correlation":
-            temp = np.squeeze(arr[:,5])
+            temp = np.squeeze(arr[:,2])
         elif cumulant_type == "Momentum Mean":
             temp = np.zeros_like(np.squeeze(arr[:,0]))
         elif cumulant_type == "Position Mean":
@@ -316,8 +316,11 @@ class GaussRefSolution(BaseRefSolution):
         """Return drift for t,q coordinate"""
 
         v1 = self.get_ref_drift_gaussian(t)
-        
-        return np.squeeze(q*v1) #+ v0
+        try:
+            return np.squeeze(q*v1) #+ v0
+        except: #return zeros
+            #TODO handle this error better or add msg
+            return np.zeros_like(q) 
  
   
     def get_quantity(self,time,quantity,data=None,arr=None,time_type="t0"):

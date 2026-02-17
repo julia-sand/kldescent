@@ -237,7 +237,7 @@ class PlotFuns():
     if refsol is not None:
       #plot marginals
       x,ptx = refsol.get_quantity(np.round(time,6),quantity = "underdamped marginal",data="perturbative underdamped",time_type="t0")
-      ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Perturbative Calculated")
+      ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Benchmark Evolved")
 
     #plot joint distribution
     ax.scatter(xs[...,0]/normall,xs[...,1]/normall,c=self.reshape_joint(joint_out).T.flatten()
@@ -312,11 +312,11 @@ class PlotFuns():
         if refsol.duref_net is not None:
 		        ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
                 self.evaluate_net_output(refsol.duref_net,times[t]),
-                label="Perturbative N.N.")
+                label="Benchmark N.N.")
         else:
             ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
                 refsol.du_ref(times[t],np.linspace(-self.qmax,self.qmax,1000)),
-                label="Underdamped")
+                label="Benchmark")
       else:
         print("No reference solution was given. Plots will not include reference values.")
     
@@ -383,13 +383,13 @@ class PlotFuns():
     #add perturbative analytic predictions distributions to plots if available
     if refsol is not None:
       xref,posref = refsol.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped",time_type="t0")   
-      ax_pos.plot(xref,posref,color="green",alpha=0.5,label="Underdamped Analytic Prediction")
+      ax_pos.plot(xref,posref,color="green",alpha=0.5,label="Benchmark Prediction")
       #xref,posref = refsol.get_quantity(plottime,"marginal", data="overdamped",time_type="t0")   
       #ax_pos.plot(xref,posref,color="yellow",alpha=0.5,label="Overdamped boundary conditions",zorder=10000)
       
     #set iteration properties
     colors = [self.c1,"orange"]
-    labels = ["Controlled by NN.","Perturbative"]
+    labels = ["Controlled by NN.","Benchmark Evolved"]
 
     for x in enumerate(xs):
       
@@ -678,7 +678,7 @@ class PlotFuns():
           if refsol is not None:
             try: 
               t_vectemp, cumulant_temp = refsol.get_perturbative_cumulant(cumulant[1])
-              ax.plot(t_vectemp, cumulant_temp,label="Perturbative_prediction")
+              ax.plot(t_vectemp, cumulant_temp,label="Benchmark")
             except FileNotFoundError:
               pass 
 

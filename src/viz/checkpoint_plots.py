@@ -170,7 +170,7 @@ class PlotUtils():
         
         #cumulant figs and csv 
         fig = self.plotter.plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],
-                                                ["NN estimated","Perturbative"],
+                                                ["NN estimated","Benchmark"],
                                                 self.data_loaded["testsamples"],
                                                 refsol=self.referencesol)
         self.plotter.save_fig_(fig,"cumulants")
