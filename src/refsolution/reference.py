@@ -4,12 +4,12 @@ import numpy as np
 
 from ..sde.boundary import *
 from ..utils.parser import fetch_results_folder_from_cmd
-from .overdamped.gauss import Gaussian_Overdamped_Ref
+from ..model.nn import MLP,NeuralNetwork
 from .utilfunctions import *
 from .perturbative.driftinterp import perturbative_du_interp
 from .perturbative.corrections import MarginalHalfBridgePerturbation,HalfBridgePerturbation
 from .overdamped.sol import compute_overdamped
-from ..model.nn import MLP,NeuralNetwork
+from .overdamped.gauss import Gaussian_Overdamped_Ref
 from .gaussian import GaussBVP
 
 class BaseRefSolution():
@@ -199,7 +199,7 @@ class RefSolution(BaseRefSolution):
         return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx]) #((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
 
     def get_perturbative_cumulants_array(self):
-        #returns the folder where the reference solution is expected to be
+        """return the array for predicted cumulants using perturbation theory"""
         arr = np.loadtxt(open(self.perturbative_cumulants_loc),
                         delimiter=",",skiprows=1) 
         return arr 
@@ -250,15 +250,23 @@ class GaussRefSolution(BaseRefSolution):
         bvp1 = GaussBVP(sigmainitial = self.boundary.gauss_boundary["sigmainitial"],
                         sigmafinal = self.boundary.gauss_boundary["sigmafinal"],
                         epsilon = self.boundary.params["epsilon"],
-                        Tf = self.boundary.params["Tf"])
-        sol1 = bvp1.get_sol()
+                        Tf = self.boundary.params["Tf"],
+                        M = self.boundary.params["weight"])
+        
+        if self.bridge_type == "half": #solve halfbridge
+            sol1 = bvp1.get_half_sol()
+        elif self.bridge_type=="marginal half": #solve for marginal half bridge
+            sol1 = bvp1.get_marginal_half_sol()
+        elif self.bridge_type=="full": #solve for full bridge
+            sol1 = bvp1.get_full_sol()
+        
         bvp1.save_csvs(sol1,self.folder_name) #save the csv 
     
     def get_ref_drift_gaussian(self,time):
         """Return linear coefficient of gaussian ref drift"""
         
         arr = self.get_underdamped_drift_array()
-        v1 = self.boundary.params["epsilon"]*np.squeeze(arr[np.where(arr[:,0]==time),-1])#/(2**0.5)
+        v1 = self.boundary.params["epsilon"]*np.squeeze(arr[np.where(arr[:,0]==time),-1])/(2**0.5)
 
         return -v1
         #self.boundary.params["epsilon"]*np.squeeze(arr[np.where(arr[:,0]==time),-1])/(2**0.5)
@@ -322,7 +330,6 @@ class GaussRefSolution(BaseRefSolution):
             #TODO handle this error better or add msg
             return np.zeros_like(q) 
  
-  
     def get_quantity(self,time,quantity,data=None,arr=None,time_type="t0"):
         """
         Get quantities to plot for the reference solution 

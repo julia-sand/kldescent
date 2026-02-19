@@ -12,39 +12,77 @@ class GaussBVP():
     def __init__(self,sigmainitial,
                       sigmafinal,
                       epsilon,
-                      Tf):
-        self.sigmainitial = sigmainitial
+                      Tf,
+                      M,
+                      bridge_type="half"):
+        """Set shared parameters"""
+    
+        self.sigmainitial = sigmainitial 
         self.sigmafinal = sigmafinal
         self.epsilon = epsilon
         self.Tf = Tf 
+        self.M = M #weighting of boundary conditions
         
+    def drho_final(self,QT,CT,PT):
+        return np.array([(-1/2)*PT*CT/((QT*PT)**(3/2)),
+                        1/np.sqrt(QT*PT),
+                        (-1/2)*QT*CT/((QT*PT)**(3/2))])
+
     def rho_final(self,QT,CT,PT):
         return CT/np.sqrt(QT*PT)
 
+    def drho_denom(self,QT,CT,PT):
+        return self.drho_final(QT,CT,PT)*(-2*self.rho_final(QT,CT,PT))
+      
+    def rho_denom(self,QT,CT,PT):
+        return 1-self.rho_final(QT,CT,PT)**2
+
+    def dfinal_v11(self,QT,CT,PT):
+
+        return np.array([-self.drho_denom(QT,CT,PT)[0]/(QT*self.rho_denom(QT,CT,PT)**2)-1/((QT**2)*self.rho_denom(QT,CT,PT)),
+                        -self.drho_denom(QT,CT,PT)[1]/(QT*self.rho_denom(QT,CT,PT)**2),
+                        -self.drho_denom(QT,CT,PT)[2]/(QT*self.rho_denom(QT,CT,PT)**2)])
+
+    def marginal_half_final_v11(self,QT):
+        return (1/self.sigmafinal**2) - 1/Q
+
     def final_v11(self,QT,CT,PT):
-        return (1/self.sigmafinal**2) - (1/(QT*(1-self.rho_final(QT,CT,PT)**2)))
+        return (1/self.sigmafinal**2) - (1/(QT*self.rho_denom(QT,CT,PT)))
+
+    def dfinal_v12(self,QT,CT,PT):
+
+        return np.array([-(CT/(QT*PT))*self.drho_denom(QT,CT,PT)[0]*(CT/(QT*PT))/(self.rho_denom(QT,CT,PT)**2)-(CT/((QT**2)*PT))/(self.rho_denom(QT,CT,PT)),
+                        -(CT/(QT*PT))*self.drho_denom(QT,CT,PT)[1]/(QT*self.rho_denom(QT,CT,PT)**2)+(1/((QT)*PT))/(self.rho_denom(QT,CT,PT)),
+                        -(CT/(QT*PT))*self.drho_denom(QT,CT,PT)[2]/(QT*self.rho_denom(QT,CT,PT)**2)-(CT/(QT*(PT**2)))/(self.rho_denom(QT,CT,PT))])
 
     def final_v12(self,QT,CT,PT):
-        return (CT/(QT*PT))/(1-self.rho_final(QT,CT,PT)**2)
+        return (CT/(QT*PT))/self.rho_denom(QT,CT,PT)
         #np.sqrt(1/(PT*QT))*self.rho_final(QT,CT,PT)/(1-self.rho_final(QT,CT,PT)**2)
 
+    def dfinal_v22(self,QT,CT,PT):
+
+        return np.array([-self.drho_denom(QT,CT,PT)[0]/(PT*self.rho_denom(QT,CT,PT)**2),
+                        -self.drho_denom(QT,CT,PT)[1]/(PT*self.rho_denom(QT,CT,PT)**2),
+                        -self.drho_denom(QT,CT,PT)[2]/(PT*self.rho_denom(QT,CT,PT)**2)-1/((PT**2)*self.rho_denom(QT,CT,PT))])
+
     def final_v22(self,QT,CT,PT):
-        return 1 - (1/(PT*(1-self.rho_final(QT,CT,PT)**2)))
+        return 1 - (1/(PT*self.rho_denom(QT,CT,PT)))
 
     def evolution_jacobian(self,t,y):
-        """compute jacobian of the evolution equations"""
+        """compute jacobian of the evolution equations
+        TODO: check these are correct, currently not used because they cause errors"""
 
         f0_deriv = np.array([np.zeros_like(y[0]),
-                            -4*(y[1]),
-                            4*((y[4]/y[3])**2)*y[2],
-                            -4*(((y[4]*y[2])**2/y[3]**(-3))),
-                            4*((y[2]/y[3])**2)*y[4],
+                            4*(y[1]),
+                            -4*((y[4]/y[3])**2)*y[2],
+                            4*((y[4]*y[2])**2/(y[3]**3)),
+                            -4*((y[2]/y[3])**2)*y[4],
                             np.zeros_like(y[0])])
         f1_deriv = np.array([- self.epsilon*np.ones_like(y[0]),
-                            1 - 2*y[2],
-                            2*y[1] - 4*y[4]*(y[2])/y[3],
-                            2*y[4]*(y[2]**2)/(y[3]**2),
-                            - 2*(y[2]**2)/y[3],
+                            1 + 2*y[2],
+                            2*y[1] + 4*y[4]*y[2]/y[3],
+                            -2*y[4]*(y[2]**2)/(y[3]**2),
+                            2*(y[2]**2)/y[3],
                             np.zeros_like(y[0])])
         f2_deriv = np.array([np.zeros_like(y[0]),
                             -2*y[1]*self.epsilon,
@@ -59,58 +97,103 @@ class GaussBVP():
                             2.0*self.epsilon*np.ones_like(y[0]),
                             np.zeros_like(y[0])])
         f4_deriv = np.array([np.zeros_like(y[0]),
-                            2*y[3],
-                            2*y[4],
-                            2*y[1],
-                            - 1 + 2*y[2],
+                            -2*y[3],
+                            -2*y[4],
+                            -2*y[1],
+                            - 1 - 2*y[2],
                             self.epsilon*np.ones_like(y[0])])      
         f5_deriv = np.array([np.zeros_like(y[0]),
                             - 4*y[4],
                             - 4*(y[4]**2)/y[3],
                             (4*(y[4]**2)*y[2])/(y[3]**2),
                             - 4*y[1] - 8*y[4]*y[2]/y[3],
-                            - 2*y[5]])
+                            - 2*np.ones_like(y[5])])
         
-        return np.array([f0_deriv.T,
-                        f1_deriv.T,
-                        f2_deriv.T,
-                        f3_deriv.T,
-                        f4_deriv.T,
-                        f5_deriv.T])
+        return np.array([f0_deriv,
+                        f1_deriv,
+                        f2_deriv,
+                        f3_deriv,
+                        f4_deriv,
+                        f5_deriv])
 
     def evolution(self, t, y):
         
-        return np.vstack((-2*(y[1]**2) +2*((y[4]*y[2]/y[3])**2), 
-                            y[1] - 2*y[2]*y[1] - self.epsilon*y[0] - 2*y[4]*(y[2]**2)/y[3],
+        return np.vstack((2*(y[1]**2) -2*((y[4]*y[2]/y[3])**2), 
+                            y[1] + 2*y[2]*y[1] - self.epsilon*y[0] + 2*y[4]*(y[2]**2)/y[3],
                             2.0*(y[2]-y[1]*self.epsilon),
                             2.0*self.epsilon*y[4],
-                            self.epsilon*y[5] + 2*y[3]*y[1] - y[4] + 2*y[2]*y[4],
-                            2 - 2*y[5] - 4*y[4]*y[1] - ((4*(y[4]**2)*y[2])/(y[3]))))
-            
-    def bc(self, ya, yb):
+                            self.epsilon*y[5] - 2*y[3]*y[1] - y[4] - 2*y[2]*y[4],
+                            2 - 2*y[5] - 4*y[4]*y[1] - (4*(y[4]**2)*y[2])/y[3]))
+              
+    def bc_marginal_half(self, ya, yb):
         return np.array([ya[3] - self.sigmainitial**2,  #initial sigma
                             ya[4] , #initial cross corr
                             ya[5] - 1, #initial mom var
-                            yb[0] - self.final_v11(yb[3],yb[4],yb[5]),#final value funs
-                            yb[1] - self.final_v12(yb[3],yb[4],yb[5]),
-                            yb[2] - self.final_v12(yb[3],yb[4],yb[5])])
+                            yb[0] - self.marginal_half_final_v11(yb[3]), #final value funs
+                            yb[1] ,
+                            yb[2]])
 
-    def get_sol(self,):
+    def bc_half(self, ya, yb):
+        return np.array([ya[3] - self.sigmainitial**2,  #initial sigma
+                            ya[4] , #initial cross corr
+                            ya[5] - 1, #initial mom var
+                            yb[0] - self.M*self.final_v11(yb[3],yb[4],yb[5]),#final value funs
+                            yb[1] - self.M*self.final_v12(yb[3],yb[4],yb[5]),
+                            yb[2] - self.M*self.final_v12(yb[3],yb[4],yb[5])])
+
+    def bc_full(self, ya, yb):
+        return np.array([ya[3] - self.sigmainitial**2,  #initial sigma
+                            ya[4] , #initial cross corr
+                            ya[5] - 1, #initial mom var
+                            yb[3] - self.sigmafinal**2, #final value funs
+                            yb[4] ,
+                            yb[5] - 1])
+
+    def bc_jacobian(self,):
+        pass 
+
+    def get_marginal_half_sol(self,):
         
         t_vec = np.linspace(0,self.Tf,num=10000)
 
         #initial guess
-        y0 = np.ones((6, t_vec.size))
+        y0 = np.tile(np.array([1,1,1,1,0,1]),(len(t_vec),1)).T
         
-        sol1 = solve_bvp(self.evolution, self.bc, t_vec, y0,
-                        fun_jac=self.evolution_jacobian,
+        sol1 = solve_bvp(self.evolution, self.bc_marginal_half, t_vec, y0,
+                        #fun_jac=self.evolution_jacobian,
+                        verbose=2)
+
+        return sol1 
+
+    def get_half_sol(self,):
+        
+        t_vec = np.linspace(0,self.Tf,num=10000)
+
+        #initial guess
+        y0 = np.tile(np.array([1,2,1,1,0,1]),(len(t_vec),1)).T
+        
+        sol1 = solve_bvp(self.evolution, self.bc_half, t_vec, y0,
+                        #fun_jac=self.evolution_jacobian,
+                        verbose=2)
+
+        return sol1 
+
+    def get_full_sol(self,):
+        
+        t_vec = np.linspace(0,self.Tf,num=10000)
+
+        #initial guess
+        y0 = np.tile(np.array([1,1,1,1,0,1]),(len(t_vec),1)).T
+        
+        sol1 = solve_bvp(self.evolution, self.bc_full, t_vec, y0,
+                        #fun_jac=self.evolution_jacobian,
                         verbose=2)
 
         return sol1 
 
     def get_u2(self,sol1,t_vec):
 
-        return 2*sol1.sol(t_vec)[1] + 2*(sol1.sol(t_vec)[4]*sol1.sol(t_vec)[2])/sol1.sol(t_vec)[3]
+        return (2/self.epsilon)*(sol1.sol(t_vec)[1] + 2*(sol1.sol(t_vec)[4]*sol1.sol(t_vec)[2]/sol1.sol(t_vec)[3]))
 
     def save_csvs(self,sol1,save_location,tnum=1000):
         
