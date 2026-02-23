@@ -39,7 +39,7 @@ class SDEBase():
                                 [Tf]])
 
     def generate_innovation(self,dt,size):
-        #generate a step of brownian motion
+        """generate a step of brownian motion"""
         return np.sqrt(dt)*torch.randn((size,1),requires_grad=False,dtype=torch.float32)
 
 class SDE(SDEBase):
@@ -157,7 +157,7 @@ class SDE(SDEBase):
                 if reference_sol.duref_net is not None:
                     du_ref = reference_sol.duref_net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1)),xinit_ref[:,0,None])))
                 else: 
-                    du_ref = torch.as_tensor(reference_sol.get_ref_drift_gaussian(t_vec[i]),dtype=torch.float32)*xinit[...,[0]]
+                    du_ref = torch.as_tensor(reference_sol.get_ref_drift_gaussian(t_vec[i]),dtype=torch.float32)*xinit_ref[...,[0]]
                     #torch.zeros_like(xinit_ref[:,0,None],dtype=torch.float32,requires_grad=False)
 
                 du_bar = self.net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
@@ -171,18 +171,19 @@ class SDE(SDEBase):
                 xinit_ref = self.boundary.euler_maruyama_step(xinit_ref,du_ref,dt,dw,t_vec[i])
             
             try:
-                kl_static = 0#kl.kl_div(xinit,xinit_ref)
+                kl_static = 0 #kl.kl_div(xinit,xinit_ref)
             except ValueError:
                 kl_static = 0
                 print("Value Error exception ignored. This means that the current value of the \n \
                 neural network drift produces NaN values. ")
+            
             mean0,var0 = torch.mean(xinit[...,0]).item(),torch.var(xinit[...,1]).item()
 
         return torch.mean(kldyn).item(), kl_static, mean0, var0 
     
     def update_ref_statistics(self,plottime=None,testing_samples=None,x0_samples=None):
         """
-        computes samples of the final time to update the g function 
+        Generate samples of the final time 
 
         ====
         Parameters
@@ -192,7 +193,6 @@ class SDE(SDEBase):
             xinit : arr
                 samples from the final distribution under the current drift
         ====
-
         """
 
         if plottime is None: 
@@ -200,7 +200,7 @@ class SDE(SDEBase):
             t_steps = self.sde_params["tsteps"]
         else: 
             #scale number of steps for the fraction of the time
-            t_steps = int(np.floor(self.sde_params["tsteps"]*plottime/self.boundary.params["Tf"]))
+            t_steps = int(np.floor(self.sde_params["tsteps"]*(plottime/self.boundary.params["Tf"])))
       
         if testing_samples == None: #default to the integrator 
             testing_samples = self.sde_params["testsamples"] 
@@ -233,8 +233,8 @@ class SDE(SDEBase):
       
       return np.append(save_array,np.array([[np.nanmean(temp[...,0]),
                                               np.nanmean(temp[...,1]),
-                                              np.nanvar(temp[...,0],ddof=1),
-                                              np.nanvar(temp[...,1],ddof=1),
+                                              np.nanvar(temp[...,0]),
+                                              np.nanvar(temp[...,1]),
                                               np.correlate(temp[...,0],temp[...,1])[0]/(len(temp[...,0]))]]),axis=0)#cross corr
 
     def compute_sde(self,
@@ -282,15 +282,16 @@ class SDE(SDEBase):
                 dw1 = self.generate_innovation(dt,self.sde_params["testsamples"])
                 dw2 = self.generate_innovation(dt,self.sde_params["testsamples"])
 
-                du = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["testsamples"],1),dtype=torch.float32)
+                du = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["testsamples"],1),dtype=torch.float32,requires_grad=False)
                                                         ,xinit[...,[0]])))
                 if reference_sol.duref_net is not None:
                     duref = reference_sol.duref_net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["testsamples"],1)),xref[:,0,None])))
                 else:
-                    duref = torch.as_tensor(reference_sol.get_ref_drift_gaussian(t_vec[i]),dtype=torch.float32)*xinit[...,[0]]
+                    duref = torch.as_tensor(reference_sol.get_ref_drift_gaussian(t_vec[i]),dtype=torch.float32)*xref[...,[0]]
 
                 xinit = self.boundary.euler_maruyama_step(xinit,du,dt,dw1,t_vec[i])
                 xref = self.boundary.euler_maruyama_step(xref,duref,dt,dw2,t_vec[i])
+                
                 cumulants_nn = self.save_cumulants(cumulants_nn,xinit.numpy())
                 cumulants_ref = self.save_cumulants(cumulants_ref,xref.numpy())
         

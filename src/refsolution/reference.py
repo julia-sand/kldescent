@@ -44,7 +44,7 @@ class BaseRefSolution():
         
         elif bridge_type == "half":  #update this to compute the half bridge solution
             
-            pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name())
+            pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name())
         
         else: 
         
@@ -242,7 +242,8 @@ class GaussRefSolution(BaseRefSolution):
         self.underdamped_loc = self.folder_name+"/underdamped.csv"
         self.duref_net = None
 
-        #self.solve_bvp_gaussian()
+        #set the bridge type
+        self.bridge_type = bridge_type
 
     def solve_bvp_gaussian(self,):
 
@@ -262,15 +263,6 @@ class GaussRefSolution(BaseRefSolution):
         
         bvp1.save_csvs(sol1,self.folder_name) #save the csv 
     
-    def get_ref_drift_gaussian(self,time):
-        """Return linear coefficient of gaussian ref drift"""
-        
-        arr = self.get_underdamped_drift_array()
-        v1 = self.boundary.params["epsilon"]*np.squeeze(arr[np.where(arr[:,0]==time),-1])/(2**0.5)
-
-        return -v1
-        #self.boundary.params["epsilon"]*np.squeeze(arr[np.where(arr[:,0]==time),-1])/(2**0.5)
-
     def get_underdamped_drift_array(self):
         """load csv of gaussian underdamped drift"""
         try:
@@ -282,6 +274,16 @@ class GaussRefSolution(BaseRefSolution):
             arr = np.loadtxt(open(self.underdamped_loc),
                         delimiter=",",skiprows=1) 
         return arr
+
+    def get_ref_drift_gaussian(self,time):
+        """Return linear coefficient of gaussian ref drift"""
+        
+        arr = self.get_underdamped_drift_array()
+        v1 = self.boundary.params["epsilon"]*np.squeeze(arr[np.where(arr[:,0]==time),-1])/(2**0.5)
+
+        return -v1
+        #self.boundary.params["epsilon"]*np.squeeze(arr[np.where(arr[:,0]==time),-1])/(2**0.5)
+
 
     def get_underdamped_cumulants_array(self):
         """load csv of gaussian underdamped cumulants"""

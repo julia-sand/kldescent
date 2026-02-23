@@ -13,8 +13,7 @@ class GaussBVP():
                       sigmafinal,
                       epsilon,
                       Tf,
-                      M,
-                      bridge_type="half"):
+                      M):
         """Set shared parameters"""
     
         self.sigmainitial = sigmainitial 
@@ -44,7 +43,7 @@ class GaussBVP():
                         -self.drho_denom(QT,CT,PT)[2]/(QT*self.rho_denom(QT,CT,PT)**2)])
 
     def marginal_half_final_v11(self,QT):
-        return (1/self.sigmafinal**2) - 1/Q
+        return (1/self.sigmafinal**2) - 1/QT
 
     def final_v11(self,QT,CT,PT):
         return (1/self.sigmafinal**2) - (1/(QT*self.rho_denom(QT,CT,PT)))
@@ -123,7 +122,8 @@ class GaussBVP():
                             2.0*(y[2]-y[1]*self.epsilon),
                             2.0*self.epsilon*y[4],
                             self.epsilon*y[5] - 2*y[3]*y[1] - y[4] - 2*y[2]*y[4],
-                            2 - 2*y[5] - 4*y[4]*y[1] - (4*(y[4]**2)*y[2])/y[3]))
+                            2 - 2*y[5] - 4*(y[1]*y[4]) - 4*(y[4]**2)*y[2]/y[3]))
+                            
               
     def bc_marginal_half(self, ya, yb):
         return np.array([ya[3] - self.sigmainitial**2,  #initial sigma
@@ -139,7 +139,7 @@ class GaussBVP():
                             ya[5] - 1, #initial mom var
                             yb[0] - self.M*self.final_v11(yb[3],yb[4],yb[5]),#final value funs
                             yb[1] - self.M*self.final_v12(yb[3],yb[4],yb[5]),
-                            yb[2] - self.M*self.final_v12(yb[3],yb[4],yb[5])])
+                            yb[2] - self.M*self.final_v22(yb[3],yb[4],yb[5])])
 
     def bc_full(self, ya, yb):
         return np.array([ya[3] - self.sigmainitial**2,  #initial sigma
@@ -157,7 +157,7 @@ class GaussBVP():
         t_vec = np.linspace(0,self.Tf,num=10000)
 
         #initial guess
-        y0 = np.tile(np.array([1,1,1,1,0,1]),(len(t_vec),1)).T
+        y0 = np.tile(np.array([-1,1,1,1,0,1]),(len(t_vec),1)).T
         
         sol1 = solve_bvp(self.evolution, self.bc_marginal_half, t_vec, y0,
                         #fun_jac=self.evolution_jacobian,
@@ -166,21 +166,25 @@ class GaussBVP():
         return sol1 
 
     def get_half_sol(self,):
+        print("hello, integrating the half bridge. ")
         
         t_vec = np.linspace(0,self.Tf,num=10000)
 
         #initial guess
-        y0 = np.tile(np.array([1,2,1,1,0,1]),(len(t_vec),1)).T
+        y0 = np.tile(np.array([-1,0,0,1,0,1]),(len(t_vec),1)).T
         
         sol1 = solve_bvp(self.evolution, self.bc_half, t_vec, y0,
                         #fun_jac=self.evolution_jacobian,
+                        max_nodes=100000,
+                        tol=1e-8,
+                        bc_tol=1e-8,
                         verbose=2)
 
         return sol1 
 
     def get_full_sol(self,):
         
-        t_vec = np.linspace(0,self.Tf,num=10000)
+        t_vec = np.linspace(0,self.Tf,num=50000)
 
         #initial guess
         y0 = np.tile(np.array([1,1,1,1,0,1]),(len(t_vec),1)).T
@@ -193,7 +197,7 @@ class GaussBVP():
 
     def get_u2(self,sol1,t_vec):
 
-        return (2/self.epsilon)*(sol1.sol(t_vec)[1] + 2*(sol1.sol(t_vec)[4]*sol1.sol(t_vec)[2]/sol1.sol(t_vec)[3]))
+        return (2/self.epsilon)*(sol1.sol(t_vec)[1] + (sol1.sol(t_vec)[4]*sol1.sol(t_vec)[2]/sol1.sol(t_vec)[3]))
 
     def save_csvs(self,sol1,save_location,tnum=1000):
         

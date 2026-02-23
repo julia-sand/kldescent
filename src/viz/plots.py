@@ -618,6 +618,7 @@ class PlotFuns():
     ax.set_title(self.make_plot_label(index),pad = self.titlepad,x = self.titlex, y = self.titley,zorder = 1000000)
     ax.set_ylabel(ylabel_text)
     ax.set_xlim((-0.1,t_vec[-1]+0.1))
+    #ax.set_ylim((-0.15,1.6))
 
   def make_fig_gridspec(self,nrows=2,ncols=6):
 
