@@ -9,7 +9,7 @@ class Gaussian_Overdamped_Ref():
         self.boundary = boundary 
 
         self.mu0 = 0 #self.boundary.gauss_boundary["muinitial"]
-        self.muT =  0 #self.boundary.gauss_boundary["mufinal"]
+        self.muT = 0 #self.boundary.gauss_boundary["mufinal"]
         self.sigma0 = self.boundary.gauss_boundary["sigmainitial"]
         self.sigmaT = self.boundary.gauss_boundary["sigmafinal"]
         self.A = self.boundary.afun(self.boundary.params["Tf"])

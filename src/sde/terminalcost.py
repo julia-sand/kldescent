@@ -44,7 +44,6 @@ class TerminalCost():
         pdf = self.get_logpdf(x)
         return self.M*(pdf + self.boundary.log_pfinal(x[...,[0]],x[...,[1]]))
 
-
 class GirsanovNet(TerminalCost):
     """
     Estimate the final cost with a neural network trained on the final distribution
@@ -120,16 +119,17 @@ class MLE(TerminalCost):
 
         #set new mean and variance and covariance
         self.pos_mean0 = torch.nanmean(x[...,0]).item() 
-        self.pos_var0 = torch.var(x[...,0]).item()
         self.mom_mean0 = torch.nanmean(x[...,1]).item() 
+
+        self.pos_var0 = torch.var(x[...,0]).item()
         self.mom_var0 = torch.var(x[...,1]).item()
+
         self.cc0 = (torch.sum((x[...,1]-self.mom_mean0)*(x[...,0]-self.pos_mean0))/(len(x[...,0]))).item()
 
     def multivariate_U(self,x):
         #exponent of a multivariate Gaussian distribution
-        #pdb.set_trace()
-        rho_var = self.cc0/(self.mom_var0*self.pos_var0)
-        return -(1/(2*(1-rho_var**2)))*(((x[...,[0]]-self.pos_mean0)**2)/self.pos_var0 - 2*(self.cc0*(x[...,[0]]-self.pos_mean0)*(x[...,[1]]-self.mom_mean0)) + ((x[...,[1]]-self.mom_mean0)**2)/self.mom_mean0)
+        rho_var = self.cc0/np.sqrt(self.mom_var0*self.pos_var0)
+        return -(1/(2*(1-rho_var**2)))*(((x[...,[0]]-self.pos_mean0)**2)/self.pos_var0 - 2*((x[...,[0]]-self.pos_mean0)*(x[...,[1]]-self.mom_mean0))*(self.cc0/(self.mom_var0*self.pos_var0)) + ((x[...,[1]]-self.mom_mean0)**2)/self.mom_var0)
 
     def get_logpdf(self,x):
 
@@ -181,10 +181,6 @@ class Histogram(TerminalCost):
 
         #step 2: return the correct histogram value
         return self.H[indy-1,indx-1]
-
-    def get_half_logpdf(self,x):
-        pdf = torch.tensor([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))],dtype=torch.float32,requires_grad=False)
-        return torch.nan_to_num(torch.log(pdf+1e-10))
 
     def get_logpdf(self,x):
         pdf = torch.tensor([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))],dtype=torch.float32,requires_grad=False)

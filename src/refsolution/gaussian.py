@@ -9,13 +9,18 @@ from .utilfunctions import save_array
 
 class GaussBVP():
 
-    def __init__(self,sigmainitial,
+    def __init__(self,
+                      muinitial,
+                      mufinal,
+                      sigmainitial,
                       sigmafinal,
                       epsilon,
                       Tf,
                       M):
         """Set shared parameters"""
-    
+        self.muinitial = muinitial 
+        self.mufinal = mufinal
+        
         self.sigmainitial = sigmainitial 
         self.sigmafinal = sigmafinal
         self.epsilon = epsilon
@@ -74,18 +79,18 @@ class GaussBVP():
         f0_deriv = np.array([np.zeros_like(y[0]),
                             4*(y[1]),
                             -4*((y[4]/y[3])**2)*y[2],
-                            4*((y[4]*y[2])**2/(y[3]**3)),
+                            4*(y[4]*y[2])**2/(y[3]**3),
                             -4*((y[2]/y[3])**2)*y[4],
                             np.zeros_like(y[0])])
         f1_deriv = np.array([- self.epsilon*np.ones_like(y[0]),
                             1 + 2*y[2],
                             2*y[1] + 4*y[4]*y[2]/y[3],
-                            -2*y[4]*(y[2]**2)/(y[3]**2),
+                            -2*y[4]*((y[2]/y[3])**2),
                             2*(y[2]**2)/y[3],
                             np.zeros_like(y[0])])
         f2_deriv = np.array([np.zeros_like(y[0]),
-                            -2*y[1]*self.epsilon,
-                            2.0*y[2],
+                            -2*self.epsilon*np.ones_like(y[0]),
+                            2.0*np.ones_like(y[0]),
                             np.zeros_like(y[0]),
                             np.zeros_like(y[0]),
                             np.zeros_like(y[0])])
@@ -104,7 +109,7 @@ class GaussBVP():
         f5_deriv = np.array([np.zeros_like(y[0]),
                             - 4*y[4],
                             - 4*(y[4]**2)/y[3],
-                            (4*(y[4]**2)*y[2])/(y[3]**2),
+                            4*((y[4]/y[3])**2)*y[2],
                             - 4*y[1] - 8*y[4]*y[2]/y[3],
                             - 2*np.ones_like(y[5])])
         
@@ -160,7 +165,7 @@ class GaussBVP():
         y0 = np.tile(np.array([-1,1,1,1,0,1]),(len(t_vec),1)).T
         
         sol1 = solve_bvp(self.evolution, self.bc_marginal_half, t_vec, y0,
-                        #fun_jac=self.evolution_jacobian,
+                        fun_jac=self.evolution_jacobian,
                         verbose=2)
 
         return sol1 
@@ -174,7 +179,7 @@ class GaussBVP():
         y0 = np.tile(np.array([-1,0,0,1,0,1]),(len(t_vec),1)).T
         
         sol1 = solve_bvp(self.evolution, self.bc_half, t_vec, y0,
-                        #fun_jac=self.evolution_jacobian,
+                        fun_jac=self.evolution_jacobian,
                         max_nodes=100000,
                         tol=1e-8,
                         bc_tol=1e-8,

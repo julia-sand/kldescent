@@ -104,10 +104,10 @@ class OverdampedFullLandauer(Boundaries):
 
     def Ufinal(self,q):
 
-        return ((q**2-1)**2)#*12
+        return ((q**2-1)**2) #*12
 
     def scorefinal(self,q):
-        #negative log-gradient of the final distribution 
+        """compute negative log-gradient of the final distribution""" 
         return -(q**2-1)*q
 
     def qfinal(self,q):
