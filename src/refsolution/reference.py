@@ -267,12 +267,12 @@ class GaussRefSolution(BaseRefSolution):
         """load csv of gaussian underdamped drift"""
         try:
             arr = np.loadtxt(open(self.underdamped_loc),
-                        delimiter=",",skiprows=1) 
+                        delimiter=",",skiprows=1,usecols=(0,-1)) 
         except FileNotFoundError:
             print("Reference solution not found. Integrating First order system...")
             self.solve_bvp_gaussian()
             arr = np.loadtxt(open(self.underdamped_loc),
-                        delimiter=",",skiprows=1) 
+                        delimiter=",",skiprows=1,usecols=(0,-1)) 
         return arr
 
     def get_ref_drift_gaussian(self,time):
@@ -285,42 +285,57 @@ class GaussRefSolution(BaseRefSolution):
         #self.boundary.params["epsilon"]*np.squeeze(arr[np.where(arr[:,0]==time),-1])/(2**0.5)
 
 
-    def get_underdamped_cumulants_array(self):
-        """load csv of gaussian underdamped cumulants"""
+    def get_underdamped_cumulants_array(self,idx=None):
+        """load csv of gaussian underdamped cumulants
+        args: 
+            idx : tuple
+                indices of the columns to load. 
+        """
         try:   
             arr = np.loadtxt(open(self.underdamped_cumulants_loc),
-                        delimiter=",",skiprows=1) 
+                        delimiter=",",skiprows=1,usecols=idx) 
         
         except FileNotFoundError:
             print("Reference solution not found. Integrating First order system...")
             self.solve_bvp_gaussian()
             arr = np.loadtxt(open(self.underdamped_loc),
-                        delimiter=",",skiprows=1) 
+                        delimiter=",",skiprows=1,usecols=idx) 
         
         return arr
         
     def get_underdamped_tgrid(self):
-        arr = self.get_underdamped_cumulants_array()
-        return np.squeeze(arr[:,0])
+        arr = self.get_underdamped_cumulants_array(idx = 0)
+        return np.squeeze(arr)
 
     def get_perturbative_cumulant(self,cumulant_type):
-        arr = self.get_underdamped_cumulants_array() 
+        """Fetch saved cumulants for plotting
+        args 
+            cumulant_type : str
+                Name of the cumulant 
+        returns 
+            tvec : (n,) array
+                vector of times
+            cumulantvec : (n,) array
+                vector of cumulant values
+        """
 
         if cumulant_type == "Position Variance": 
-            temp = np.squeeze(arr[:,1])
+            arr = self.get_underdamped_cumulants_array(idx=(0,1)) 
         elif cumulant_type == "Momentum Variance":
-            temp = np.squeeze(arr[:,3])
+            arr = self.get_underdamped_cumulants_array(idx=(0,3))
         elif cumulant_type == "Cross Correlation":
-            temp = np.squeeze(arr[:,2])
+            arr = self.get_underdamped_cumulants_array(idx=(0,2)) 
         elif cumulant_type == "Momentum Mean":
-            temp = np.zeros_like(np.squeeze(arr[:,0]))
+            arr = np.zeros((10,2))
+            #temp = np.zeros_like(np.squeeze(arr[:,0]))
         elif cumulant_type == "Position Mean":
-            temp = np.zeros_like(np.squeeze(arr[:,0]))
+            arr = np.zeros((10,2))
+            #temp = np.zeros_like(np.squeeze(arr[:,0]))
         else:
             print("Perturbative prediction for "+cumulant_type+" not available.")
-            temp = np.zeros_like(np.squeeze(arr[:,0]))
+            arr = np.zeros((10,2))
         
-        return np.squeeze(arr[:,0]),temp
+        return np.squeeze(arr[:,0]),np.squeeze(arr[:,1])
        
     def du_ref(self,t,q):
         """Return drift for t,q coordinate"""

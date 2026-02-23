@@ -9,6 +9,7 @@ from src.sde import *
 import src.sde.boundary as boundaries
 from src.utils import *
 from src.viz.checkpoint_plots import *
+from src.viz.loss_plots import plot_loss_metrics
 import src.model.pretrain as pretrain
 from src.refsolution.reference import *
 
@@ -86,5 +87,7 @@ def run():
             #print("The training has resulted in NaN loss and therefore failed. Please retry.")
             #raise
     
+    plot_loss_metrics(folder=metrics_logger.newpath)
+
 if __name__=="__main__":
     run()

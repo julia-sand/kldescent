@@ -437,85 +437,6 @@ class PlotFuns():
     
     return fig  
     
-
-
-  def get_loss_output(self,filename=None):
-    if filename is not None:
-      arr = np.loadtxt(filename,
-                          delimiter=",",skiprows=1)  
-    else:
-      ##fetch the logged results for current run
-      arr = np.loadtxt(self.folder+"/loss.csv",
-                          delimiter=",",skiprows=1)  
-
-    return arr
-
-  def plot_lhat(self,ax,arr,window_size=5):
-
-    ax.plot(arr[:,0],arr[:,1],label=r"$\hat\mathcal{L}$")
-    ax.plot(np.squeeze(arr[:,0])[window_size:-window_size],self.movingaverage(np.squeeze(arr[:,1]),window_size),linestyle="dashed")
-
-    #set axis labels
-    ax.set_xlabel("epochs")
-    ax.set_ylabel(r"Effective Loss, $\hat\mathcal{L}$")
-    
-    return     
-
-  def plot_dynamic_kl(self,ax,arr,window_size=5):
-
-    #arr = self.get_loss_output()
-
-    ax.plot(arr[:,0],arr[:,2],label=r"K.L. Divergence")
-    ax.plot(np.squeeze(arr[:,0])[window_size:-window_size],self.movingaverage(np.squeeze(arr[:,2]),window_size),linestyle="dashed")
-
-    #set axis labels
-    ax.set_xlabel("epochs")
-    ax.set_ylabel(r"(dynamic) K.L.")
-
-  def plot_static_kl(self,ax,arr,window_size=5):
-
-    #arr = self.get_loss_output()
-
-    ax.plot(arr[:,0],arr[:,3],label=r"K.L. Divergence")
-    ax.plot(np.squeeze(arr[:,0])[window_size:-window_size],self.movingaverage(np.squeeze(arr[:,3]),5),linestyle="dashed")
-
-    #set axis labels
-    ax.set_xlabel("epochs")
-    ax.set_ylabel(r"(static) K.L.")
-
-  def plot_learningrate(self,ax,arr):
-
-
-    ax.plot(arr[:,0],-arr[:,-1]*10,label=r"$\eta$")
-    
-    return     
-
-  def plot_loss_metrics(self,filename=None):
-
-    fig = plt.figure(figsize=(15,8))
-
-    arr = self.get_loss_output(filename)
-
-    ax1 = fig.subplot(131)
-    ax2 = fig.subplot(132)
-    ax3 = fig.subplot(133)
-    try:
-      self.plot_lhat(ax1,arr)
-      self.plot_dynamic_kl(ax2,arr)
-      self.plot_static_kl(ax3,arr)
-      
-      plt.tight_layout()
-      self.save_fig_(fig,"losses")
-      
-      plt.close()
-    
-    except IndexError:
-      print("Not enough data to plot the loss metrics.\n \
-               Ensure that there has been at least one epoch in the current run and logging frequency is configured correctly.")
-      plt.close()
-    
-    return     
-
   ##@profile
   def evaluate_net_output(self,net,time):
     with torch.no_grad():
@@ -711,10 +632,6 @@ class PlotFuns():
     self.mut_q = cumulants_nn[0]
     self.sigsqt_q = cumulants_nn[2]
      
-  def movingaverage(self, data, window_size):
-      data_means = np.convolve(data, np.ones(int(window_size))/float(window_size), 'same')
-      return data_means[window_size:-window_size]
-
   def get_all_subplot_handles_labels(self,fig):
 
     d0 = {}

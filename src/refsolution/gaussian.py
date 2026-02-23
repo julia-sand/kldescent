@@ -10,16 +10,16 @@ from .utilfunctions import save_array
 class GaussBVP():
 
     def __init__(self,
-                      muinitial,
-                      mufinal,
+                      #muinitial,
+                      #mufinal,
                       sigmainitial,
                       sigmafinal,
                       epsilon,
                       Tf,
                       M):
         """Set shared parameters"""
-        self.muinitial = muinitial 
-        self.mufinal = mufinal
+        #self.muinitial = muinitial 
+        #self.mufinal = mufinal
         
         self.sigmainitial = sigmainitial 
         self.sigmafinal = sigmafinal
