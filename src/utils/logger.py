@@ -59,27 +59,20 @@ class LossLogger():
 
         self.filename = self.newpath +"/loss.csv" 
         with open(self.filename, 'w') as f:
-                fields=['epoch','Lhat','dynamic_kl','static_kl','learning_rate', "ref_mean", "ref_var"]
+                fields=['epoch','Lhat','dynamic_kl','static_kl','static_kl_from_ref', "ref_mean", "ref_var"]
                 writer = csv.writer(f)
                 writer.writerow(fields)
         print("Log file created successfully.")   
 
-    def write_data_row(self,epoch,Lhat,kl_dyn,klval,lr,refmean,refvar):
+    def write_data_row(self,epoch,Lhat,kl_dyn,kl_static,kl_static_from_ref,refmean,refvar):
 
         with open(self.filename, 'a') as f:
             writer = csv.writer(f)
-            writer.writerow([epoch, Lhat, kl_dyn, klval, lr, refmean, refvar])
+            writer.writerow([epoch, Lhat, kl_dyn, kl_static, kl_static_from_ref, refmean, refvar])
 
     def get_epoch_folder(self,epoch):
         os.makedirs(self.newpath+f"/epoch{epoch}", exist_ok = True)
         return f"/epoch{epoch}"
-
-    #@profile
-    def log_epoch_data(self,net,epoch,lout,kl_dyn,kl_val,lr,mean0,var0):
-
-        self.write_data_row(epoch,lout,kl_dyn,kl_val,lr,mean0,var0) #log
-
-        #self.save_checkpoint(net,epoch)
 
     def get_results_path(self):
         return self.newpath

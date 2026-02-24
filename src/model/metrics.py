@@ -3,6 +3,7 @@ import numpy as np
 
 from ..refsolution.reference import RefSolution
 from ..model.nn import save_nn_checkpoint
+from ..sde.kl import static_kl_divergence
 
 class Metrics():
     """
@@ -40,7 +41,7 @@ class Metrics():
 
         self.update_metrics(0, 0)
 
-    def update_metrics(self, epoch, loss_out, trainer=None):
+    def update_metrics(self, epoch, loss_out):
         """
         Function for computing metrics
             - checks for nan loss
@@ -64,26 +65,20 @@ class Metrics():
         
             with torch.no_grad():
                 
-                #this also updates the ref. cumulants
-                kl_dynamic, kl_static, mean0, var0 = self.integrator.compute_metrics(self.reference_sol)
+                kl_dynamic,xinit,xref = self.integrator.compute_metrics(self.reference_sol)
 
-                if trainer is not None:
-                    lr_rate = trainer.scheduler.get_last_lr()[0]
-                else:
-                    lr_rate = 0
+                kl_static_from_ref,kl_static = static_kl_divergence(xinit,xref,self.integrator.boundary)
 
                 self.logger.write_data_row(epoch,
                                             loss_out,
                                             kl_dynamic,
                                             kl_static,
-                                            lr_rate, #,
-                                            mean0,
-                                            var0)
+                                            kl_static_from_ref,
+                                            np.nanmean(xinit[...,0]),
+                                            np.nanvar(xinit[...,0]))
 
                 net_name = self.net.net_name
                 
                 #save checkpoint 
                 save_nn_checkpoint(self.net,loc=self.logger.newpath+f"/checkpoints/{self.net.net_name}_checkpoint_{epoch}.pt")
-                #if self.rhonet is not None:
-                #    self.logger.save_checkpoint(self.rhonet,epoch)
-            
+        

@@ -588,23 +588,24 @@ class PlotFuns():
             plt.subplot(gs_cumulants[1,:3]),
             plt.subplot(gs_cumulants[1, 3:])]
 
-    for cumulant_vec,legend_label in zip(cumulants,labels):
+    for ax, cumulant in zip(axs,enumerate(cumulant_names)):
 
-        for ax, cumulant in zip(axs,enumerate(cumulant_names)):
+      for cumulant_vec,legend_label in zip(cumulants,labels):
 
-          self.make_cumulant_subplot(ax,cumulant[1],
-                                            t_vec,cumulant_vec,legend_label,
-                                            test_samples)
-          self.add_freediffusion_cumulants_subplot(ax,cumulant[1],t_vec,cumulant_vec) 
+        self.make_cumulant_subplot(ax,cumulant[1],
+                                          t_vec,cumulant_vec,legend_label,
+                                          test_samples)
+      
+      self.add_freediffusion_cumulants_subplot(ax,cumulant[1],t_vec,cumulant_vec) 
 
-          if refsol is not None:
-            try: 
-              t_vectemp, cumulant_temp = refsol.get_perturbative_cumulant(cumulant[1])
-              ax.plot(t_vectemp, cumulant_temp,label="Benchmark")
-            except FileNotFoundError:
-              pass 
+      if refsol is not None:
+        try: 
+          t_vectemp, cumulant_temp = refsol.get_perturbative_cumulant(cumulant[1])
+          ax.plot(t_vectemp, cumulant_temp,label="Benchmark")
+        except FileNotFoundError:
+          pass 
 
-          self.format_cumulant_subplot(ax,cumulant[0],cumulant[1],t_vec)
+      self.format_cumulant_subplot(ax,cumulant[0],cumulant[1],t_vec)
     
     plt.tight_layout()
 

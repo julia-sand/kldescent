@@ -86,7 +86,6 @@ def get_solution_in_time(cell,integrator,
              
     return np.nan_to_num(arr_out,nan=0,posinf=0,neginf=0)
 
-
 def compute_overdamped(boundary,save_location,bridge_type="marginal"):
     
     cell = CellProblem(boundary,save_location,bridge_type=bridge_type)

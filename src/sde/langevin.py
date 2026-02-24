@@ -162,7 +162,7 @@ class SDE(SDEBase):
 
                 du_bar = self.net(torch.column_stack((t_vec[i]*torch.ones((testing_samples,1),requires_grad=False,dtype=torch.float32)
                                                         ,xinit[...,[0]]))).detach()
-                kldyn = kldyn + dt*(torch.linalg.norm(torch.sub(du_bar, du_ref), axis=1,keepdim=True)) 
+                kldyn = kldyn + dt*(torch.linalg.norm(torch.sub(du_bar, du_ref), axis=1, keepdim=True)) 
                 #torch.randn((testing_samples,1),requires_grad=False,dtype=torch.float32)
 
 
@@ -170,16 +170,8 @@ class SDE(SDEBase):
         
                 xinit_ref = self.boundary.euler_maruyama_step(xinit_ref,du_ref,dt,dw,t_vec[i])
             
-            try:
-                kl_static = 0 #kl.kl_div(xinit,xinit_ref)
-            except ValueError:
-                kl_static = 0
-                print("Value Error exception ignored. This means that the current value of the \n \
-                neural network drift produces NaN values. ")
-            
-            mean0,var0 = torch.mean(xinit[...,0]).item(),torch.var(xinit[...,1]).item()
-
-        return torch.mean(kldyn).item(), kl_static, mean0, var0 
+        return torch.mean(kldyn).item(), xinit.detach().numpy(),xinit_ref.detach().numpy()
+        # kl_static, mean0, var0 
     
     def update_ref_statistics(self,plottime=None,testing_samples=None,x0_samples=None):
         """

@@ -61,6 +61,9 @@ class Boundaries():
         if logger is not None:
             logger.log_dict(self.params) #add to log
 
+        self.gauss_boundary = None #set final and initial means
+
+
         
 class OverdampedFullLandauer(Boundaries):
     """
@@ -460,11 +463,19 @@ class UnderdampedGaussian(UnderdampedLandauer):
 
         return self.qinitial(q)/self.pi_norm
 
+    def final_full_distribution_cov(self,):
+        return np.array([[self.gauss_boundary["sigmafinal"]**2,0],[0,1]])
+
+    def final_full_distribution_covdet(self,):
+        return (1/self.gauss_boundary["sigmafinal"]**2)
+
+    def final_full_distribution_inverse_cov(self,):
+        return np.array([[(1/self.gauss_boundary["sigmafinal"]**2),0],[0,1]])
+
     def q_marginal_final(self,q): 
         
         return self.qfinal(q)/self.pf_norm
 
-    #generate the initial data
     def generate_samples_q(self,batch_samples,mode):
         r"""Sample points from the intial or final distributions for q (position)
         
