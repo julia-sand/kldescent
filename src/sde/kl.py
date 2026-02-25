@@ -89,6 +89,7 @@ def static_kl_divergence(xinit,xref,boundary):
 
 def kl_between_gaussians(Sig1,InvSig2,Sig2_det):
     """Compute kl divergence between two gaussian distributions with zero mean"""
+    
     return (1/2)*(np.log(Sig2_det/np.linalg.det(Sig1))-2+np.linalg.trace(InvSig2@Sig1))
 
 if __name__=="__main__":

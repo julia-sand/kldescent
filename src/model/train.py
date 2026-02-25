@@ -172,9 +172,9 @@ class TrainRho():
 
         self.clip = 0.01 #gradient clipping
 
-        self.rho_epochs = 1 #2048 #total number of training epochs
+        self.rho_epochs = 2048 #total number of training epochs
         self.milestone = 512 #how often to decay learning rate
-        self.rho_batch = 64 #size of batch 
+        self.rho_batch = 128 #size of batch 
 
         self.loss = torch.nn.MSELoss()
 

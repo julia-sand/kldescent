@@ -116,14 +116,14 @@ class PlotUtils():
             self.referencesol = RefSolution(boundary_cond,folder_name=self.folder)
             self.net = self.referencesol.duref_net #NeuralNetwork(self.boundary_cond,self.data_loaded)
 
-            self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
+            self.integrator = langevin.VerletSDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
     def load_du_checkpoint(self):
         
         self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
         load_checkpoint(self.net,self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
         
-        self.integrator = langevin.SDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
+        self.integrator = langevin.VerletSDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
     def load_rho_checkpoint(self):
         
@@ -138,8 +138,8 @@ class PlotUtils():
 
         self.load_du_checkpoint()
         self.load_ref_solution()
-       
-        self.plotter.plot_drift(times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net,refsol=self.referencesol)
+        #plot_times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]]
+        self.plotter.plot_drift(times = [0,2.507508,4.994995],net=self.net,refsol=self.referencesol)
         self.make_sde_plots()
         #self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
         
@@ -332,6 +332,8 @@ class PlotUtils():
         self.plotter.make_legend(fig,h,l)
         self.plotter.make_colourbar(fig,vmax=0.5)
         
+        plt.tight_layout()
+
         self.plotter.save_fig_(fig,"contour_distribution")
         
         plt.close()
@@ -409,3 +411,7 @@ if __name__=="__main__":
     plot_utils = PlotUtils()
 
     plot_utils.checkpoint_plots_du()
+    try:
+        plot_utils.checkpoint_plots_rho()
+    except FileNotFoundError:
+        pass

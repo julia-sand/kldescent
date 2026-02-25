@@ -375,7 +375,7 @@ class UnderdampedLandauer(OverdampedLandauer):
 
         return 0
     
-    def euler_maruyama_step(self,xn,du_bar,dt,dw,t):
+    def euler_maruyama_step(self,xn,du_bar,dt,dw,t=0):
 
         #takes one step forward in the euler maruyama discretisation
         #go forward one step 
@@ -467,7 +467,7 @@ class UnderdampedGaussian(UnderdampedLandauer):
         return np.array([[self.gauss_boundary["sigmafinal"]**2,0],[0,1]])
 
     def final_full_distribution_covdet(self,):
-        return (1/self.gauss_boundary["sigmafinal"]**2)
+        return self.gauss_boundary["sigmafinal"]**2
 
     def final_full_distribution_inverse_cov(self,):
         return np.array([[(1/self.gauss_boundary["sigmafinal"]**2),0],[0,1]])

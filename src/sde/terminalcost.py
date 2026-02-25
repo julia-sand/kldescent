@@ -74,10 +74,10 @@ class GirsanovNet(TerminalCost):
     def update_cost_params(self,integrator,epoch):
         """train girsanov net to find the final distribution"""
 
-        #if epoch<1:
-        #    pass
-        #else: #update number of epochs
-        #    self.rhotrainer.rho_epochs = 1024 #less epochs for training later 
+        if epoch<1:
+            pass
+        else: #update number of epochs
+            self.rhotrainer.rho_epochs = 1024 #less epochs for training later 
 
         #train the rho neural network
         self.rhotrainer.train_loop(integrator)

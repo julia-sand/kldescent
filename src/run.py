@@ -47,7 +47,7 @@ def run():
     terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,metrics_logger)
     
     #intialise sde integration 
-    integrator = langevin.SDE(boundaryconditions, net=net, terminal_cost=terminal_cost)
+    integrator = langevin.VerletSDE(boundaryconditions, net=net, terminal_cost=terminal_cost)
     
     #log integration parameters
     metrics_logger.log_dict(integrator.sde_params)

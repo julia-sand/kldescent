@@ -151,7 +151,7 @@ class PlotFuns():
    
     ax.set_xlabel(r"$p$")
     ax_qmarginal.set_xlabel(r"$\rho_t(q)$")
-    ax_qmarginal.set_xlim(right=-0.01,left=0.6)
+    ax_qmarginal.set_xlim(right=-0.01)#,left=0.6)
 
     ax.set_ylabel(r"$q$")
     ax_pmarginal.set_ylabel(r"$\rho_t(p)$")
@@ -280,7 +280,8 @@ class PlotFuns():
   def format_distribution_ax(self,ax1):
     ax1.set_xlim((-self.qmax,self.qmax))
     ax1.set_xlabel("q")
-    ax1.set_ylim((-0.01,0.65))
+    #ax1.set_ylim((-0.01,0.65))
+    ax1.set_ylim(bottom=-0.01)
     #ax1.set_ylabel(r"$\rho$")
 
   def plot_reference(self,ax1,x,du):
@@ -413,7 +414,10 @@ class PlotFuns():
     ax_mom.yaxis.tick_right()
     ax_mom.yaxis.set_label_position("right")
     
-    #h,l = ax_pos.get_legend_handles_labels()
+    #set plot limits
+    ax_mom.set_xlim((-5,5))
+    ax_pos.set_xlim((-3,3))
+    
     return 
   
   def make_marginal_distribution_fig(self,xvals,plottime,refsol=None):

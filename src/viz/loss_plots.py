@@ -48,8 +48,13 @@ def plot_metric(ax,xdata,ydata,ylabel,window_size=5):
   returns
     None
   """
+  
   ax.scatter(xdata,ydata,label="raw data")
   ax.plot(xdata[window_size:-window_size],movingaverage(ydata,window_size),linestyle="dashed",label=f"Moving average with size {window_size}")
+
+  if "KL" in ylabel:
+ 
+    ax.set_yscale("log")
 
   #set axis labels
   ax.set_xlabel("Epoch")
@@ -67,8 +72,8 @@ def plot_loss_metrics(folder):
                                                                                delimiter=",",skiprows=1,unpack=True)  
 
   for ax,metric,ylabel in zip(axs.flatten(),
-                        [Lhat,dynamic_kl,static_kl,static_kl_from_ref,ref_mean,ref_var],
-                        [r"Loss, $\hat{\mathcal{L}}$","Dynamic KL","Static KL","Static KL from Reference","Final Position Mean","Final Momentum Variance"]):
+                        [Lhat,dynamic_kl+100*static_kl_from_ref,dynamic_kl,static_kl_from_ref,ref_mean,ref_var],
+                        [r"Loss, $\hat{\mathcal{L}}$","Dynamic KL+StaticKL","Dynamic KL","Static KL from Reference","Final Position Mean","Final Position Variance"]):
 
     plot_metric(ax,epoch,metric,ylabel)
   
