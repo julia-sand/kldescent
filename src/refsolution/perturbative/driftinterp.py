@@ -32,14 +32,17 @@ def perturbative_du_interp(reference_sol,mlp_net):
         print("Checkpoint for perturbative Solution found and loaded")
     
     except BaseException:
-        #this means that the checkpoint file could not be loaded
+        #this is any caught error raised by the loadcheckpoint function 
+        #It happens when the checkpoint file could not be loaded
         #because checkpoint doesnt exist or is incompatible with initialised network
-        #run training again to learn the csv in the reference solution folder
-        run_pretrain(mlp_net,reference_sol)
+        try:
+            #run training again to learn the csv in the reference solution folder
+            run_pretrain(mlp_net,reference_sol)
 
-        #save the trained checkpoint
-        save_nn_checkpoint(mlp_net,loc=reference_sol.folder_name+f"/perturbative_underdamped_drift.pt")
-
+            #save the trained checkpoint
+            save_nn_checkpoint(mlp_net,loc=reference_sol.folder_name+f"/perturbative_underdamped_drift.pt")
+        else: 
+            
 
     return mlp_net
 
@@ -56,7 +59,7 @@ def contour(plotter,net):
     #from ...sde.langevin import *
 
     #plotter = PlotFuns(boundary,referencesol=reference_sol)
-    integrator1 = SDE(boundary,net=net)
+    integrator1 = EulerMaruyamaSDE(boundary,net=net)
 
     times = [0,2.5,5]
 

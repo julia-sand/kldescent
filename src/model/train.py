@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from torch import nn as torchnn
 from torch.optim import Adam
-from torch.optim.lr_scheduler import CosineAnnealingLR,ExponentialLR
+from torch.optim.lr_scheduler import CosineAnnealingLR,ExponentialLR,ReduceLROnPlateau
 from torch.nn.utils import clip_grad_norm_
 
 from tqdm import tqdm
@@ -126,9 +126,14 @@ class Train():
         self.milestone = 100 #how often to decay learning rate
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
-        self.scheduler = CosineAnnealingLR(self.optimiser, 
-                            T_max=100, eta_min=1e-10)
+        #self.scheduler = CosineAnnealingLR(self.optimiser, 
+        #                    T_max=100, eta_min=1e-10)
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
+        self.scheduler = ReduceLROnPlateau(self.optimiser,
+                                            mode="min",
+                                            factor=0.1,
+                                            patience=3, #how many steps to wait before 
+                                            eps=1e-8) #Decays the learning rate based on a passed metric
         
     def train_step(self):  
         
@@ -143,9 +148,6 @@ class Train():
         ##training##
         Lhat.backward()
         self.optimiser.step()
-               
-        #self.scheduler.step()
-        #if (epoch % self.milestone == 0) and (epoch>0):
             
         return Lhat.detach().numpy().item()
 

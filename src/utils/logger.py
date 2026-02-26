@@ -9,6 +9,11 @@ import yaml
 
 from .parser import fetch_results_folder_from_cmd
 
+def save_params(LossLogger,args):
+
+    for params in args:
+        LossLogger.log_dict(params)
+
 class LossLogger():
     '''
     This class deals with making results folder and recording losses and plots. also saving checkpoints

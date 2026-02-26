@@ -39,7 +39,9 @@ class Metrics():
             pass
             #self.refnet = None 
 
-        self.update_metrics(0, 0)
+        #self.update_metrics(0, 0)
+        self.kldyn = 0
+
 
     def update_metrics(self, epoch, loss_out):
         """
@@ -68,17 +70,20 @@ class Metrics():
                 kl_dynamic,xinit,xref = self.integrator.compute_metrics(self.reference_sol)
 
                 kl_static_from_ref,kl_static = static_kl_divergence(xinit,xref,self.integrator.boundary)
+                self.actioncost = kl_dynamic + self.integrator.boundary.params["weight"]*kl_static_from_ref
 
                 self.logger.write_data_row(epoch,
                                             loss_out,
-                                            kl_dynamic + self.integrator.boundary.params["weight"]*kl_static_from_ref,
+                                            self.actioncost,
+                                            #kl_dynamic + self.integrator.boundary.params["weight"]*kl_static_from_ref,
                                             kl_dynamic,
                                             kl_static,
                                             kl_static_from_ref,
                                             np.nanvar(xinit[...,0]))
 
-                net_name = self.net.net_name
-                
+                #net_name = self.net.net_name
+
+
                 #save checkpoint 
                 save_nn_checkpoint(self.net,loc=self.logger.newpath+f"/checkpoints/{self.net.net_name}_checkpoint_{epoch}.pt")
         
