@@ -71,10 +71,10 @@ class Metrics():
 
                 self.logger.write_data_row(epoch,
                                             loss_out,
+                                            kl_dynamic + self.integrator.boundary.params["weight"]*kl_static_from_ref,
                                             kl_dynamic,
                                             kl_static,
                                             kl_static_from_ref,
-                                            np.nanmean(xinit[...,0]),
                                             np.nanvar(xinit[...,0]))
 
                 net_name = self.net.net_name

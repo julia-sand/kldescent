@@ -59,7 +59,7 @@ class LossLogger():
 
         self.filename = self.newpath +"/loss.csv" 
         with open(self.filename, 'w') as f:
-                fields=['epoch','Lhat','dynamic_kl','static_kl','static_kl_from_ref', "ref_mean", "ref_var"]
+                fields=['epoch','Lhat_objective','cost','dynamic_kl','static_kl','static_kl_from_ref',"position_variance"]
                 writer = csv.writer(f)
                 writer.writerow(fields)
         print("Log file created successfully.")   

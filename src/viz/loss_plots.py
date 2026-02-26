@@ -68,12 +68,12 @@ def plot_loss_metrics(folder):
   fig.set_figheight(15)
   fig.set_figwidth(25)
 
-  epoch,Lhat,dynamic_kl,static_kl,static_kl_from_ref,ref_mean,ref_var = np.loadtxt(folder+"/loss.csv",
+  epoch,Lhat,cost,dynamic_kl,static_kl,static_kl_from_ref,ref_var = np.loadtxt(folder+"/loss.csv",
                                                                                delimiter=",",skiprows=1,unpack=True)  
 
   for ax,metric,ylabel in zip(axs.flatten(),
-                        [Lhat,dynamic_kl+100*static_kl_from_ref,dynamic_kl,static_kl_from_ref,ref_mean,ref_var],
-                        [r"Loss, $\hat{\mathcal{L}}$","Dynamic KL+StaticKL","Dynamic KL","Static KL from Reference","Final Position Mean","Final Position Variance"]):
+                        [Lhat,cost,dynamic_kl,static_kl_from_ref,static_kl,ref_var],
+                        [r"Objective, $\hat{\mathcal{L}}$","Action (Dynamic+Static KL)","Dynamic KL","Static KL from Reference","Static KL from Benchmark","Final Position Variance"]):
 
     plot_metric(ax,epoch,metric,ylabel)
   
