@@ -234,7 +234,7 @@ class EulerMaruyamaSDE(SDEBase):
         dw = self.generate_innovation(dt,self.testing_samples)
 
         if reference_sol.duref_net is not None:
-            du = reference_sol.duref_net(torch.column_stack((t_vec[i]*torch.ones((self.testing_samples,1)),xinit[...,[0]])))
+            du = reference_sol.duref_net(torch.column_stack((t*torch.ones((self.testing_samples,1)),xinit[...,[0]])))
         else: 
             du = torch.as_tensor(reference_sol.get_ref_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
             #torch.zeros_like(xinit_ref[:,0,None],dtype=torch.float32,requires_grad=False)

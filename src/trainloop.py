@@ -1,4 +1,5 @@
 from src.viz.checkpoint_plots import PlotUtils
+from ..model.nn import save_nn_checkpoint
 
 def train_loop_du(epoch,
                     metric_,
@@ -22,10 +23,13 @@ def train_loop_du(epoch,
         trainer.scheduler.step(metric_.actioncost)
 
         if epoch % logstep == 0:
-            
+        
+            #save checkpoint 
+            save_nn_checkpoint(metric_.net,loc=metric_.logger.newpath+f"/checkpoints/{metric_.net.net_name}_checkpoint_{epoch}.pt")
+    
             #uncomment to make plots
             #!! creating plots will run perturbative calculations
-            plot_utils = PlotUtils(refsol=refsolution_,epoch=epoch+1)
+            plot_utils = PlotUtils(refsol=refsolution_,epoch=epoch)
 
             plot_utils.checkpoint_plots_du()
             #plot_utils.make_girsanov_net_plots()
