@@ -1,5 +1,5 @@
 from src.viz.checkpoint_plots import PlotUtils
-from ..model.nn import save_nn_checkpoint
+from src.model.nn import save_nn_checkpoint
 
 def train_loop_du(epoch,
                     metric_,
@@ -15,7 +15,8 @@ def train_loop_du(epoch,
         #update the drift nn with the current learned final distribution  
         loss_out = trainer.train_step()
                     
-        print(trainer.scheduler.get_last_lr())
+       
+        metric.lr = trainer.scheduler.get_last_lr()[0]
 
         #update metrics 
         metric_.update_metrics(epoch, loss_out)

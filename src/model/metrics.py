@@ -41,6 +41,7 @@ class Metrics():
 
         #self.update_metrics(0, 0)
         self.kldyn = 0
+        self.lr = 0 
 
 
     def update_metrics(self, epoch, loss_out):
@@ -79,7 +80,8 @@ class Metrics():
                                             kl_dynamic,
                                             kl_static,
                                             kl_static_from_ref,
-                                            np.nanvar(xinit[...,0]))
+                                            self.lr)
+                                           # np.nanvar(xinit[...,0]))
 
                 #net_name = self.net.net_name
 

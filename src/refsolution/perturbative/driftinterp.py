@@ -36,9 +36,16 @@ def perturbative_du_interp(reference_sol,mlp_net):
         #this is any caught error raised by the loadcheckpoint function 
         #It happens when the checkpoint file could not be loaded
         #because checkpoint doesnt exist or is incompatible with initialised network
-        #run training again to learn the csv in the reference solution folder
-        pass
+        
+        #train it to learn the csv in the reference solution folder
+        train_and_save_perturbative_du(reference_sol,mlp_net)
+    
     return mlp_net
+
+def train_and_save_perturbative_du(reference_sol,mlp_net):
+    run_pretrain(mlp_net,reference_sol)
+    save_nn_checkpoint(mlp_net,loc=reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt")
+    
 
 def contour(plotter,net):
     """Plots a contour plot of the solution to the Fokker-Planck 

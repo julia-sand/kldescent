@@ -132,8 +132,9 @@ class Train():
         self.scheduler = ReduceLROnPlateau(self.optimiser,
                                             mode="min",
                                             factor=0.1,
-                                            patience=3, #how many steps to wait before 
-                                            eps=1e-8) #Decays the learning rate based on a passed metric
+                                            patience=10, #how many steps to wait before 
+                                            eps=1e-8,
+                                            cooldown=50) #Decays the learning rate based on a passed metric
         
     def train_step(self):  
         

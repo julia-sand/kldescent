@@ -6,7 +6,7 @@ from ..sde.boundary import *
 from ..utils.parser import fetch_results_folder_from_cmd
 from ..model.nn import MLP,NeuralNetwork
 from .utilfunctions import *
-from .perturbative.driftinterp import perturbative_du_interp
+from .perturbative.driftinterp import perturbative_du_interp,train_and_save_perturbative_du
 from .perturbative.corrections import MarginalHalfBridgePerturbation,HalfBridgePerturbation
 from .overdamped.sol import compute_overdamped
 from .overdamped.gauss import Gaussian_Overdamped_Ref
@@ -40,15 +40,15 @@ class BaseRefSolution():
         """
 
         if bridge_type == "marginal":
-            pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name())
+            pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name)
         
         elif bridge_type == "half":  #update this to compute the half bridge solution
             
-            pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name())
+            pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name)
         
         else: 
         
-            pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name())
+            pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name)
 
         return pertsol
 
@@ -92,41 +92,37 @@ class RefSolution(BaseRefSolution):
             #compute corrections
             self.duref_net = perturbative_du_interp(self,mlp_net)
         
-        except BaseException:
-            try: #train from default initialisation 
-                self.duref_net = perturbative_du_interp(self,mlp_net)
-            
+        except FileNotFoundError: #no csvs available to train from
+
+            try: 
+                #try to fetch overdamped results
+                overdamped_arr = self.get_ref_data(data="overdamped")
+
             except FileNotFoundError:
+                print("Overdamped results not available. Solving cell problem...")
 
-                try: 
-                    #try to fetch overdamped results
-                    overdamped_arr = self.get_ref_data(data="overdamped")
+                #compute overdamped ref solution
+                compute_overdamped(self.boundary,self.get_ref_path(),bridge_type=bridge_type)
 
-                    print("Perturbative results not available. Computing corrections...")
+                print("Cell problem completed.")
+                overdamped_arr = self.get_ref_data(data="overdamped")
 
-                    #initialise correct bridge type
-                    pertsol = self.get_perturbative_calculations(bridge_type,overdamped_arr)
-                    pertsol.save_perturbative()
-                    pertsol.save_perturbative_cumulants()
+            print("Perturbative results not available. Computing corrections...")
 
-                except FileNotFoundError:
-                    print("Overdamped results not available. Solving cell problem...")
+            #initialise correct bridge type
+            pertsol = self.get_perturbative_calculations(bridge_type,overdamped_arr)
+            pertsol.save_perturbative()
+            pertsol.save_perturbative_cumulants()
 
-                    #compute overdamped ref solution
-                    compute_overdamped(self.boundary,self.get_ref_path(),bridge_type=bridge_type)
-
-                    print("Cell problem completed. Computing Corrections...")
-                    overdamped_arr = self.get_ref_data(data="overdamped")
-
-                    #initialise correct bridge type
-                    pertsol = self.get_perturbative_calculations(bridge_type,overdamped_arr)
-                    
-                    pertsol.save_perturbative()
-                    pertsol.save_perturbative_cumulants()
-                    print("Perturbative Results saved.")
-                    
-                self.duref_net = perturbative_du_interp(self,mlp_net)
-        
+            #initialise correct bridge type
+            pertsol = self.get_perturbative_calculations(bridge_type,overdamped_arr)
+            
+            pertsol.save_perturbative()
+            pertsol.save_perturbative_cumulants()
+            print("Perturbative Results saved.")
+                
+            self.duref_net = train_and_save_perturbative_du(self,mlp_net)
+    
         self.duref_net.eval()
 
     def get_ref_path(self):

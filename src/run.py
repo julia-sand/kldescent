@@ -65,12 +65,6 @@ def run():
                         refsolution_,
                         logstep=args["logstep"])
 
-        
-        
-        #except ValueError:
-            #print("The training has resulted in NaN loss and therefore failed. Please retry.")
-            #raise
-    
     plot_loss_metrics(folder=metrics_logger.newpath)
 
 if __name__=="__main__":
