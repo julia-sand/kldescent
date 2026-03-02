@@ -123,13 +123,13 @@ class Train():
         self.clip = 0.001 #gradient clipping
 
         self.optimiser = Adam(self.net.parameters(), lr=self.lr)
-        self.milestone = 100 #how often to decay learning rate
+        self.milestone = 400 #how often to decay learning rate
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
-        #self.scheduler = CosineAnnealingLR(self.optimiser, 
-        #                    T_max=100, eta_min=1e-10)
+        self.scheduler1 = CosineAnnealingLR(self.optimiser, 
+                                        T_max=100, eta_min=1e-10)
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
-        self.scheduler = ReduceLROnPlateau(self.optimiser,
+        self.scheduler2 = ReduceLROnPlateau(self.optimiser,
                                             mode="min",
                                             factor=0.1,
                                             patience=10, #how many steps to wait before 
