@@ -232,7 +232,7 @@ class GaussRefSolution(BaseRefSolution):
         BaseRefSolution.__init__(self,bridge_type="half",boundary=boundary,folder_name=folder_name)
         
         #only for gaussian
-        self.refsol_phi = Gaussian_Overdamped_Ref(self.boundary)
+        #self.refsol_phi = Gaussian_Overdamped_Ref(self.boundary)
 
         #set different filename for underdamped cumulants 
         self.underdamped_cumulants_loc = self.folder_name+"/underdamped_cumulants.csv"

@@ -6,7 +6,8 @@ def mcintegrator(x0,y0,
                     Tf,
                     beta,
                     num_steps = 20,
-                    mc_samples = 2000):
+                    mc_samples = 10000,
+                    seed=42):
     """
     Integrates a heat equation by the monte carlo method
     yT = E(Phi(xT)|x0)
@@ -23,6 +24,8 @@ def mcintegrator(x0,y0,
             number of timesteps
         mcsamples : int
             number of MonteCarlo trajectories
+        seed : int 
+            seed for rng
     Returns
         yT : array
             values at final time evaluated with feynman-kac

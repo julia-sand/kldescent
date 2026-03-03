@@ -491,8 +491,4 @@ class UnderdampedGaussian(UnderdampedLandauer):
 if __name__=="__main__":
 
     boundary = UnderdampedGaussian()
-    import matplotlib.pyplot as plt
-
-    plt.plot(np.linspace(0,20),boundary.bfun(np.linspace(0,20))/boundary.afun(np.linspace(0,20)))
-    plt.savefig("BA.png")
-    plt.close()
+    

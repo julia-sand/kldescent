@@ -17,9 +17,9 @@ class Perturbation():
         self.epsilon = self.boundary.params["epsilon"]
         self.Tf2 = self.Tf*(self.epsilon**2)
         
-        self.A = self.boundary.afun()
-        self.B = self.boundary.bfun()
-        self.C = 2*(self.A - self.B) # (self.boundary.afun() - self.boundary.bfun())
+        #self.A = self.boundary.afun()
+        #self.B = self.boundary.bfun()
+        #self.C = 2*(self.A - self.B) # (self.boundary.afun() - self.boundary.bfun())
 
         self.qaxis = np.unique(overdamped_arr[:,1])
         #self.reference.get_quantity(0,"value",arr=self.overdamped_arr)
@@ -208,22 +208,6 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
         return f02_temp 
 
-    def f02(self,t0,t2):
-        
-        coeff2 = (-t0*self.A + t0 + np.exp(-t0) - 1)
-        coeff3 = -2*np.sinh(t0) + (1-np.exp(-self.Tf))*((t0/self.Tf)*(3-np.exp(-self.Tf))+2*(np.cosh(t0)-1))
-        #-2*t0*self.B - 2*(np.sinh(t0)-t0-(np.cosh(t0)-1)*(1-np.exp(-self.Tf)))
-
-        idx = self.get_rhomask(t2)
-
-        v00_arr = self.apply_filter(self.v00(t2)[idx])
-        f00_arr = self.apply_filter(self.f00(t2)[idx])
-        
-        term2 = self.f02_term2(idx,f00_arr)
-        term3 = self.f02_term3(idx,v00_arr,f00_arr)
-        
-        return coeff2*term2 + coeff3*term3
-    
     def f02_new(self,t0,t2):
         """Compute the f02 correction. 
         Uses the later version with a,b functions and only f00"""
@@ -245,6 +229,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
         return self.f00(t2) + (self.epsilon**2)*self.f02_new(t0,t2)
 
     def little_a(self,t0):
+        
         return t0 - 1 + np.exp(-t0)
 
     def little_b(self,t0):

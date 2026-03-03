@@ -7,26 +7,9 @@ from ..heatintegrators import proximal_fpk,mcintegrator
 from .gauss import *
 from ..utilfunctions import *
 
-class CellProblemBase():
-    """Base class for setting parameters for cell problem"""
-    
-    def __init__(self,boundary,save_location):
+class CellProblem():
 
-        self.boundary = boundary
-        self.save_location = save_location #where to save the plots
-        
-        self.Tf = self.boundary.params["Tf"]
-        self.Tf2 = self.boundary.params["Tf"]*(self.boundary.params["epsilon"]**2)
-        
-        self.M = self.boundary.params["weight"]
-        
-        self.qmax = self.boundary.qmax
-        
-        self.q = np.linspace(-self.qmax,self.qmax,num_samples) #for plotting 
-
-class CellProblem(CellProblemBase):
-
-    def __init__(self,boundary,save_location,bridge_type="marginal"):
+    def __init__(self,boundary,save_location,bridge_type):
         """
         class for solving the cell problem, which is a 'marginal halfbridge' problem
 
@@ -40,61 +23,121 @@ class CellProblem(CellProblemBase):
             bridge_type : str
         """
         
-        CellProblemBase.__init__(boundary,save_location)
+        self.bridge_type = bridge_type
+
+        ##boundary parameters
+        self.boundary = boundary
+        self.save_location = save_location #where to save the plots
         
-        self.A = self.afun(self.boundary.params["Tf"],bridge_type)
-        self.B = self.bfun(self.boundary.params["Tf"],bridge_type)
+        self.Tf = self.boundary.params["Tf"]
+        self.Tf2 = self.boundary.params["Tf"]*(self.boundary.params["epsilon"]**2)
+        
+        self.M = self.boundary.params["weight"]
+        
+        self.qmax = self.boundary.qmax
+        self.num_samples=400
+        self.q = np.linspace(-self.qmax,self.qmax,self.num_samples) #for plotting 
+
+        ######################################
+        #bridge type parameters
+        self.B = self.bfun(self.boundary.params["Tf"])
+        self.A = self.afun(self.boundary.params["Tf"])
         self.beta = 1/np.sqrt(self.A)
+
+        self.power = self.compute_power()
 
         #####################################
         
-        if bridge_type =="marginal":
-                         
-            self.power = (self.M*self.B)/(self.A+self.M*self.B)
-
-        elif bridge_type == "full":
-
-            #to be updated 
-            self.beta = 1/np.sqrt(self.A)
-        
-            self.power = 1
-        else:
-            
-            self.power = 1
-            print("Bridge type not found. Default value used.")
-
         #only initialise when using gaussian boundaries
         if "Gauss" in str(self.boundary.__class__.__name__):
-            self.refsol = Gaussian_Overdamped_Ref(boundary)
+            self.refsol = Gaussian_Overdamped_Ref(boundary,self.A,self.B)
             #
         else:            
             pass #self.qmax = 6
 
-        self.xhatphi = np.linspace(-self.qmax,self.qmax,num_samples)
-        #self.boundary.generate_samples_q(num_samples, mode="final").flatten()
+        self.xhatphi = self.q 
         
         #preallocate arrays
-        self.hatphi0 = np.ones_like(xhatphi) #these must be non.zero positive values
-        self.hatphiT = np.ones_like(xhatphi)
-        self.psi0 = np.ones_like(xhatphi) #np.empty_like(xpsi) 
-        self.psiT = np.ones_like(xhatphi) 
-        self.xpsi = np.ones_like(xhatphi)
+        self.hatphi0 = np.ones_like(self.xhatphi) #these must be non.zero positive values
+        self.hatphiT = np.ones_like(self.xhatphi)
+        self.psi0 = np.ones_like(self.xhatphi) #np.empty_like(xpsi) 
+        self.psiT = np.ones_like(self.xhatphi) 
+        self.xpsi = self.xhatphi 
 
-    def bfun(self,Tf,bridge_type):
-        
-        if bridge_type=="marginal":
-            return 1 - (1-np.exp(-Tf))*(3-np.exp(-Tf))/(2*Tf)
-        else:
-            return 1 
-
-    def afun(self,Tf,bridge_type):
+    def compute_power(self):
+        if self.bridge_type =="marginal":
+                         
+            return (self.M*self.B)/(self.A+self.M*self.B)
+        elif self.bridge_type == "full":
+            #to be updated 
        
-        if bridge_type=="marginal":
-            return (Tf - 1 + np.exp(-Tf))/Tf
+            return 1
+        elif self.bridge_type == "half":
+            self.alpha = ((1-np.sqrt(self.A))/(2*self.A))-self.M
+            return np.sqrt(self.A)/(1-np.sqrt(self.A)*self.alpha)
+        else:  
+            print("Bridge type not found. Default value used.")
+            return 1
+
+    def bfun(self,Tf):
+        
+        if self.bridge_type=="marginal":
+            return 1 - (1-np.exp(-Tf))*(3-np.exp(-Tf))/(2*Tf)
+        elif self.bridge_type =="half":
+            return -(np.tanh(Tf/2)/Tf)*((1-np.exp(-Tf))**2)/(1+4*np.exp(-Tf)+np.exp(-2*Tf))
         else:
             return 1 
 
-    def iteration(self,integrator,num_iters=4,num_samples=400):
+    def afun(self,Tf):
+       
+        if self.bridge_type=="marginal":
+            return (Tf - 1 + np.exp(-Tf))/Tf
+        elif self.bridge_type =="half":
+            return -(-1 + (2*np.tanh(Tf/2)/Tf)-self.B)  
+        else:
+            return 1 
+
+    def compute_boundary_value(self,xhatphi,hatphiT,psi0,xpsi):
+        if self.bridge_type == "marginal":
+            return zchop(self.boundary.q_marginal_final(xhatphi)/hatphiT)
+        elif self.bridge_type == "full":
+            return zchop(self.boundary.q_marginal_final(xhatphi)/hatphiT)
+        elif self.bridge_type == "half":
+            #print(r"$\alpha$=",self.alpha)
+            varkappa = self.compute_varkappa(hatphiT,psi0,xpsi)
+            #print(r"$\kappa$=",varkappa)
+            C = np.exp(self.constant_hboundary_exponent(xhatphi,varkappa))
+            #print(r"$\gamma$=",C)
+            return (hatphiT**self.alpha)*C*(self.boundary.q_marginal_final(xhatphi)**self.M)
+        
+    def constant_hboundary_exponent(self,q,varkappa):
+        """Compute the constant for the value function boundary condition
+        """
+
+        return (self.B/(2*self.A))*(varkappa*q + (1-self.A)*self.Tf*(varkappa**2)/2)
+
+    def compute_varkappa(self,hatphi,phi,xphi):
+        """Compute the constant varkappa
+        for the boundary conditions
+        
+        args:
+            hatphi : ndarray
+            phi : ndarray
+            xpsi : ndarray
+        returns 
+            varkappa
+        """
+        
+        coeff = -2*np.sqrt(self.A)/(self.A-self.B)
+        out = hatphi*np.gradient(phi,xphi)
+        return coeff*np.trapezoid(out,xphi)
+
+    def l2err(self,x,y):
+        return np.mean((x-y)**2)
+
+    def iteration(self,integrator,
+                        tol=1e-2,
+                        max_iters=500):
         """
         Implementation of Iteration in 1912.01244
         'Wasserstein Proximal Algorithms for the Schr¨odinger Bridge Problem:
@@ -103,10 +146,10 @@ class CellProblem(CellProblemBase):
         args:
             integrator : method
                 method to use for integrating the heat equations
-            num_samples : int
-                number of samples
-            num_iters : int
-                number of iterations to perform
+            max_iters : int
+                maximum number of iterations to perform
+            tol : float
+                tolerance for difference between the iterations. If below tol, stop the iteration. 
 
         returns
             hatphiT : arr
@@ -126,10 +169,10 @@ class CellProblem(CellProblemBase):
         with warnings.catch_warnings(): #dont print divide by zero warnings (these are handled in the script)
             warnings.simplefilter("ignore")
             
-            while iters < num_iters:
+            while iters < max_iters:
 
                 #compute psi0/phiT
-                psi0 = np.nan_to_num(zchop(self.boundary.q_marginal_final(xhatphi)/hatphiT),posinf=0,neginf=0,nan=0)**self.power
+                psi0 = np.nan_to_num(self.compute_boundary_value(xhatphi,hatphiT,psi0,xpsi),posinf=0,neginf=0,nan=0)**self.power
 
                 #integrate psi to Tf
                 xpsi,psiT = integrator(xhatphi,psi0,self.Tf2,self.beta)
@@ -140,7 +183,10 @@ class CellProblem(CellProblemBase):
                 #integrate phihat to Tf
                 xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
                 
-                iters += 1
+                if (self.l2err(hatphiT,self.hatphiT)<tol and self.l2err(psiT,self.psiT)<tol):
+                    break
+                else: 
+                    iters += 1
 
         #plot the final output
         self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
@@ -192,7 +238,6 @@ class CellProblem(CellProblemBase):
         rhoT = interpolate_(self.q,xpsi,hatphiT)*interpolate_(self.q,xhatphi,psi0)
         rho0 = interpolate_(self.q,xpsi,hatphi0)*interpolate_(self.q,xhatphi,psiT) #interpolate_(self.q,xhatphi,hatphi0)*interpolate_(self.q,xpsi,psiT)
         
-        #plt.plot(self.q,normalise(self.q,rhoT)**self.power)
         plt.plot(self.q,normalise(self.q,rhoT), label="rhoT")
         plt.plot(self.q,normalise(self.q,rho0), label="rho0")
 
@@ -203,123 +248,13 @@ class CellProblem(CellProblemBase):
         plt.savefig(self.save_location+f"/boundary_test_iter_{iters}.png")
         plt.close()
 
-class HalfBridgeCellProblem(CellProblemBase):
-    """Separate class for the half bridge cell problem, because it is 
-    different to the other cases
-    """
-    def __init__(self,boundary,):
-        CellProblemBase.__init__(self,boundary,save_location)
-
-        self.A = self.afun(self.Tf)
-        self.B = self.bfun(self.Tf)
-
-        self.alpha = 0.5*(np.sqrt(A)*(1-2*self.M)-1)
-
-    def bfun(self,Tf):
-        
-        return -(np.tanh(Tf/2)/Tf)*((1-np.exp(-Tf))**2)/(1+4*np.exp(-Tf)+np.exp(-2*Tf))
-        
-    def afun(self,Tf):
-       
-        return -(-1 + (2*np.tanh(Tf/2)/Tf)-self.bfun(Tf,bridge_type="half"))
     
-    def constant_hboundary(self,q,varkappa,Tf):
-        """Compute the constant for the value function boundary condition
-        """
-
-        return  -self.B*((varkappa/(2*self.A))*q + (1-self.A)*Tf*(varkappa**2)/4)
-
-    def varkappa(self,rho,sigma):
-        """Compute the constant varkappa
-        for the boundary conditions
-        
-        args:
-            rho : ndarray
-                computed by phi times hatphi 
-            sigma : ndarray
-                computed by log phi 
-        returns 
-            varkappa
-        """
-        
-        coeff = 2*self.A/(self.A-self.B)
-
-        out = rho*np.gradient(sigma,self.qaxis)
-        return np.trapezoid(out,self.qaxis)
-
-    
-     
-    def iteration(self,integrator,num_iters=4,num_samples=400):
-        """
-        Adaptation of the Iteration in 1912.01244
-        'Wasserstein Proximal Algorithms for the Schr¨odinger Bridge Problem:
-        Density Control with Nonlinear Drift', Caluya&Halder,2021.
-        
-        args:
-            integrator : method
-                method to use for integrating the heat equations. Since we have an extra 
-                term on the boundary, we need to use a discretised version  
-            num_samples : int
-                number of samples
-            num_iters : int
-                number of iterations to perform
-
-        returns
-            hatphiT : arr
-            psiT : arr
-        """
-
-        #initialise iterates
-        xhatphi = self.xhatphi
-        hatphi0 = self.hatphi0 #these must be non.zero positive values
-        hatphiT = self.hatphiT
-        psi0 = self.psi0  #np.empty_like(xpsi) 
-        psiT = self.psiT 
-        xpsi = self.xpsi
-
-        iters = 0
-        
-        with warnings.catch_warnings(): #dont print divide by zero warnings (these are handled in the script)
-            warnings.simplefilter("ignore")
-            
-            while iters < num_iters:
-
-                #compute psi0/phiT
-                psi0 = np.nan_to_num(zchop(self.boundary.q_marginal_final(xhatphi)/hatphiT),posinf=0,neginf=0,nan=0)**self.power
-
-                #integrate psi to Tf
-                xpsi,psiT = integrator(xhatphi,psi0,self.Tf2,self.beta)
-
-                #compute hatphi0 
-                hatphi0 = np.nan_to_num(zchop(self.boundary.q_marginal_initial(xpsi)/psiT),posinf=0,neginf=0,nan=0)
-
-                #integrate phihat to Tf
-                xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
-                
-                iters += 1
-
-        #plot the final output
-        self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-        
-        self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-        self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-
-        #set new iterates
-        self.xhatphi = zchop(xhatphi)
-        self.xpsi = zchop(xpsi) 
-        self.hatphiT = zchop(hatphiT)
-        self.psiT = zchop(psiT)
-        self.hatphi0 = zchop(hatphi0)
-        self.psi0 = zchop(psi0)
-
-        return 
-   
 if __name__=="__main__":
     import src.sde.boundary as boundaries
 
     boundary = boundaries.UnderdampedLandauer()
     Tf = boundary.params["Tf"]
 
-    cell = CellProblem(boundary)
+    cell = CellProblem(boundary,"temp_results","half")
     
-    cell.iteration(mcintegrator,num_iters=4)
+    cell.iteration(mcintegrator)
