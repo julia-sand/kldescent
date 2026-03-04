@@ -11,7 +11,7 @@ class CellProblem():
 
     def __init__(self,boundary,save_location,bridge_type):
         """
-        class for solving the cell problem, which is a 'marginal halfbridge' problem
+        class for solving the cell problem using an iteration algorithm
 
         args: 
             boundary : class

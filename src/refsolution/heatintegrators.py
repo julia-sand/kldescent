@@ -6,7 +6,7 @@ def mcintegrator(x0,y0,
                     Tf,
                     beta,
                     num_steps = 20,
-                    mc_samples = 10000,
+                    mc_samples = 2000,
                     seed=42):
     """
     Integrates a heat equation by the monte carlo method

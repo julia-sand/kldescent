@@ -11,6 +11,7 @@ import numpy as np
 import torch
 
 from ..viz.distribution_plots import *
+from ..utils.logger import save_params
 
 class TerminalCost():
     """
@@ -21,19 +22,20 @@ class TerminalCost():
     g(q,p) = log(^P_marg(q,p) / Pref_marg)
     """
 
-    def __init__(self,boundaryconditions,logger):
+    def __init__(self,boundaryconditions,
+                        fileloc):
         """
         Initialise how the terminal cost should be evaluated.    
         args:
             boundaryconditions: 
                 associated boundary conditions
-            logger: class
-                read and write saved run data (eg checkpoints)
+            fileloc: str
+                save parameters
         """
 
         self.boundary = boundaryconditions
         self.M = self.boundary.params["weight"]
-        self.logger = logger
+        self.loc = fileloc
     
     def gfun(self,x):
         
@@ -57,16 +59,16 @@ class MLE(TerminalCost):
     estimates for the mean and variance
     """
 
-    def __init__(self,boundaryconditions,logger,*_):
+    def __init__(self,boundaryconditions,fileloc,*_):
         """
         Initialise placeholder parameters for estimating the final distirbution using a parametric method
 
         args:
             boundaryconditions : class
-            logger : class
+            fileloc : folder
         """
 
-        TerminalCost.__init__(self,boundaryconditions,logger)
+        TerminalCost.__init__(self,boundaryconditions,fileloc)
 
         #initialise variables
         self.pos_mean0 = 0 
@@ -89,9 +91,9 @@ class MLE(TerminalCost):
 class Histogram(TerminalCost):
     """Find the final probabilities from an estimated histogram"""
 
-    def __init__(self,boundaryconditions,logger):
+    def __init__(self,boundaryconditions,fileloc):
 
-        TerminalCost.__init__(self,boundaryconditions,logger)
+        TerminalCost.__init__(self,boundaryconditions,fileloc)
         
         #initialise blank histogram values
         self.H = None
@@ -112,8 +114,8 @@ class Histogram(TerminalCost):
         self.xedges = xedges
 
         #plot learned distribution vs histogram
-        plot_loc = self.logger.newpath 
-        plot_histogram(plot_loc,self.H,self.xedges,epoch)
+        #plot_loc = self.logger.newpath 
+        #plot_histogram(plot_loc,self.H,self.xedges,epoch)
 
         return 
 
@@ -138,10 +140,10 @@ class Histogram(TerminalCost):
 
 class NormFlow(TerminalCost):
 
-    def __init__(self,boundaryconditions,logger):
+    def __init__(self,boundaryconditions,fileloc):
         from ..model.normflow import RhoNormFlow
 
-        TerminalCost.__init__(self,boundaryconditions,logger)
+        TerminalCost.__init__(self,boundaryconditions,fileloc)
         
         #initialise normalising flow
         self.rho = RhoNormFlow(boundaryconditions=self.boundary,bridgetype="marginal")
@@ -156,8 +158,6 @@ class NormFlow(TerminalCost):
         x = torch.tensor(self.boundary.generate_samples(8192,"final"),dtype=torch.float32)
         #integrator.sde_params["testsamples"] ,"final"),dtype=torch.float32)
 
-        #integrator.update_ref_statistics(x0_samples=x0)
-        
         #put model in train mode
         self.rho.model.train()
 
@@ -168,18 +168,19 @@ class NormFlow(TerminalCost):
         self.rho.model.eval()
         
         #plot learned distribution vs histogram
-        plot_loc = self.logger.newpath 
-        make_histogram(plot_loc,x,self.rho.model,self.boundary)
+        #plot_loc = self.logger.newpath 
+        #make_histogram(plot_loc,x,self.rho.model,self.boundary)
 
     def get_half_logpdf(self,x):
         pdf = self.rho.model.log_prob(x[...,[0]])
         return torch.nan_to_num(pdf) 
 
     @torch.no_grad
-    def make_plot(self,x):
+    def make_plot(self,x,location):
+        #TODO fix this
         import matplotlib.pyplot as plt
 
-        plot_loc = self.logger.newpath 
+        #plot_loc = self.logger.newpath 
         
         #make a plot of final points vs estimated distribution
         pdf_temp = torch.exp(self.get_half_logpdf(x))

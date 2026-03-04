@@ -86,7 +86,7 @@ def get_solution_in_time(cell,integrator,
              
     return np.nan_to_num(arr_out,nan=0,posinf=0,neginf=0)
 
-def compute_overdamped(boundary,save_location,bridge_type="marginal"):
+def compute_overdamped(boundary,save_location,bridge_type="half"):
     
     cell = CellProblem(boundary,save_location,bridge_type=bridge_type)
     cell.iteration(integrator=mcintegrator,
@@ -102,6 +102,6 @@ def compute_overdamped(boundary,save_location,bridge_type="marginal"):
 
 if __name__=="__main__":
     boundary = UnderdampedLandauer()
-    compute_overdamped(boundary,"results",bridge_type="marginal half")
+    compute_overdamped(boundary,"results",bridge_type="half")
     
     

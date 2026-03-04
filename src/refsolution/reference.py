@@ -86,12 +86,12 @@ class RefSolution(BaseRefSolution):
     def initialise_net(self,bridge_type):
 
         #initialise a simple neural net to approximate the drift 
-        mlp_net = NeuralNetwork(self.boundary) #MLP()
+        self.duref_net = NeuralNetwork(self.boundary) #MLP()
 
         #get perturbative sol 
         try:
             #compute corrections
-            self.duref_net = perturbative_du_interp(self,mlp_net)
+            perturbative_du_interp(self,self.duref_net)
         
         except FileNotFoundError: #no csvs available to train from
 
@@ -122,7 +122,7 @@ class RefSolution(BaseRefSolution):
             pertsol.save_perturbative_cumulants()
             print("Perturbative Results saved.")
                 
-            self.duref_net = train_and_save_perturbative_du(self,mlp_net)
+            train_and_save_perturbative_du(self,self.duref_net)
     
         self.duref_net.eval()
 
@@ -253,7 +253,7 @@ class GaussRefSolution(BaseRefSolution):
         
         if self.bridge_type == "half": #solve halfbridge
             sol1 = bvp1.get_half_sol()
-        elif self.bridge_type=="marginal half": #solve for marginal half bridge
+        elif self.bridge_type=="marginal": #solve for marginal half bridge
             sol1 = bvp1.get_marginal_half_sol()
         elif self.bridge_type=="full": #solve for full bridge
             sol1 = bvp1.get_full_sol()

@@ -13,6 +13,7 @@ import src.model.pretrain as pretrain
 from src.refsolution.reference import *
 from src.trainloop import train_loop_du
 
+
 def run():
     
     print(f"{torch.get_num_threads()} threads and {torch.get_num_interop_threads()} interop threads being used by torch")
@@ -25,11 +26,13 @@ def run():
 
     if args["bridgetype"]=="marginal":
         import src.sde.terminalcost_marginal as terminalcosts
-    else:        
+    elif args["bridgetype"]=="half":        
         import src.sde.terminalcost as terminalcosts
+    else: 
+        pass
 
     #initialise the model using parsed boundary conditions
-    boundaryconditions = getattr(boundaries,args["boundary"])(logger=metrics_logger)
+    boundaryconditions = getattr(boundaries,args["boundary"])(logfile=metrics_logger.datayaml)
        
     net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
     
@@ -38,7 +41,7 @@ def run():
     else:
         refsolution_ = RefSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
 
-    terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,metrics_logger)
+    terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,fileloc=metrics_logger.newpath)
     
     #intialise sde integration 
     integrator = langevin.EulerMaruyamaSDE(boundaryconditions, net=net, terminal_cost=terminal_cost)
@@ -49,9 +52,10 @@ def run():
     metric_ = metrics.Metrics(net,integrator, metrics_logger,refsol=refsolution_)    
 
     #save the parameters
-    logger.save_params(metrics_logger,[args,net.params,integrator.sde_params])
+    for params in [args,net.params,integrator.sde_params]:
+        logger.save_params(params,metrics_logger.datayaml)
     
-    if args["pretrain"]: #if a path is provided 
+    if args["pretrain"] is not None: #if a path is provided 
         pretrain.run_pretrain(net,
                             path_to_pretrain=args["pretrain"])
     

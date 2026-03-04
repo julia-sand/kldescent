@@ -1,17 +1,17 @@
 """
 Includes classes defining the initial and reference distributions
 
-    Boundaries: top level 
+    Boundaries: top level base class 
 
-    OverdampedFullLandauer: Overdamped with Initial at 0 and reference as in final 2403.
+    OverdampedFullLandauer: Overdamped with Initial at 0 and reference as in final arxiv2403.
 
-    OverdampedLandauer: Overdamped with both Initial and reference as in final 2403.
+    OverdampedLandauer: Overdamped with both Initial and reference as in final arxiv2403.
 
-    UnderdampedLandauer: Underdamped dynamics with Initial and reference are as in 2403.
+    UnderdampedLandauer: Underdamped dynamics with Initial and reference are as in arxiv2403.
 
-    UnderdampedGaussian: Initial and reference are given by Gaussians, with moments can be parsed as arguments
+    UnderdampedGaussian: Initial and reference are given by Gaussians, with moments can be passed as arguments
 
-    LinearOU: Linear Ornstein Uhlenbeck process in the overdamped dynamics with inital condition a delta peak defining a full bridge
+    LinearOU: Linear Ornstein Uhlenbeck process in the overdamped dynamics with inital condition a delta peak that gives a full bridge
 """
 
 import os
@@ -19,6 +19,7 @@ import os
 import numpy as np 
 
 from ..utils.parser import boundary_params, gaussian_params
+from ..utils.logger import save_params
 
 class Boundaries():
     """
@@ -36,7 +37,7 @@ class Boundaries():
         sets the value of the volatility
     """
 
-    def __init__(self,params=None,logger=None):
+    def __init__(self,params=None,logfile=None):
         """
         Initialises the class 
 
@@ -44,8 +45,8 @@ class Boundaries():
         ----------
         params : dict
             parameters of the boundary condition. If None, arguments are parsed from command line. If no arguments are parsed, defaults are used.
-        logger : class
-            logger object of the training run. If given, the parameters are logged through this object
+        logfile : str
+            file to save the parameters 
         """
 
         self.sigma0 = 1 #np.sqrt(2)
@@ -58,8 +59,8 @@ class Boundaries():
         
         self.Generator = np.random.default_rng(seed=42)
 
-        if logger is not None:
-            logger.log_dict(self.params) #add to log
+        if logfile is not None:
+            save_params(self.params,logfile) #add to log
 
         self.gauss_boundary = None #set final and initial means
 
@@ -95,8 +96,8 @@ class OverdampedFullLandauer(Boundaries):
         returns one step of the overdamped sde wrt problem description
     """
     
-    def __init__(self,params=None,logger=None):
-        Boundaries.__init__(self,params,logger)
+    def __init__(self,params=None,logfile=None):
+        Boundaries.__init__(self,params,logfile)
         self.pf_norm = np.trapezoid(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
         #self.pi_norm = np.trapezoid(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
         self.qmax = 6
@@ -111,7 +112,8 @@ class OverdampedFullLandauer(Boundaries):
 
     def scorefinal(self,q):
         """compute negative log-gradient of the final distribution""" 
-        return -(q**2-1)*q
+        return -4*q*(q**2-1)
+        #(q**2-1)*q
 
     def qfinal(self,q):
         #unnormalised final reference marginal distribution
@@ -163,8 +165,8 @@ class OverdampedFullLandauer(Boundaries):
 
 class OverdampedLandauer(OverdampedFullLandauer):
 
-    def __init__(self,params=None,logger=None):
-        OverdampedFullLandauer.__init__(self,params,logger)
+    def __init__(self,params=None,logfile=None):
+        OverdampedFullLandauer.__init__(self,params,logfile)
         #self.pf_norm = np.trapezoid(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
         self.pi_norm = np.trapezoid(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
         self.qmax = 6
@@ -306,8 +308,8 @@ class LinearOU(Boundaries):
                      + self.sigma0*du_bar)*dt + self.sigma0*dw
 
 class UnderdampedLandauer(OverdampedLandauer):
-    def __init__(self,params=None,logger=None):
-        OverdampedLandauer.__init__(self,params,logger)
+    def __init__(self,params=None,logfile=None):
+        OverdampedLandauer.__init__(self,params,logfile)
         self.sigma0 = np.sqrt(2)
         self.qmax = 6
 
@@ -406,8 +408,8 @@ class UnderdampedGaussian(UnderdampedLandauer):
     
     def __init__(self,params=None,
                         gauss_params=None,
-                        logger=None):
-        Boundaries.__init__(self,params,logger)
+                        logfile=None):
+        Boundaries.__init__(self,params,logfile)
         self.sigma0 = np.sqrt(2)
         self.qmax = 25
 
@@ -416,11 +418,11 @@ class UnderdampedGaussian(UnderdampedLandauer):
         else: #fetch from command line
             self.gauss_boundary = gaussian_params()
 
-        if logger is not None:
-            logger.log_dict(self.gauss_boundary) #add to log
+        if logfile is not None:
+            save_params(self.gauss_boundary,logfile) #add to log
         
-        self.pi_norm = (np.sqrt(2*np.pi)*(self.gauss_boundary["sigmainitial"]))
-        self.pf_norm = (np.sqrt(2*np.pi)*(self.gauss_boundary["sigmafinal"]))
+        self.pi_norm = np.sqrt(2*np.pi)*self.gauss_boundary["sigmainitial"]
+        self.pf_norm = np.sqrt(2*np.pi)*self.gauss_boundary["sigmafinal"]
         
 
     def overwrite_ref_path(self,new_path):
@@ -436,10 +438,9 @@ class UnderdampedGaussian(UnderdampedLandauer):
 
         return (q-self.gauss_boundary["mufinal"])**2/(2*(self.gauss_boundary["sigmafinal"]**2))
 
-
     def scorefinal(self,q):
-
-        return -(q-self.gauss_boundary["muinitial"])/((self.gauss_boundary["sigmainitial"]**2))
+        #-gradient(log(qmarginalfinal))
+        return -(q-self.gauss_boundary["mufinal"])/(self.gauss_boundary["sigmafinal"]**2)
 
 
     def q_marginal_initial(self,q):

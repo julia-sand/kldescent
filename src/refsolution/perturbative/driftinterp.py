@@ -40,7 +40,7 @@ def perturbative_du_interp(reference_sol,mlp_net):
         #train it to learn the csv in the reference solution folder
         train_and_save_perturbative_du(reference_sol,mlp_net)
     
-    return mlp_net
+    return 
 
 def train_and_save_perturbative_du(reference_sol,mlp_net):
     run_pretrain(mlp_net,reference_sol)

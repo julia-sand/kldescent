@@ -15,6 +15,7 @@ import torch
 from .kl import kl_div
 from ..viz.distribution_plots import *
 from ..model.nn import save_nn_checkpoint
+from ..utils.logger import save_params
 
 class TerminalCost():
     """
@@ -25,18 +26,18 @@ class TerminalCost():
     g(q,p) = log(^P(q,p) / Pref)
     """
 
-    def __init__(self,boundaryconditions,logger):
+    def __init__(self,boundaryconditions,fileloc):
         """
         Initialise how the terminal cost should be evaluated.    
         args:
             boundaryconditions: 
                 associated boundary conditions
-            logger: class
-                read and write saved run data (eg checkpoints)
+            filelocation: str
+                filepath to results folder, for saved checkpoints
         """
 
         self.boundary = boundaryconditions
-        self.logger = logger
+        self.loc = fileloc
         self.M = self.boundary.params["weight"]
 
     def gfun(self,x):
@@ -50,23 +51,23 @@ class GirsanovNet(TerminalCost):
     Note this is only available for full final distribution
     """
 
-    def __init__(self,boundaryconditions,logger,*_):
+    def __init__(self,boundaryconditions,fileloc,*_):
         """
         Initialise a neural network for learning the final distribution via Girsanov theorem 
         
         args:
             boundaryconditions: class
-            logger : class
+            filelocation : str
         """
         
         from ..model.nn import RhoNeuralNetwork
         from ..model.train import TrainRho
 
-        TerminalCost.__init__(self,boundaryconditions,logger)
+        TerminalCost.__init__(self,boundaryconditions,fileloc)
         
         self.rhonet = RhoNeuralNetwork() 
         
-        self.logger.log_dict(self.rhonet.params)
+        save_params(self.rhonet.params,fileloc)
         
         #initialise a trainer class for rho
         self.rhotrainer = TrainRho(self.rhonet)
@@ -83,7 +84,7 @@ class GirsanovNet(TerminalCost):
         self.rhotrainer.train_loop(integrator)
 
         #save the checkpoint
-        save_nn_checkpoint(self.rhonet,loc=self.logger.newpath+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{epoch+1}.pt")
+        save_nn_checkpoint(self.rhonet,loc=self.loc+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{epoch+1}.pt")
 
     def get_logpdf(self,x):
         return torch.nan_to_num(self.rhonet(x,condition="log"))
@@ -94,7 +95,7 @@ class MLE(TerminalCost):
     estimates for the mean and variance
     """
 
-    def __init__(self,boundaryconditions,logger,*_):
+    def __init__(self,boundaryconditions,fileloc,*_):
         """
         Initialise placeholder parameters for estimating the final distirbution using a parametric method
 
@@ -102,7 +103,7 @@ class MLE(TerminalCost):
             boundaryconditions: class
         """
 
-        TerminalCost.__init__(self,boundaryconditions,logger)
+        TerminalCost.__init__(self,boundaryconditions,fileloc)
 
         #initialise variables
         self.pos_mean0 = 0 
@@ -121,10 +122,13 @@ class MLE(TerminalCost):
         self.pos_mean0 = torch.nanmean(x[...,0]).item() 
         self.mom_mean0 = torch.nanmean(x[...,1]).item() 
 
-        self.pos_var0 = torch.var(x[...,0]).item()
-        self.mom_var0 = torch.var(x[...,1]).item()
+        self.Sigma_matrix = torch.cov(x)
 
-        self.cc0 = (torch.sum((x[...,1]-self.mom_mean0)*(x[...,0]-self.pos_mean0))/(len(x[...,0]))).item()
+        self.pos_var0 = self.Sigma_matrix[0,0].item()#torch.var(x[...,0]).item()
+        self.pos_var0 = self.Sigma_matrix[1,1].item()#self.mom_var0 = torch.var(x[...,1]).item()
+
+        self.cc0 = self.Sigma_matrix[0,1].item()
+        #(torch.sum((x[...,1]-self.mom_mean0)*(x[...,0]-self.pos_mean0))/(len(x[...,0]))).item()
 
     def multivariate_U(self,x):
         #exponent of a multivariate Gaussian distribution
@@ -140,9 +144,9 @@ class Histogram(TerminalCost):
     Find the final probabilities from an estimated histogram
     """
 
-    def __init__(self,boundaryconditions,logger):
+    def __init__(self,boundaryconditions,fileloc):
 
-        TerminalCost.__init__(self,boundaryconditions,logger)
+        TerminalCost.__init__(self,boundaryconditions,fileloc)
         
         #initialise blank histogram values
         self.H = None
@@ -188,10 +192,10 @@ class Histogram(TerminalCost):
 
 class NormFlow(TerminalCost):
 
-    def __init__(self,boundaryconditions,logger):
+    def __init__(self,boundaryconditions,fileloc):
         from ..model.normflow import RhoNormFlow
 
-        TerminalCost.__init__(self,boundaryconditions,logger)
+        TerminalCost.__init__(self,boundaryconditions,fileloc)
         #initialise normalising flow
         self.rho = RhoNormFlow(boundaryconditions=self.boundary,bridgetype="half")
 
@@ -219,7 +223,7 @@ class NormFlow(TerminalCost):
         #put model in evaluation mode
         self.rho.model.eval()
 
-        plot_loc = self.logger.newpath 
+        plot_loc = self.loc 
         make_scatter_plot(plot_loc,x,self.rho.model,epoch)#,self.boundary)
         distribution_plot(plot_loc,self.rho.model,self.boundary.params["Tf"],epoch,self.boundary)
 

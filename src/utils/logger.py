@@ -9,10 +9,17 @@ import yaml
 
 from .parser import fetch_results_folder_from_cmd
 
-def save_params(LossLogger,args):
+def save_params(params,logfile):
+    """
+    args:
+        params : dict
+            params to output
+        logfile : str
+            where to save them
+    """
 
-    for params in args:
-        LossLogger.log_dict(params)
+    with open(logfile, 'a+') as outfile:
+        yaml.dump(params, outfile)
 
 class LossLogger():
     '''
@@ -86,9 +93,3 @@ class LossLogger():
         
         with open(self.datafile, "a") as f:
             print(str(name)+f"= {val}", file=f)
-
-    def log_dict(self,dictparams):
-                
-        with open(self.datayaml, 'a+') as outfile:
-            yaml.dump(dictparams, outfile)
-

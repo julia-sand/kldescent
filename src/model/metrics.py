@@ -82,10 +82,3 @@ class Metrics():
                                             kl_static_from_ref,
                                             self.lr)
                                            # np.nanvar(xinit[...,0]))
-
-                #net_name = self.net.net_name
-
-
-                #save checkpoint 
-                #save_nn_checkpoint(self.net,loc=self.logger.newpath+f"/checkpoints/{self.net.net_name}_checkpoint_{epoch}.pt")
-        

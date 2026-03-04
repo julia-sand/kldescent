@@ -114,9 +114,6 @@ class NeuralNetwork(nn.Module):
         else:
             self.params = du_network_params()
         
-        #if logger is not None:
-        #    logger.log_dict(self.params)
-
         #params
         self.boundary = boundary
 

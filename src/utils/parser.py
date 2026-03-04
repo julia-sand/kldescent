@@ -80,7 +80,7 @@ def overdamped_argparser():
                         help='How the terminal cost should be evaluated. See Sde.terminalcost for options')
     
     #TODO... move into model module?
-    parser.add_argument('-pretrain','--pretrain', type=str, default="",
+    parser.add_argument('-pretrain','--pretrain', type=str, default=None,
                         help='Path to CSV containing a set of values to fit to the neural network before training. See model/train for parameters of the training process.')
              
     args = parser.parse_known_args(parser.argfile)
