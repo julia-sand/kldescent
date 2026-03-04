@@ -37,11 +37,10 @@ class SDEBase():
         return np.concatenate([[0],
                                 np.sort(np.random.uniform(0, Tf, tsteps-1)),
                                 [Tf]])
-    
-    @torch.no_grad()
-    def generate_innovation(self,dt,size_like):
+
+    def generate_innovation(self,dt,size):
         """generate a step of brownian motion"""
-        return np.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32)
+        return np.sqrt(dt)*torch.randn((size,1),requires_grad=False,dtype=torch.float32)
 
     def save_cumulants(self,save_array,temp):
       """Append the computed cumulants to a new array"""
@@ -147,15 +146,14 @@ class SDEBase():
          
         return xinit
 
-    def compute_sde_cumulants(self,reference_sol=None,mcsamples=None):
+    def compute_sde(self,
+                        final_time,reference_sol=None):
         """
         Compute the evolution of the SDE while saving cumulants 
 
         ====
         args:
-            referencesol: class
-                compute reference samples
-            mcsamples : int
+          final_time: when to stop the integration for intermediate time plots
         ====
         returns:
           t_vec : ndarray
@@ -170,9 +168,6 @@ class SDEBase():
             cumulants computed during ref evolution
         """
             
-        if mcsamples is None: #default to test samples
-            mcsamples = self.sde_params["testsamples"]
-
         #pdb.set_trace()
         if reference_sol.duref_net is not None:
             t_vec = self.generate_time_grid()
@@ -180,7 +175,7 @@ class SDEBase():
             t_vec = reference_sol.get_underdamped_tgrid()
 
         #initialise x values at \delta_0 (i.e. x=0)
-        xinit = torch.tensor(self.boundary.generate_samples(mcsamples,"initial"),requires_grad=False,dtype=torch.float32)
+        xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["testsamples"],"initial"),requires_grad=False,dtype=torch.float32)
         xref = torch.clone(xinit)
 
         #save the cumulants of the evolutions
@@ -219,11 +214,11 @@ class EulerMaruyamaSDE(SDEBase):
         
     @torch.no_grad()
     def integration_step(self,xinit,dt,t):
-
-        dw = self.generate_innovation(dt,size_like=xinit[...,[0]])#self.testing_samples)
+        
+        dw = self.generate_innovation(dt,self.testing_samples)
 
         #compute du 
-        du = self.net(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
+        du = self.net(torch.column_stack((t*torch.ones((self.testing_samples,1),requires_grad=False,dtype=torch.float32)
                                                             ,xinit[...,[0]]))).detach()
                     
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt)
@@ -236,11 +231,10 @@ class EulerMaruyamaSDE(SDEBase):
     @torch.no_grad()
     def reference_integration_step(self,xinit,dt,t,reference_sol):
         
-        dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+        dw = self.generate_innovation(dt,self.testing_samples)
 
         if reference_sol.duref_net is not None:
-            du = reference_sol.duref_net(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
-                                                    ,xinit[...,[0]])))
+            du = reference_sol.duref_net(torch.column_stack((t*torch.ones((self.testing_samples,1)),xinit[...,[0]])))
         else: 
             du = torch.as_tensor(reference_sol.get_ref_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
             #torch.zeros_like(xinit_ref[:,0,None],dtype=torch.float32,requires_grad=False)
@@ -279,7 +273,7 @@ class EulerMaruyamaSDE(SDEBase):
         for i in range(0,self.sde_params["tsteps"]-1):
             dt = (t_vec[i+1]-t_vec[i])
             
-            dw = self.generate_innovation(dt,xinit[...,[0]])
+            dw = self.generate_innovation(dt,self.sde_params["batchsamples"])
            
             #get neural network drift
             du = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32)
@@ -343,7 +337,7 @@ class EulerMaruyamaSDE(SDEBase):
                 #get timestep
                 dt = np.abs(t_vec[-i-1]-t_vec[-i])
                 
-                dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+                dw = self.generate_innovation(dt,num_samples)
             
                 #evaluate neural network approximated drift 
                 du_bar = self.net(torch.column_stack((t_vec[-i]*torch.ones((num_samples,1),dtype=torch.float32)
@@ -380,14 +374,14 @@ class VerletSDE(SDEBase):
         
     @torch.no_grad()
     def integration_step(self,xinit,dt,t):
-
-        dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+        
+        dw = self.generate_innovation(dt,self.testing_samples)
 
         #update positions by half step
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
 
         #compute du 
-        du = self.net(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
+        du = self.net(torch.column_stack((t*torch.ones((self.testing_samples,1),requires_grad=False,dtype=torch.float32)
                                                             ,xinit[...,[0]]))).detach()
                     
         #Update the velocity
@@ -401,14 +395,13 @@ class VerletSDE(SDEBase):
     @torch.no_grad()
     def reference_integration_step(self,xinit,dt,t,reference_sol=None):
         
-        dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+        dw = self.generate_innovation(dt,self.testing_samples)
 
         #update positions by half step
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
 
         if reference_sol.duref_net is not None:
-            du = reference_sol.duref_net(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
-                                                            ,xinit[...,[0]])))
+            du = reference_sol.duref_net(torch.column_stack((t*torch.ones((self.testing_samples,1)),xinit[:,0,None])))
         else: 
             du = torch.as_tensor(reference_sol.get_ref_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
             #torch.zeros_like(xinit_ref[:,0,None],dtype=torch.float32,requires_grad=False)
@@ -457,7 +450,7 @@ class VerletSDE(SDEBase):
         for i in range(0,self.sde_params["tsteps"]-1):
             dt = (t_vec[i+1]-t_vec[i])
                 
-            dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+            dw = self.generate_innovation(dt,self.sde_params["batchsamples"])
             
             #position half step 
             xinit[...,[0]] += self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)      
@@ -525,7 +518,7 @@ class VerletSDE(SDEBase):
                 #get timestep
                 dt = np.abs(t_vec[-i-1]-t_vec[-i])
                 
-                dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+                dw = self.generate_innovation(dt,num_samples)
             
                 #evaluate neural network approximated drift 
                 du_bar = self.net(torch.column_stack((t_vec[-i]*torch.ones((num_samples,1),dtype=torch.float32)
