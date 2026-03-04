@@ -122,13 +122,12 @@ class MLE(TerminalCost):
         self.pos_mean0 = torch.nanmean(x[...,0]).item() 
         self.mom_mean0 = torch.nanmean(x[...,1]).item() 
 
-        self.Sigma_matrix = torch.cov(x)
+        #self.Sigma_matrix = torch.cov(x)
 
-        self.pos_var0 = self.Sigma_matrix[0,0].item()#torch.var(x[...,0]).item()
-        self.pos_var0 = self.Sigma_matrix[1,1].item()#self.mom_var0 = torch.var(x[...,1]).item()
+        self.pos_var0 = torch.var(x[...,0]).item()
+        self.mom_var0 = torch.var(x[...,1]).item()
 
-        self.cc0 = self.Sigma_matrix[0,1].item()
-        #(torch.sum((x[...,1]-self.mom_mean0)*(x[...,0]-self.pos_mean0))/(len(x[...,0]))).item()
+        self.cc0 = (torch.sum((x[...,1]-self.mom_mean0)*(x[...,0]-self.pos_mean0))/(len(x[...,0]))).item()
 
     def multivariate_U(self,x):
         #exponent of a multivariate Gaussian distribution

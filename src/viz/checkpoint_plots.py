@@ -130,7 +130,7 @@ class PlotUtils():
         self.rhonet = RhoNeuralNetwork(self.data_loaded)
         load_checkpoint(self.rhonet,self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
             
-    def checkpoint_plots_du(self):
+    def checkpoint_plots_du(self,mcsamples=None):
         """
         Runs the functions to make plots to show the results of the 
         drift learning
@@ -140,7 +140,7 @@ class PlotUtils():
         self.load_ref_solution()
         #plot_times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]]
         self.plotter.plot_drift(times = [0,2.507508,4.994995],net=self.net,refsol=self.referencesol)
-        self.make_sde_plots()
+        self.make_sde_plots(mcsamples=mcsamples)
         #self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
         
     def load_ref_solution(self):
@@ -163,22 +163,19 @@ class PlotUtils():
         self.plotter.plot_drift(times = plottimes,net=self.net,refsol=self.referencesol) #[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
         self.make_contour_plot2(plottimes=[0,5])
 
-    def make_cumulant_plot(self,t_vec,cumulants_nn,cumulants_ref):
+    def make_cumulant_plot(self,t_vec,cumulants_nn,cumulants_ref,mcsamples):
 
-        if t_vec is None:
-            t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(self.boundary_cond.params["Tf"],self.referencesol)
-        
         #cumulant figs and csv 
         fig = self.plotter.plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],
                                                 ["NN estimated","Benchmark"],
-                                                self.data_loaded["testsamples"],
+                                                mcsamples,
                                                 refsol=self.referencesol)
         self.plotter.save_fig_(fig,"cumulants")
         self.plotter.save_cumulants_csv(t_vec,cumulants_nn)
         self.plotter.save_cumulants_csv(t_vec,cumulants_ref,cumulants_filename="ref_cumulants")
         plt.close("all")
 
-    def make_sde_plots(self):
+    def make_sde_plots(self,mcsamples=None):
         """Make plots and save results of sde integration 
         1. compute final point clouds
         2. make final time marginal distribution plot
@@ -189,11 +186,11 @@ class PlotUtils():
 
         final_plot_time = self.boundary_cond.params["Tf"]
         
-        t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde(final_plot_time,self.referencesol)
+        t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde_cumulants(reference_sol=self.referencesol,mcsamples=mcsamples)
         
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
         
-        self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref)
+        self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples)
 
         #marginal distribution fig
         fig = self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,refsol=self.referencesol)
@@ -253,11 +250,11 @@ class PlotUtils():
         for i in range(len(plottimes)):
             
             self.integrator.net = self.net#referencesol.duref_net
-            x_du = self.integrator.update_ref_statistics(plottime=plottimes[i])
+            x_du = self.integrator.update_ref_statistics(time=plottimes[i])
             
             #UPDATE NET FOR INTEGRATOR
             self.integrator.net = self.referencesol.duref_net
-            x_ref = self.integrator.update_ref_statistics(plottime=plottimes[i])
+            x_ref = self.integrator.update_ref_statistics(time=plottimes[i])
                         
             self.plotter.marginal_distribution(axs[i],[x_du.detach().numpy(),x_ref.detach().numpy()],plottimes[i],refsol=self.referencesol)
             
@@ -413,5 +410,5 @@ if __name__=="__main__":
     plot_utils.checkpoint_plots_du()
     try:
         plot_utils.checkpoint_plots_rho()
-    except FileNotFoundError:
+    except KeyError: #no rho parameters saved 
         pass
