@@ -15,23 +15,24 @@ def train_loop_du(epoch,
         #update the drift nn with the current learned final distribution  
         loss_out = trainer.train_step()
                     
-        if epoch<trainer.milestone:
-            #trainer.scheduler1.step()#metric_.actioncost)
+        #if epoch<trainer.milestone:
+        #trainer.scheduler1.step()#metric_.actioncost)
       
-            metric_.lr = trainer.scheduler1.get_last_lr()[0]
-        else:
-            metric_.update_metrics(epoch, loss_out)
-            trainer.scheduler2.step(metric_.actioncost)
-            metric_.lr = trainer.scheduler2.get_last_lr()[0]
+        #    metric_.lr = trainer.scheduler1.get_last_lr()[0]
+        #else:
+        metric_.update_metrics(epoch, loss_out)
+        trainer.scheduler2.step(metric_.actioncost)
+        metric_.lr = trainer.scheduler2.get_last_lr()[0]
+
 
         if epoch % logstep == 0:
         
-            if epoch<trainer.milestone:
+            #if epoch<trainer.milestone:
 
-                #update metrics 
-                metric_.update_metrics(epoch, loss_out)
-            else:
-                pass
+            #update metrics 
+            #    metric_.update_metrics(epoch, loss_out)
+            #else:
+            #    pass
 
             #save checkpoint 
             save_nn_checkpoint(metric_.net,loc=metric_.logger.newpath+f"/checkpoints/{metric_.net.net_name}_checkpoint_{epoch}.pt")

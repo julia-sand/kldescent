@@ -68,6 +68,7 @@ def run():
                         trainer,
                         refsolution_,
                         logstep=args["logstep"])
+        
 
     plot_loss_metrics(folder=metrics_logger.newpath)
 
