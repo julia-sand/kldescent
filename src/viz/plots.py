@@ -504,7 +504,7 @@ class PlotFuns():
                             ylabel_text,
                             t_vec,
                             cumulants_nn_plot,label,test_samples):
-        
+
     if ylabel_text=="Position Mean":
       index = 0 
       yerr=np.sqrt(cumulants_nn_plot[:,2]/test_samples)

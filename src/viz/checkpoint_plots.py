@@ -75,7 +75,7 @@ class PlotUtils():
         else:
             self.folder = folder 
         
-        boundary_cond,data_loaded = init_params_from_file(folder)
+        boundary_cond,data_loaded = init_params_from_file(self.folder)
 
         params = checkpoint_plot_params() #get checkpoint plot parameters from cmd line
         
@@ -133,12 +133,18 @@ class PlotUtils():
         Runs the functions to make plots to show the results of the 
         drift learning
         """
+        if mcsamples is None:
+            try:
+                mcsamples = self.data_loaded["testsamples"]
+            except:
+                mcsamples = 100    
+
 
         self.load_du_checkpoint()
         self.load_ref_solution()
         #plot_times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]]
         self.plotter.plot_drift(times = [0,2.507508,4.994995],net=self.net,refsol=self.referencesol)
-        self.make_sde_plots(mcsamples=mcsamples)
+        self.make_sde_plots(mcsamples)
         #self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
         
     def load_ref_solution(self):
@@ -173,7 +179,7 @@ class PlotUtils():
         self.plotter.save_cumulants_csv(t_vec,cumulants_ref,cumulants_filename="ref_cumulants")
         plt.close("all")
 
-    def make_sde_plots(self,mcsamples=None):
+    def make_sde_plots(self,mcsamples):
         """Make plots and save results of sde integration 
         1. compute final point clouds
         2. make final time marginal distribution plot
@@ -413,7 +419,5 @@ if __name__=="__main__":
     plot_utils = PlotUtils()
 
     plot_utils.checkpoint_plots_du()
-    try:
-        plot_utils.checkpoint_plots_rho()
-    except KeyError: #no rho parameters saved 
-        pass
+    if plot_utils.data_loaded["terminalcost"]=="GirsanovNet":
+        plot_utils.make_girsanov_net_plots()

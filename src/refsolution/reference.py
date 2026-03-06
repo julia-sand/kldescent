@@ -195,33 +195,43 @@ class RefSolution(BaseRefSolution):
         
         return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx]) #((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
 
-    def get_perturbative_cumulants_array(self):
+    def get_perturbative_cumulants_array(self,idx=None):
         """return the array for predicted cumulants using perturbation theory"""
         arr = np.loadtxt(open(self.perturbative_cumulants_loc),
-                        delimiter=",",skiprows=1) 
+                        delimiter=",",skiprows=1,usecols=idx) 
         return arr 
 
     def get_perturbative_cumulant(self,cumulant_type):
-        arr = self.get_perturbative_cumulants_array() 
+        #arr = self.get_perturbative_cumulants_array() 
         try:  
             if cumulant_type == "Position Variance": 
-                temp = np.squeeze(arr[:,3])
+                #temp = np.squeeze(arr[:,3])
+                arr = self.get_perturbative_cumulants_array(idx= (0,3))
             elif cumulant_type == "Momentum Variance":
-                temp = np.squeeze(arr[:,4])
+                #temp = np.squeeze(arr[:,4])
+                arr = self.get_perturbative_cumulants_array(idx= (0,4))
+
             elif cumulant_type == "Cross Correlation":
-                temp = np.squeeze(arr[:,5])
+                #temp = np.squeeze(arr[:,5])
+                arr = self.get_perturbative_cumulants_array(idx= (0,5))
+
             elif cumulant_type == "Momentum Mean":
-                temp = np.squeeze(arr[:,2])
+                #temp = np.squeeze(arr[:,2])
+                arr = self.get_perturbative_cumulants_array(idx= (0,2))
+
             elif cumulant_type == "Position Mean":
-                temp = np.squeeze(arr[:,1])
+                #temp = np.squeeze(arr[:,1])
+                arr = self.get_perturbative_cumulants_array(idx= (0,1))
+
             else:
                 print("Perturbative prediction for "+cumulant_type+" not available.")
-                temp = np.zeros_like(np.squeeze(arr[:,0]))
+                #temp = np.zeros_like(np.squeeze(arr[:,0]))
+                arr = np.zeros((10,2))
         except IndexError:
             print("Perturbative prediction for "+cumulant_type+" not available.")
-            return np.zeros_like(np.squeeze(arr[:,0])),np.zeros_like(np.squeeze(arr[:,0]))
+            return np.zeros(10),np.zeros(10)
 
-        return np.squeeze(arr[:,0]),temp
+        return np.squeeze(arr[:,0]),np.squeeze(arr[:,1])
 
 
 class GaussRefSolution(BaseRefSolution):
