@@ -136,8 +136,8 @@ class CellProblem():
         return np.mean((x-y)**2)
 
     def iteration(self,integrator,
-                        tol=1e-2,
-                        max_iters=500):
+                        tol=1e-4,
+                        max_iters=4):
         """
         Implementation of Iteration in 1912.01244
         'Wasserstein Proximal Algorithms for the Schr¨odinger Bridge Problem:
@@ -182,17 +182,17 @@ class CellProblem():
 
                 #integrate phihat to Tf
                 xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
+            
+                #plot the final output
+                self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
                 
+                self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+                self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+
                 if (self.l2err(hatphiT,self.hatphiT)<tol and self.l2err(psiT,self.psiT)<tol):
                     break
                 else: 
                     iters += 1
-
-        #plot the final output
-        self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-        
-        self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-        self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
 
         #set new iterates
         self.xhatphi = zchop(xhatphi)
@@ -255,6 +255,6 @@ if __name__=="__main__":
     boundary = boundaries.UnderdampedLandauer()
     Tf = boundary.params["Tf"]
 
-    cell = CellProblem(boundary,"temp_results","half")
+    cell = CellProblem(boundary,"results_M20_v2","half")
     
     cell.iteration(mcintegrator)

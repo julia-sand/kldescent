@@ -144,7 +144,7 @@ class Train():
         self.optimiser.zero_grad()
         
         Lhat = self.integrator.loss_fn()
-        clip_grad_norm_(self.net.parameters(), self.clip)
+        #clip_grad_norm_(self.net.parameters(), self.clip)
 
         ##training##
         Lhat.backward()

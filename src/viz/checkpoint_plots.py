@@ -71,12 +71,10 @@ class PlotUtils():
 
         #get folder and load boundary data and params from file
         if folder is None:
-            folder = fetch_results_folder_from_cmd()
+            self.folder = fetch_results_folder_from_cmd()
         else:
-            folder = folder 
+            self.folder = folder 
         
-        self.folder = folder
-
         boundary_cond,data_loaded = init_params_from_file(folder)
 
         params = checkpoint_plot_params() #get checkpoint plot parameters from cmd line
@@ -197,6 +195,13 @@ class PlotUtils():
         self.plotter.save_fig_(fig,f"marginal_time_{final_plot_time}")
         
         plt.close("all")
+
+    def get_cumulants_csv(self):
+        return np.loadtxt(self.resultsdir + "/ref_cumulants.csv")
+
+
+    def make_cumulant_errs_plot(self):
+        pass
 
     def make_rhonet_marginals_plot(self):
         """Make plot and add legend"""
