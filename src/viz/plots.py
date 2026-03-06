@@ -492,6 +492,7 @@ class PlotFuns():
     elif ylabel_text=="Position Variance":
       index = 2 
       self.plot_free_diffusion_sol(ax,t_vec,self.position_variance_free_diffusion(t_vec,cumulants_ref_plot[0,index],cumulants_ref_plot[0,index+1]))
+    
     elif ylabel_text=="Momentum Variance":
       index = 3 
       self.plot_free_diffusion_sol(ax,t_vec,self.momentum_variance_free_diffusion(t_vec,cumulants_ref_plot[0,index]))
@@ -555,7 +556,20 @@ class PlotFuns():
            
     return fig1,gs
 
-  def plot_cumulants(self,t_vec,cumulants,labels,test_samples,refsol=None):
+  def make_cumulant_plot_axes(self,gs):
+
+    #define plot locations
+    axs = [plt.subplot(gs[0, 0:2]),
+            plt.subplot(gs[0, 2:4]),
+            plt.subplot(gs[0, 4:]),
+            plt.subplot(gs[1,:3]),
+            plt.subplot(gs[1, 3:])]
+
+    return axs 
+
+  def plot_cumulants(self,t_vec,cumulants,labels,test_samples,
+                      refsol=None,
+                      add_free_diffusion=True):
     """
     Plots the cumulants which are computed by the evolutions
     
@@ -584,13 +598,7 @@ class PlotFuns():
                       "Momentum Mean",
                       "Momentum Variance",
                       "Cross Correlation"]
-
-    #define plot locations
-    axs = [plt.subplot(gs_cumulants[0, 0:2]),
-            plt.subplot(gs_cumulants[0, 2:4]),
-            plt.subplot(gs_cumulants[0, 4:]),
-            plt.subplot(gs_cumulants[1,:3]),
-            plt.subplot(gs_cumulants[1, 3:])]
+    axs = self.make_cumulant_plot_axes(gs_cumulants)
 
     for ax, cumulant in zip(axs,enumerate(cumulant_names)):
 
@@ -600,7 +608,8 @@ class PlotFuns():
                                           t_vec,cumulant_vec,legend_label,
                                           test_samples)
       
-      self.add_freediffusion_cumulants_subplot(ax,cumulant[1],t_vec,cumulant_vec) 
+      if add_free_diffusion:
+        self.add_freediffusion_cumulants_subplot(ax,cumulant[1],t_vec,cumulant_vec) 
 
       if refsol is not None:
         try: 

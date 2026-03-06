@@ -14,6 +14,10 @@ from ..utils.getboundary import init_params_from_file
 from .contour import *
 from ..refsolution.reference import RefSolution,GaussRefSolution
 
+def zchop(x,tol=1e-6):
+   
+    return np.where(np.abs(x)<tol,0,x)
+
 def compute_rho_girsanov(x_samples=40,integrator=None,mc_samples=64,Tf=None):
     """
     Computes an estimate of the final joint distribution using girsanov theorem
@@ -133,13 +137,7 @@ class PlotUtils():
         Runs the functions to make plots to show the results of the 
         drift learning
         """
-        if mcsamples is None:
-            try:
-                mcsamples = self.data_loaded["testsamples"]
-            except:
-                mcsamples = 100    
-
-
+        
         self.load_du_checkpoint()
         self.load_ref_solution()
         #plot_times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]]
@@ -166,7 +164,7 @@ class PlotUtils():
         #self.make_intermediate_histograms(plottimes=plottimes)
         self.plotter.plot_drift(times = plottimes,net=self.net,refsol=self.referencesol) #[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
         self.make_contour_plot2(plottimes=[0,5])
-
+    
     def make_cumulant_plot(self,t_vec,cumulants_nn,cumulants_ref,mcsamples):
 
         #cumulant figs and csv 
@@ -188,6 +186,9 @@ class PlotUtils():
         5. save csv of reference and computed csvs. 
         """
 
+        if mcsamples is None: #set number of samples if not passed
+            mcsamples = self.data_loaded["testsamples"]
+
         final_plot_time = self.boundary_cond.params["Tf"]
         
         t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde_cumulants(reference_sol=self.referencesol,mcsamples=mcsamples)
@@ -195,19 +196,12 @@ class PlotUtils():
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
         
         self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples)
-
+        self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples)
         #marginal distribution fig
         fig = self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,refsol=self.referencesol)
         self.plotter.save_fig_(fig,f"marginal_time_{final_plot_time}")
         
         plt.close("all")
-
-    def get_cumulants_csv(self):
-        return np.loadtxt(self.resultsdir + "/ref_cumulants.csv")
-
-
-    def make_cumulant_errs_plot(self):
-        pass
 
     def make_rhonet_marginals_plot(self):
         """Make plot and add legend"""
@@ -383,7 +377,39 @@ class PlotUtils():
         self.plotter.save_fig_(fig,"contour_distribution")
         
         plt.close()
-        
+
+
+    def l1_error_cumulants(self,cumulants_nn,cumulants_ref):
+        """dinf"""
+        return zchop(np.abs(cumulants_nn-cumulants_ref))/np.maximum(np.abs(cumulants_ref),np.abs(cumulants_nn))
+        #np.zeros_like(cumulants_nn)#np.abs(zchop(cumulants_nn)-zchop(cumulants_ref))/zchop(cumulants_ref)
+
+    def l2_error_cumulants(self,cumulants_nn,cumulants_ref):
+
+        return zchop(np.abs(cumulants_nn-cumulants_ref)**2)/np.maximum(np.abs(cumulants_ref),np.abs(cumulants_nn))
+
+    def load_cumulant_csvs(self,):
+        cumulants_nn = np.loadtxt(open(self.resultsdir+"/cumulants.csv"),
+                        delimiter=",",skiprows=1) 
+        cumulants_ref = np.loadtxt(open(self.resultsdir+"/ref_cumulants.csv"),
+                        delimiter=",",skiprows=1)
+
+        return cumulants_nn[:,0],cumulants_nn[:,1:],cumulants_ref[:,1:]
+    
+    def make_cumulant_plot_from_csv(self,):
+        mcsamples = self.data_loaded["testsamples"]
+        t_vec,cumulants_nn,cumulants_ref = self.load_cumulant_csvs()
+        self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref)
+
+    def make_cumulant_error_plot(self,t_vec,cumulants_nn,cumulants_ref):    
+        l1_err = self.l1_error_cumulants(cumulants_nn,cumulants_ref)
+        l2_err = self.l2_error_cumulants(cumulants_nn,cumulants_ref)
+        fig = self.plotter.plot_cumulants(t_vec,[l1_err,l2_err],
+                                                        ["Relative L1","Relative L2"],
+                                                        0,
+                                                        refsol=self.referencesol,
+                                                        add_free_diffusion=False)
+        self.plotter.save_fig_(fig,"cumulants_errors")
 
 def compute_ref_dynamic_kl(refsolution):
     """Estimate of the dynamic kl divergence for the Gaussian reference data.
@@ -419,5 +445,6 @@ if __name__=="__main__":
     plot_utils = PlotUtils()
 
     plot_utils.checkpoint_plots_du()
+
     if plot_utils.data_loaded["terminalcost"]=="GirsanovNet":
         plot_utils.make_girsanov_net_plots()
