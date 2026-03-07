@@ -291,7 +291,7 @@ class PlotFuns():
   #@profile
   def plot_drift(self,times,net_vals,ref_vals):#refsol=None):
 
-    fig,ax = self.make_fig_subplots(nrows=1,ncols=len(times),squeeze=True)#plt.subplots()#plt.figure(figsize=(15,8))
+    fig,ax = self.make_fig_subplots(nrows=1,ncols=len(times),squeeze=True)
     #ax = plt.subplots()
   
     for t in range(len(times)):  
@@ -323,9 +323,9 @@ class PlotFuns():
 
     #move the legend
     legend.set_bbox_to_anchor(bbox=(0.95,0.07))
-    
+
     plt.tight_layout()
-    
+    fig.subplots_adjust(bottom=0.15)
     self.save_fig_(fig,"drift")
     plt.close()
 
@@ -518,7 +518,7 @@ class PlotFuns():
 
     try:
       ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr,alpha=0.8)
-    except UnboundLocalError:
+    except UnboundLocalError: #mcsamples set to 0, skip the error bars
       pass
 
     color = ax.lines[-1].get_color()
@@ -531,7 +531,6 @@ class PlotFuns():
     ax.set_title(self.make_plot_label(index),pad = self.titlepad,x = self.titlex, y = self.titley,zorder = 1000000)
     ax.set_ylabel(ylabel_text)
     ax.set_xlim((-0.1,t_vec[-1]+0.1))
-    #ax.set_ylim((-0.15,1.6))
 
   def make_fig_gridspec(self,nrows=2,ncols=6):
 
@@ -670,6 +669,8 @@ class PlotFuns():
                                               ax_qmarginal,
                                               jointout,
                                               xout,time,vmax=0.5,refsol=refsol)
+
+
 
 if __name__=="__main__":
   

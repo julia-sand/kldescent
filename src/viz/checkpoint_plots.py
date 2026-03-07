@@ -473,6 +473,7 @@ class PlotUtils():
         self.plotter.save_fig_(fig,"drift_errors")
 
 
+
 def compute_ref_dynamic_kl(refsolution):
     """Estimate of the dynamic kl divergence for the Gaussian reference data.
     Uses the reference position and momentum variance and estimates the integral
