@@ -310,7 +310,7 @@ class GaussRefSolution(BaseRefSolution):
         
         return arr
         
-    def get_underdamped_tgrid(self):
+    def get_reference_timegrid(self):
         arr = self.get_underdamped_cumulants_array(idx = 0)
         return np.squeeze(arr)
 

@@ -6,6 +6,8 @@ from torch import nn
 
 from ..utils.parser import du_network_params,rho_network_params,fetch_checkpoint_path
 
+import pdb
+
 def load_checkpoint(net,checkpointpath):
     try:
         net.load_state_dict(torch.load(checkpointpath, weights_only=True))
@@ -264,8 +266,8 @@ class MLP(nn.Module):
 if __name__ == "__main__":
     from torchinfo import summary
 
-    from ..sde.boundary import UnderdampedHalfGaussian
-    boundary_cond = UnderdampedHalfGaussian() #getattr(boundaries,run_params["boundary"])()
+    from ..sde.boundary import UnderdampedGaussian
+    boundary_cond = UnderdampedGaussian() #getattr(boundaries,run_params["boundary"])()
     
     net = NeuralNetwork(boundary_cond)
 

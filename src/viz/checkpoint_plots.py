@@ -14,6 +14,9 @@ from ..utils.getboundary import init_params_from_file
 from .contour import *
 from ..refsolution.reference import RefSolution,GaussRefSolution
 
+import pdb
+
+
 def zchop(x,tol=1e-6):
    
     return np.where(np.abs(x)<tol,0,x)
@@ -140,8 +143,7 @@ class PlotUtils():
         
         self.load_du_checkpoint()
         self.load_ref_solution()
-        #plot_times = [0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]]
-        self.plotter.plot_drift(times = [0,2.507508,4.994995],net=self.net,refsol=self.referencesol)
+        self.make_drift_plot(numplots=3)
         self.make_sde_plots(mcsamples)
         #self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
         
@@ -196,12 +198,52 @@ class PlotUtils():
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
         
         self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples)
-        self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples)
+        self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref)
         #marginal distribution fig
         fig = self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,refsol=self.referencesol)
         self.plotter.save_fig_(fig,f"marginal_time_{final_plot_time}")
         
         plt.close("all")
+    
+    ##@profile
+    def evaluate_net_output(self,net,time):
+        with torch.no_grad():
+            #computes neural network output (forward pass) to use in plotting
+            return net(torch.column_stack((time*torch.ones((1000,1),requires_grad=False,dtype=torch.float32)
+                                                        ,torch.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000,requires_grad=False)))).detach()
+    
+    def make_drift_plot(self,numplots):
+
+        #get the timegrid
+        t_vec = self.referencesol.get_reference_timegrid()
+        
+        #choose numplot random times
+        times = t_vec[np.random.randint(low=0,high=len(t_vec),size=numplots)]
+        times.sort()
+
+        net_vals, ref_vals = self.get_drift_data(times)
+
+        self.plotter.plot_drift(times,
+                                net_vals,
+                                ref_vals)
+
+    @torch.no_grad
+    def get_drift_data(self,times):
+        pdb.set_trace()
+        
+        #initialise the arrays
+        net_vals = []
+        ref_vals = []
+
+        for t in range(len(times)):
+
+            if self.referencesol.duref_net is not None:
+                ref_vals.append(self.evaluate_net_output(self.referencesol.duref_net,times[t]).flatten().numpy())
+            else: 
+                ref_vals.append(self.referencesol.get_ref_drift_gaussian(times[t])*np.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000))
+
+            net_vals.append(self.evaluate_net_output(self.net,times[t]).flatten().numpy())
+        return net_vals,ref_vals
 
     def make_rhonet_marginals_plot(self):
         """Make plot and add legend"""
@@ -265,7 +307,7 @@ class PlotUtils():
             
         h,l = self.plotter.get_all_subplot_handles_labels(fig)
         
-        #make legend 
+        #make the legend 
         legend = fig.legend(h,l,ncols= 4, 
                                 frameon=False,handlelength = 1)
 
@@ -274,7 +316,6 @@ class PlotUtils():
         
         fig.tight_layout()
         
-        #fig.savefig(self.resultsdir+"/histograms_all.png",bbox_inches="tight")     
         self.plotter.save_fig_(fig,"histograms_all")
         plt.close()
     
@@ -310,7 +351,6 @@ class PlotUtils():
             Q,P = generate_mesh(x_samples,qmax=6)
             xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
             
-            #torch.tensor(self.boundary_cond.generate_samples(x_samples,"initial"),dtype=torch.float32,requires_grad=False)
             pdf_out = self.rhonet(xinit.detach().clone())
 
             return xinit.detach().numpy(),pdf_out.detach().numpy()
@@ -379,14 +419,14 @@ class PlotUtils():
         plt.close()
 
 
-    def l1_error_cumulants(self,cumulants_nn,cumulants_ref):
+    def l1_error(self,test_vec,ref_vec):
         """dinf"""
-        return zchop(np.abs(cumulants_nn-cumulants_ref))/np.maximum(np.abs(cumulants_ref),np.abs(cumulants_nn))
+        return zchop(np.abs(test_vec-ref_vec))/np.maximum(np.abs(ref_vec),np.abs(test_vec))
         #np.zeros_like(cumulants_nn)#np.abs(zchop(cumulants_nn)-zchop(cumulants_ref))/zchop(cumulants_ref)
 
-    def l2_error_cumulants(self,cumulants_nn,cumulants_ref):
+    def l2_error(self,test_vec,ref_vec):
 
-        return zchop(np.abs(cumulants_nn-cumulants_ref)**2)/np.maximum(np.abs(cumulants_ref),np.abs(cumulants_nn))
+        return zchop(np.abs(test_vec-ref_vec)**2)/np.maximum(np.abs(ref_vec),np.abs(test_vec))
 
     def load_cumulant_csvs(self,):
         cumulants_nn = np.loadtxt(open(self.resultsdir+"/cumulants.csv"),
@@ -396,20 +436,42 @@ class PlotUtils():
 
         return cumulants_nn[:,0],cumulants_nn[:,1:],cumulants_ref[:,1:]
     
-    def make_cumulant_plot_from_csv(self,):
+    def make_cumulant_error_plot_from_csv(self,):
         mcsamples = self.data_loaded["testsamples"]
         t_vec,cumulants_nn,cumulants_ref = self.load_cumulant_csvs()
         self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref)
 
     def make_cumulant_error_plot(self,t_vec,cumulants_nn,cumulants_ref):    
-        l1_err = self.l1_error_cumulants(cumulants_nn,cumulants_ref)
-        l2_err = self.l2_error_cumulants(cumulants_nn,cumulants_ref)
+        l1_err = self.l1_error(cumulants_nn,cumulants_ref)
+        l2_err = self.l2_error(cumulants_nn,cumulants_ref)
         fig = self.plotter.plot_cumulants(t_vec,[l1_err,l2_err],
                                                         ["Relative L1","Relative L2"],
                                                         0,
-                                                        refsol=self.referencesol,
+                                                        refsol=None,#self.referencesol,
                                                         add_free_diffusion=False)
         self.plotter.save_fig_(fig,"cumulants_errors")
+
+    @torch.no_grad
+    def make_drift_error_plot(self,xnum=2000):    
+        
+        with torch.no_grad:
+            t_vec = self.referencesol.get_reference_timegrid()#compute du 
+
+            l1_errs = np.zeros_like(t_vec)
+            l2_errs = np.zeros_like(t_vec)
+            xtest = torch.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,num=xnum,requires_grad=False,dtype=torch.float32)
+            xtest.reshape((xnum,1))
+
+            for i in range(len(t_vec)):
+                du = self.net(torch.column_stack((t_vec[i]*torch.ones_like(xtest,requires_grad=False,dtype=torch.float32)
+                                                                    ,xtest))).detach().numpy()
+                du_ref = xtest*self.referencesol.get_ref_drift_gaussian(t_vec[i]).numpy()
+
+                l1_err = self.l1_error(du,du_ref)
+                l2_err = self.l2_error(du,du_ref)
+
+        self.plotter.save_fig_(fig,"drift_errors")
+
 
 def compute_ref_dynamic_kl(refsolution):
     """Estimate of the dynamic kl divergence for the Gaussian reference data.
@@ -441,10 +503,10 @@ def compute_ref_dynamic_kl(refsolution):
 
 if __name__=="__main__":
 
-
     plot_utils = PlotUtils()
 
     plot_utils.checkpoint_plots_du()
+    plot_utils.make_cumulant_error_plot_from_csv()
 
     if plot_utils.data_loaded["terminalcost"]=="GirsanovNet":
         plot_utils.make_girsanov_net_plots()

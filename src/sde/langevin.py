@@ -81,7 +81,7 @@ class SDEBase():
             if reference_sol.duref_net is not None:
                 t_vec = self.generate_time_grid() #use random time grid
             else: 
-                t_vec = reference_sol.get_underdamped_tgrid() #use fixed times from csv
+                t_vec = reference_sol.get_reference_timegrid() #use fixed times from csv
                             
             #initialise x values as samples from assigned initial distribution
             xinit = torch.tensor(self.boundary.generate_samples(self.testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
@@ -173,11 +173,10 @@ class SDEBase():
         if mcsamples is None: #default to test samples
             mcsamples = self.sde_params["testsamples"]
 
-        #pdb.set_trace()
         if reference_sol.duref_net is not None:
             t_vec = self.generate_time_grid()
         else:
-            t_vec = reference_sol.get_underdamped_tgrid()
+            t_vec = reference_sol.get_reference_timegrid()
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples(mcsamples,"initial"),requires_grad=False,dtype=torch.float32)

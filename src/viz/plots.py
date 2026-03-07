@@ -3,7 +3,6 @@ import string
 
 import numpy as np 
 from sklearn.neighbors import KernelDensity
-import torch
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -244,7 +243,7 @@ class PlotFuns():
               ,cmap="Blues",norm="log",vmin=0.0001,vmax=vmax)
     
   def make_colourbar(self,fig,vmax):
-    #adds a colour
+    #adds a colour bar
 
     sm =  ScalarMappable(norm="log",cmap=plt.get_cmap("Blues"))
     sm.set_array([])
@@ -290,7 +289,7 @@ class PlotFuns():
             label="Reference")
 
   #@profile
-  def plot_drift(self,times,net,refsol=None):
+  def plot_drift(self,times,net_vals,ref_vals):#refsol=None):
 
     fig,ax = self.make_fig_subplots(nrows=1,ncols=len(times),squeeze=True)#plt.subplots()#plt.figure(figsize=(15,8))
     #ax = plt.subplots()
@@ -298,7 +297,7 @@ class PlotFuns():
     for t in range(len(times)):  
       
       ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
-              self.evaluate_net_output(net,times[t]),
+                net_vals[t],
                 label="N.N.")
       
       self.format_drift_ax(ax[t],times[t])
@@ -306,23 +305,15 @@ class PlotFuns():
       ax[t].set_ylabel(r"$\mathbb{U}$")
       ax[t].set_ylim((-5,5))
       
-      if refsol is not None:
-        #xref,duref = refsol.get_quantity(round(times[t],3), "underdamped drift", data="perturbative underdamped",time_type="t0")
-        #ax[t].plot(xref,-0.2*duref/(2**0.5),label="Perturbative")
+      if ref_vals is not None:
         
-        if refsol.duref_net is not None:
-		        ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
-                self.evaluate_net_output(refsol.duref_net,times[t]),
-                label="Benchmark N.N.")
-        else:
-            ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
-                refsol.du_ref(times[t],np.linspace(-self.qmax,self.qmax,1000)),
-                label="Benchmark")
+        ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
+            ref_vals[t],#self.evaluate_net_output(refsol.duref_net,times[t]),
+            label="Benchmark N.N.")
+      
       else:
         print("No reference solution was given. Plots will not include reference values.")
     
-    plt.tight_layout()
-
     h,l = ax[0].get_legend_handles_labels()
     #plt.legend()
     legend = fig.legend(h,l,
@@ -332,6 +323,9 @@ class PlotFuns():
 
     #move the legend
     legend.set_bbox_to_anchor(bbox=(0.95,0.07))
+    
+    plt.tight_layout()
+    
     self.save_fig_(fig,"drift")
     plt.close()
 
@@ -440,14 +434,7 @@ class PlotFuns():
     fig.tight_layout()
     
     return fig  
-    
-  ##@profile
-  def evaluate_net_output(self,net,time):
-    with torch.no_grad():
-        #computes neural network output (forward pass) to use in plotting
-      return net(torch.column_stack((time*torch.ones((1000,1),requires_grad=False,dtype=torch.float32)
-                                                    ,torch.linspace(-self.qmax,self.qmax,1000,requires_grad=False)))).detach()
-               
+        
   def position_mean_free_diffusion(self,t_vec,q0,p0):
     return q0 + self.boundary.params["epsilon"]*(1-np.exp(-t_vec))*p0
 
