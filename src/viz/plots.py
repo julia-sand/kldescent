@@ -17,6 +17,70 @@ from matplotlib.axes import Axes
 This file holds all the functions used in plotting.
 '''
 
+def save_cumulants_csv(t_vec,cumulants_nn,loc,cumulants_filename="cumulants"):
+
+  a = np.concatenate((t_vec[...,np.newaxis],cumulants_nn),axis=1)
+  #np.savetxt(self.subdir+"/"+cumulants_filename+".csv", a, delimiter=",")
+  np.savetxt(loc+"/"+cumulants_filename+".csv", a ,fmt="%10.6f",header = "t,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
+  return 
+
+def get_inset_axes(ax):
+  return [c for c in ax.get_children() if isinstance(c, Axes)]
+    
+
+def make_fig_subplots(nrows,ncols,squeeze=True):
+
+  fig,axs = plt.subplots(ncols=ncols,nrows=nrows,squeeze=squeeze)
+  fig.set_figheight(15)
+  fig.set_figwidth(25)
+
+  return fig,axs
+
+def make_legend(fig,handles,labels): 
+  
+  fig.legend(handles,labels,
+                      frameon = False,
+                      handlelength = 1,
+                      ncols = len(labels),
+                      bbox_to_anchor=(1,0),
+                      bbox_transform=fig.transFigure)
+
+def save_fig_(fig,filename,loc):
+  fig.savefig(loc+"/"+filename+".png", bbox_inches='tight')
+  #fig.savefig(self.subdir+"/"+filename+".pdf",format="eps", bbox_inches='tight')
+  #fig.savefig(self.subdir+"/"+filename+".eps",format="pdf", bbox_inches='tight')
+  plt.close()
+
+def normal_distribution(x,mu=0,sigmasq=1):
+  
+  return np.exp(-((x-mu)**2)/(2*sigmasq))/np.sqrt(2*sigmasq*np.pi)
+  
+def get_inset_handles_labels(ax): 
+    """Find the handles and labels for data plotted on inset axes of ax and returns the 
+    unique labels that can be used in a legend. """
+    
+    #fetch all inset axes for ax
+    axes_temp = get_inset_axes(ax)
+
+    #return all labels and handles for each inset ax as dictionary
+    labels_handles = {}
+    
+    for c in axes_temp:
+      handles,labels = c.get_legend_handles_labels() 
+      ltemp = {label: handle for handle, label in zip(handles,labels)}
+      labels_handles.update(ltemp)
+      
+    return labels_handles #labels_handles.values(),labels_handles.keys()
+
+def get_all_subplot_handles_labels(fig):
+
+  d0 = {}
+  for ax in fig.axes:
+    dtemp = get_inset_handles_labels(ax) #returns dictionary of labels and handles
+    d0.update(dtemp)
+
+  return d0.values(),d0.keys() 
+
 def update_mpl():
   """
   Sets default parameters for any matplotlib plotting formatting
@@ -70,201 +134,6 @@ class PlotFuns():
   def make_plot_label(self,plot_index):
     return "("+string.ascii_lowercase[plot_index]+")"
 
-  def plot_marginal_joint(self,ax,x0_marginal,x0_init):
-
-    ax.plot(x0_init,x0_marginal
-                      ,color=self.c1,label="Girsanov")
-
-  def get_norm(self,x,y):
-    idx = np.argsort(x)
-    return np.trapezoid(y[idx],x[idx])
-
-  def add_boundary_conditions_scatter_panel(self,ax_pmarginal,ax_qmarginal,time):
-    
-    if time==0:
-      ax_qmarginal.fill_between(
-                self.boundary.q_marginal_initial(np.linspace(-self.qmax,self.qmax,)),np.linspace(-self.qmax,self.qmax,),color="orange",label="Assigned Initial Distribution")
-      
-      ax_pmarginal.fill_between(np.linspace(-self.qmax,self.qmax,),
-                self.normal_distribution(np.linspace(-self.qmax,self.qmax,),0,1),color="orange",label="Assigned Initial Distribution")
-    
-    elif time==self.boundary.params["Tf"]:
-      ax_qmarginal.fill_between(
-                self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,)),np.linspace(-self.qmax,self.qmax,),color="orange",label="Target Final Distribution")
-      
-      ax_pmarginal.fill_between(np.linspace(-self.qmax,self.qmax,),
-                self.normal_distribution(np.linspace(-self.qmax,self.qmax,),0,1),color="darkorange",label="Target Final Distribution")
-    
-    else: 
-      pass
-
-
-  def scatter_panel_layout(self,ax,time=None):
-
-    if time == None:
-      time = self.boundary.params["Tf"]
-
-    if self.boundary is not None:  
-      plot_title_value = round(time/self.boundary.params["Tf"],2)
-      ax.set_title(f"t={plot_title_value}Tf")
-    else: 
-      ax.set_title(f"t={time}")
-
-    #make inset axes to show marginal distributions
-    ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
-    ax_qmarginal = ax.inset_axes([-0.65, 0, 0.6, 1])
-    ax_qmarginal.invert_xaxis()
-
-    #set x axis limits
-    ax.set_ylim((-self.qmax,self.qmax))
-    ax.set_xlim((-self.qmax,self.qmax))
-    ax_qmarginal.set_ylim((-self.qmax,self.qmax))
-    ax_pmarginal.set_xlim((-self.qmax,self.qmax))
-
-    ###ticks formatting and labelling
-    ax_pmarginal.yaxis.tick_right()
-    ax.yaxis.tick_right()
-    
-    ax_pmarginal.tick_params(
-        axis='y',
-        which='both',
-        length=5,
-        rotation=-20,
-        pad = -3)
-
-    ax_qmarginal.tick_params(
-        axis='x',          # changes apply to the x-axis
-        which='both',
-        rotation=70,
-        length =5,
-        pad = -3,
-        labelleft=False)
-    
-    ax_qmarginal.tick_params(
-        axis='y',          # changes apply to the y-axis
-        which='both',      #both major and minor ticks
-        left=False,
-        labelleft=False)
-
-    ax_pmarginal.set_xticklabels([])
-   
-    ax.set_xlabel(r"$p$")
-    ax_qmarginal.set_xlabel(r"$\rho_t(q)$")
-    ax_qmarginal.set_xlim(right=-0.01)#,left=0.6)
-
-    ax.set_ylabel(r"$q$")
-    ax_pmarginal.set_ylabel(r"$\rho_t(p)$")
-    ax.yaxis.set_label_position("right")
-    ax_pmarginal.set_ylim(bottom=-0.01,top=0.6)
-
-    ax.set_aspect('equal', adjustable='box')
-    #ax.set_xticks([-2.5,0,2.5])
-    
-    if self.boundary is not None:
-      self.add_boundary_conditions_scatter_panel(ax_pmarginal,ax_qmarginal,time)
-
-    return ax, ax_pmarginal,ax_qmarginal
-
-  def reshape_joint(self,joint_out):
-    """reshape joint distribution for plotting"""
-    
-    n = joint_out.shape[0]
-    
-    return np.nan_to_num(joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n)))),nan=0,posinf=0,neginf=0)
-    
-
-  def compute_marginals_from_joint(self,xs,joint_out):
-    r"""Compute normalised q and p marginals from joint distribution data
-    args:
-      xs : ndarray
-      joint_out : ndarray
-        see joint_distributions_scatter_panel
-    returns: 
-      pinit : ndarray
-        set of q coordinates
-      qmargnorm : ndarray
-        normalised position marginal
-      pmargnorm : ndarray
-        normalised momentum marginal
-
-
-      """
-    
-    joint_out_temp = self.reshape_joint(joint_out)
-    
-    p_init = np.unique(xs) 
-
-    #compute marginals
-    qmarg = np.trapezoid(joint_out_temp,x = p_init,axis=0)#np.sum(joint_out_temp,axis=0) #np.trapezoid(joint_out_temp,x = p_init,axis=0)
-    pmarg = np.trapezoid(joint_out_temp,x = p_init,axis=1)
-    
-    #compute normalisation
-    qnorm = self.get_norm(p_init, qmarg)
-    pnorm = self.get_norm(p_init, pmarg)
-
-    return p_init,qmarg/qnorm, pmarg/pnorm,qnorm*pnorm
-
-  def joint_distributions_scatter_panel(self,
-                                        ax,
-                                        ax_pmarginal,
-                                        ax_qmarginal,
-                                        joint_out,
-                                        xs,time,vmax=0.5,
-                                        refsol=None):
-    """
-    Plots one panel of the joint distribution, where the 
-    center shows the joint and marginals are estimated
-
-    args:
-      ax: artist
-        axes where to plot. can be a gridspec subplot
-      joint_out: arr
-        joint distribution (n**2,1) as a numpy array
-      xs: arr
-        2d input data shaped (n**2,2) as numpy arr (q,p). Assume that the input values of x are generated
-        using meshgrid, and so have the same values of q and p
-      vmax: float
-        maximum value for the scatter plots color scale
-    """
-    
-    p_init_out,qmarg_norm,pmarg_norm,normall = self.compute_marginals_from_joint(xs,joint_out)
-
-    #plot and format marginals
-    self.plot_marginal_joint(ax_qmarginal,p_init_out,qmarg_norm)
-    self.plot_marginal_joint(ax_pmarginal,pmarg_norm,p_init_out)
-
-    if refsol is not None:
-      #plot marginals
-      x,ptx = refsol.get_quantity(np.round(time,6),quantity = "underdamped marginal",data="perturbative underdamped",time_type="t0")
-      ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Benchmark Evolved")
-
-    #plot joint distribution
-    ax.scatter(xs[...,0]/normall,xs[...,1]/normall,c=self.reshape_joint(joint_out).T.flatten()
-              ,cmap="Blues",norm="log",vmin=0.0001,vmax=vmax)
-    
-  def make_colourbar(self,fig,vmax):
-    #adds a colour bar
-
-    sm =  ScalarMappable(norm="log",cmap=plt.get_cmap("Blues"))
-    sm.set_array([])
-    sm.set_clim(vmin=0.001, vmax=vmax)
-
-    cbar_ax = fig.add_axes([0.2, -0.15, 0.55, 0.05])
-    cb = fig.colorbar(sm,
-                      cax=cbar_ax,
-                      orientation="horizontal")
-
-    cb.ax.set_xlabel("Joint Distribution")
-
-  def make_legend(self,fig,handles,labels): 
-    
-    fig.legend(handles,labels,
-                        frameon = False,
-                        handlelength = 1,
-                        ncols = len(labels),
-                        bbox_to_anchor=(1,0),
-                        bbox_transform=fig.transFigure)
-
   def format_drift_ax(self,ax1,time):
     ax1.set_xlim((-10,10))#self.qmax,self.qmax))
     #ax1.set_xlim((-2,2))
@@ -272,10 +141,6 @@ class PlotFuns():
     ax1.set_xlabel("q")
     #ax1.set_ylim((-1.8,1.8))
 
-  def normal_distribution(self,x,mu=0,sigmasq=1):
-    
-    return np.exp(-((x-mu)**2)/(2*sigmasq))/np.sqrt(2*sigmasq*np.pi)
-      
   def format_distribution_ax(self,ax1):
     ax1.set_xlim((-self.qmax,self.qmax))
     ax1.set_xlabel("q")
@@ -291,7 +156,7 @@ class PlotFuns():
   #@profile
   def plot_drift(self,times,net_vals,ref_vals):#refsol=None):
 
-    fig,ax = self.make_fig_subplots(nrows=1,ncols=len(times),squeeze=True)
+    fig,ax = make_fig_subplots(nrows=1,ncols=len(times),squeeze=True)
     #ax = plt.subplots()
   
     for t in range(len(times)):  
@@ -326,21 +191,13 @@ class PlotFuns():
 
     plt.tight_layout()
     fig.subplots_adjust(bottom=0.15)
-    self.save_fig_(fig,"drift")
+    save_fig_(fig,"drift",self.subdir)
     plt.close()
 
   def fit_kde(self,xs):
 
     kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(xs[np.isfinite(xs)].reshape(-1,1))
     return kde.score_samples(np.linspace(-self.qmax,self.qmax,num =1000).reshape(-1,1))
-
-  def make_fig_subplots(self,nrows,ncols,squeeze=True):
-
-    fig,axs = plt.subplots(ncols=ncols,nrows=nrows,squeeze=squeeze)
-    fig.set_figheight(15)
-    fig.set_figwidth(25)
-
-    return fig,axs
 
   ##scatter plot of final distribution 
   def marginal_distribution(self,ax,xs,plottime=None,refsol=None):
@@ -397,7 +254,7 @@ class PlotFuns():
             self.boundary.q_marginal_final(np.linspace(-self.qmax,self.qmax,num=1000)),
             color="gray",alpha=0.1,label="target")
     ax_mom.fill_between(np.linspace(-self.qmax,self.qmax,num=1000),
-        self.normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=0,sigmasq=1),
+        normal_distribution(np.linspace(-self.qmax,self.qmax,num=1000),mu=0,sigmasq=1),
                     color="gray",alpha=0.1,label="target")
     
     #add formatting
@@ -417,12 +274,12 @@ class PlotFuns():
   def make_marginal_distribution_fig(self,xvals,plottime,refsol=None):
 
     #make figure object
-    fig = plt.figure(figsize=(15,8))#self.make_fig_subplots(nrows=1,ncols=1)#plt.figure(figsize=(15,8))
+    fig = plt.figure(figsize=(15,8))
     ax0 = plt.subplot(1,1,1)
 
     self.marginal_distribution(ax0,xvals,plottime,refsol)
     
-    h,l = self.get_all_subplot_handles_labels(fig)
+    h,l = get_all_subplot_handles_labels(fig)
 
     #make legend 
     legend = fig.legend(h,l,ncols= 4, 
@@ -449,13 +306,6 @@ class PlotFuns():
 
   def cross_correlation_free_diffusion(self,t_vec,pos_var0,mom_var0):
     return (self.boundary.params["epsilon"]**2)*np.exp(-t_vec)*(1-np.exp(-t_vec))*mom_var0 + self.boundary.params["epsilon"]*(1-2*np.exp(-t_vec)+np.exp(-2*t_vec))
-
-  def save_cumulants_csv(self,t_vec,cumulants_nn,cumulants_filename="cumulants"):
-
-    a = np.concatenate((t_vec[...,np.newaxis],cumulants_nn),axis=1)
-    #np.savetxt(self.subdir+"/"+cumulants_filename+".csv", a, delimiter=",")
-    np.savetxt(self.subdir+"/"+cumulants_filename+".csv", a ,fmt="%10.6f",header = "t,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
-    return 
 
   def plot_free_diffusion_sol(self,ax,t_vec,cumulant):
       ax.plot(t_vec,cumulant,
@@ -620,11 +470,6 @@ class PlotFuns():
     
     return fig1
 
-  def save_fig_(self,fig,filename):
-    fig.savefig(self.subdir+"/"+filename+".png", bbox_inches='tight')
-    #fig.savefig(self.subdir+"/"+filename+".pdf",format="eps", bbox_inches='tight')
-    #fig.savefig(self.subdir+"/"+filename+".eps",format="pdf", bbox_inches='tight')
-    plt.close()
 
   def update_final_cumulants(self,cumulants_nn):
     self.mut_p = cumulants_nn[1]
@@ -632,45 +477,6 @@ class PlotFuns():
     self.mut_q = cumulants_nn[0]
     self.sigsqt_q = cumulants_nn[2]
      
-  def get_all_subplot_handles_labels(self,fig):
-
-    d0 = {}
-    for ax in fig.axes:
-      dtemp = self.get_inset_handles_labels(ax) #returns dictionary of labels and handles
-      d0.update(dtemp)
-
-    return d0.values(),d0.keys()
-
-  def get_inset_axes(self,ax):
-    return [c for c in ax.get_children() if isinstance(c, Axes)]
-      
-  def get_inset_handles_labels(self,ax): 
-      """Find the handles and labels for data plotted on inset axes of ax and returns the 
-      unique labels that can be used in a legend. """
-      
-      #fetch all inset axes for ax
-      axes_temp = self.get_inset_axes(ax)
-
-      #return all labels and handles for each inset ax as dictionary
-      labels_handles = {}
-      
-      for c in axes_temp:
-        handles,labels = c.get_legend_handles_labels() 
-        ltemp = {label: handle for handle, label in zip(handles,labels)}
-        labels_handles.update(ltemp)
-        
-      return labels_handles #labels_handles.values(),labels_handles.keys()
-
-  def plot_joint_panel(self,ax,time,jointout,xout,refsol=None):
-      ax, ax_pmarginal,ax_qmarginal = self.scatter_panel_layout(ax,time)
-
-      self.joint_distributions_scatter_panel(ax,
-                                              ax_pmarginal,
-                                              ax_qmarginal,
-                                              jointout,
-                                              xout,time,vmax=0.5,refsol=refsol)
-
-
 
 if __name__=="__main__":
   

@@ -7,11 +7,10 @@ import torch
 import numpy as np
 
 from ..model.nn import RhoNeuralNetwork,NeuralNetwork,load_checkpoint
-from .plots import PlotFuns,update_mpl
+from .plots import *
 from ..sde import langevin
 from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
 from ..utils.getboundary import init_params_from_file
-from .contour import *
 from ..refsolution.reference import RefSolution,GaussRefSolution
 
 import pdb
@@ -20,6 +19,21 @@ import pdb
 def zchop(x,tol=1e-6):
    
     return np.where(np.abs(x)<tol,0,x)
+
+def generate_mesh(x_samples,qmax=6):
+    """
+    generates a mesh in two dimensional phase space to evaluate and plot the joint distribution 
+    
+    args:
+        x_samples:
+            number of samples in the space discretisation
+    """
+
+    p_init = np.linspace(-qmax,qmax,x_samples)
+    q_init = np.linspace(-qmax,qmax,x_samples)
+    
+    Q,P = np.meshgrid(q_init,p_init)
+    return Q,P
 
 def compute_rho_girsanov(x_samples=40,integrator=None,mc_samples=64,Tf=None):
     """
@@ -124,7 +138,8 @@ class PlotUtils():
             self.integrator = langevin.EulerMaruyamaSDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
     def load_du_checkpoint(self):
-        
+        """Load neural network and initialise integration method"""
+
         self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
         load_checkpoint(self.net,self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
         
@@ -165,7 +180,6 @@ class PlotUtils():
         
         #self.make_intermediate_histograms(plottimes=plottimes)
         self.plotter.plot_drift(times = plottimes,net=self.net,refsol=self.referencesol) #[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
-        self.make_contour_plot2(plottimes=[0,5])
     
     def make_cumulant_plot(self,t_vec,cumulants_nn,cumulants_ref,mcsamples):
 
@@ -174,9 +188,9 @@ class PlotUtils():
                                                 ["NN estimated","Benchmark"],
                                                 mcsamples,
                                                 refsol=self.referencesol)
-        self.plotter.save_fig_(fig,"cumulants")
-        self.plotter.save_cumulants_csv(t_vec,cumulants_nn)
-        self.plotter.save_cumulants_csv(t_vec,cumulants_ref,cumulants_filename="ref_cumulants")
+        save_fig_(fig,"cumulants",loc=self.resultsdir)
+        save_cumulants_csv(t_vec,cumulants_nn,loc=self.resultsdir)
+        save_cumulants_csv(t_vec,cumulants_ref,loc=self.resultsdir,cumulants_filename="ref_cumulants")
         plt.close("all")
 
     def make_sde_plots(self,mcsamples):
@@ -201,7 +215,7 @@ class PlotUtils():
         self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref)
         #marginal distribution fig
         fig = self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,refsol=self.referencesol)
-        self.plotter.save_fig_(fig,f"marginal_time_{final_plot_time}")
+        save_fig_(fig,f"marginal_time_{final_plot_time}",loc=self.resultsdir)
         
         plt.close("all")
     
@@ -229,7 +243,7 @@ class PlotUtils():
 
     @torch.no_grad
     def get_drift_data(self,times):
-        pdb.set_trace()
+        #pdb.set_trace()
         
         #initialise the arrays
         net_vals = []
@@ -249,12 +263,12 @@ class PlotUtils():
         """Make plot and add legend"""
         fig = self.plot_rhonet_marginals()
 
-        h,l = self.plotter.get_all_subplot_handles_labels(fig)
+        h,l = get_all_subplot_handles_labels(fig)
 
-        self.plotter.make_legend(fig,h,l)
+        make_legend(fig,h,l)
 
         fig.tight_layout()
-        self.plotter.save_fig_(fig,"rho_marginals")
+        save_fig_(fig,"rho_marginals",loc=self.resultsdir)
         plt.close("all")
 
     def plot_rhonet_marginals(self):
@@ -266,12 +280,12 @@ class PlotUtils():
         fig = self.plotter.make_marginal_distribution_fig(xvals=[],plottime=self.boundary_cond.params["Tf"])
 
         ax0 = fig.get_axes()
-        ax_list = self.plotter.get_inset_axes(ax0[0])
+        ax_list = get_inset_axes(ax0[0])
         
         for compute_rho_fun,label in zip([self.compute_rho_nn,compute_rho_girsanov],["girsanovnet","mc"]):
             xs,joint_out = compute_rho_fun(x_samples=20,integrator=self.integrator)
 
-            pinit,qmargnorm,pmargnorm,_ = self.plotter.compute_marginals_from_joint(xs,joint_out)
+            pinit,qmargnorm,pmargnorm,_ = compute_marginals_from_joint(xs,joint_out)
             
             ax_list[0].plot(pinit,qmargnorm,label=label)
             ax_list[1].plot(pinit,pmargnorm,label=label) 
@@ -290,7 +304,7 @@ class PlotUtils():
     def make_intermediate_histograms(self,plottimes):
 
         #make figure object
-        fig,axs = self.plotter.make_fig_subplots(ncols=int(np.ceil(len(plottimes)/2)),nrows=2)
+        fig,axs = make_fig_subplots(ncols=int(np.ceil(len(plottimes)/2)),nrows=2)
         
         axs = axs.flatten()
 
@@ -305,7 +319,7 @@ class PlotUtils():
                         
             self.plotter.marginal_distribution(axs[i],[x_du.detach().numpy(),x_ref.detach().numpy()],plottimes[i],refsol=self.referencesol)
             
-        h,l = self.plotter.get_all_subplot_handles_labels(fig)
+        h,l = get_all_subplot_handles_labels(fig)
         
         #make the legend 
         legend = fig.legend(h,l,ncols= 4, 
@@ -316,14 +330,14 @@ class PlotUtils():
         
         fig.tight_layout()
         
-        self.plotter.save_fig_(fig,"histograms_all")
+        save_fig_(fig,"histograms_all",loc=self.resultsdir)
         plt.close()
     
     def checkpoint_plots_rho(self):
         
         self.load_rho_checkpoint()
-        self.make_contour_plot()
-
+        #self.make_contour_plot()
+        print("NO PLOTS WILL BE OUTPUT. UPDATE THIS SECTION")
         plt.close("all")
 
     
@@ -355,31 +369,6 @@ class PlotUtils():
 
             return xinit.detach().numpy(),pdf_out.detach().numpy()
 
-    def make_contour_plot2(self,plottimes = [0,1,2,3,4,5]):
-        
-        ncols = int(np.ceil(len(plottimes)/2))
-        fig,axs = self.plotter.make_fig_subplots(ncols=ncols,nrows=2)
-        axs = axs.flatten()
-
-        for i in range(len(plottimes)):
-
-            xout,jointout = compute_rho_girsanov(integrator=self.integrator,x_samples=50,mc_samples=self.mc_samples,Tf=plottimes[i])
-
-            self.plotter.plot_joint_panel(axs[i],plottimes[i],jointout,xout,refsol=self.referencesol)
-        
-        fig.subplots_adjust(hspace=1.1,wspace=1,bottom=0.08)
-        
-        #add legend
-        h,l = self.plotter.get_all_subplot_handles_labels(fig)
-        self.plotter.make_legend(fig,h,l)
-        self.plotter.make_colourbar(fig,vmax=0.5)
-        
-        plt.tight_layout()
-
-        self.plotter.save_fig_(fig,"contour_distribution")
-        
-        plt.close()
-
     def plot_pdf_3d(self):
         xs,jointout = self.compute_rho_nn(x_samples=50)
         
@@ -394,29 +383,6 @@ class PlotUtils():
         ax.set_title('3D Line Plot')
         plt.savefig(self.resultsdir+"/test_3d.png",bbox_inches="tight")        
         plt.close("all")
-
-    def make_contour_plot(self):
-        """plot the learned distribution at final time"""
-        
-        xout,jointout = self.compute_rho_nn(x_samples=20)
-        
-        fig,ax = plt.subplots()
-        ax, ax_pmarginal,ax_qmarginal = self.plotter.scatter_panel_layout(ax)
-
-        self.plotter.joint_distributions_scatter_panel(ax,
-                                                    ax_pmarginal,
-                                                    ax_qmarginal,
-                                                    jointout,
-                                                    xout,
-                                                    time=self.boundary_cond.params["Tf"],vmax=0.5,refsol=self.referencesol)
-        
-        h,l = self.plotter.get_all_subplot_handles_labels(fig)
-        self.plotter.make_legend(fig,h,l)
-        self.plotter.make_colourbar(fig,vmax=0.5)
-        
-        self.plotter.save_fig_(fig,"contour_distribution")
-        
-        plt.close()
 
 
     def l1_error(self,test_vec,ref_vec):
@@ -449,7 +415,7 @@ class PlotUtils():
                                                         0,
                                                         refsol=None,#self.referencesol,
                                                         add_free_diffusion=False)
-        self.plotter.save_fig_(fig,"cumulants_errors")
+        save_fig_(fig,"cumulants_errors",loc=self.resultsdir)
 
     @torch.no_grad
     def make_drift_error_plot(self,xnum=2000):    
@@ -470,7 +436,7 @@ class PlotUtils():
                 l1_err = self.l1_error(du,du_ref)
                 l2_err = self.l2_error(du,du_ref)
 
-        self.plotter.save_fig_(fig,"drift_errors")
+        save_fig_(fig,"drift_errors",loc=self.resultsdir)
 
 
 
@@ -497,7 +463,7 @@ def compute_ref_dynamic_kl(refsolution):
 
     for t in enumerate(times):
         xref,duref = boundary.get_reference_data(t[1])
-        ptx = plotter.normal_distribution(xref,0,var_t[t[0]])
+        ptx = normal_distribution(xref,0,var_t[t[0]])
         klout[t[0]] = np.trapezoid((duref**2)*ptx,xref)
 
     return np.trapezoid(klout,times)

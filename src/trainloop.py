@@ -42,5 +42,4 @@ def train_loop_du(epoch,
             plot_utils = PlotUtils(refsol=refsolution_,epoch=epoch)
 
             plot_utils.checkpoint_plots_du(mcsamples=2048)
-            #plot_utils.make_girsanov_net_plots()
-            #plot_utils.make_contour_plot()
+            

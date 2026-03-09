@@ -1,6 +1,7 @@
 import torch
 
 from . import plots
+from .contour import *
 import matplotlib.pyplot as plt
 
 plots.update_mpl()
@@ -82,7 +83,7 @@ def distribution_plot(plot_loc,model,Tf,epoch=1,boundary=None):
 
     xout,jointout = zz,pdf_temp.detach().clone().numpy().flatten()
 
-    plotter.plot_joint_panel(plt.gca(),5,jointout,xout)
+    plot_joint_panel(plt.gca(),5,jointout,xout)
 
     fig.tight_layout()
     fig.savefig(plot_loc+f"/contour_distribution_{epoch}.png",bbox_inches="tight")        
