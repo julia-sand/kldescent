@@ -158,7 +158,7 @@ class PlotUtils():
         
         self.load_du_checkpoint()
         self.load_ref_solution()
-        self.make_drift_plot(numplots=3)
+        self.make_drift_plot(numplots=5)
         self.make_sde_plots(mcsamples)
         #self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
         
@@ -172,15 +172,15 @@ class PlotUtils():
             else:
                 self.referencesol = RefSolution(boundary=self.boundary_cond,folder_name=self.folder)
             
-
     def perturbative_plots_du(self,plottimes):
         """make plots to show the results of the evolution under perturbative drift"""
         
         self.load_perturbative_du_checkpoint()
         
         #self.make_intermediate_histograms(plottimes=plottimes)
-        self.plotter.plot_drift(times = plottimes,net=self.net,refsol=self.referencesol) #[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
-    
+        #self.plotter.plot_drift(times = plottimes,net=self.net,refsol=self.referencesol) #[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
+        self.make_drift_plot(numplots=4)
+
     def make_cumulant_plot(self,t_vec,cumulants_nn,cumulants_ref,mcsamples):
 
         #cumulant figs and csv 
@@ -257,7 +257,16 @@ class PlotUtils():
                 ref_vals.append(self.referencesol.get_ref_drift_gaussian(times[t])*np.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000))
 
             net_vals.append(self.evaluate_net_output(self.net,times[t]).flatten().numpy())
+        
         return net_vals,ref_vals
+
+    def compute_drift_errs(self,time):
+
+        net_val,ref_val = self.get_drift_data([time])
+        l1 = np.mean(self.l1_error(net_val[0],ref_val[0]))
+        l2 = np.sqrt(np.mean(self.l2_error(net_val[0],ref_val[0])))
+        
+        return l1,l2
 
     def make_rhonet_marginals_plot(self):
         """Make plot and add legend"""
@@ -417,27 +426,28 @@ class PlotUtils():
                                                         add_free_diffusion=False)
         save_fig_(fig,"cumulants_errors",loc=self.resultsdir)
 
-    @torch.no_grad
-    def make_drift_error_plot(self,xnum=2000):    
-        
-        with torch.no_grad:
-            t_vec = self.referencesol.get_reference_timegrid()#compute du 
+    def make_drift_error_plot(self):    
+
+        self.load_du_checkpoint()
+        self.load_ref_solution()
+
+        with torch.no_grad():
+            t_vec = self.referencesol.get_reference_timegrid()[::10]#compute du 
 
             l1_errs = np.zeros_like(t_vec)
             l2_errs = np.zeros_like(t_vec)
-            xtest = torch.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,num=xnum,requires_grad=False,dtype=torch.float32)
-            xtest.reshape((xnum,1))
-
+            
             for i in range(len(t_vec)):
-                du = self.net(torch.column_stack((t_vec[i]*torch.ones_like(xtest,requires_grad=False,dtype=torch.float32)
-                                                                    ,xtest))).detach().numpy()
-                du_ref = xtest*self.referencesol.get_ref_drift_gaussian(t_vec[i]).numpy()
-
-                l1_err = self.l1_error(du,du_ref)
-                l2_err = self.l2_error(du,du_ref)
+                l1_errs[i],l2_errs[i] = self.compute_drift_errs(t_vec[i])
+            
+        fig = plt.figure()
+        plt.plot(t_vec,l1_errs,label="L1")
+        plt.plot(t_vec,l2_errs,label="L2")
+        plt.xlabel("t")
+        plt.ylabel("Error")
+        plt.legend()
 
         save_fig_(fig,"drift_errors",loc=self.resultsdir)
-
 
 
 def compute_ref_dynamic_kl(refsolution):
@@ -473,7 +483,7 @@ if __name__=="__main__":
     plot_utils = PlotUtils()
 
     plot_utils.checkpoint_plots_du()
-    plot_utils.make_cumulant_error_plot_from_csv()
+    #plot_utils.make_cumulant_error_plot_from_csv()
 
     if plot_utils.data_loaded["terminalcost"]=="GirsanovNet":
         plot_utils.make_girsanov_net_plots()

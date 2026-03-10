@@ -35,7 +35,7 @@ def save_nn_checkpoint(net,loc):
 class FourierFeatures(nn.Module):
     def __init__(self, out_features: int,
                  sigma: float = 1.,
-                 trainable: bool = False,
+                 trainable: bool = True,
                  device=None, dtype=None):
         """
         For input feature vector `x`, apply linear transformation

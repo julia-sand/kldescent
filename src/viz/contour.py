@@ -259,4 +259,3 @@ if __name__=="__main__":
     plot_utils = PlotUtils()
     plot_utils.load_du_checkpoint()
     make_contour_plot2(plot_utils)
-    #plot_utils.make_cumulant_error_plot_from_csv()
