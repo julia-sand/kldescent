@@ -446,7 +446,8 @@ class PlotUtils():
         plt.xlabel("t")
         plt.ylabel("Error")
         plt.legend()
-
+        print("L1 = ",np.trapezoid(l1_errs,t_vec))
+        print("L2 = ",np.trapezoid(l2_errs,t_vec))
         save_fig_(fig,"drift_errors",loc=self.resultsdir)
 
 

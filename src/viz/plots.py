@@ -135,8 +135,7 @@ class PlotFuns():
     return "("+string.ascii_lowercase[plot_index]+")"
 
   def format_drift_ax(self,ax1,time):
-    ax1.set_xlim((-10,10))#self.qmax,self.qmax))
-    #ax1.set_xlim((-2,2))
+    
     ax1.set_title(f"t={time}")
     ax1.set_xlabel("q")
     #ax1.set_ylim((-1.8,1.8))
@@ -168,7 +167,7 @@ class PlotFuns():
       self.format_drift_ax(ax[t],times[t])
     
       ax[t].set_ylabel(r"$\mathbb{U}$")
-      ax[t].set_ylim((-5,5))
+      #ax[t].set_ylim((-5,5))
       
       if ref_vals is not None:
         
@@ -336,8 +335,7 @@ class PlotFuns():
     elif ylabel_text=="Cross Correlation":
       index = 4 
       self.plot_free_diffusion_sol(ax,t_vec,self.cross_correlation_free_diffusion(t_vec,cumulants_ref_plot[0,2],cumulants_ref_plot[0,3]))
-      
-    
+       
   def make_cumulant_subplot(self,ax,#gs_location,
                             ylabel_text,
                             t_vec,
@@ -368,7 +366,7 @@ class PlotFuns():
 
     try:
       ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr,alpha=0.8)
-    except UnboundLocalError: #mcsamples set to 0, skip the error bars
+    except UnboundLocalError: #if mcsamples set to 0, skip the error bars
       pass
 
     color = ax.lines[-1].get_color()

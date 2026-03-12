@@ -29,7 +29,6 @@ def save_nn_checkpoint(net,loc):
         
     torch.save(net.state_dict(),loc) 
 
-
 ##SOURCE: https://github.com/miaotianyi 
 #@torch.compile
 class FourierFeatures(nn.Module):
@@ -126,6 +125,8 @@ class NeuralNetwork(nn.Module):
             nn.Linear(2*self.params["duhiddenlayerneurons"], self.params["duhiddenlayerneurons"] ),  #
             nn.GELU(), #MyActivation(),
             nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
+            #nn.GELU(), #MyActivation(),
+            #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
             nn.ReLU(),  #must be positive
             ) 
         self.NNx = nn.Sequential(
