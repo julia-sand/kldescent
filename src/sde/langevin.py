@@ -251,6 +251,14 @@ class EulerMaruyamaSDE(SDEBase):
             
         return xinit
 
+    def girsanov_scheme_half_step(self,xn,du_bar,dt,dw,t):
+
+        #takes one step forward in the euler maruyama discretisation
+        #go forward one step 
+        xn[...,[1]] = xn[...,[1]] + self.boundary.sigma0*du_bar*dt + self.boundary.sigma0*dw
+        xn[...,[0]] = xn[...,[0]] + self.boundary.params["epsilon"]*xn[...,[1]]*(dt/2) 
+
+        return xn
 
     def loss_fn(self):
         """
@@ -305,7 +313,6 @@ class EulerMaruyamaSDE(SDEBase):
         
         return Lhat
     
-
     def compute_pdf(self,xinit,Tf=None):
         """
         Computes an estimate for the final joint distribution using Girsanov theorem 
@@ -349,7 +356,7 @@ class EulerMaruyamaSDE(SDEBase):
                                                            ,xinit[...,[0]])))
                 
                 #one backward step of euler maruyama scheme of stochastic evolution
-                xinit = self.boundary.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[-i])#-dt,-dw,t_vec[-i])
+                xinit = self.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[-i])#-dt,-dw,t_vec[-i])
                 
                 #add step to stochastic integral
                 girs = girs + (dw*xinit[...,[1]])/(2**0.5) + (dt * (xinit[...,[1]])**2)/4
@@ -429,7 +436,17 @@ class VerletSDE(SDEBase):
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*dt/2
         
         return xinit
-    
+        
+    def girsanov_scheme(self,xn,du_bar,dt,dw,t):
+
+        #takes one step forward in the euler maruyama discretisation
+        #go forward one step 
+        #xn[...,[0]] = xn[...,[0]] + self.boundary.params["epsilon"]*xn[...,[1]]*(dt/2)
+        xn[...,[1]] = xn[...,[1]] + self.boundary.sigma0*du_bar*dt + self.boundary.sigma0*dw
+        xn[...,[0]] = xn[...,[0]] + self.boundary.params["epsilon"]*xn[...,[1]]*(dt/2)
+
+        return xn
+
     def loss_fn(self):
         """
         Following 2410.05163 (see proposition 3). 
@@ -525,13 +542,16 @@ class VerletSDE(SDEBase):
                 dt = np.abs(t_vec[-i-1]-t_vec[-i])
                 
                 dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
-            
+                
+                #take a half step of position 
+                xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"]*xn[...,[1]]*(dt/2)
+
                 #evaluate neural network approximated drift 
                 du_bar = self.net(torch.column_stack((t_vec[-i]*torch.ones((num_samples,1),dtype=torch.float32)
                                                            ,xinit[...,[0]])))
                 
                 #one backward step of euler maruyama scheme of stochastic evolution
-                xinit = self.boundary.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[-i])#-dt,-dw,t_vec[-i])
+                xinit = self.girsanov_scheme_half_step(xinit,du_bar,-dt,-dw,t_vec[-i])
                 
                 #add step to stochastic integral
                 girs = girs + (dw*xinit[...,[1]])/(2**0.5) + (dt * (xinit[...,[1]])**2)/4

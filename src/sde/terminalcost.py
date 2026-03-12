@@ -45,6 +45,22 @@ class TerminalCost():
         pdf = self.get_logpdf(x)
         return self.M*(pdf + self.boundary.log_pfinal(x[...,[0]],x[...,[1]]))
 
+class GirsanovMC(TerminalCost):
+    """
+    Estimate the final distribution by a Monte Carlo method
+    """
+    def __init__(self,boundaryconditions,fileloc,*_):
+        """
+
+        args:
+            boundaryconditions: class
+            filelocation : str
+        """
+        
+        TerminalCost.__init__(self,boundaryconditions,fileloc)
+        
+        
+
 class GirsanovNet(TerminalCost):
     """
     Estimate the final cost with a neural network trained on the final distribution
