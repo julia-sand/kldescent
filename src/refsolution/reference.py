@@ -146,7 +146,7 @@ class RefSolution(BaseRefSolution):
         return arr 
 
     def get_reference_timegrid(self,time=None):
-        arr = self.get_ref_data()
+        arr = self.get_ref_data(data="overdamped")
         return np.unique(arr[:,0])
         
     def get_quantity(self,time,quantity,data=None,arr=None,time_type="t2"):
@@ -174,7 +174,7 @@ class RefSolution(BaseRefSolution):
 
         ##fetch the reference data for halfbridge
         if arr is None: #default overdamped
-            arr = self.get_ref_data(data=data)  
+            arr = self.get_ref_data(data="overdamped")  
 
         if time_type=="t0":
             #multiply by eps**2 to get t2 from t0 

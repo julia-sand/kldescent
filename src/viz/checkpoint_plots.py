@@ -9,9 +9,11 @@ import numpy as np
 from ..model.nn import RhoNeuralNetwork,NeuralNetwork,load_checkpoint
 from .plots import *
 from ..sde import langevin
+from ..sde.girsanovpdf import compute_pdf
 from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
 from ..utils.getboundary import init_params_from_file
 from ..refsolution.reference import RefSolution,GaussRefSolution
+
 
 import pdb
 
@@ -35,7 +37,7 @@ def generate_mesh(x_samples,qmax=6):
     Q,P = np.meshgrid(q_init,p_init)
     return Q,P
 
-def compute_rho_girsanov(x_samples=40,integrator=None,mc_samples=64,Tf=None):
+def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=None):
     """
     Computes an estimate of the final joint distribution using girsanov theorem
     under the input drift 
@@ -43,8 +45,6 @@ def compute_rho_girsanov(x_samples=40,integrator=None,mc_samples=64,Tf=None):
     args:
         dunet : class 
             neural network approximating the drift
-        integrator : class
-            determines the method of SDE integration
         x_samples : int 
             number of space discretisation steps
         mc_samples : int
@@ -66,10 +66,16 @@ def compute_rho_girsanov(x_samples=40,integrator=None,mc_samples=64,Tf=None):
     pdf_out = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
 
     with torch.no_grad():
-        for _ in range(mc_samples):
-            pdf_out += integrator.compute_pdf(xinit.detach().clone(),Tf)
-    
-    return xinit.detach().numpy(),pdf_out.detach().numpy()/mc_samples
+        for i in range(pdf.shape[0]):
+            pdf_out[i] = torch.mean(compute_pdf(x[i,None],net,
+                                    self.boundary.sigma0,
+                                    self.boundary.params["epsilon"],
+                                    self.boundary.p_initial,
+                                    self.boundary.params["Tf"],
+                                    mc_samples,
+                                    tsteps=512))
+        #print(pdf) 
+    return xinit.detach().numpy(),pdf_out.detach().numpy()
 
 class PlotUtils():
     """
@@ -292,7 +298,7 @@ class PlotUtils():
         ax_list = get_inset_axes(ax0[0])
         
         for compute_rho_fun,label in zip([self.compute_rho_nn,compute_rho_girsanov],["girsanovnet","mc"]):
-            xs,joint_out = compute_rho_fun(x_samples=20,integrator=self.integrator)
+            xs,joint_out = compute_rho_fun(x_samples=20,boundary=self.boundary_cond,net=self.net)
 
             pinit,qmargnorm,pmargnorm,_ = compute_marginals_from_joint(xs,joint_out)
             

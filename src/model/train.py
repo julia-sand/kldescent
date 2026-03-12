@@ -9,6 +9,8 @@ from torch.nn.utils import clip_grad_norm_
 
 from tqdm import tqdm
 
+from ..sde.girsanovpdf import compute_pdf
+
 class Pretrain():
     """
     Class for training a neural network to interpolate CSV
@@ -184,8 +186,16 @@ class TrainRho():
     def generate_training_data(self,x0,integrator):
         
         with torch.no_grad():
+            yobs = torch.zeros_like(x0[...,[0]])
 
-            yobs = integrator.compute_pdf(x0)
+            for i in range(yobs.shape[0]):
+                yobs[i] = compute_pdf(x0,integrator.net,
+                                    integrator.boundary.sigma0,
+                                    integrator.boundary.params["epsilon"],
+                                    integrator.boundary.p_initial,
+                                    integrator.boundary.params["Tf"],
+                                    1,
+                                    integrator.sde_params["tsteps"])
 
         return yobs
 

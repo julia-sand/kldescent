@@ -86,15 +86,32 @@ def get_solution_in_time(cell,integrator,
              
     return np.nan_to_num(arr_out,nan=0,posinf=0,neginf=0)
 
-def compute_overdamped(boundary,save_location,bridge_type="half"):
-    
+def compute_overdamped(boundary,save_location,bridge_type="half",
+                            xnum=100,
+                            tnum=11):
+    """Compute the overdamped cell problem
+    params:
+        boundary : class
+            defines the boundary conditions
+        savelocation : str
+            location where to save csv
+        bridgetype : str 
+            determines the type of the cell problem
+        xnum : int
+            number of x values
+        tnum : int
+            number of t values
+    returns:
+        csv saved in savelocation
+    """
+
     cell = CellProblem(boundary,save_location,bridge_type=bridge_type)
     cell.iteration(integrator=mcintegrator,
-                    num_iters=20)
+                    max_iters=20)
 
     arr = get_solution_in_time(cell,integrator=mcintegrator,
-                            xnum=1000,
-                            tnum=11)
+                                                    xnum=xnum,
+                                                    tnum=tnum)
 
     arr  = zchop(arr,tol=1e-6)
     

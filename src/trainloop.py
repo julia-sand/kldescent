@@ -24,7 +24,6 @@ def train_loop_du(epoch,
         trainer.scheduler2.step(metric_.actioncost)
         metric_.lr = trainer.scheduler2.get_last_lr()[0]
 
-
         if epoch % logstep == 0:
         
             #if epoch<trainer.milestone:

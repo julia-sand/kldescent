@@ -41,7 +41,7 @@ def run():
     else:
         refsolution_ = RefSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
 
-    terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,fileloc=metrics_logger.newpath)
+    terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,fileloc=metrics_logger.newpath,filename=metrics_logger.datayaml)
     
     #intialise sde integration 
     integrator = langevin.EulerMaruyamaSDE(boundaryconditions, net=net, terminal_cost=terminal_cost)

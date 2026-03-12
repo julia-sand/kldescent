@@ -1,5 +1,6 @@
 import numpy as np
 
+import pdb
 class Perturbation():
 
     def __init__(self,boundary,overdamped_arr,ref_path):
@@ -17,15 +18,11 @@ class Perturbation():
         self.epsilon = self.boundary.params["epsilon"]
         self.Tf2 = self.Tf*(self.epsilon**2)
         
-        #self.A = self.boundary.afun()
-        #self.B = self.boundary.bfun()
-        #self.C = 2*(self.A - self.B) # (self.boundary.afun() - self.boundary.bfun())
-
         self.qaxis = np.unique(overdamped_arr[:,1])
-        #self.reference.get_quantity(0,"value",arr=self.overdamped_arr)
         self.xnum = len(self.qaxis) #int(self.overdamped_arr.shape[0]/len(self.t2vec))
 
-        self.filter_delta = 40 
+        #size of convolution filter is 5pc of the datavector. 
+        self.filter_delta = int(np.floor(self.xnum*0.05))
 
         #compute muvec for cumulants 
         self.mu_1_vec = np.zeros_like(self.t2vec)
@@ -88,7 +85,7 @@ class Perturbation():
         position using analytic expressions.
         Results are added to a csv and saved
         """
-
+        #pdb.set_trace()
         pertsol = np.c_[self.overdamped_arr, np.ones(self.xnum*len(self.t2vec)), np.ones(self.xnum*len(self.t2vec))] 
         
         for t in range(len(self.t2vec)):
@@ -169,20 +166,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
         temp = self.d_(self.apply_filter(self.v00(t2)),self.qaxis)
 
         return 2*coeff*temp
-
-    def f02_term3(self,idx,v00_arr,f00_arr):
-
-        #preallocate
-        f02_temp = np.zeros(self.xnum)
-
-        #compute gradient of V00
-        f02_temp[idx] = f00_arr*self.d_(v00_arr,self.qaxis[idx]) 
-
-        #take gradient
-        f02_temp[idx] = self.d_(f02_temp[idx],self.qaxis[idx])
-
-        return f02_temp 
-
+    
     def f02_term2(self,idx,f00_arr):
         """Compute second deriv of f00_arr"""
 
@@ -207,11 +191,12 @@ class MarginalHalfBridgePerturbation(Perturbation):
         f02_temp[idx] = self.d_(f00_arr,self.qaxis[idx]) 
 
         return f02_temp 
-
+    
+            
     def f02_new(self,t0,t2):
         """Compute the f02 correction. 
         Uses the later version with a,b functions and only f00"""
-        
+
         coeff2 = -(t0-self.Tf*(self.little_b(t0)/self.little_b(self.Tf)))
         coeff3 = (self.little_a(t0) - (self.little_a(self.Tf)*self.little_b(t0)/self.little_b(self.Tf)))
 

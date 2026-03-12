@@ -9,7 +9,7 @@ from ..utilfunctions import *
 
 class CellProblem():
 
-    def __init__(self,boundary,save_location,bridge_type):
+    def __init__(self,boundary,save_location,bridge_type,num_samples=400):
         """
         class for solving the cell problem using an iteration algorithm
 

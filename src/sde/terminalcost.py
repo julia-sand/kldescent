@@ -16,6 +16,7 @@ from .kl import kl_div
 from ..viz.distribution_plots import *
 from ..model.nn import save_nn_checkpoint
 from ..utils.logger import save_params
+from .girsanovpdf import compute_pdf
 
 class TerminalCost():
     """
@@ -26,7 +27,7 @@ class TerminalCost():
     g(q,p) = log(^P(q,p) / Pref)
     """
 
-    def __init__(self,boundaryconditions,fileloc):
+    def __init__(self,boundaryconditions,fileloc,*_):
         """
         Initialise how the terminal cost should be evaluated.    
         args:
@@ -34,32 +35,56 @@ class TerminalCost():
                 associated boundary conditions
             filelocation: str
                 filepath to results folder, for saved checkpoints
+            filename    :   str
+                file name for saving params  
         """
 
         self.boundary = boundaryconditions
         self.loc = fileloc
+        #self.datafile = filename
         self.M = self.boundary.params["weight"]
 
-    def gfun(self,x):
+    def gfun(self,x,*_):
         
-        pdf = self.get_logpdf(x)
+        pdf = torch.nan_to_num(self.get_logpdf(x),posinf=0,neginf=0,nan=0)
         return self.M*(pdf + self.boundary.log_pfinal(x[...,[0]],x[...,[1]]))
 
 class GirsanovMC(TerminalCost):
     """
     Estimate the final distribution by a Monte Carlo method
     """
-    def __init__(self,boundaryconditions,fileloc,*_):
+    def __init__(self,boundaryconditions,fileloc,filename=None,*_):
         """
-
         args:
             boundaryconditions: class
             filelocation : str
         """
         
-        TerminalCost.__init__(self,boundaryconditions,fileloc)
+        TerminalCost.__init__(self,boundaryconditions,fileloc,*_)
         
+    def update_cost_params(self,integrator,epoch):
+        """compute the loss first for this method"""
+        pass
+
+    def gfun(self,x,net,mc_samples,*_):
         
+        pdf = torch.nan_to_num(self.get_logpdf(x,net,mc_samples),posinf=0,neginf=0,nan=0)
+        return self.M*(pdf + self.boundary.log_pfinal(x[...,[0]],x[...,[1]]))
+
+    def get_logpdf(self,x,net,mc_samples):
+        
+        pdf = torch.zeros_like(x[...,[0]])    
+        for i in range(pdf.shape[0]):
+            pdf[i] = torch.mean(compute_pdf(x[i,None],net,
+                                    self.boundary.sigma0,
+                                    self.boundary.params["epsilon"],
+                                    self.boundary.p_initial,
+                                    self.boundary.params["Tf"],
+                                    mc_samples,
+                                    tsteps=512))
+        #print(pdf)
+        return torch.log(pdf)
+
 
 class GirsanovNet(TerminalCost):
     """
@@ -67,7 +92,7 @@ class GirsanovNet(TerminalCost):
     Note this is only available for full final distribution
     """
 
-    def __init__(self,boundaryconditions,fileloc,*_):
+    def __init__(self,boundaryconditions,fileloc,filename):
         """
         Initialise a neural network for learning the final distribution via Girsanov theorem 
         
@@ -83,7 +108,7 @@ class GirsanovNet(TerminalCost):
         
         self.rhonet = RhoNeuralNetwork() 
         
-        save_params(self.rhonet.params,fileloc)
+        save_params(self.rhonet.params,filename)
         
         #initialise a trainer class for rho
         self.rhotrainer = TrainRho(self.rhonet)
@@ -102,7 +127,7 @@ class GirsanovNet(TerminalCost):
         #save the checkpoint
         save_nn_checkpoint(self.rhonet,loc=self.loc+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{epoch+1}.pt")
 
-    def get_logpdf(self,x):
+    def get_logpdf(self,x,*_):
         return torch.nan_to_num(self.rhonet(x,condition="log"))
 
 class MLE(TerminalCost):
@@ -111,7 +136,7 @@ class MLE(TerminalCost):
     estimates for the mean and variance
     """
 
-    def __init__(self,boundaryconditions,fileloc,*_):
+    def __init__(self,boundaryconditions,fileloc,filename=None,*_):
         """
         Initialise placeholder parameters for estimating the final distirbution using a parametric method
 
@@ -119,7 +144,7 @@ class MLE(TerminalCost):
             boundaryconditions: class
         """
 
-        TerminalCost.__init__(self,boundaryconditions,fileloc)
+        TerminalCost.__init__(self,boundaryconditions,fileloc,*_)
 
         #initialise variables
         self.pos_mean0 = 0 
@@ -150,7 +175,7 @@ class MLE(TerminalCost):
         rho_var = self.cc0/np.sqrt(self.mom_var0*self.pos_var0)
         return -(1/(2*(1-rho_var**2)))*(((x[...,[0]]-self.pos_mean0)**2)/self.pos_var0 - 2*((x[...,[0]]-self.pos_mean0)*(x[...,[1]]-self.mom_mean0))*(self.cc0/(self.mom_var0*self.pos_var0)) + ((x[...,[1]]-self.mom_mean0)**2)/self.mom_var0)
 
-    def get_logpdf(self,x):
+    def get_logpdf(self,x,*_):
 
         return self.multivariate_U(x)
 
@@ -159,9 +184,9 @@ class Histogram(TerminalCost):
     Find the final probabilities from an estimated histogram
     """
 
-    def __init__(self,boundaryconditions,fileloc):
+    def __init__(self,boundaryconditions,fileloc,filename=None,*_):
 
-        TerminalCost.__init__(self,boundaryconditions,fileloc)
+        TerminalCost.__init__(self,boundaryconditions,fileloc,*_)
         
         #initialise blank histogram values
         self.H = None
@@ -201,13 +226,13 @@ class Histogram(TerminalCost):
         #step 2: return the correct histogram value
         return self.H[indy-1,indx-1]
 
-    def get_logpdf(self,x):
+    def get_logpdf(self,x,*_):
         pdf = torch.tensor([self.evaluate_density(x[i,:]) for i in range(len(x[:,0]))],dtype=torch.float32,requires_grad=False)
         return torch.nan_to_num(torch.log(pdf+1e-10))
 
 class NormFlow(TerminalCost):
 
-    def __init__(self,boundaryconditions,fileloc):
+    def __init__(self,boundaryconditions,fileloc,filename=None,*_):
         from ..model.normflow import RhoNormFlow
 
         TerminalCost.__init__(self,boundaryconditions,fileloc)
@@ -242,6 +267,6 @@ class NormFlow(TerminalCost):
         make_scatter_plot(plot_loc,x,self.rho.model,epoch)#,self.boundary)
         distribution_plot(plot_loc,self.rho.model,self.boundary.params["Tf"],epoch,self.boundary)
 
-    def get_logpdf(self,x):
+    def get_logpdf(self,x,*_):
         pdf = self.rho.model.log_prob(x)
         return torch.nan_to_num(pdf)     

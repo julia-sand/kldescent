@@ -251,14 +251,6 @@ class EulerMaruyamaSDE(SDEBase):
             
         return xinit
 
-    def girsanov_scheme_half_step(self,xn,du_bar,dt,dw,t):
-
-        #takes one step forward in the euler maruyama discretisation
-        #go forward one step 
-        xn[...,[1]] = xn[...,[1]] + self.boundary.sigma0*du_bar*dt + self.boundary.sigma0*dw
-        xn[...,[0]] = xn[...,[0]] + self.boundary.params["epsilon"]*xn[...,[1]]*(dt/2) 
-
-        return xn
 
     def loss_fn(self):
         """
@@ -306,64 +298,12 @@ class EulerMaruyamaSDE(SDEBase):
 
         with torch.no_grad():
             #compute terminal cost
-            gvals = self.TerminalCost.gfun(xinit.clone().detach())
-                
+            gvals = self.TerminalCost.gfun(xinit.detach().clone(),self.net,self.sde_params["testsamples"])
+
         #compute value of Lhat
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
         
         return Lhat
-    
-    def compute_pdf(self,xinit,Tf=None):
-        """
-        Computes an estimate for the final joint distribution using Girsanov theorem 
-        Does not track gradients 
-        Following 2411.08518 (see Section 3 for example). 
-
-        ====
-        Parameters
-            xinit : array
-                values of x0 on which to evaluate rho
-            Tf : float 
-                time for the plot
-        Returns: 
-            pdfout : arr
-                estimate of the pdf at time Tf at locations xinit
-        ====
-        """
-
-        num_samples = xinit.shape[0]
-
-        #set default time to final time
-        if Tf==None:
-            Tf = self.boundary.params["Tf"]
-
-        with torch.no_grad():
-
-            t_vec = self.generate_time_grid(Tf,tsteps=self.sde_params["tsteps"])#tsteps=16)
-
-            #preallocate girsanov integrals
-            girs = torch.zeros((num_samples,1),requires_grad=False,dtype=torch.float32)
-
-            for i in range(1,len(t_vec)):#self.sde_params["tsteps"]+1):
-                                
-                #get timestep
-                dt = np.abs(t_vec[-i-1]-t_vec[-i])
-                
-                dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
-            
-                #evaluate neural network approximated drift 
-                du_bar = self.net(torch.column_stack((t_vec[-i]*torch.ones((num_samples,1),dtype=torch.float32)
-                                                           ,xinit[...,[0]])))
-                
-                #one backward step of euler maruyama scheme of stochastic evolution
-                xinit = self.girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[-i])#-dt,-dw,t_vec[-i])
-                
-                #add step to stochastic integral
-                girs = girs + (dw*xinit[...,[1]])/(2**0.5) + (dt * (xinit[...,[1]])**2)/4
-                          
-            pdfout = self.boundary.p_initial(xinit[...,[0]],xinit[...,[1]])*torch.exp(-girs)
-
-        return pdfout
     
 class VerletSDE(SDEBase):
 
@@ -374,11 +314,7 @@ class VerletSDE(SDEBase):
                     sde_params=None,
                     device="cpu"):
         
-        SDEBase.__init__(self,boundary_data,
-                            terminal_cost, 
-                            net,
-                            sde_params,
-                            device)
+        SDEBase.__init__(self,boundary_data)
 
         self.TerminalCost = terminal_cost
         self.net = net 
@@ -437,15 +373,6 @@ class VerletSDE(SDEBase):
         
         return xinit
         
-    def girsanov_scheme(self,xn,du_bar,dt,dw,t):
-
-        #takes one step forward in the euler maruyama discretisation
-        #go forward one step 
-        #xn[...,[0]] = xn[...,[0]] + self.boundary.params["epsilon"]*xn[...,[1]]*(dt/2)
-        xn[...,[1]] = xn[...,[1]] + self.boundary.sigma0*du_bar*dt + self.boundary.sigma0*dw
-        xn[...,[0]] = xn[...,[0]] + self.boundary.params["epsilon"]*xn[...,[1]]*(dt/2)
-
-        return xn
 
     def loss_fn(self):
         """
@@ -503,63 +430,8 @@ class VerletSDE(SDEBase):
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
         
         return Lhat
-    
+            
 
-    def compute_pdf(self,xinit,Tf=None):
-        """
-        Computes an estimate for the final joint distribution using Girsanov theorem 
-        Does not track gradients 
-        Following 2411.08518 (see Section 3 for example). 
-
-        ====
-        Parameters
-            xinit : array
-                values of x0 on which to evaluate rho
-            Tf : float 
-                time for the plot
-        Returns: 
-            pdfout : arr
-                estimate of the pdf at time Tf at locations xinit
-        ====
-        """
-
-        num_samples = xinit.shape[0]
-
-        #set default time to final time
-        if Tf==None:
-            Tf = self.boundary.params["Tf"]
-
-        with torch.no_grad():
-
-            t_vec = self.generate_time_grid(Tf,tsteps=self.sde_params["tsteps"])#tsteps=16)
-
-            #preallocate girsanov integrals
-            girs = torch.zeros((num_samples,1),requires_grad=False,dtype=torch.float32)
-
-            for i in range(1,len(t_vec)):#self.sde_params["tsteps"]+1):
-                                
-                #get timestep
-                dt = np.abs(t_vec[-i-1]-t_vec[-i])
-                
-                dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
-                
-                #take a half step of position 
-                xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"]*xn[...,[1]]*(dt/2)
-
-                #evaluate neural network approximated drift 
-                du_bar = self.net(torch.column_stack((t_vec[-i]*torch.ones((num_samples,1),dtype=torch.float32)
-                                                           ,xinit[...,[0]])))
-                
-                #one backward step of euler maruyama scheme of stochastic evolution
-                xinit = self.girsanov_scheme_half_step(xinit,du_bar,-dt,-dw,t_vec[-i])
-                
-                #add step to stochastic integral
-                girs = girs + (dw*xinit[...,[1]])/(2**0.5) + (dt * (xinit[...,[1]])**2)/4
-                          
-            pdfout = self.boundary.p_initial(xinit[...,[0]],xinit[...,[1]])*torch.exp(-girs)
-
-        return pdfout
-        
 if __name__=="__main__":
     from src.model import nn
     from src.sde.boundary import UnderdampedHalfGaussian
