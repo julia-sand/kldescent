@@ -1,7 +1,6 @@
 import torch
 import numpy as np 
 
-from ..refsolution.reference import RefSolution
 from ..model.nn import save_nn_checkpoint
 from ..sde.kl import static_kl_divergence
 
@@ -13,7 +12,7 @@ class Metrics():
         update_metrics
     """
 
-    def __init__(self, net, integrator, logger, refsol=None):
+    def __init__(self, net, integrator, logger, benchmark=None):
         """
         Initialises class parameters
         args:
@@ -31,10 +30,10 @@ class Metrics():
 
         self.logger = logger
         
-        if refsol is not None:
+        if benchmark is not None:
 
-            self.reference_sol = refsol #RefSolution(integrator.boundary,folder_name=self.logger.newpath)
-            self.refnet = self.reference_sol.duref_net 
+            self.benchmark = benchmark 
+            self.benchmarknet = self.benchmark.du_net_benchmark 
         else: 
             pass
             #self.refnet = None 
@@ -48,7 +47,6 @@ class Metrics():
         """
         Function for computing metrics
             - checks for nan loss
-            TODO (fix logic)- updates the metrics for final distribution, gaussian reference. 
         args:
             epoch:
                 pass current epoch to use in logging loss
@@ -68,9 +66,9 @@ class Metrics():
         
             with torch.no_grad():
                 
-                kl_dynamic,xinit,xref = self.integrator.compute_metrics(self.reference_sol)
+                kl_dynamic,xinit,xref = self.integrator.compute_metrics(self.benchmark)
 
-                kl_static_from_ref,kl_static = static_kl_divergence(xinit,xref,self.integrator.boundary)
+                kl_static_from_ref,kl_static = 0,0#static_kl_divergence(xinit,xref,self.integrator.boundary)
                 self.actioncost = kl_dynamic + self.integrator.boundary.params["weight"]*kl_static_from_ref
 
                 self.logger.write_data_row(epoch,

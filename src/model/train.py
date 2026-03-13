@@ -20,14 +20,14 @@ class Pretrain():
     """
     
     #define the training parameters and loop for any pretraining. 
-    def __init__(self,refsol=None,path_to_pretrain=None):
+    def __init__(self,benchmark=None,path_to_pretrain=None):
         
         
         if path_to_pretrain is None:
-            self.refsol = refsol 
-            self.path = self.refsol.perturb_underdamped_loc #overdamped_loc        
+            self.benchmark = benchmark 
+            self.path = self.benchmark.perturb_underdamped_loc #overdamped_loc        
         else:
-            self.refsol = None  #overwrites the reference solution and learn straight from the csv
+            self.benchmark = None  #overwrites the reference solution and learn straight from the csv
             self.path = path_to_pretrain 
 
         #set defaults of training process
@@ -75,9 +75,9 @@ class Pretrain():
                 left hand side of (**) 
         """
 
-        if self.refsol is not None:
-            X[:,0] /= self.refsol.boundary.params["epsilon"]**2 #use t0 
-            y *= (-(self.refsol.boundary.params["epsilon"]/(2**0.5)))
+        if self.benchmark is not None:
+            X[:,0] /= self.benchmark.boundary.params["epsilon"]**2 #use t0 
+            y *= (-(self.benchmark.boundary.params["epsilon"]/(2**0.5)))
 
         return X,y
 
@@ -177,7 +177,7 @@ class TrainRho():
 
         self.clip = 0.01 #gradient clipping
 
-        self.rho_epochs = 2048 #total number of training epochs
+        self.rho_epochs = 3 #total number of training epochs
         self.milestone = 512 #how often to decay learning rate
         self.rho_batch = 128 #size of batch 
 
@@ -196,7 +196,6 @@ class TrainRho():
                                     integrator.boundary.params["Tf"],
                                     1,
                                     integrator.sde_params["tsteps"])
-
         return yobs
 
     def train_step(self,optimiser,integrator):  
@@ -259,4 +258,4 @@ class TrainRho():
         self.rhonet.eval() #return neural net into eval mode
 
 if __name__=="__main__":
-    Pretrain(path="src/refsolution/UnderdampedHalfNet/refsol.csv").get_pretraining_data()
+    Pretrain(path="src/refsolution/UnderdampedHalfNet/benchmark.csv").get_pretraining_data()

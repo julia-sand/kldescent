@@ -1,4 +1,4 @@
-#reference solution for gaussian full bridge
+#benchmark solution for gaussian full bridge
 import numpy as np 
 from ..utilfunctions import *
 

@@ -153,7 +153,7 @@ class PlotFuns():
             label="Reference")
 
   #@profile
-  def plot_drift(self,times,net_vals,ref_vals):#refsol=None):
+  def plot_drift(self,times,net_vals,benchmark_vals):
 
     fig,ax = make_fig_subplots(nrows=1,ncols=len(times),squeeze=True)
     #ax = plt.subplots()
@@ -169,10 +169,10 @@ class PlotFuns():
       ax[t].set_ylabel(r"$\mathbb{U}$")
       #ax[t].set_ylim((-5,5))
       
-      if ref_vals is not None:
+      if benchmark_vals is not None:
         
         ax[t].plot(np.linspace(-self.qmax,self.qmax,1000),
-            ref_vals[t],#self.evaluate_net_output(refsol.duref_net,times[t]),
+            benchmark_vals[t],
             label="Benchmark N.N.")
       
       else:
@@ -199,7 +199,7 @@ class PlotFuns():
     return kde.score_samples(np.linspace(-self.qmax,self.qmax,num =1000).reshape(-1,1))
 
   ##scatter plot of final distribution 
-  def marginal_distribution(self,ax,xs,plottime=None,refsol=None):
+  def marginal_distribution(self,ax,xs,plottime=None,benchmark=None):
     """
     Function that plots the an estimate of the marginal densities
     computed by sampled points
@@ -232,11 +232,9 @@ class PlotFuns():
     ax_pos.set_xlim((-self.qmax,self.qmax))
     
     #add perturbative analytic predictions distributions to plots if available
-    if refsol is not None:
-      xref,posref = refsol.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped",time_type="t0")   
+    if benchmark is not None:
+      xref,posref = benchmark.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped",time_type="t0")   
       ax_pos.plot(xref,posref,color="green",alpha=0.5,label="Benchmark Prediction")
-      #xref,posref = refsol.get_quantity(plottime,"marginal", data="overdamped",time_type="t0")   
-      #ax_pos.plot(xref,posref,color="yellow",alpha=0.5,label="Overdamped boundary conditions",zorder=10000)
       
     #set iteration properties
     colors = [self.c1,"orange"]
@@ -270,13 +268,13 @@ class PlotFuns():
     
     return 
   
-  def make_marginal_distribution_fig(self,xvals,plottime,refsol=None):
+  def make_marginal_distribution_fig(self,xvals,plottime,benchmark=None):
 
     #make figure object
     fig = plt.figure(figsize=(15,8))
     ax0 = plt.subplot(1,1,1)
 
-    self.marginal_distribution(ax0,xvals,plottime,refsol)
+    self.marginal_distribution(ax0,xvals,plottime,benchmark)
     
     h,l = get_all_subplot_handles_labels(fig)
 
@@ -402,7 +400,7 @@ class PlotFuns():
     return axs 
 
   def plot_cumulants(self,t_vec,cumulants,labels,test_samples,
-                      refsol=None,
+                      benchmark=None,
                       add_free_diffusion=True):
     """
     Plots the cumulants which are computed by the evolutions
@@ -416,7 +414,7 @@ class PlotFuns():
         list of labels to show in the legend for each of the cumulants plotted
       test_samples : int
         number of samples used for computing estimates of the cumulants. Computes error bar estimates 
-      refsol : class
+      benchmark : class
         include preturbative predictions for cumulants
 
     returns:
@@ -445,9 +443,9 @@ class PlotFuns():
       if add_free_diffusion:
         self.add_freediffusion_cumulants_subplot(ax,cumulant[1],t_vec,cumulant_vec) 
 
-      if refsol is not None:
+      if benchmark is not None:
         try: 
-          t_vectemp, cumulant_temp = refsol.get_perturbative_cumulant(cumulant[1])
+          t_vectemp, cumulant_temp = benchmark.get_perturbative_cumulant(cumulant[1])
           ax.plot(t_vectemp, cumulant_temp,label="Benchmark")
         except FileNotFoundError:
           pass 

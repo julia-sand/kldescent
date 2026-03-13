@@ -10,7 +10,7 @@ import src.sde.boundary as boundaries
 from src.utils import *
 from src.viz.loss_plots import plot_loss_metrics
 import src.model.pretrain as pretrain
-from src.refsolution.reference import *
+from src.benchmark.benchmarksol import *
 from src.trainloop import train_loop_du
 
 
@@ -37,19 +37,19 @@ def run():
     net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
     
     if "Gauss" in args["boundary"]:
-        refsolution_ = GaussRefSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
+        benchmark_ = GaussBenchmarkSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
     else:
-        refsolution_ = RefSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
+        benchmark_ = PerturbativeBenchmarkSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
 
     terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,fileloc=metrics_logger.newpath,filename=metrics_logger.datayaml)
     
     #intialise sde integration 
     integrator = langevin.EulerMaruyamaSDE(boundaryconditions, net=net, terminal_cost=terminal_cost)
     
-    #initialise trainer & ref solution computation
+    #initialise trainer
     trainer = train.Train(net,integrator) 
 
-    metric_ = metrics.Metrics(net,integrator, metrics_logger,refsol=refsolution_)    
+    metric_ = metrics.Metrics(net,integrator, metrics_logger,benchmark=benchmark_)    
 
     #save the parameters
     for params in [args,net.params,integrator.sde_params]:
@@ -66,7 +66,7 @@ def run():
                         terminal_cost,
                         integrator,
                         trainer,
-                        refsolution_,
+                        benchmark_,
                         logstep=args["logstep"])
         
 

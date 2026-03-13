@@ -136,7 +136,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
         args:
             boundary : class
                 determines boundary conditions and parameters
-            reference : class
+            benchmark : class
                 sets the input and output locations
         """
 
@@ -285,7 +285,7 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
         args:
             boundary : class
                 determines boundary conditions and parameters
-            reference : class
+            benchmark : class
                 sets the input and output locations
         """
 
@@ -336,11 +336,11 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
         return 0
 
 if __name__=="__main__":
-    from ..reference import RefSolution
+    from ..benchmark import PerturbativeBenchmarkSolution
     from ...sde.boundary import *
     
     boundary = UnderdampedLandauer()
-    reference = RefSolution(boundary=boundary,folder_name="results_temp6")
-    pertsol = MarginalHalfBridgePerturbation(boundary,reference)
+    benchmark = PerturbativeBenchmarkSolution(boundary=boundary,folder_name="results_temp6")
+    pertsol = MarginalHalfBridgePerturbation(boundary,benchmark)
     pertsol.save_perturbative()
     pertsol.save_perturbative_cumulants()

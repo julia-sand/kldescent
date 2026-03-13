@@ -48,12 +48,16 @@ def compute_pdf(x0,
     """
 
     with torch.no_grad():
-        xinit = torch.broadcast_to(x0,(mc_samples,2)).clone()
+        
+        if mc_samples ==1:
+            xinit = x0.clone()
+        else:
+            xinit = torch.broadcast_to(x0,(mc_samples,2)).clone()
 
         t_vec = torch.linspace(0,Tf,tsteps,requires_grad=False,dtype=torch.float32)#self.generate_time_grid(Tf,tsteps)#tsteps=16)
 
         #preallocate girsanov integrals
-        girs = torch.zeros((mc_samples,1),requires_grad=False,dtype=torch.float32)
+        girs = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
 
         for i in range(1,len(t_vec)):#self.sde_params["tsteps"]+1):
                             
@@ -63,7 +67,7 @@ def compute_pdf(x0,
             dw = (dt**0.5)*torch.randn_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
 
             #evaluate neural network approximated drift 
-            du_bar = net(torch.column_stack((t_vec[-i]*torch.ones((mc_samples,1),dtype=torch.float32)
+            du_bar = net(torch.column_stack((t_vec[-i]*torch.ones_like(xinit,dtype=torch.float32)
                                                         ,xinit[...,[0]])))
             
             #one backward step of euler maruyama scheme of stochastic evolution

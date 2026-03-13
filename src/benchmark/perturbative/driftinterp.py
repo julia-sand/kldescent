@@ -14,21 +14,20 @@ from ...model.nn import save_nn_checkpoint,load_checkpoint
 from ...model.pretrain import run_pretrain
 
 
-def perturbative_du_interp(reference_sol,mlp_net):
+def perturbative_du_interp(benchmark,mlp_net):
     """Trains a neural network to approximate the perturbatively 
-    estimated drift. If a checkpoint is included in the reference solution
+    estimated drift. If a checkpoint is alread in the benchmark solution
     folder, this is loaded instead of training.
 
     args: 
-        boundary : class
-            class for specifying the boundary conditions and hence the reference solution
-        reference_sol : class
-            controls how the reference solution is saved
+        benchmark : class
+            find the benchmark solution
+        mlpnet : class
+            neural network
     """
 
     try:
-        #mlp_net.load_state_dict(torch.load(reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt", weights_only=True))
-        load_checkpoint(mlp_net,reference_sol.folder_name+f"/perturbative_underdamped_drift.pt")
+        load_checkpoint(mlp_net,benchmark.folder_name+f"/perturbative_underdamped_drift.pt")
         print("Checkpoint for perturbative Solution found and loaded")
     
     except BaseException:
@@ -37,14 +36,14 @@ def perturbative_du_interp(reference_sol,mlp_net):
         #It happens when the checkpoint file could not be loaded
         #because checkpoint doesnt exist or is incompatible with initialised network
         
-        #train it to learn the csv in the reference solution folder
-        train_and_save_perturbative_du(reference_sol,mlp_net)
+        #train it to learn the csv in the benchmark solution folder
+        train_and_save_perturbative_du(benchmark,mlp_net)
     
     return 
 
-def train_and_save_perturbative_du(reference_sol,mlp_net):
-    run_pretrain(mlp_net,reference_sol)
-    save_nn_checkpoint(mlp_net,loc=reference_sol.get_ref_path()+f"/perturbative_underdamped_drift.pt")
+def train_and_save_perturbative_du(benchmark,mlp_net):
+    run_pretrain(mlp_net,benchmark)
+    save_nn_checkpoint(mlp_net,loc=benchmark.get_benchmark_path()+f"/perturbative_underdamped_drift.pt")
     
 
 def contour(plotter,net):
@@ -57,9 +56,6 @@ def contour(plotter,net):
             trained neural net estimating a drift. 
     """
     
-    #from ...sde.langevin import *
-
-    #plotter = PlotFuns(boundary,referencesol=reference_sol)
     integrator1 = EulerMaruyamaSDE(boundary,net=net)
 
     times = [0,2.5,5]
@@ -79,13 +75,13 @@ def contour(plotter,net):
     plotter.plot_drift(times = [0,2.5,5],net=net)
     
 if __name__=="__main__":
-    from ..reference import *
+    from ..benchmark import *
     from ...sde.boundary import *
     
     boundary = UnderdampedLandauer()
 
-    #get the reference solution folder
-    reference_sol = RefSolution(boundary,folder="results_temp2")
+    #get the benchmark solution folder
+    benchmark = PerturbativeBenchmarkSolution(boundary,folder="results_temp2")
     
-    mlp_net = perturbative_du_interp(reference_sol)
-    contour(boundary,reference_sol,mlp_net)
+    mlp_net = perturbative_du_interp(benchmark)
+    contour(boundary,benchmark,mlp_net)

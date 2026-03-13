@@ -48,13 +48,6 @@ class CellProblem():
 
         #####################################
         
-        #only initialise when using gaussian boundaries
-        if "Gauss" in str(self.boundary.__class__.__name__):
-            self.refsol = Gaussian_Overdamped_Ref(boundary,self.A,self.B)
-            #
-        else:            
-            pass #self.qmax = 6
-
         self.xhatphi = self.q 
         
         #preallocate arrays
@@ -207,11 +200,6 @@ class CellProblem():
     def plot_factors_HATPHI(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
 
         plt.scatter(xpsi,hatphiT, label="t=T")
-        try: #plot known solution for gaussians
-            plt.plot(self.q,normalise(self.q,self.refsol.hatphi_t(self.q,self.Tf2)),linestyle="dashed",color="blue",alpha=0.5)
-            plt.plot(self.q,normalise(self.q,self.refsol.hatphi_t(self.q,0)),linestyle="dashed",color="blue",alpha=0.5)
-        except:
-            pass
 
         plt.legend()
         plt.savefig(self.save_location+f"/factors0_hatphi_{iters}.png")
@@ -222,12 +210,6 @@ class CellProblem():
         
         plt.scatter(xhatphi,psi0, label="t=0",zorder=100)
         plt.scatter(xpsi,psiT, label="t=T",zorder=100)
-
-        try: #plot known solution for gaussians
-            plt.plot(self.q,normalise(self.q,self.refsol.phi_t(self.q,self.Tf2)),linestyle="dashed",color="blue",alpha=0.5)
-            plt.plot(self.q,normalise(self.q,self.refsol.phi_t(self.q,0)),linestyle="dashed",color="orange",alpha=0.5)
-        except:
-            pass  
 
         plt.legend()
         plt.savefig(self.save_location+f"/factors_phi_{iters}.png")

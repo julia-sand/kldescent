@@ -4,7 +4,7 @@ import torch
 
 from src.model.train import Pretrain
 
-def run_pretrain(net,refsol=None,
+def run_pretrain(net,benchmark=None,
                     path_to_pretrain=None):
     """
     Trains a neural network to approximate a numerical function given by values in a csv
@@ -12,18 +12,18 @@ def run_pretrain(net,refsol=None,
     args:
         net:
             neural network to be trained
-        refsol : class 
+        benchmark : class 
             sets the path to pretain as the location of the reference solution csv 
         path_to_pretrain : csv
             path from current working directory to a CSV containing data to be used in the pretraining. The data should have a csv format 
-            where the first two entries are the input and the last column should contian the trained values. See RefSolution folder for some examples.  
+            where the first two entries are the input and the last column should contian the trained values. See PerturbativeBenchmarkSolution folder for some examples.  
     returns:
         none
     """
 
     print("Starting pre-training")
     
-    pretrainer = Pretrain(refsol=refsol,path_to_pretrain=path_to_pretrain)
+    pretrainer = Pretrain(benchmark=benchmark,path_to_pretrain=path_to_pretrain)
     pretrainer.pretraining(net)
     
     print("Pretraining completed successfully.")

@@ -149,7 +149,7 @@ def joint_distributions_scatter_panel(
                                     ax_qmarginal,
                                     joint_out,
                                     xs,time,vmax=0.5,
-                                    refsol=None):
+                                    benchmark=None):
     """
     Plots one panel of the joint distribution, where the 
     center shows the joint and marginals are estimated
@@ -172,9 +172,9 @@ def joint_distributions_scatter_panel(
     plot_marginal_joint(ax_qmarginal,p_init_out,qmarg_norm)
     plot_marginal_joint(ax_pmarginal,pmarg_norm,p_init_out)
 
-    if refsol is not None:
+    if benchmark is not None:
         #plot marginals
-        x,ptx = refsol.get_quantity(np.round(time,6),quantity = "underdamped marginal",data="perturbative underdamped",time_type="t0")
+        x,ptx = benchmark.get_quantity(np.round(time,6),quantity = "underdamped marginal",data="perturbative underdamped",time_type="t0")
         ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Benchmark Evolved")
 
     #plot joint distribution
@@ -195,14 +195,14 @@ def make_colourbar(fig,vmax):
 
     cb.ax.set_xlabel("Joint Distribution")
 
-def plot_joint_panel(ax,time,jointout,xout,boundary,refsol=None):
+def plot_joint_panel(ax,time,jointout,xout,boundary,benchmark=None):
     ax, ax_pmarginal,ax_qmarginal = scatter_panel_layout(ax,time,boundary)
 
     joint_distributions_scatter_panel(ax,
                                             ax_pmarginal,
                                             ax_qmarginal,
                                             jointout,
-                                            xout,time,vmax=0.5,refsol=refsol)
+                                            xout,time,vmax=0.5,benchmark=benchmark)
 
 
 def make_contour_plot(plotutils):
@@ -218,7 +218,7 @@ def make_contour_plot(plotutils):
                                                 ax_qmarginal,
                                                 jointout,
                                                 xout,
-                                                time=plotutils.params["Tf"],vmax=0.5,refsol=plotutils.referencesol)
+                                                time=plotutils.params["Tf"],vmax=0.5,benchmark=plotutils.benchmark)
     
     h,l = get_all_subplot_handles_labels(fig)
     make_legend(fig,h,l)
@@ -238,7 +238,7 @@ def make_contour_plot2(plotutils,plottimes = [0,1,2,3,4,5]):
 
         xout,jointout = compute_rho_girsanov(integrator=plotutils.integrator,x_samples=10,mc_samples=plotutils.mc_samples,Tf=plottimes[i])
 
-        plot_joint_panel(axs[i],plottimes[i],jointout,xout,boundary= plotutils.boundary_cond,refsol=plotutils.referencesol)
+        plot_joint_panel(axs[i],plottimes[i],jointout,xout,boundary= plotutils.boundary_cond,benchmark=plotutils.referencesol)
     
     fig.subplots_adjust(hspace=1.1,wspace=1,bottom=0.08)
     

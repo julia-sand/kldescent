@@ -9,10 +9,9 @@ from .utilfunctions import *
 from .perturbative.driftinterp import perturbative_du_interp,train_and_save_perturbative_du
 from .perturbative.corrections import MarginalHalfBridgePerturbation,HalfBridgePerturbation
 from .overdamped.sol import compute_overdamped
-from .overdamped.gauss import Gaussian_Overdamped_Ref
 from .gaussian import GaussBVP
 
-class BaseRefSolution():
+class BaseBenchmarkSolution():
 
     def __init__(self, bridge_type="half", boundary=None, folder_name=None):
         
@@ -25,10 +24,10 @@ class BaseRefSolution():
                 
         os.makedirs(self.folder_name,exist_ok=True)
 
-        #sets reference file locations
+        #sets benchmark file locations
         self.overdamped_loc = self.folder_name+"/overdamped.csv"
         self.perturb_underdamped_loc = self.folder_name+"/perturbative_underdamped.csv"
-        self.ref_loc = self.folder_name+"/refsol.csv"
+        self.ref_loc = self.folder_name+"/benchmark.csv"
         self.perturbative_cumulants_loc = self.folder_name+"/perturbative_cumulants.csv"
 
     def get_perturbative_calculations(self,bridge_type,overdamped_arr):
@@ -45,32 +44,33 @@ class BaseRefSolution():
         elif bridge_type == "half":  #update this to compute the half bridge solution
             pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name)
             
-            #pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name)
-        
         else: 
         
             pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name)
 
         return pertsol
 
-class RefSolution(BaseRefSolution):
-    """
+class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
+    r"""
     Class used for organising the location
-    for the reference solutions used in plotting
+    for the benchmark solutions computed using perturbation theory
     
     Methods:
-        get_reference_timegrid()
-            Fetches time discretisation from reference solution
-        get_reference_data()
-            fetches reference data found in ref sol path
-        du_ref()
-            reference drift for integration
+        initialise_net()
+        get_benchmark_path()
+        get_timegrid()
+            Fetches time discretisation from benchmark solution
+        get_benchmark_data()
+            fetches benchmark data found in benchmark sol path
+        get_quantity()
+        get_perturbative_cumulants_array()
+        get_perturbative_cumulant()
     """
 
     def __init__(self, bridge_type="half", boundary=None, folder_name=None):
         r"""
-        Initialises parameters and directs to the reference solutions. 
-        If no reference solution is available in the folder, then computes the reference solution
+        Initialises parameters and directs to the benchmark solutions. 
+        If no benchmark solution is available in the folder, then computes the benchmark solution
         args:
             bridge_type : str
                 type of bridge. Choose from "marginal" or "half". 
@@ -80,33 +80,33 @@ class RefSolution(BaseRefSolution):
                 if no boundary condition specified, the folder can be set manually using this parameter. 
         """
         
-        BaseRefSolution.__init__(self,bridge_type,boundary,folder_name)
+        BaseBenchmarkSolution.__init__(self,bridge_type,boundary,folder_name)
         self.initialise_net(bridge_type)
 
     def initialise_net(self,bridge_type):
 
         #initialise a simple neural net to approximate the drift 
-        self.duref_net = NeuralNetwork(self.boundary) #MLP()
+        self.du_net_benchmark = NeuralNetwork(self.boundary) #MLP()
 
         #get perturbative sol 
         try:
             #compute corrections
-            perturbative_du_interp(self,self.duref_net)
+            perturbative_du_interp(self,self.du_net_benchmark)
         
         except FileNotFoundError: #no csvs available to train from
 
             try: 
                 #try to fetch overdamped results
-                overdamped_arr = self.get_ref_data(data="overdamped")
+                overdamped_arr = self.get_benchmark_data(data="overdamped")
 
             except FileNotFoundError:
                 print("Overdamped results not available. Solving cell problem...")
 
-                #compute overdamped ref solution
-                compute_overdamped(self.boundary,self.get_ref_path(),bridge_type=bridge_type)
+                #compute overdamped solution
+                compute_overdamped(self.boundary,self.get_benchmark_path(),bridge_type=bridge_type)
 
                 print("Cell problem completed.")
-                overdamped_arr = self.get_ref_data(data="overdamped")
+                overdamped_arr = self.get_benchmark_data(data="overdamped")
 
             print("Perturbative results not available. Computing corrections...")
 
@@ -122,17 +122,17 @@ class RefSolution(BaseRefSolution):
             pertsol.save_perturbative_cumulants()
             print("Perturbative Results saved.")
                 
-            train_and_save_perturbative_du(self,self.duref_net)
+            train_and_save_perturbative_du(self,self.du_net_benchmark)
     
-        self.duref_net.eval()
+        self.du_net_benchmark.eval()
 
-    def get_ref_path(self):
-        """return the folder where the reference solution files are"""
+    def get_benchmark_path(self):
+        """return the folder where the benchmark solution files are"""
 
         return self.folder_name # os.path.dirname(__file__) + "/" + self.folder_name
     
-    def get_ref_data(self,data=None):
-        """Return an array for reference solution"""
+    def get_benchmark_data(self,data=None):
+        """Return an array for benchmark solution"""
         
         if data == "overdamped":
             arr = np.loadtxt(open(self.overdamped_loc),
@@ -145,13 +145,13 @@ class RefSolution(BaseRefSolution):
                         delimiter=",",skiprows=1) 
         return arr 
 
-    def get_reference_timegrid(self,time=None):
-        arr = self.get_ref_data(data="overdamped")
+    def get_timegrid(self,time=None):
+        arr = self.get_benchmark_data(data="overdamped")
         return np.unique(arr[:,0])
         
     def get_quantity(self,time,quantity,data=None,arr=None,time_type="t2"):
         """
-        Get quantities to plot for the reference solution 
+        Get quantities to plot for the benchmark solution 
         args:
             time : float
                 the time to lookup the data
@@ -172,15 +172,14 @@ class RefSolution(BaseRefSolution):
                 specified quantity evaluated at points x, with shape (n,)
         """
 
-        ##fetch the reference data for halfbridge
         if arr is None: #default overdamped
-            arr = self.get_ref_data(data="overdamped")  
+            arr = self.get_benchmark_data(data="overdamped")  
 
         if time_type=="t0":
             #multiply by eps**2 to get t2 from t0 
             time *= self.boundary.params["epsilon"]**2
 
-        ##fetch the reference data approximation data
+        ##fetch the approximation data
         arrtemp = arr[np.where(arr[:,0]==np.round(time,6))] 
         arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
 
@@ -234,20 +233,31 @@ class RefSolution(BaseRefSolution):
         return np.squeeze(arr[:,0]),np.squeeze(arr[:,1])
 
 
-class GaussRefSolution(BaseRefSolution):
-    """Compile the gaussian versions of the reference solutions"""
+class GaussBenchmarkSolution(BaseBenchmarkSolution):
+    r"""Compile the gaussian versions of the benchmark solutions
+    Benchmark solution is calculated as the solution of the first order 
+    differential equations
+
+    Methods
+        solve_bvp_gaussian()
+        get_underdamped_drift_array()
+        get_drift_gaussian()
+        get_underdamped_cumulants_array()
+        get_timegrid()
+        get_perturbative_cumulant()
+        du_benchmark()
+        get_quantity()
+    """
 
     def __init__(self,bridge_type="half",boundary=None,folder_name=None):   
         
-        BaseRefSolution.__init__(self,bridge_type="half",boundary=boundary,folder_name=folder_name)
+        BaseBenchmarkSolution.__init__(self,bridge_type="half",boundary=boundary,folder_name=folder_name)
         
-        #only for gaussian
-        #self.refsol_phi = Gaussian_Overdamped_Ref(self.boundary)
-
+        
         #set different filename for underdamped cumulants 
         self.underdamped_cumulants_loc = self.folder_name+"/underdamped_cumulants.csv"
         self.underdamped_loc = self.folder_name+"/underdamped.csv"
-        self.duref_net = None
+        self.du_net_benchmark = None
 
         #set the bridge type
         self.bridge_type = bridge_type
@@ -276,13 +286,13 @@ class GaussRefSolution(BaseRefSolution):
             arr = np.loadtxt(open(self.underdamped_loc),
                         delimiter=",",skiprows=1,usecols=(0,-1)) 
         except FileNotFoundError:
-            print("Reference solution not found. Integrating First order system...")
+            print("Benchmark solution not found. Integrating First order system...")
             self.solve_bvp_gaussian()
             arr = np.loadtxt(open(self.underdamped_loc),
                         delimiter=",",skiprows=1,usecols=(0,-1)) 
         return arr
 
-    def get_ref_drift_gaussian(self,time):
+    def get_drift_gaussian(self,time):
         """Return linear coefficient of gaussian ref drift"""
         
         arr = self.get_underdamped_drift_array()
@@ -303,14 +313,14 @@ class GaussRefSolution(BaseRefSolution):
                         delimiter=",",skiprows=1,usecols=idx) 
         
         except FileNotFoundError:
-            print("Reference solution not found. Integrating First order system...")
+            print("Benchmark solution not found. Integrating First order system...")
             self.solve_bvp_gaussian()
             arr = np.loadtxt(open(self.underdamped_loc),
                         delimiter=",",skiprows=1,usecols=idx) 
         
         return arr
         
-    def get_reference_timegrid(self):
+    def get_timegrid(self):
         arr = self.get_underdamped_cumulants_array(idx = 0)
         return np.squeeze(arr)
 
@@ -344,10 +354,10 @@ class GaussRefSolution(BaseRefSolution):
         
         return np.squeeze(arr[:,0]),np.squeeze(arr[:,1])
        
-    def du_ref(self,t,q):
+    def du_benchmark(self,t,q):
         """Return drift for t,q coordinate"""
 
-        v1 = self.get_ref_drift_gaussian(t)
+        v1 = self.get_drift_gaussian(t)
         try:
             return np.squeeze(q*v1) #+ v0
         except: #return zeros
@@ -356,7 +366,7 @@ class GaussRefSolution(BaseRefSolution):
  
     def get_quantity(self,time,quantity,data=None,arr=None,time_type="t0"):
         """
-        Get quantities to plot for the reference solution 
+        Get quantities to plot for the benchmark solution 
         args:
             time : float
                 the time to lookup the data
@@ -377,10 +387,6 @@ class GaussRefSolution(BaseRefSolution):
                 specified quantity evaluated at points x, with shape (n,)
         """
 
-        ##fetch the reference data for halfbridge
-        #if arr is None: #default overdamped
-        #    arr = self.get_ref_data(data=data)  
-
         qtemp = np.linspace(-6,6,1000)
 
         if quantity =="value":
@@ -390,7 +396,7 @@ class GaussRefSolution(BaseRefSolution):
             return qtemp,np.zeros_like(qtemp)
 
         elif quantity =="underdamped drift":
-            return qtemp,self.du_ref(time,qtemp)
+            return qtemp,self.du_benchmark(time,qtemp)
 
         elif quantity =="underdamped marginal":
             #arr_ = self.get_underdamped_cumulants_array()
@@ -403,7 +409,7 @@ class GaussRefSolution(BaseRefSolution):
         
         #return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx]) #((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
 
-def plot_data(reference_,quantity,data):
+def plot_data(benchmark_,quantity,data):
     
     times = [0,0.06,0.12,0.2]
 
@@ -412,18 +418,18 @@ def plot_data(reference_,quantity,data):
     fig.set_figwidth(25)
 
     for time in enumerate(times):
-        q, ptq = reference_.get_quantity(time[1], quantity, data=data)
+        q, ptq = benchmark_.get_quantity(time[1], quantity, data=data)
         axs[time[0]].plot(q,ptq)
         axs[time[0]].set_title(f"t={time[1]}")
         
     fig.tight_layout()
 
-    fig.savefig(reference_.folder_name+f"/{data}_{quantity}.png",bbox_inches="tight")        
+    fig.savefig(benchmark_.folder_name+f"/{data}_{quantity}.png",bbox_inches="tight")        
 
 if __name__=="__main__":
     import matplotlib.pyplot as plt
     boundary = UnderdampedLandauer()
-    reference_ = RefSolution(boundary)
-    plot_data(reference_,quantity="value",data="overdamped")
-    plot_data(reference_,quantity="marginal",data="overdamped")
-    plot_data(reference_,quantity="underdamped drift",data="perturbative underdamped")
+    benchmark_ = PerturbativeBenchmarkSolution(boundary)
+    plot_data(benchmark_,quantity="value",data="overdamped")
+    plot_data(benchmark_,quantity="marginal",data="overdamped")
+    plot_data(benchmark_,quantity="underdamped drift",data="perturbative underdamped")

@@ -53,15 +53,15 @@ class SDEBase():
                                               np.correlate(temp[...,0],temp[...,1])[0]/(len(temp[...,0]))]]),axis=0)#cross corr
 
     #@profile
-    def compute_metrics(self,reference_sol=None):
+    def compute_metrics(self,benchmark=None):
         """
         Computes sample evolutions of the dynamics and saves the metrics for 
         recording the training process
 
         ====
         Parameters:
-            reference_sol : class
-                reference_solution 
+            benchmark : class
+                benchmark 
         Returns:
             kldyn : float
                 Dynamic KL divergence computed along trajectories. 
@@ -78,10 +78,10 @@ class SDEBase():
 
             self.net.eval()
                   
-            if reference_sol.duref_net is not None:
+            if benchmark.du_net_benchmark is not None:
                 t_vec = self.generate_time_grid() #use random time grid
             else: 
-                t_vec = reference_sol.get_reference_timegrid() #use fixed times from csv
+                t_vec = benchmark.get_timegrid() #use fixed times from csv
                             
             #initialise x values as samples from assigned initial distribution
             xinit = torch.tensor(self.boundary.generate_samples(self.testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
@@ -95,7 +95,7 @@ class SDEBase():
             
                 xinit,du_bar = self.integration_step(xinit,dt,t_vec[i])
         
-                xinit_ref = self.reference_integration_step(xinit_ref,dt,t_vec[i],reference_sol)
+                xinit_ref = self.benchmark_integration_step(xinit_ref,dt,t_vec[i],benchmark)
                 
                 kldyn = kldyn + dt*(du_bar**2)
             
@@ -147,7 +147,7 @@ class SDEBase():
          
         return xinit
 
-    def compute_sde_cumulants(self,reference_sol=None,mcsamples=None):
+    def compute_sde_cumulants(self,benchmark=None,mcsamples=None):
         """
         Compute the evolution of the SDE while saving cumulants 
 
@@ -173,10 +173,10 @@ class SDEBase():
         if mcsamples is None: #default to test samples
             mcsamples = self.sde_params["testsamples"]
 
-        if reference_sol.duref_net is not None:
+        if benchmark.du_net_benchmark is not None:
             t_vec = self.generate_time_grid()
         else:
-            t_vec = reference_sol.get_reference_timegrid()
+            t_vec = benchmark.get_timegrid()
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples(mcsamples,"initial"),requires_grad=False,dtype=torch.float32)
@@ -194,7 +194,7 @@ class SDEBase():
                
                 xinit,du_bar = self.integration_step(xinit,dt,t_vec[i])
         
-                xref = self.reference_integration_step(xref,dt,t_vec[i],reference_sol)
+                xref = self.benchmark_integration_step(xref,dt,t_vec[i],benchmark)
                 
                 cumulants_nn = self.save_cumulants(cumulants_nn,xinit.numpy())
                 cumulants_ref = self.save_cumulants(cumulants_ref,xref.numpy())
@@ -233,15 +233,15 @@ class EulerMaruyamaSDE(SDEBase):
         return xinit, du 
 
     @torch.no_grad()
-    def reference_integration_step(self,xinit,dt,t,reference_sol):
+    def benchmark_integration_step(self,xinit,dt,t,benchmark):
         
         dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
 
-        if reference_sol.duref_net is not None:
-            du = reference_sol.duref_net(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
+        if benchmark.du_net_benchmark is not None:
+            du = benchmark.du_net_benchmark(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
                                                     ,xinit[...,[0]])))
         else: 
-            du = torch.as_tensor(reference_sol.get_ref_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
+            du = torch.as_tensor(benchmark.get_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
             #torch.zeros_like(xinit_ref[:,0,None],dtype=torch.float32,requires_grad=False)
 
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt)
@@ -341,18 +341,18 @@ class VerletSDE(SDEBase):
         return xinit, du 
     
     @torch.no_grad()
-    def reference_integration_step(self,xinit,dt,t,reference_sol=None):
+    def benchmark_integration_step(self,xinit,dt,t,benchmark=None):
         
         dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
 
         #update positions by half step
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
 
-        if reference_sol.duref_net is not None:
-            du = reference_sol.duref_net(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
+        if benchmark.du_net_benchmark is not None:
+            du = benchmark.du_net_benchmark(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
                                                             ,xinit[...,[0]])))
         else: 
-            du = torch.as_tensor(reference_sol.get_ref_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
+            du = torch.as_tensor(benchmark.get_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
             #torch.zeros_like(xinit_ref[:,0,None],dtype=torch.float32,requires_grad=False)
                     
         #Update the velocity

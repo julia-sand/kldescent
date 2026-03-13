@@ -104,7 +104,7 @@ class OverdampedFullLandauer(Boundaries):
 
     def overwrite_ref_path(self,new_path):
         
-        self.ref_path = new_path + "/refsol.csv"
+        self.ref_path = new_path + "/benchmark.csv"
 
     def Ufinal(self,q):
 
@@ -265,7 +265,7 @@ class LinearOU(Boundaries):
         return np.linspace(-4,4,num=50),ut*np.ones(50)
 
 
-    def du_ref(self,q,time):
+    def du_benchmark(self,q,time):
 
         ut = self.analytic_sol(time)
         
@@ -427,7 +427,7 @@ class UnderdampedGaussian(UnderdampedLandauer):
 
     def overwrite_ref_path(self,new_path):
         
-        self.ref_path = new_path + "/refsol.csv"
+        self.ref_path = new_path + "/benchmark.csv"
         self.cumulants_path = new_path + "/refcumulants.csv"
 
     def Uinitial(self,q):

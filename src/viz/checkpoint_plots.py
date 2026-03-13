@@ -12,7 +12,7 @@ from ..sde import langevin
 from ..sde.girsanovpdf import compute_pdf
 from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
 from ..utils.getboundary import init_params_from_file
-from ..refsolution.reference import RefSolution,GaussRefSolution
+from ..benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmarkSolution
 
 
 import pdb
@@ -92,7 +92,7 @@ class PlotUtils():
     6. adds reference solutions if they are available
     """
 
-    def __init__(self,refsol=None,folder=None,epoch=None):
+    def __init__(self,benchmark=None,folder=None,epoch=None):
         
         update_mpl()
 
@@ -126,7 +126,7 @@ class PlotUtils():
 
         self.boundary_cond.overwrite_ref_path(self.folder)
             
-        self.referencesol = refsol
+        self.benchmark = benchmark
                 
         #make new folder for the results labelled with epoch
         os.makedirs(self.folder+f"/plots_{self.epoch}", exist_ok = True) 
@@ -136,10 +136,10 @@ class PlotUtils():
 
     def load_perturbative_du_checkpoint(self):
 
-        if self.referencesol is None:
-            #initialise refsol
-            self.referencesol = RefSolution(boundary_cond,folder_name=self.folder)
-            self.net = self.referencesol.duref_net #NeuralNetwork(self.boundary_cond,self.data_loaded)
+        if self.benchmark is None:
+            #initialise benchmarks
+            self.benchmark = PerturbativeBenchmarkSolution(boundary_cond,folder_name=self.folder)
+            self.net = self.benchmark.du_net_benchmark 
 
             self.integrator = langevin.EulerMaruyamaSDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
@@ -171,12 +171,12 @@ class PlotUtils():
     def load_ref_solution(self):
         """initialise the reference solution and add to the class""" 
 
-        if self.referencesol is None:
+        if self.benchmark is None:
             if "Gauss" in f"{self.boundary_cond.__class__.__name__}":  
-                self.referencesol = GaussRefSolution(boundary=self.boundary_cond,folder_name=self.folder)
+                self.benchmark = GaussBenchmarkSolution(boundary=self.boundary_cond,folder_name=self.folder)
             
             else:
-                self.referencesol = RefSolution(boundary=self.boundary_cond,folder_name=self.folder)
+                self.benchmark = PerturbativeBenchmarkSolution(boundary=self.boundary_cond,folder_name=self.folder)
             
     def perturbative_plots_du(self,plottimes):
         """make plots to show the results of the evolution under perturbative drift"""
@@ -184,7 +184,6 @@ class PlotUtils():
         self.load_perturbative_du_checkpoint()
         
         #self.make_intermediate_histograms(plottimes=plottimes)
-        #self.plotter.plot_drift(times = plottimes,net=self.net,refsol=self.referencesol) #[0,self.boundary_cond.params["Tf"]/2,self.boundary_cond.params["Tf"]],net=self.net)
         self.make_drift_plot(numplots=4)
 
     def make_cumulant_plot(self,t_vec,cumulants_nn,cumulants_ref,mcsamples):
@@ -193,7 +192,7 @@ class PlotUtils():
         fig = self.plotter.plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],
                                                 ["NN estimated","Benchmark"],
                                                 mcsamples,
-                                                refsol=self.referencesol)
+                                                benchmark=self.benchmark)
         save_fig_(fig,"cumulants",loc=self.resultsdir)
         save_cumulants_csv(t_vec,cumulants_nn,loc=self.resultsdir)
         save_cumulants_csv(t_vec,cumulants_ref,loc=self.resultsdir,cumulants_filename="ref_cumulants")
@@ -213,14 +212,14 @@ class PlotUtils():
 
         final_plot_time = self.boundary_cond.params["Tf"]
         
-        t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde_cumulants(reference_sol=self.referencesol,mcsamples=mcsamples)
+        t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde_cumulants(benchmark=self.benchmark,mcsamples=mcsamples)
         
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
         
         self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples)
         self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref)
         #marginal distribution fig
-        fig = self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,refsol=self.referencesol)
+        fig = self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,benchmark=self.benchmark)
         save_fig_(fig,f"marginal_time_{final_plot_time}",loc=self.resultsdir)
         
         plt.close("all")
@@ -235,7 +234,7 @@ class PlotUtils():
     def make_drift_plot(self,numplots):
 
         #get the timegrid
-        t_vec = self.referencesol.get_reference_timegrid()
+        t_vec = self.benchmark.get_timegrid()
         
         #choose numplot random times
         times = t_vec[np.random.randint(low=0,high=len(t_vec),size=numplots)]
@@ -257,10 +256,10 @@ class PlotUtils():
 
         for t in range(len(times)):
 
-            if self.referencesol.duref_net is not None:
-                ref_vals.append(self.evaluate_net_output(self.referencesol.duref_net,times[t]).flatten().numpy())
+            if self.benchmark.du_net_benchmark is not None:
+                ref_vals.append(self.evaluate_net_output(self.benchmark.du_net_benchmark,times[t]).flatten().numpy())
             else: 
-                ref_vals.append(self.referencesol.get_ref_drift_gaussian(times[t])*np.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000))
+                ref_vals.append(self.benchmark.get_drift_gaussian(times[t])*np.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000))
 
             net_vals.append(self.evaluate_net_output(self.net,times[t]).flatten().numpy())
         
@@ -325,14 +324,14 @@ class PlotUtils():
 
         for i in range(len(plottimes)):
             
-            self.integrator.net = self.net#referencesol.duref_net
+            self.integrator.net = self.net
             x_du = self.integrator.update_ref_statistics(time=plottimes[i])
             
             #UPDATE NET FOR INTEGRATOR
-            self.integrator.net = self.referencesol.duref_net
+            self.integrator.net = self.benchmark.du_net_benchmark
             x_ref = self.integrator.update_ref_statistics(time=plottimes[i])
                         
-            self.plotter.marginal_distribution(axs[i],[x_du.detach().numpy(),x_ref.detach().numpy()],plottimes[i],refsol=self.referencesol)
+            self.plotter.marginal_distribution(axs[i],[x_du.detach().numpy(),x_ref.detach().numpy()],plottimes[i],benchmark=self.benchmark)
             
         h,l = get_all_subplot_handles_labels(fig)
         
@@ -428,17 +427,17 @@ class PlotUtils():
         fig = self.plotter.plot_cumulants(t_vec,[l1_err,l2_err],
                                                         ["Relative L1","Relative L2"],
                                                         0,
-                                                        refsol=None,#self.referencesol,
+                                                        benchmark=None,
                                                         add_free_diffusion=False)
         save_fig_(fig,"cumulants_errors",loc=self.resultsdir)
 
     def make_drift_error_plot(self):    
 
         self.load_du_checkpoint()
-        self.load_ref_solution()
+        self.load_benchmark_solution()
 
         with torch.no_grad():
-            t_vec = self.referencesol.get_reference_timegrid()[::10]#compute du 
+            t_vec = self.benchmark.get_timegrid()[::10]#compute du 
 
             l1_errs = np.zeros_like(t_vec)
             l2_errs = np.zeros_like(t_vec)
@@ -457,23 +456,23 @@ class PlotUtils():
         save_fig_(fig,"drift_errors",loc=self.resultsdir)
 
 
-def compute_ref_dynamic_kl(refsolution):
-    """Estimate of the dynamic kl divergence for the Gaussian reference data.
-    Uses the reference position and momentum variance and estimates the integral
+def compute_ref_dynamic_kl(benchmark):
+    """Estimate of the dynamic kl divergence for the Gaussian benchmark data.
+    Uses the benchmark position and momentum variance and estimates the integral
     E_(P) (du)**2 in the interval [0,T]
     where the (P) is the path measure estimated with a Gaussian at each step 
     
     ##TODO: update this for non-gaussian
 
     args:
-        refsolution : class
-            specify the reference solution for comparison
+        benchmark : class
+            specify the benchmark solution for comparison
     returns: 
         kldyn : float
             estimate of the kl divergence computed for the reference solution  
     """ 
     
-    times = refsolution.get_reference_timegrid() #boundary.get_reference_timegrid()
+    times = benchmark.get_timegrid() 
     klout = np.empty(len(times))
 
     var_t = boundary.get_known_solution_cumulants("Position Variance")

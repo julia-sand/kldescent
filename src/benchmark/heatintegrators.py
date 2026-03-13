@@ -162,22 +162,20 @@ if __name__=="__main__":
     import matplotlib.pyplot as plt 
 
     import src.sde.boundary as boundaries
-    from src.refsolution.overdamped.gauss import Gaussian_Overdamped_Ref,normalise
+    from src.benchmark.overdamped.gauss import Gaussian_Overdamped_Ref,normalise
     Generator = np.random.default_rng(seed=42)
     boundary = boundaries.UnderdampedGaussian()
-    refsol = Gaussian_Overdamped_Ref(boundary)
+    phi_benchmark = Gaussian_Overdamped_Ref(boundary)
     Tf2 = boundary.params["Tf"]*(boundary.params["epsilon"]**2)
     
     beta = 1/(boundary.afun(boundary.params["Tf"]))
     nsamples = 150
 
-    #print(refsol.m2(Tf2))
     def makeplot(phifun,tinit,nsamples):
         x0_temp = np.linspace(-6,6,nsamples)
 
         x0_mc = np.linspace(-4,4,nsamples)
-        y0_mc = normalise(x0_mc,phifun(x0_mc,tinit))#normalise(x0_mc,refsol.hatphi_t(x0_mc,0))
-        #x_end, y_end = proximal_fpk(x0,y0,Tf2,beta,num_steps=1000)
+        y0_mc = normalise(x0_mc,phifun(x0_mc,tinit))
         x_end_mc, y_end_mc = mcintegrator(x0_mc,y0_mc,Tf2,beta,num_steps=200)
         
         def phifinal(qT,x0,y0):
@@ -190,16 +188,11 @@ if __name__=="__main__":
         #plt.plot(x0_mc,y0_mc,label="mc start")#normalise(x_end,y_end))
 
         qax = np.linspace(-4,4)
-        #plt.plot(qax,normalise(qax,refsol.phi_t(qax,Tf2)),label="phi at Tf")
-        #plt.plot(qax,normalise(qax,refsol.phi_t(qax,0)),label="phi at 0")
-        #plt.plot(qax,normalise(qax,refsol.rho(qax,Tf2)),label="rho at Tf")
-        #plt.plot(qax,normalise(qax,refsol.rho(qax,0)),label="rho at 0")
         plt.plot(qax,normalise(qax,phifun(qax,Tf2)),label="hatphi at Tf")
         plt.plot(qax,normalise(qax,phifun(qax,0)),label="hatphi at 0")
         
         plt.legend()
-        #plt.ylim((0,2))
         plt.savefig(f"test_fpk_.png")
         plt.close()
     
-    makeplot(refsol.hatphi_t,0,nsamples)
+    makeplot(phi_benchmark.hatphi_t,0,nsamples)
