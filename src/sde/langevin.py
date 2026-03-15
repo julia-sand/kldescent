@@ -215,7 +215,20 @@ class EulerMaruyamaSDE(SDEBase):
         self.TerminalCost = terminal_cost
         self.net = net 
         self.testing_samples =self.sde_params["testsamples"]
+
+    def compute_benchmark_drift(self,xinit,t,benchmark):
         
+        if benchmark.du_net_benchmark is not None:
+            du = benchmark.du_net_benchmark(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
+                                                            ,xinit[...,[0]])))
+        elif benchmark is not None: 
+            du = torch.as_tensor(benchmark.get_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
+            #
+        else: 
+            du = torch.zeros_like(xinit[...,[0]],dtype=torch.float32,requires_grad=False)
+        
+        return du
+
     @torch.no_grad()
     def integration_step(self,xinit,dt,t):
 
@@ -237,13 +250,7 @@ class EulerMaruyamaSDE(SDEBase):
         
         dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
 
-        if benchmark.du_net_benchmark is not None:
-            du = benchmark.du_net_benchmark(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
-                                                    ,xinit[...,[0]])))
-        else: 
-            du = torch.as_tensor(benchmark.get_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
-            #torch.zeros_like(xinit_ref[:,0,None],dtype=torch.float32,requires_grad=False)
-
+        du = self.compute_benchmark_drift(xinit,t,benchmark)
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt)
 
         xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du)*dt \
@@ -347,14 +354,9 @@ class VerletSDE(SDEBase):
 
         #update positions by half step
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
-
-        if benchmark.du_net_benchmark is not None:
-            du = benchmark.du_net_benchmark(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
-                                                            ,xinit[...,[0]])))
-        else: 
-            du = torch.as_tensor(benchmark.get_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
-            #torch.zeros_like(xinit_ref[:,0,None],dtype=torch.float32,requires_grad=False)
-                    
+        
+        du = self.compute_benchmark_drift(xinit,t,benchmark)
+        
         #Update the velocity
         xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du)*dt \
                                                 + self.boundary.sigma0*dw

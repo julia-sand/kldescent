@@ -1,6 +1,6 @@
 import numpy as np
 
-import pdb
+
 class Perturbation():
 
     def __init__(self,boundary,overdamped_arr,ref_path):

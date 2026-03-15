@@ -29,10 +29,10 @@ class Metrics():
         self.net = net
 
         self.logger = logger
-        
+        self.benchmark = benchmark 
+
         if benchmark is not None:
 
-            self.benchmark = benchmark 
             self.benchmarknet = self.benchmark.du_net_benchmark 
         else: 
             pass
