@@ -116,7 +116,6 @@ def proximal_fpk(x0,y0,
         c_k = sci.cdist(x_evolution_new[:,np.newaxis],x_evolution[:,np.newaxis],metric="sqeuclidean")#
 
         gamma_k = np.exp(-c_k/(2*eps))
-        #pdb.set_trace()
 
         gamma_kt = gamma_k.T 
 

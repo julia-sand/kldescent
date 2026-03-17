@@ -80,8 +80,7 @@ class GirsanovMC(TerminalCost):
                                     self.boundary.params["epsilon"],
                                     self.boundary.p_initial,
                                     self.boundary.params["Tf"],
-                                    mc_samples,
-                                    tsteps=512))
+                                    mc_samples))
         #print(pdf)
         return torch.log(pdf)
 

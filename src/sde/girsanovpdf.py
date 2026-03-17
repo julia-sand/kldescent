@@ -1,5 +1,7 @@
 import torch
 
+from ..utils.parser import integrator_params
+
 @torch.no_grad
 def girsanov_scheme(xinit,du_bar,dt,dw,t,sigma0,epsilon):
 
@@ -16,8 +18,8 @@ def compute_pdf(x0,
                     epsilon,
                     p_initial,
                     Tf,
-                    mc_samples,
-                    tsteps=512):
+                    mc_samples=None,
+                    tsteps=None):
     """
     Computes an estimate for the final joint distribution using Girsanov theorem 
     Does not track gradients 
@@ -47,14 +49,19 @@ def compute_pdf(x0,
     ====
     """
 
+    args = integrator_params()
+    tsteps = args["tsteps"]
+    if mc_samples is None: #use default if none given
+        mc_samples = args["testsamples"]
+
     with torch.no_grad():
         
-        if mc_samples ==1:
+        if mc_samples == 1:
             xinit = x0.clone()
         else:
             xinit = torch.broadcast_to(x0,(mc_samples,2)).clone()
 
-        t_vec = torch.linspace(0,Tf,tsteps,requires_grad=False,dtype=torch.float32)#self.generate_time_grid(Tf,tsteps)#tsteps=16)
+        t_vec = torch.linspace(0,Tf,tsteps,requires_grad=False,dtype=torch.float32)
 
         #preallocate girsanov integrals
         girs = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)

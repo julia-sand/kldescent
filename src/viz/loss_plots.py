@@ -50,7 +50,11 @@ def plot_metric(ax,xdata,ydata,ylabel,window_size=5):
   """
   
   ax.scatter(xdata,ydata,label="raw data")
-  ax.plot(xdata[window_size:-window_size],movingaverage(ydata,window_size),linestyle="dashed",label=f"Moving average with size {window_size}")
+  
+  try:
+    ax.plot(xdata[window_size:-window_size],movingaverage(ydata,window_size),linestyle="dashed",label=f"Moving average with size {window_size}")
+  except IndexError: #error raised if num data points less than window size.  
+    pass
 
   if "KL" in ylabel:
  

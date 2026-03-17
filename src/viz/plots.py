@@ -136,7 +136,7 @@ class PlotFuns():
 
   def format_drift_ax(self,ax1,time):
     
-    ax1.set_title(f"t={time}")
+    ax1.set_title(f"t={time:.4f}")
     ax1.set_xlabel("q")
     #ax1.set_ylim((-1.8,1.8))
 
@@ -176,7 +176,8 @@ class PlotFuns():
             label="Benchmark N.N.")
       
       else:
-        print("No reference solution was given. Plots will not include reference values.")
+        pass
+        #print("No reference solution was given. Plots will not include reference values.")
     
     h,l = ax[0].get_legend_handles_labels()
     #plt.legend()
@@ -189,7 +190,7 @@ class PlotFuns():
     legend.set_bbox_to_anchor(bbox=(0.95,0.07))
 
     plt.tight_layout()
-    fig.subplots_adjust(bottom=0.15)
+    fig.subplots_adjust(top=0.8,bottom=0.15)
     save_fig_(fig,"drift",self.subdir)
     plt.close()
 
@@ -235,10 +236,12 @@ class PlotFuns():
     if benchmark is not None:
       xref,posref = benchmark.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped",time_type="t0")   
       ax_pos.plot(xref,posref,color="green",alpha=0.5,label="Benchmark Prediction")
-      
+      label2 = "Benchmark Evolved"
+    else:
+      label2 = "Free Diffusion"
     #set iteration properties
     colors = [self.c1,"orange"]
-    labels = ["Controlled by NN.","Benchmark Evolved"]
+    labels = ["Controlled by NN.",label2]
 
     for x in enumerate(xs):
       

@@ -36,11 +36,6 @@ def run():
        
     net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
     
-    if "Gauss" in args["boundary"]:
-        benchmark_ = GaussBenchmarkSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
-    else:
-        benchmark_ = PerturbativeBenchmarkSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
-
     terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,fileloc=metrics_logger.newpath,filename=metrics_logger.datayaml)
     
     #intialise sde integration 
@@ -49,7 +44,7 @@ def run():
     #initialise trainer
     trainer = train.Train(net,integrator) 
 
-    metric_ = metrics.Metrics(net,integrator, metrics_logger,benchmark=benchmark_)    
+    metric_ = metrics.Metrics(net,integrator, metrics_logger,usebenchmark=False)    
 
     #save the parameters
     for params in [args,net.params,integrator.sde_params]:
@@ -66,7 +61,6 @@ def run():
                         terminal_cost,
                         integrator,
                         trainer,
-                        benchmark_,
                         logstep=args["logstep"])
         
 

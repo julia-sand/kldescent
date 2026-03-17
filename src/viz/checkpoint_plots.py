@@ -15,9 +15,6 @@ from ..utils.getboundary import init_params_from_file
 from ..benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmarkSolution
 
 
-import pdb
-
-
 def zchop(x,tol=1e-6):
    
     return np.where(np.abs(x)<tol,0,x)
@@ -71,9 +68,7 @@ def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=No
                                     self.boundary.sigma0,
                                     self.boundary.params["epsilon"],
                                     self.boundary.p_initial,
-                                    self.boundary.params["Tf"],
-                                    mc_samples,
-                                    tsteps=512))
+                                    self.boundary.params["Tf"]))
         #print(pdf) 
     return xinit.detach().numpy(),pdf_out.detach().numpy()
 
@@ -156,14 +151,23 @@ class PlotUtils():
         self.rhonet = RhoNeuralNetwork(self.data_loaded)
         load_checkpoint(self.rhonet,self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
             
-    def checkpoint_plots_du(self,mcsamples=None):
-        """
-        Runs the functions to make plots to show the results of the 
+    def checkpoint_plots_du(self,usebenchmark=False,mcsamples=None):
+        r"""
+        Make plots to show the results of the 
         drift learning
+        params: 
+            usebenchmark : bool
+                If true, load reference solution, else pass
+            mcsamples : int
+                Overwrite default number of test/mc samples
         """
         
         self.load_du_checkpoint()
-        self.load_ref_solution()
+        if usebenchmark:
+            self.load_ref_solution()
+        else:
+            self.benchmark=None
+
         self.make_drift_plot(numplots=5)
         self.make_sde_plots(mcsamples)
         #self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
@@ -233,12 +237,15 @@ class PlotUtils():
     
     def make_drift_plot(self,numplots):
 
-        #get the timegrid
-        t_vec = self.benchmark.get_timegrid()
-        
-        #choose numplot random times
-        times = t_vec[np.random.randint(low=0,high=len(t_vec),size=numplots)]
-        times.sort()
+        if self.benchmark is not None:
+            #get the timegrid where data is available
+            t_vec = self.benchmark.get_timegrid()
+            #choose numplot random times to show
+            times = t_vec[np.random.randint(low=0,high=len(t_vec),size=numplots)]
+            times.sort()
+        else:
+            times = np.sort(np.random.uniform(0, self.boundary_cond.params["Tf"],numplots))
+            #times.sort()        
 
         net_vals, ref_vals = self.get_drift_data(times)
 
@@ -248,18 +255,21 @@ class PlotUtils():
 
     @torch.no_grad
     def get_drift_data(self,times):
-        #pdb.set_trace()
         
         #initialise the arrays
         net_vals = []
         ref_vals = []
 
         for t in range(len(times)):
-
-            if self.benchmark.du_net_benchmark is not None:
-                ref_vals.append(self.evaluate_net_output(self.benchmark.du_net_benchmark,times[t]).flatten().numpy())
-            else: 
-                ref_vals.append(self.benchmark.get_drift_gaussian(times[t])*np.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000))
+            
+            if self.benchmark is None:
+                #ref_vals.append(np.zeros((1000,1)))
+                ref_vals = None
+            else:
+                if self.benchmark.du_net_benchmark is not None:
+                    ref_vals.append(self.evaluate_net_output(self.benchmark.du_net_benchmark,times[t]).flatten().numpy())
+                else: 
+                    ref_vals.append(self.benchmark.get_drift_gaussian(times[t])*np.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000))
 
             net_vals.append(self.evaluate_net_output(self.net,times[t]).flatten().numpy())
         

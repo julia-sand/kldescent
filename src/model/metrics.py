@@ -12,7 +12,7 @@ class Metrics():
         update_metrics
     """
 
-    def __init__(self, net, integrator, logger, benchmark=None):
+    def __init__(self, net, integrator, logger, usebenchmark=False):
         """
         Initialises class parameters
         args:
@@ -29,15 +29,17 @@ class Metrics():
         self.net = net
 
         self.logger = logger
-        self.benchmark = benchmark 
+        #self.benchmark = benchmark 
 
-        if benchmark is not None:
-
-            self.benchmarknet = self.benchmark.du_net_benchmark 
+        if usebenchmark:
+            if "Gauss" in args["boundary"]:
+                self.benchmark_ = GaussBenchmarkSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
+                self.benchmarknet = None
+            else:
+                self.benchmark_ = PerturbativeBenchmarkSolution(bridge_type=args["bridgetype"],boundary=boundaryconditions,folder_name = metrics_logger.get_results_path())
+                self.benchmarknet = self.benchmark.du_net_benchmark 
         else: 
-            pass
-            #self.refnet = None 
-
+            self.benchmark = None
         #self.update_metrics(0, 0)
         self.kldyn = 0
         self.lr = 0 

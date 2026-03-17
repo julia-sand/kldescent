@@ -6,8 +6,8 @@ def train_loop_du(epoch,
                     terminal_cost,
                     integrator,
                     trainer,
-                    benchmark_,
-                    logstep):
+                    logstep,
+                    usebenchmark =False):
 
         #update the terminal cost with current final distribution
         terminal_cost.update_cost_params(integrator,epoch)
@@ -38,7 +38,7 @@ def train_loop_du(epoch,
     
             #uncomment to make plots
             #!! creating plots will run perturbative calculations
-            plot_utils = PlotUtils(benchmark=benchmark_,epoch=epoch)
+            plot_utils = PlotUtils(benchmark=metric_.benchmark,epoch=epoch)
 
-            plot_utils.checkpoint_plots_du(mcsamples=2048)
+            plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark,mcsamples=2048)
             

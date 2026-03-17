@@ -6,7 +6,6 @@ from torch import nn
 
 from ..utils.parser import du_network_params,rho_network_params,fetch_checkpoint_path
 
-import pdb
 
 def load_checkpoint(net,checkpointpath):
     try:
@@ -99,7 +98,6 @@ class FourierFeatures(nn.Module):
             param.requires_grad_(self.trainable)
 
     def forward(self, t: torch.Tensor) -> torch.Tensor:
-        #pdb.set_trace()
         t = self.linear(t)
         t = 2 * math.pi * t
         t = torch.cat((t.sin(), t.cos()), dim=-1)
@@ -160,7 +158,6 @@ class NeuralNetwork(nn.Module):
                 pass
 
     def forward(self, input_vec):   #how the model should evaluate
-        #pdb.set_trace()
 
         x = self.NNx(input_vec[...,[1]])
         t = self.FourierFeatures(input_vec[...,[0]])#

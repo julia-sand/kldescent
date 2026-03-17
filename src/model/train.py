@@ -189,13 +189,12 @@ class TrainRho():
             yobs = torch.zeros_like(x0[...,[0]])
 
             for i in range(yobs.shape[0]):
-                yobs[i] = compute_pdf(x0,integrator.net,
+                yobs[i] = compute_pdf(x0[i,None],integrator.net,
                                     integrator.boundary.sigma0,
                                     integrator.boundary.params["epsilon"],
                                     integrator.boundary.p_initial,
                                     integrator.boundary.params["Tf"],
-                                    1,
-                                    integrator.sde_params["tsteps"])
+                                    mc_samples=1)
         return yobs
 
     def train_step(self,optimiser,integrator):  

@@ -85,7 +85,6 @@ class Perturbation():
         position using analytic expressions.
         Results are added to a csv and saved
         """
-        #pdb.set_trace()
         pertsol = np.c_[self.overdamped_arr, np.ones(self.xnum*len(self.t2vec)), np.ones(self.xnum*len(self.t2vec))] 
         
         for t in range(len(self.t2vec)):
@@ -193,7 +192,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
         return f02_temp 
     
             
-    def f02_new(self,t0,t2):
+    def f02(self,t0,t2):
         """Compute the f02 correction. 
         Uses the later version with a,b functions and only f00"""
 
@@ -211,7 +210,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
         
     def marginal_perturbative(self,t0,t2):
         
-        return self.f00(t2) + (self.epsilon**2)*self.f02_new(t0,t2)
+        return self.f00(t2) + (self.epsilon**2)*self.f02(t0,t2)
 
     def little_a(self,t0):
         
@@ -307,7 +306,6 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
         """
         
         return 0
-
 
     def f02(self,t0,t2):
         

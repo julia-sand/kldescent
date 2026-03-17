@@ -78,11 +78,15 @@ class SDEBase():
 
             self.net.eval()
                   
-            if benchmark.du_net_benchmark is not None:
+            if benchmark is None:
                 t_vec = self.generate_time_grid() #use random time grid
             else: 
-                t_vec = benchmark.get_timegrid() #use fixed times from csv
-                            
+                if benchmark.du_net_benchmark is not None:
+                    t_vec = self.generate_time_grid() #use random time grid
+                else: 
+                    #use fixed times from csv
+                    t_vec = benchmark.get_timegrid()
+                    
             #initialise x values as samples from assigned initial distribution
             xinit = torch.tensor(self.boundary.generate_samples(self.testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
             xinit_ref = torch.clone(xinit)
@@ -173,10 +177,13 @@ class SDEBase():
         if mcsamples is None: #default to test samples
             mcsamples = self.sde_params["testsamples"]
 
-        if benchmark.du_net_benchmark is not None:
+        if benchmark is None:
             t_vec = self.generate_time_grid()
         else:
-            t_vec = benchmark.get_timegrid()
+            if benchmark.du_net_benchmark is not None:
+                t_vec = self.generate_time_grid()
+            else:
+                t_vec = benchmark.get_timegrid()
 
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = torch.tensor(self.boundary.generate_samples(mcsamples,"initial"),requires_grad=False,dtype=torch.float32)
@@ -218,14 +225,15 @@ class EulerMaruyamaSDE(SDEBase):
 
     def compute_benchmark_drift(self,xinit,t,benchmark):
         
-        if benchmark.du_net_benchmark is not None:
-            du = benchmark.du_net_benchmark(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
-                                                            ,xinit[...,[0]])))
-        elif benchmark is not None: 
-            du = torch.as_tensor(benchmark.get_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
-            #
-        else: 
+        if benchmark is None:
             du = torch.zeros_like(xinit[...,[0]],dtype=torch.float32,requires_grad=False)
+        else:
+            if benchmark.du_net_benchmark is not None:
+                du = benchmark.du_net_benchmark(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
+                                                            ,xinit[...,[0]])))
+            else:
+                du = torch.as_tensor(benchmark.get_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
+            
         
         return du
 
@@ -437,7 +445,6 @@ class VerletSDE(SDEBase):
 if __name__=="__main__":
     from src.model import nn
     from src.sde.boundary import UnderdampedHalfGaussian
-    import pdb
     from src.utils.parser import integrator_params
 
     boundaryconditions = UnderdampedHalfGaussian()#getattr(boundaries,"UnderdampedHalfGaussian")()
