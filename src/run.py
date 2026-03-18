@@ -10,7 +10,7 @@ import src.sde.boundary as boundaries
 from src.utils import *
 from src.viz.loss_plots import plot_loss_metrics
 import src.model.pretrain as pretrain
-from src.benchmark.benchmarksol import *
+#from src.benchmark.benchmarksol import *
 from src.trainloop import train_loop_du
 
 
@@ -44,7 +44,7 @@ def run():
     #initialise trainer
     trainer = train.Train(net,integrator) 
 
-    metric_ = metrics.Metrics(net,integrator, metrics_logger,usebenchmark=False)    
+    metric_ = metrics.Metrics(net,integrator, metrics_logger,args["bridgetype"])    
 
     #save the parameters
     for params in [args,net.params,integrator.sde_params]:
@@ -62,7 +62,9 @@ def run():
                         integrator,
                         trainer,
                         logstep=args["logstep"])
-        
+    
+    if metric_.wandb_run is not None:
+        metric_.wandb_run.finish()
 
     plot_loss_metrics(folder=metrics_logger.newpath)
 

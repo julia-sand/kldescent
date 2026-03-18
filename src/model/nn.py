@@ -6,7 +6,6 @@ from torch import nn
 
 from ..utils.parser import du_network_params,rho_network_params,fetch_checkpoint_path
 
-
 def load_checkpoint(net,checkpointpath):
     try:
         net.load_state_dict(torch.load(checkpointpath, weights_only=True))

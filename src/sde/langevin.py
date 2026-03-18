@@ -13,7 +13,8 @@ class SDEBase():
 
     def __init__(self,boundary_data,
                     sde_params=None):
-
+                    
+        self.device = "cpu"            
         self.boundary = boundary_data
 
         #get params 
@@ -34,9 +35,9 @@ class SDEBase():
         
         #TODO : get self.sde_params["tsteps"] as a fraction of the total time
         
-        return np.concatenate([[0],
-                                np.sort(np.random.uniform(0, Tf, tsteps-1)),
-                                [Tf]])
+        return torch.concatenate([[0],
+                                torch.rand(,dtype=torch.float32,requires_grad=False),
+                                [Tf]]).to(self.device)
     
     @torch.no_grad()
     def generate_innovation(self,dt,size_like):
@@ -86,13 +87,15 @@ class SDEBase():
                 else: 
                     #use fixed times from csv
                     t_vec = benchmark.get_timegrid()
-                    
+            
+            t_vec.to(self.device)
+
             #initialise x values as samples from assigned initial distribution
-            xinit = torch.tensor(self.boundary.generate_samples(self.testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
-            xinit_ref = torch.clone(xinit)
+            xinit = torch.tensor(self.boundary.generate_samples(self.testing_samples,"initial"),requires_grad=False,dtype=torch.float32).to(self.device)
+            xinit_ref = torch.clone(xinit).to(self.device)
 
             #preallocate storing kl divergence 
-            kldyn = torch.zeros((self.testing_samples,1),requires_grad=False,dtype=torch.float32)
+            kldyn = torch.zeros((self.testing_samples,1),requires_grad=False,dtype=torch.float32).to(self.device)
             
             for i in range(0,len(t_vec)-1):
                 dt = (t_vec[i+1]-t_vec[i])
@@ -137,13 +140,15 @@ class SDEBase():
         
         with torch.no_grad():
 
-            t_vec = torch.linspace(0,time,t_steps)
+            t_vec = self.generate_time_grid()#torch.linspace(0,time,t_steps)
+            t_vec.to(self.device)
 
             if x0_samples == None: #default to the integrator 
                 xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
             else:
                 xinit = x0_samples.detach().clone()
 
+            xinit.to(self.device)
             for i in range(0,len(t_vec)-1):
                 dt = (t_vec[i+1]-t_vec[i])
                 
@@ -185,13 +190,17 @@ class SDEBase():
             else:
                 t_vec = benchmark.get_timegrid()
 
+        t_vec.to(self.device)
+
         #initialise x values at \delta_0 (i.e. x=0)
-        xinit = torch.tensor(self.boundary.generate_samples(mcsamples,"initial"),requires_grad=False,dtype=torch.float32)
-        xref = torch.clone(xinit)
+        xinit = torch.tensor(self.boundary.generate_samples(mcsamples,"initial"),requires_grad=False,dtype=torch.float32).to(device)
+        xref = torch.clone(xinit).to(self.device)
 
         #save the cumulants of the evolutions
         cumulants_nn = self.save_cumulants(np.empty((0,5)),xinit.numpy())
         cumulants_ref = self.save_cumulants(np.empty((0,5)),xref.numpy())
+        
+        self.net.eval()
 
         with torch.no_grad():
 
@@ -203,10 +212,10 @@ class SDEBase():
         
                 xref = self.benchmark_integration_step(xref,dt,t_vec[i],benchmark)
                 
-                cumulants_nn = self.save_cumulants(cumulants_nn,xinit.numpy())
-                cumulants_ref = self.save_cumulants(cumulants_ref,xref.numpy())
+                cumulants_nn = self.save_cumulants(cumulants_nn,xinit.cpu().numpy())
+                cumulants_ref = self.save_cumulants(cumulants_ref,xref.cpu().numpy())
         
-        return t_vec, xinit.numpy(), xref.numpy(), cumulants_nn, cumulants_ref
+        return t_vec, xinit.cpu().numpy(), xref.cpu().numpy(), cumulants_nn.cpu(), cumulants_ref.cpu()
 
 class EulerMaruyamaSDE(SDEBase):
 
@@ -277,11 +286,11 @@ class EulerMaruyamaSDE(SDEBase):
         ====
         """
         
-        #self.net.train()
+        self.net.train()
         t_vec = self.generate_time_grid()
 
         #initialise x values 
-        xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32)#.to_device(device)
+        xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32).to(self.device)
         
         #set up a,abar,c,cbar
         a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
@@ -394,11 +403,11 @@ class VerletSDE(SDEBase):
         ====
         """
         
-        #self.net.train()
+        self.net.train()
         t_vec = self.generate_time_grid()
 
         #initialise x values 
-        xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32)#.to_device(device)
+        xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32).to(device)
         
         #set up a,abar,c,cbar
         a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)

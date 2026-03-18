@@ -1,5 +1,4 @@
 import os
-import string
 
 import numpy as np 
 from sklearn.neighbors import KernelDensity
@@ -111,10 +110,7 @@ class PlotFuns():
     self.c2 = "#a6cee3" #lightblue
     self.c3 = "#33a02c" #dark green
     self.c4 = "#b2df8a" #light green
-
-    self.titlepad = 5
-    self.titlex = 0.07
-    self.titley = 0.88
+ 
     
     self.mut_p = 0
     self.sigsqt_p = 1
@@ -130,9 +126,6 @@ class PlotFuns():
 
   def setsubdir(self, subdir):
     self.subdir = self.folder+subdir #os.path.join(self.folder,subdir)
-
-  def make_plot_label(self,plot_index):
-    return "("+string.ascii_lowercase[plot_index]+")"
 
   def format_drift_ax(self,ax1,time):
     
@@ -191,8 +184,7 @@ class PlotFuns():
 
     plt.tight_layout()
     fig.subplots_adjust(top=0.8,bottom=0.15)
-    save_fig_(fig,"drift",self.subdir)
-    plt.close()
+    return fig
 
   def fit_kde(self,xs):
 
@@ -291,183 +283,7 @@ class PlotFuns():
     fig.tight_layout()
     
     return fig  
-        
-  def position_mean_free_diffusion(self,t_vec,q0,p0):
-    return q0 + self.boundary.params["epsilon"]*(1-np.exp(-t_vec))*p0
-
-  def momentum_mean_free_diffusion(self,t_vec,p0):
-    return np.exp(-t_vec)*p0
-
-  def position_variance_free_diffusion(self,t_vec,pos_var0,mom_var0):
-    return pos_var0 + (self.boundary.params["epsilon"]**2)*(((1-np.exp(-t_vec))**2)*mom_var0 + 2*t_vec - 3 +4*np.exp(-t_vec) - np.exp(-2*t_vec))
-
-  def momentum_variance_free_diffusion(self,t_vec,mom_var0):
-    return 1 - np.exp(-2*t_vec) + np.exp(-2*t_vec)*mom_var0
-
-  def cross_correlation_free_diffusion(self,t_vec,pos_var0,mom_var0):
-    return (self.boundary.params["epsilon"]**2)*np.exp(-t_vec)*(1-np.exp(-t_vec))*mom_var0 + self.boundary.params["epsilon"]*(1-2*np.exp(-t_vec)+np.exp(-2*t_vec))
-
-  def plot_free_diffusion_sol(self,ax,t_vec,cumulant):
-      ax.plot(t_vec,cumulant,
-                            linestyle="dashed",
-                            zorder=0,
-                            alpha=0.5,
-                            color="gray",
-                            label="Free Diffusion")
-
-  def add_freediffusion_cumulants_subplot(self,ax,#gs_location,
-                                      ylabel_text,t_vec,cumulants_ref_plot):
-      
-    if ylabel_text=="Position Mean":
-      index = 0 
-      self.plot_free_diffusion_sol(ax,t_vec,self.position_mean_free_diffusion(t_vec,cumulants_ref_plot[0,index],cumulants_ref_plot[0,1]))
-
-    elif ylabel_text=="Momentum Mean":
-      index = 1
-      self.plot_free_diffusion_sol(ax,t_vec,self.momentum_mean_free_diffusion(t_vec,cumulants_ref_plot[0,index]))
-
-    elif ylabel_text=="Position Variance":
-      index = 2 
-      self.plot_free_diffusion_sol(ax,t_vec,self.position_variance_free_diffusion(t_vec,cumulants_ref_plot[0,index],cumulants_ref_plot[0,index+1]))
     
-    elif ylabel_text=="Momentum Variance":
-      index = 3 
-      self.plot_free_diffusion_sol(ax,t_vec,self.momentum_variance_free_diffusion(t_vec,cumulants_ref_plot[0,index]))
-    elif ylabel_text=="Cross Correlation":
-      index = 4 
-      self.plot_free_diffusion_sol(ax,t_vec,self.cross_correlation_free_diffusion(t_vec,cumulants_ref_plot[0,2],cumulants_ref_plot[0,3]))
-       
-  def make_cumulant_subplot(self,ax,#gs_location,
-                            ylabel_text,
-                            t_vec,
-                            cumulants_nn_plot,label,test_samples):
-
-    if ylabel_text=="Position Mean":
-      index = 0 
-      yerr=np.sqrt(cumulants_nn_plot[:,2]/test_samples)
-
-    elif ylabel_text=="Momentum Mean":
-      index = 1
-      yerr=np.sqrt(cumulants_nn_plot[:,3]/test_samples)
-
-    elif ylabel_text=="Position Variance":
-      index = 2 
-      yerr=cumulants_nn_plot[:,index]*np.sqrt(2/(test_samples-1))
-
-    elif ylabel_text=="Momentum Variance":
-      index = 3 
-      yerr=cumulants_nn_plot[:,index]*np.sqrt(2/(test_samples-1))
-          
-    elif ylabel_text=="Cross Correlation":
-      index = 4 
-      yerr = np.sqrt((1-cumulants_nn_plot[:,index]**2)/(test_samples-2))
-    
-    else:
-      print(ylabel_text+" not found")
-
-    try:
-      ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr,alpha=0.8)
-    except UnboundLocalError: #if mcsamples set to 0, skip the error bars
-      pass
-
-    color = ax.lines[-1].get_color()
-    ax.plot(t_vec,cumulants_nn_plot[:,index], label=label, zorder=1000,color=color)
-
-    return ax
-
-  def format_cumulant_subplot(self,ax,index,ylabel_text,t_vec):
-    
-    ax.set_title(self.make_plot_label(index),pad = self.titlepad,x = self.titlex, y = self.titley,zorder = 1000000)
-    ax.set_ylabel(ylabel_text)
-    ax.set_xlim((-0.1,t_vec[-1]+0.1))
-
-  def make_fig_gridspec(self,nrows=2,ncols=6):
-
-    # Plotting the cumulants
-    fig1 = plt.figure(figsize=(15, 8))#, constrained_layout=True)
-
-    # Create a grid 
-    gs = fig1.add_gridspec(2, 6, width_ratios=[1, 1, 1, 1,1,1], height_ratios=[1, 1])
-           
-    return fig1,gs
-
-  def make_cumulant_plot_axes(self,gs):
-
-    #define plot locations
-    axs = [plt.subplot(gs[0, 0:2]),
-            plt.subplot(gs[0, 2:4]),
-            plt.subplot(gs[0, 4:]),
-            plt.subplot(gs[1,:3]),
-            plt.subplot(gs[1, 3:])]
-
-    return axs 
-
-  def plot_cumulants(self,t_vec,cumulants,labels,test_samples,
-                      benchmark=None,
-                      add_free_diffusion=True):
-    """
-    Plots the cumulants which are computed by the evolutions
-    
-    args: 
-      t_vec : ndarray
-        array of times at which cumulants are evaluated
-      cumulants : list
-        list of arrays which are plotted iteratively
-      labels : list
-        list of labels to show in the legend for each of the cumulants plotted
-      test_samples : int
-        number of samples used for computing estimates of the cumulants. Computes error bar estimates 
-      benchmark : class
-        include preturbative predictions for cumulants
-
-    returns:
-      fig : figure
-        matplotlib figure with cumulants plotted and legend 
-    """
-
-    fig1,gs_cumulants = self.make_fig_gridspec()
-    
-    #cumulant labels
-    cumulant_names = ["Position Mean",
-                      "Position Variance",
-                      "Momentum Mean",
-                      "Momentum Variance",
-                      "Cross Correlation"]
-    axs = self.make_cumulant_plot_axes(gs_cumulants)
-
-    for ax, cumulant in zip(axs,enumerate(cumulant_names)):
-
-      for cumulant_vec,legend_label in zip(cumulants,labels):
-
-        self.make_cumulant_subplot(ax,cumulant[1],
-                                          t_vec,cumulant_vec,legend_label,
-                                          test_samples)
-      
-      if add_free_diffusion:
-        self.add_freediffusion_cumulants_subplot(ax,cumulant[1],t_vec,cumulant_vec) 
-
-      if benchmark is not None:
-        try: 
-          t_vectemp, cumulant_temp = benchmark.get_perturbative_cumulant(cumulant[1])
-          ax.plot(t_vectemp, cumulant_temp,label="Benchmark")
-        except FileNotFoundError:
-          pass 
-
-      self.format_cumulant_subplot(ax,cumulant[0],cumulant[1],t_vec)
-    
-    plt.tight_layout()
-
-    h,l = axs[0].get_legend_handles_labels()
-    legend = fig1.legend(h,l, 
-                            frameon = False,
-                            handlelength = 1,
-                            ncols = 5,
-                            columnspacing=0.4)
-
-    #move the legend
-    legend.set_bbox_to_anchor(bbox=(0.95,0.07))
-    
-    return fig1
 
 
   def update_final_cumulants(self,cumulants_nn):

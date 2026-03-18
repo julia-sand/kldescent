@@ -75,7 +75,7 @@ class MLE(TerminalCost):
         self.pos_var0 = 1
 
     def update_cost_params(self,integrator,*_):
-        """update the cumulants for the current final distribution"""
+        """compute cumulants for the current final distribution"""
 
         #compute x vals
         x = integrator.update_ref_statistics()

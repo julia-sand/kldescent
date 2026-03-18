@@ -16,3 +16,4 @@ core.*
 scratch
 gauss_*
 namelist*
+wandb*

@@ -7,7 +7,7 @@ def train_loop_du(epoch,
                     integrator,
                     trainer,
                     logstep,
-                    usebenchmark =False):
+                    usebenchmark = False):
 
         #update the terminal cost with current final distribution
         terminal_cost.update_cost_params(integrator,epoch)
@@ -34,11 +34,13 @@ def train_loop_du(epoch,
             #    pass
 
             #save checkpoint 
-            save_nn_checkpoint(metric_.net,loc=metric_.logger.newpath+f"/checkpoints/{metric_.net.net_name}_checkpoint_{epoch}.pt")
+            save_nn_checkpoint(metric_.net,loc=metric_.metrics_logger.newpath+f"/checkpoints/{metric_.net.net_name}_checkpoint_{epoch}.pt")
     
             #uncomment to make plots
             #!! creating plots will run perturbative calculations
-            plot_utils = PlotUtils(benchmark=metric_.benchmark,epoch=epoch)
+            plot_utils = PlotUtils(benchmark=metric_.benchmark_,
+                                    epoch=epoch,
+                                    wandb_run = metric_.wandb_run)
 
-            plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark,mcsamples=2048)
+            plot_utils.checkpoint_plots_du(usebenchmark=metric_.usebenchmark,mcsamples=2048)
             

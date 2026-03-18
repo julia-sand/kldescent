@@ -13,7 +13,7 @@ from ..sde.girsanovpdf import compute_pdf
 from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
 from ..utils.getboundary import init_params_from_file
 from ..benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmarkSolution
-
+from .cumulants import plot_cumulants
 
 def zchop(x,tol=1e-6):
    
@@ -87,7 +87,7 @@ class PlotUtils():
     6. adds reference solutions if they are available
     """
 
-    def __init__(self,benchmark=None,folder=None,epoch=None):
+    def __init__(self,benchmark=None,folder=None,epoch=None,wandb_run=None):
         
         update_mpl()
 
@@ -128,6 +128,8 @@ class PlotUtils():
 
         self.resultsdir = self.folder+f"/plots_{self.epoch}"
         self.plotter.setresultsdir(self.resultsdir)
+
+        self.wandb_run = wandb_run
 
     def load_perturbative_du_checkpoint(self):
 
@@ -190,18 +192,6 @@ class PlotUtils():
         #self.make_intermediate_histograms(plottimes=plottimes)
         self.make_drift_plot(numplots=4)
 
-    def make_cumulant_plot(self,t_vec,cumulants_nn,cumulants_ref,mcsamples):
-
-        #cumulant figs and csv 
-        fig = self.plotter.plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],
-                                                ["NN estimated","Benchmark"],
-                                                mcsamples,
-                                                benchmark=self.benchmark)
-        save_fig_(fig,"cumulants",loc=self.resultsdir)
-        save_cumulants_csv(t_vec,cumulants_nn,loc=self.resultsdir)
-        save_cumulants_csv(t_vec,cumulants_ref,loc=self.resultsdir,cumulants_filename="ref_cumulants")
-        plt.close("all")
-
     def make_sde_plots(self,mcsamples):
         """Make plots and save results of sde integration 
         1. compute final point clouds
@@ -220,7 +210,8 @@ class PlotUtils():
         
         self.plotter.update_final_cumulants(cumulants_nn[-1,:])
         
-        self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples)
+        self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples,
+                                        add_free_diffusion=False,)
         self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref)
         #marginal distribution fig
         fig = self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,benchmark=self.benchmark)
@@ -249,9 +240,16 @@ class PlotUtils():
 
         net_vals, ref_vals = self.get_drift_data(times)
 
-        self.plotter.plot_drift(times,
+        fig = self.plotter.plot_drift(times,
                                 net_vals,
                                 ref_vals)
+        
+        if self.wandb_run is not None:
+            self.wandb_run.log({"drift":fig})
+
+        save_fig_(fig,"drift",self.resultsdir)
+        plt.close()
+        return
 
     @torch.no_grad
     def get_drift_data(self,times):
@@ -290,6 +288,9 @@ class PlotUtils():
         h,l = get_all_subplot_handles_labels(fig)
 
         make_legend(fig,h,l)
+
+        if self.wandb_run is not None:
+            self.wandb_run.log({"rhonetmargs":fig})
 
         fig.tight_layout()
         save_fig_(fig,"rho_marginals",loc=self.resultsdir)
@@ -354,6 +355,9 @@ class PlotUtils():
         
         fig.tight_layout()
         
+        if self.wandb_run is not None:
+            self.wandb_run.log({"inthists":fig})
+
         save_fig_(fig,"histograms_all",loc=self.resultsdir)
         plt.close()
     
@@ -434,12 +438,15 @@ class PlotUtils():
     def make_cumulant_error_plot(self,t_vec,cumulants_nn,cumulants_ref):    
         l1_err = self.l1_error(cumulants_nn,cumulants_ref)
         l2_err = self.l2_error(cumulants_nn,cumulants_ref)
-        fig = self.plotter.plot_cumulants(t_vec,[l1_err,l2_err],
+        fig = plot_cumulants(t_vec,[l1_err,l2_err],
                                                         ["Relative L1","Relative L2"],
                                                         0,
                                                         benchmark=None,
                                                         add_free_diffusion=False)
         save_fig_(fig,"cumulants_errors",loc=self.resultsdir)
+        
+        if self.wandb_run is not None:
+            self.wandb_run.log({"cumerrs":fig})
 
     def make_drift_error_plot(self):    
 
@@ -465,6 +472,24 @@ class PlotUtils():
         print("L2 = ",np.trapezoid(l2_errs,t_vec))
         save_fig_(fig,"drift_errors",loc=self.resultsdir)
 
+    def make_cumulant_plot(self,t_vec,cumulants_nn,cumulants_ref,
+                            mcsamples,
+                            add_free_diffusion=False):
+
+        #cumulant figs and csv 
+        fig = plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],
+                                                ["NN estimated","Benchmark"],
+                                                mcsamples,
+                                                self.benchmark,
+                                                add_free_diffusion,
+                                                self.boundary_cond.params["epsilon"])
+        if self.wandb_run is not None:
+            self.wandb_run.log({"cums":fig})
+
+        save_fig_(fig,"cumulants",loc=self.resultsdir)
+        save_cumulants_csv(t_vec,cumulants_nn,loc=self.resultsdir)
+        save_cumulants_csv(t_vec,cumulants_ref,loc=self.resultsdir,cumulants_filename="ref_cumulants")
+        plt.close("all")
 
 def compute_ref_dynamic_kl(benchmark):
     """Estimate of the dynamic kl divergence for the Gaussian benchmark data.

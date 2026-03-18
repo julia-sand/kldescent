@@ -216,6 +216,21 @@ def checkpoint_plot_params():
 
     return vars(args5[0])
 
+def metric_params():
+
+    # Instantiate the parser
+    metric_params = CustomArgParse()
+    #subparser = parser.add_subparsers()
+
+    metric_params.add_argument('-usewandb','--usewandb', type=bool, default=False,
+                        help='log into wandb')
+
+    metric_params.add_argument('-usebenchmark','--usebenchmark', type=bool, default=False,
+                        help='compute benchmarks')
+
+    args2 = metric_params.parse_known_args(metric_params.argfile)[0]
+
+    return args2.usebenchmark,args2.usewandb
 
 if __name__=="__main__":
     
