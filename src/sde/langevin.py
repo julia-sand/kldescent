@@ -14,7 +14,6 @@ class SDEBase():
     def __init__(self,boundary_data,
                     sde_params=None):
                     
-        self.device = "cpu"            
         self.boundary = boundary_data
 
         #get params 
@@ -22,38 +21,54 @@ class SDEBase():
             self.sde_params = sde_params #take params from given yaml
         else:
             self.sde_params = integrator_params() #parse command line
-
-    def generate_time_grid(self,Tf=None,tsteps=None):
-        """
-        Samples the interval [0,Tf] and returns sorted set of values to be used in integration
-        """
+    
+    @torch.no_grad
+    def generate_time_grid(self,benchmark=None,Tf=None,tsteps=None):
+        """Generate time grid for comparison with benchmark"""
 
         if Tf ==None:
             Tf = self.boundary.params["Tf"]
         if tsteps==None:
             tsteps= self.sde_params["tsteps"]
+            
+        if benchmark is None:
+            return self.uniform_random_time_grid(Tf,tsteps) #use random time grid
+        else: 
+            if benchmark.du_net_benchmark is not None:
+                return self.uniform_random_time_grid(Tf,tsteps) #use random time grid
+            else: 
+                #use fixed times from csv
+                return torch.from_numpy(benchmark.get_timegrid()).to(self.device)
         
-        #TODO : get self.sde_params["tsteps"] as a fraction of the total time
-        
-        return torch.concatenate([[0],
-                                torch.rand(,dtype=torch.float32,requires_grad=False),
-                                [Tf]]).to(self.device)
+    @torch.no_grad
+    def uniform_random_time_grid(self,Tf,tsteps):
+        """
+        Generate a randomly sampled time grid to be used in integration
+        """
+        return torch.concatenate([torch.zeros(1),
+                                Tf*torch.sort(torch.rand(tsteps,dtype=torch.float32,requires_grad=False))[0],
+                                Tf*torch.ones(1)]).to(self.device)   
     
     @torch.no_grad()
     def generate_innovation(self,dt,size_like):
         """generate a step of brownian motion"""
-        return np.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32)
+        return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32)
 
+    @torch.no_grad 
+    def cross_corr(self,temp):
+        return torch.sum((temp[...,0]-torch.nanmean(temp[...,0]))*(temp[...,1]-torch.nanmean(temp[...,1])))/len(temp[...,0])
+
+    @torch.no_grad
     def save_cumulants(self,save_array,temp):
       """Append the computed cumulants to a new array"""
       
-      return np.append(save_array,np.array([[np.nanmean(temp[...,0]),
-                                              np.nanmean(temp[...,1]),
-                                              np.nanvar(temp[...,0]),
-                                              np.nanvar(temp[...,1]),
-                                              np.correlate(temp[...,0],temp[...,1])[0]/(len(temp[...,0]))]]),axis=0)#cross corr
+      return torch.cat((save_array,torch.tensor([[torch.nanmean(temp[...,0]),
+                                              torch.nanmean(temp[...,1]),
+                                              torch.var(temp[...,0]),
+                                              torch.var(temp[...,1]),
+                                              self.cross_corr(temp)]])),dim=0)#cross corr
 
-    #@profile
+    @torch.no_grad
     def compute_metrics(self,benchmark=None):
         """
         Computes sample evolutions of the dynamics and saves the metrics for 
@@ -78,18 +93,8 @@ class SDEBase():
         with torch.no_grad():
 
             self.net.eval()
-                  
-            if benchmark is None:
-                t_vec = self.generate_time_grid() #use random time grid
-            else: 
-                if benchmark.du_net_benchmark is not None:
-                    t_vec = self.generate_time_grid() #use random time grid
-                else: 
-                    #use fixed times from csv
-                    t_vec = benchmark.get_timegrid()
-            
-            t_vec.to(self.device)
 
+            t_vec = self.generate_time_grid(benchmark)
             #initialise x values as samples from assigned initial distribution
             xinit = torch.tensor(self.boundary.generate_samples(self.testing_samples,"initial"),requires_grad=False,dtype=torch.float32).to(self.device)
             xinit_ref = torch.clone(xinit).to(self.device)
@@ -109,6 +114,7 @@ class SDEBase():
         return 0.5*torch.mean(kldyn).item(), xinit.detach().numpy(),xinit_ref.detach().numpy()
         # kl_static, mean0, var0 
     
+    @torch.no_grad
     def update_ref_statistics(self,time=None,testing_samples=None,x0_samples=None):
         """
         Generate samples from the intermediate distribution by evolving the SDE
@@ -140,15 +146,14 @@ class SDEBase():
         
         with torch.no_grad():
 
-            t_vec = self.generate_time_grid()#torch.linspace(0,time,t_steps)
-            t_vec.to(self.device)
+            t_vec = self.uniform_random_time_grid(time,t_steps)#torch.linspace(0,time,t_steps)
+            
 
             if x0_samples == None: #default to the integrator 
-                xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32)
+                xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32).to(self.device)
             else:
-                xinit = x0_samples.detach().clone()
+                xinit = x0_samples.clone().to(self.device)
 
-            xinit.to(self.device)
             for i in range(0,len(t_vec)-1):
                 dt = (t_vec[i+1]-t_vec[i])
                 
@@ -156,6 +161,7 @@ class SDEBase():
          
         return xinit
 
+    @torch.no_grad
     def compute_sde_cumulants(self,benchmark=None,mcsamples=None):
         """
         Compute the evolution of the SDE while saving cumulants 
@@ -182,29 +188,20 @@ class SDEBase():
         if mcsamples is None: #default to test samples
             mcsamples = self.sde_params["testsamples"]
 
-        if benchmark is None:
-            t_vec = self.generate_time_grid()
-        else:
-            if benchmark.du_net_benchmark is not None:
-                t_vec = self.generate_time_grid()
-            else:
-                t_vec = benchmark.get_timegrid()
-
-        t_vec.to(self.device)
-
+        t_vec = self.generate_time_grid(benchmark)
+        
         #initialise x values at \delta_0 (i.e. x=0)
-        xinit = torch.tensor(self.boundary.generate_samples(mcsamples,"initial"),requires_grad=False,dtype=torch.float32).to(device)
+        xinit = torch.tensor(self.boundary.generate_samples(mcsamples,"initial"),requires_grad=False,dtype=torch.float32).to(self.device)
         xref = torch.clone(xinit).to(self.device)
 
         #save the cumulants of the evolutions
-        cumulants_nn = self.save_cumulants(np.empty((0,5)),xinit.numpy())
-        cumulants_ref = self.save_cumulants(np.empty((0,5)),xref.numpy())
+        cumulants_nn = self.save_cumulants(torch.empty((0,5),requires_grad=False,dtype=torch.float32),xinit).to(self.device)
+        cumulants_ref = self.save_cumulants(torch.empty((0,5),requires_grad=False,dtype=torch.float32),xref).to(self.device)
         
         self.net.eval()
 
         with torch.no_grad():
 
-            #self.generate_time_grid()
             for i in range(0,len(t_vec)-1):
                 dt = (t_vec[i+1]-t_vec[i])
                
@@ -212,8 +209,8 @@ class SDEBase():
         
                 xref = self.benchmark_integration_step(xref,dt,t_vec[i],benchmark)
                 
-                cumulants_nn = self.save_cumulants(cumulants_nn,xinit.cpu().numpy())
-                cumulants_ref = self.save_cumulants(cumulants_ref,xref.cpu().numpy())
+                cumulants_nn = self.save_cumulants(cumulants_nn,xinit)
+                cumulants_ref = self.save_cumulants(cumulants_ref,xref)
         
         return t_vec, xinit.cpu().numpy(), xref.cpu().numpy(), cumulants_nn.cpu(), cumulants_ref.cpu()
 
@@ -231,7 +228,9 @@ class EulerMaruyamaSDE(SDEBase):
         self.TerminalCost = terminal_cost
         self.net = net 
         self.testing_samples =self.sde_params["testsamples"]
+        self.device = self.net.device
 
+    @torch.no_grad
     def compute_benchmark_drift(self,xinit,t,benchmark):
         
         if benchmark is None:
@@ -246,7 +245,6 @@ class EulerMaruyamaSDE(SDEBase):
         
         return du
 
-    @torch.no_grad()
     def integration_step(self,xinit,dt,t):
 
         dw = self.generate_innovation(dt,size_like=xinit[...,[0]])#self.testing_samples)
@@ -287,7 +285,7 @@ class EulerMaruyamaSDE(SDEBase):
         """
         
         self.net.train()
-        t_vec = self.generate_time_grid()
+        t_vec = self.uniform_random_time_grid(self.boundary.params["Tf"],self.sde_params["tsteps"])
 
         #initialise x values 
         xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32).to(self.device)
@@ -404,10 +402,10 @@ class VerletSDE(SDEBase):
         """
         
         self.net.train()
-        t_vec = self.generate_time_grid()
+        t_vec = self.uniform_random_time_grid(self.boundary.params["Tf"],self.sde_params["tsteps"])
 
         #initialise x values 
-        xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32).to(device)
+        xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32).to(self.device)
         
         #set up a,abar,c,cbar
         a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)

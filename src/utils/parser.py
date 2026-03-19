@@ -68,7 +68,7 @@ def overdamped_argparser():
                         help='Total number of training epochs; relates to number of parameter updates for the drift (du) network')
     
     parser.add_argument('-device','--device', default="cpu",
-                        help='Device to use. Currently only CPU supported')
+                        help='Device to use. If gpu is passed, checks if available and defaults to cpu')
     
     parser.add_argument('-logstep','--logstep', type=int, default=1,
                         help='Frequency to save checkpoints and compute loss metrics')

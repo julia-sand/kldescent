@@ -101,6 +101,8 @@ class PlotUtils():
 
         params = checkpoint_plot_params() #get checkpoint plot parameters from cmd line
         
+
+
         self.boundary_cond = boundary_cond
         self.data_loaded = data_loaded
 
@@ -143,7 +145,7 @@ class PlotUtils():
     def load_du_checkpoint(self):
         """Load neural network and initialise integration method"""
 
-        self.net = NeuralNetwork(self.boundary_cond,self.data_loaded)
+        self.net = NeuralNetwork(self.boundary_cond,nn_params=self.data_loaded)
         load_checkpoint(self.net,self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
         
         self.integrator = langevin.EulerMaruyamaSDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)

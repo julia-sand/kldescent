@@ -13,7 +13,6 @@ import src.model.pretrain as pretrain
 #from src.benchmark.benchmarksol import *
 from src.trainloop import train_loop_du
 
-
 def run():
     
     print(f"{torch.get_num_threads()} threads and {torch.get_num_interop_threads()} interop threads being used by torch")
@@ -34,7 +33,7 @@ def run():
     #initialise the model using parsed boundary conditions
     boundaryconditions = getattr(boundaries,args["boundary"])(logfile=metrics_logger.datayaml)
        
-    net = nn.NeuralNetwork(boundaryconditions).to(args["device"])
+    net = nn.NeuralNetwork(boundaryconditions,args["device"])
     
     terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,fileloc=metrics_logger.newpath,filename=metrics_logger.datayaml)
     

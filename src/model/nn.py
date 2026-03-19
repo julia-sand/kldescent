@@ -104,9 +104,21 @@ class FourierFeatures(nn.Module):
 
 #@torch.compile
 class NeuralNetwork(nn.Module):
-    def __init__(self,boundary,nn_params=None):
+    def __init__(self,boundary,device=None,nn_params=None):
         
         self.net_name = "du"
+        
+        if device=="cpu":
+            self.device=device
+        else:
+            if torch.cuda.is_available():
+                self.device = "gpu"
+            else:
+                print("No GPU available. Training on CPU")
+                self.device = "cpu"
+    
+
+        
         if nn_params is not None:
             self.params = nn_params    
         else:
@@ -125,18 +137,18 @@ class NeuralNetwork(nn.Module):
             #nn.GELU(), #MyActivation(),
             #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
             nn.ReLU(),  #must be positive
-            ) 
+            ).to(self.device)
         self.NNx = nn.Sequential(
             nn.Linear(1, self.params["duhiddenlayerneurons"] ),  #input x
             nn.GELU(),
             nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            )    
+            ).to(self.device) 
         self.NN1 = nn.Sequential(
             nn.Linear(2*self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
             nn.GELU(),
             nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
             nn.GELU(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , 1))  
+            nn.Linear(self.params["duhiddenlayerneurons"] , 1)).to(self.device)  
         self.NN2 = nn.Sequential(
             nn.Linear(2*self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
             nn.GELU(),
@@ -144,8 +156,8 @@ class NeuralNetwork(nn.Module):
             nn.GELU(),
             nn.Linear(self.params["duhiddenlayerneurons"] , 1),   #64 outputs
             nn.ReLU(), #must be positive
-            )  
-        self.FourierFeatures = FourierFeatures(2*self.params["duhiddenlayerneurons"])
+            ).to(self.device) 
+        self.FourierFeatures = FourierFeatures(2*self.params["duhiddenlayerneurons"]).to(self.device)
 
         self.checkpoint_path = fetch_checkpoint_path()
         if self.checkpoint_path is not None: #automatically loads a checkpoint from the command line
