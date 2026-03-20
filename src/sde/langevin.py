@@ -52,21 +52,26 @@ class SDEBase():
     @torch.no_grad()
     def generate_innovation(self,dt,size_like):
         """generate a step of brownian motion"""
-        return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32)
+        return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32).to(self.device)
 
     @torch.no_grad 
     def cross_corr(self,temp):
         return torch.sum((temp[...,0]-torch.nanmean(temp[...,0]))*(temp[...,1]-torch.nanmean(temp[...,1])))/len(temp[...,0])
 
     @torch.no_grad
-    def save_cumulants(self,save_array,temp):
-      """Append the computed cumulants to a new array"""
-      
-      return torch.cat((save_array,torch.tensor([[torch.nanmean(temp[...,0]),
+    def compute_cumulant_row(self,temp):
+        return torch.tensor([[torch.nanmean(temp[...,0]),
                                               torch.nanmean(temp[...,1]),
                                               torch.var(temp[...,0]),
                                               torch.var(temp[...,1]),
-                                              self.cross_corr(temp)]])),dim=0)#cross corr
+                                              self.cross_corr(temp)]])
+
+    @torch.no_grad
+    def save_cumulants(self,rows):
+      """Append the computed cumulants to a new array and return in numpy"""
+      temp = torch.cat(rows, dim=0).cpu().numpy()
+      print(temp.shape)
+      return temp
 
     @torch.no_grad
     def compute_metrics(self,benchmark=None):
@@ -111,7 +116,7 @@ class SDEBase():
                 
                 kldyn = kldyn + dt*(du_bar**2)
             
-        return 0.5*torch.mean(kldyn).item(), xinit.detach().numpy(),xinit_ref.detach().numpy()
+        return 0.5*torch.mean(kldyn).item(), xinit.detach().cpu().numpy(),xinit_ref.detach().cpu().numpy()
         # kl_static, mean0, var0 
     
     @torch.no_grad
@@ -195,9 +200,11 @@ class SDEBase():
         xref = torch.clone(xinit).to(self.device)
 
         #save the cumulants of the evolutions
-        cumulants_nn = self.save_cumulants(torch.empty((0,5),requires_grad=False,dtype=torch.float32),xinit).to(self.device)
-        cumulants_ref = self.save_cumulants(torch.empty((0,5),requires_grad=False,dtype=torch.float32),xref).to(self.device)
-        
+        cumulants_nn = []#self.save_cumulants(torch.empty((0,5),requires_grad=False,dtype=torch.float32),xinit).to(self.device)
+        cumulants_ref = []#self.save_cumulants(torch.empty((0,5),requires_grad=False,dtype=torch.float32),xref).to(self.device)
+        cumulants_nn.append(self.compute_cumulant_row(xinit))
+        cumulants_ref.append(self.compute_cumulant_row(xinit))
+
         self.net.eval()
 
         with torch.no_grad():
@@ -209,10 +216,14 @@ class SDEBase():
         
                 xref = self.benchmark_integration_step(xref,dt,t_vec[i],benchmark)
                 
-                cumulants_nn = self.save_cumulants(cumulants_nn,xinit)
-                cumulants_ref = self.save_cumulants(cumulants_ref,xref)
+                cumulants_nn.append(self.compute_cumulant_row(xinit))#self.save_cumulants(cumulants_nn,xinit)
+                cumulants_ref.append(self.compute_cumulant_row(xref))
         
-        return t_vec, xinit.cpu().numpy(), xref.cpu().numpy(), cumulants_nn.cpu(), cumulants_ref.cpu()
+        #save as numpy arrays and return to cpu for plots
+        cumulants_nn = self.save_cumulants(cumulants_nn)
+        cumulants_ref = self.save_cumulants(cumulants_ref)
+
+        return t_vec, xinit.cpu().numpy(), xref.cpu().numpy(), cumulants_nn,cumulants_ref #cumulants_nn.cpu(), cumulants_ref.cpu()
 
 class EulerMaruyamaSDE(SDEBase):
 
@@ -237,7 +248,7 @@ class EulerMaruyamaSDE(SDEBase):
             du = torch.zeros_like(xinit[...,[0]],dtype=torch.float32,requires_grad=False)
         else:
             if benchmark.du_net_benchmark is not None:
-                du = benchmark.du_net_benchmark(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
+                du = benchmark.du_net_benchmark(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
                                                             ,xinit[...,[0]])))
             else:
                 du = torch.as_tensor(benchmark.get_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
@@ -250,7 +261,7 @@ class EulerMaruyamaSDE(SDEBase):
         dw = self.generate_innovation(dt,size_like=xinit[...,[0]])#self.testing_samples)
 
         #compute du 
-        du = self.net(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
+        du = self.net(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
                                                             ,xinit[...,[0]]))).detach()
                     
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt)
@@ -291,11 +302,11 @@ class EulerMaruyamaSDE(SDEBase):
         xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32).to(self.device)
         
         #set up a,abar,c,cbar
-        a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
-        abar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32)
-        bbar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32)
-        c = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
-        dw = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32)
+        a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
+        abar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32).to(self.device)
+        bbar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32).to(self.device)
+        c = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
+        dw = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32).to(self.device)
 
         for i in range(0,self.sde_params["tsteps"]-1):
             dt = (t_vec[i+1]-t_vec[i])
@@ -303,7 +314,7 @@ class EulerMaruyamaSDE(SDEBase):
             dw = self.generate_innovation(dt,xinit[...,[0]])
            
             #get neural network drift
-            du = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32)
+            du = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
                                                     ,xinit[...,[0]])))
                     
             a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True) ** 2) 
@@ -351,7 +362,7 @@ class VerletSDE(SDEBase):
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
 
         #compute du 
-        du = self.net(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
+        du = self.net(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
                                                             ,xinit[...,[0]]))).detach()
                     
         #Update the velocity
@@ -423,7 +434,7 @@ class VerletSDE(SDEBase):
             xinit[...,[0]] += self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)      
             
             #get neural network drift
-            du = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32)
+            du = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
                                                         ,xinit[...,[0]])))
                            
             a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True)**2) 

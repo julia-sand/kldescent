@@ -50,7 +50,7 @@ def loss_fn(self):
 
     with torch.no_grad():
         #compute terminal cost
-        gvals = self.TerminalCost.gfun(xinit.clone().detach())
+        gvals = self.TerminalCost.gfun(xinit.detach().clone())
             
     #compute value of Lhat
     Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))

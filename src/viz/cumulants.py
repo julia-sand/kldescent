@@ -1,6 +1,7 @@
 """Make plots to visualise cumulants"""
 
 import string
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np 
@@ -54,7 +55,9 @@ def make_cumulant_subplot(ax,#gs_location,
                             ylabel_text,
                             t_vec,
                             cumulants_nn_plot,label,test_samples):
-
+  with warnings.catch_warnings(): #dont print divide by zero warnings (these are handled in the script)
+    warnings.simplefilter("ignore")
+    
     if ylabel_text=="Position Mean":
       index = 0 
       yerr=np.sqrt(cumulants_nn_plot[:,2]/test_samples)

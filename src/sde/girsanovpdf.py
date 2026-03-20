@@ -49,6 +49,7 @@ def compute_pdf(x0,
     ====
     """
 
+    #todo fix this
     args = integrator_params()
     tsteps = args["tsteps"]
     if mc_samples is None: #use default if none given
@@ -57,24 +58,25 @@ def compute_pdf(x0,
     with torch.no_grad():
         
         if mc_samples == 1:
-            xinit = x0.clone()
+            xinit = x0.clone().to(net.device)
         else:
-            xinit = torch.broadcast_to(x0,(mc_samples,2)).clone()
+            xinit = torch.broadcast_to(x0,(mc_samples,2)).clone().to(net.device)
 
-        t_vec = torch.linspace(0,Tf,tsteps,requires_grad=False,dtype=torch.float32)
+        t_vec = torch.linspace(0,Tf,tsteps,requires_grad=False,dtype=torch.float32).to(net.device)
 
-        #preallocate girsanov integrals
-        girs = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
+        #preallocate girsanov integrals and results
+        girs = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(net.device)
+        pdfout = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(net.device)
 
         for i in range(1,len(t_vec)):#self.sde_params["tsteps"]+1):
                             
             #get timestep
             dt = torch.abs(t_vec[-i-1]-t_vec[-i])
             
-            dw = (dt**0.5)*torch.randn_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
+            dw = (dt**0.5)*torch.randn_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(net.device)
 
             #evaluate neural network approximated drift 
-            du_bar = net(torch.column_stack((t_vec[-i]*torch.ones_like(xinit,dtype=torch.float32)
+            du_bar = net(torch.column_stack((t_vec[-i]*torch.ones_like(xinit,dtype=torch.float32).to(net.device)
                                                         ,xinit[...,[0]])))
             
             #one backward step of euler maruyama scheme of stochastic evolution

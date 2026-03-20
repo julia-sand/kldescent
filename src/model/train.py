@@ -152,7 +152,7 @@ class Train():
         Lhat.backward()
         self.optimiser.step()
             
-        return Lhat.detach().numpy().item()
+        return Lhat.detach().cpu().numpy()
 
 class TrainRho():
     """

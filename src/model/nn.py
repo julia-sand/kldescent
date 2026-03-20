@@ -112,7 +112,7 @@ class NeuralNetwork(nn.Module):
             self.device=device
         else:
             if torch.cuda.is_available():
-                self.device = "gpu"
+                self.device = "cuda"
             else:
                 print("No GPU available. Training on CPU")
                 self.device = "cpu"

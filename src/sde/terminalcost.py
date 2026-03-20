@@ -73,7 +73,7 @@ class GirsanovMC(TerminalCost):
 
     def get_logpdf(self,x,net,mc_samples):
         
-        pdf = torch.zeros_like(x[...,[0]])    
+        pdf = torch.zeros_like(x[...,[0]]).to(net.device)
         for i in range(pdf.shape[0]):
             pdf[i] = torch.mean(compute_pdf(x[i,None],net,
                                     self.boundary.sigma0,

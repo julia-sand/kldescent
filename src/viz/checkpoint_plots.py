@@ -34,6 +34,7 @@ def generate_mesh(x_samples,qmax=6):
     Q,P = np.meshgrid(q_init,p_init)
     return Q,P
 
+@torch.no_grad
 def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=None):
     """
     Computes an estimate of the final joint distribution using girsanov theorem
@@ -64,13 +65,13 @@ def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=No
 
     with torch.no_grad():
         for i in range(pdf.shape[0]):
-            pdf_out[i] = torch.mean(compute_pdf(x[i,None],net,
+            pdf_out[i] = np.mean(compute_pdf(x[i,None],net,
                                     self.boundary.sigma0,
                                     self.boundary.params["epsilon"],
                                     self.boundary.p_initial,
-                                    self.boundary.params["Tf"]))
+                                    self.boundary.params["Tf"]).cpu().numpy())
         #print(pdf) 
-    return xinit.detach().numpy(),pdf_out.detach().numpy()
+    return xinit.cpu().numpy(),pdf_out.cpu().numpy()
 
 class PlotUtils():
     """
@@ -101,8 +102,6 @@ class PlotUtils():
 
         params = checkpoint_plot_params() #get checkpoint plot parameters from cmd line
         
-
-
         self.boundary_cond = boundary_cond
         self.data_loaded = data_loaded
 
@@ -173,7 +172,7 @@ class PlotUtils():
             self.benchmark=None
 
         self.make_drift_plot(numplots=5)
-        self.make_sde_plots(mcsamples)
+        self.make_sde_plots(mcsamples,usebenchmark)
         #self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
         
     def load_ref_solution(self):
@@ -194,7 +193,7 @@ class PlotUtils():
         #self.make_intermediate_histograms(plottimes=plottimes)
         self.make_drift_plot(numplots=4)
 
-    def make_sde_plots(self,mcsamples):
+    def make_sde_plots(self,mcsamples,usebenchmark):
         """Make plots and save results of sde integration 
         1. compute final point clouds
         2. make final time marginal distribution plot
@@ -214,7 +213,9 @@ class PlotUtils():
         
         self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples,
                                         add_free_diffusion=False,)
-        self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref)
+        if usebenchmark:
+            self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref)
+        
         #marginal distribution fig
         fig = self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,benchmark=self.benchmark)
         save_fig_(fig,f"marginal_time_{final_plot_time}",loc=self.resultsdir)
@@ -433,7 +434,7 @@ class PlotUtils():
         return cumulants_nn[:,0],cumulants_nn[:,1:],cumulants_ref[:,1:]
     
     def make_cumulant_error_plot_from_csv(self,):
-        mcsamples = self.data_loaded["testsamples"]
+        #mcsamples = self.data_loaded["testsamples"]
         t_vec,cumulants_nn,cumulants_ref = self.load_cumulant_csvs()
         self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref)
 

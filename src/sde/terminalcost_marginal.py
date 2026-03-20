@@ -185,8 +185,8 @@ class NormFlow(TerminalCost):
         #make a plot of final points vs estimated distribution
         pdf_temp = torch.exp(self.get_half_logpdf(x))
         pdf_temp[torch.isnan(pdf_temp)] = 0
-        plt.scatter(x[...,0].detach().numpy(),pdf_temp.data.numpy())
-        plt.hist(x[...,0].detach().numpy(),density=True,bins=100,alpha=0.5,color="orange")
+        plt.scatter(x[...,0],pdf_temp.data.numpy())
+        plt.hist(x[...,0],density=True,bins=100,alpha=0.5,color="orange")
         plt.savefig(plot_loc+"/distribution.png")
         plt.close()
         
