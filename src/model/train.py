@@ -3,7 +3,7 @@ import os
 import numpy as np 
 import torch
 from torch import nn as torchnn
-from torch.optim import Adam
+from torch.optim import Adam,SGD
 from torch.optim.lr_scheduler import CosineAnnealingLR,ExponentialLR,ReduceLROnPlateau
 from torch.nn.utils import clip_grad_norm_
 
@@ -124,7 +124,7 @@ class Train():
 
         self.clip = 0.001 #gradient clipping
 
-        self.optimiser = Adam(self.net.parameters(), lr=self.lr)
+        self.optimiser = SGD(self.net.parameters(), lr=self.lr)
         self.milestone = 400 #how often to decay learning rate
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541

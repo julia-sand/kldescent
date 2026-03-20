@@ -69,9 +69,7 @@ class SDEBase():
     @torch.no_grad
     def save_cumulants(self,rows):
       """Append the computed cumulants to a new array and return in numpy"""
-      temp = torch.cat(rows, dim=0).cpu().numpy()
-      print(temp.shape)
-      return temp
+      return torch.cat(rows, dim=0).cpu().numpy()
 
     @torch.no_grad
     def compute_metrics(self,benchmark=None):
@@ -116,7 +114,7 @@ class SDEBase():
                 
                 kldyn = kldyn + dt*(du_bar**2)
             
-        return 0.5*torch.mean(kldyn).item(), xinit.detach().cpu().numpy(),xinit_ref.detach().cpu().numpy()
+        return 0.5*torch.mean(kldyn).item(), xinit.cpu().numpy(),xinit_ref.cpu().numpy()
         # kl_static, mean0, var0 
     
     @torch.no_grad
@@ -190,6 +188,8 @@ class SDEBase():
             cumulants computed during ref evolution
         """
             
+        self.net.eval()
+
         if mcsamples is None: #default to test samples
             mcsamples = self.sde_params["testsamples"]
 
@@ -204,8 +204,6 @@ class SDEBase():
         cumulants_ref = []#self.save_cumulants(torch.empty((0,5),requires_grad=False,dtype=torch.float32),xref).to(self.device)
         cumulants_nn.append(self.compute_cumulant_row(xinit))
         cumulants_ref.append(self.compute_cumulant_row(xinit))
-
-        self.net.eval()
 
         with torch.no_grad():
 
@@ -223,7 +221,7 @@ class SDEBase():
         cumulants_nn = self.save_cumulants(cumulants_nn)
         cumulants_ref = self.save_cumulants(cumulants_ref)
 
-        return t_vec, xinit.cpu().numpy(), xref.cpu().numpy(), cumulants_nn,cumulants_ref #cumulants_nn.cpu(), cumulants_ref.cpu()
+        return t_vec.cpu().numpy(), xinit.cpu().numpy(), xref.cpu().numpy(), cumulants_nn,cumulants_ref #cumulants_nn.cpu(), cumulants_ref.cpu()
 
 class EulerMaruyamaSDE(SDEBase):
 
@@ -331,7 +329,7 @@ class EulerMaruyamaSDE(SDEBase):
 
         with torch.no_grad():
             #compute terminal cost
-            gvals = self.TerminalCost.gfun(xinit.detach().clone(),self.net,self.sde_params["testsamples"])
+            gvals = self.TerminalCost.gfun(xinit.detach().clone(),self.net,self.sde_params["testsamples"]).to(self.device)
 
         #compute value of Lhat
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
@@ -452,7 +450,7 @@ class VerletSDE(SDEBase):
 
         with torch.no_grad():
             #compute terminal cost
-            gvals = self.TerminalCost.gfun(xinit.clone().detach())
+            gvals = self.TerminalCost.gfun(xinit.detach().clone(),self.net,self.sde_params["testsamples"]).to(self.device)
                 
         #compute value of Lhat
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))

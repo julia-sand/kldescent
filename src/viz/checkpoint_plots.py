@@ -10,7 +10,7 @@ from ..model.nn import RhoNeuralNetwork,NeuralNetwork,load_checkpoint
 from .plots import *
 from ..sde import langevin
 from ..sde.girsanovpdf import compute_pdf
-from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd
+from ..utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd,metric_params
 from ..utils.getboundary import init_params_from_file
 from ..benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmarkSolution
 from .cumulants import plot_cumulants
@@ -222,13 +222,14 @@ class PlotUtils():
         
         plt.close("all")
     
-    ##@profile
+    @torch.no_grad
     def evaluate_net_output(self,net,time):
+        net.eval()
         with torch.no_grad():
             #computes neural network output (forward pass) to use in plotting
-            return net(torch.column_stack((time*torch.ones((1000,1),requires_grad=False,dtype=torch.float32)
-                                                        ,torch.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000,requires_grad=False)))).detach()
-    
+            return net(torch.column_stack((time*torch.ones((1000,1),requires_grad=False,dtype=torch.float32).to(net.device)
+                                                        ,torch.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000,requires_grad=False).to(net.device)))).cpu().numpy()
+        
     def make_drift_plot(self,numplots):
 
         if self.benchmark is not None:
@@ -268,11 +269,11 @@ class PlotUtils():
                 ref_vals = None
             else:
                 if self.benchmark.du_net_benchmark is not None:
-                    ref_vals.append(self.evaluate_net_output(self.benchmark.du_net_benchmark,times[t]).flatten().numpy())
+                    ref_vals.append(self.evaluate_net_output(self.benchmark.du_net_benchmark,times[t]).flatten())
                 else: 
                     ref_vals.append(self.benchmark.get_drift_gaussian(times[t])*np.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000))
 
-            net_vals.append(self.evaluate_net_output(self.net,times[t]).flatten().numpy())
+            net_vals.append(self.evaluate_net_output(self.net,times[t]).flatten())
         
         return net_vals,ref_vals
 
@@ -339,13 +340,13 @@ class PlotUtils():
         for i in range(len(plottimes)):
             
             self.integrator.net = self.net
-            x_du = self.integrator.update_ref_statistics(time=plottimes[i])
+            x_du = self.integrator.update_ref_statistics(time=plottimes[i]).cpu().numpy()
             
             #UPDATE NET FOR INTEGRATOR
             self.integrator.net = self.benchmark.du_net_benchmark
-            x_ref = self.integrator.update_ref_statistics(time=plottimes[i])
+            x_ref = self.integrator.update_ref_statistics(time=plottimes[i]).cpu().numpy()
                         
-            self.plotter.marginal_distribution(axs[i],[x_du.detach().numpy(),x_ref.detach().numpy()],plottimes[i],benchmark=self.benchmark)
+            self.plotter.marginal_distribution(axs[i],[x_du,x_ref],plottimes[i],benchmark=self.benchmark)
             
         h,l = get_all_subplot_handles_labels(fig)
         
@@ -525,8 +526,9 @@ def compute_ref_dynamic_kl(benchmark):
 if __name__=="__main__":
 
     plot_utils = PlotUtils()
+    usebenchmark,_ = metric_params()
 
-    plot_utils.checkpoint_plots_du()
+    plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark)
     #plot_utils.make_cumulant_error_plot_from_csv()
 
     if plot_utils.data_loaded["terminalcost"]=="GirsanovNet":

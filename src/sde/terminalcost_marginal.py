@@ -105,7 +105,7 @@ class Histogram(TerminalCost):
     def update_cost_params(self,integrator,epoch,*_):
         """compute a histogram for the final distribution"""
 
-        x = integrator.update_ref_statistics().numpy()
+        x = integrator.update_ref_statistics().cpu().numpy()
         H, xedges = np.histogram(x[...,0], 
                                             bins=self.nbins,
                                             range=self.xrange,

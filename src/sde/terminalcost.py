@@ -159,19 +159,20 @@ class MLE(TerminalCost):
         x = integrator.update_ref_statistics()
 
         #set new mean and variance and covariance
-        self.pos_mean0 = torch.nanmean(x[...,0]).item() 
-        self.mom_mean0 = torch.nanmean(x[...,1]).item() 
+        self.pos_mean0 = torch.nanmean(x[...,0])
+        self.mom_mean0 = torch.nanmean(x[...,1])
 
         #self.Sigma_matrix = torch.cov(x)
 
-        self.pos_var0 = torch.var(x[...,0]).item()
-        self.mom_var0 = torch.var(x[...,1]).item()
+        self.pos_var0 = torch.var(x[...,[0]])
+        self.mom_var0 = torch.var(x[...,[1]])
 
-        self.cc0 = (torch.sum((x[...,1]-self.mom_mean0)*(x[...,0]-self.pos_mean0))/(len(x[...,0]))).item()
+        self.cc0 = (torch.sum((x[...,1]-self.mom_mean0)*(x[...,0]-self.pos_mean0))/(len(x[...,0])))
+
 
     def multivariate_U(self,x):
         #exponent of a multivariate Gaussian distribution
-        rho_var = self.cc0/np.sqrt(self.mom_var0*self.pos_var0)
+        rho_var = self.cc0/torch.sqrt(self.mom_var0*self.pos_var0)
         return -(1/(2*(1-rho_var**2)))*(((x[...,[0]]-self.pos_mean0)**2)/self.pos_var0 - 2*((x[...,[0]]-self.pos_mean0)*(x[...,[1]]-self.mom_mean0))*(self.cc0/(self.mom_var0*self.pos_var0)) + ((x[...,[1]]-self.mom_mean0)**2)/self.mom_var0)
 
     def get_logpdf(self,x,*_):
@@ -195,7 +196,7 @@ class Histogram(TerminalCost):
     def update_cost_params(self,integrator,*_):
         """make histogram of the final distribution"""
 
-        x = integrator.update_ref_statistics().numpy()
+        x = integrator.update_ref_statistics().cpu().numpy()
         H, yedges, xedges = np.histogram2d(x[...,1], x[...,0], 
                                             bins=500,
                                             range=[[-5, 5], [-5, 5]],
@@ -263,7 +264,7 @@ class NormFlow(TerminalCost):
         self.rho.model.eval()
 
         plot_loc = self.loc 
-        make_scatter_plot(plot_loc,x,self.rho.model,epoch)#,self.boundary)
+        make_scatter_plot(plot_loc,x.cpu().numpy(),self.rho.model,epoch)#,self.boundary)
         distribution_plot(plot_loc,self.rho.model,self.boundary.params["Tf"],epoch,self.boundary)
 
     def get_logpdf(self,x,*_):

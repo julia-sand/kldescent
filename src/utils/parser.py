@@ -101,7 +101,7 @@ def integrator_params():
     integrator_params.add_argument('-tsteps','--tsteps', type=int, default=20,
                         help='number of timesteps in the integration')
 
-    integrator_params.add_argument('-testsamples','--testsamples', type=int, default=1,
+    integrator_params.add_argument('-testsamples','--testsamples', type=int, default=3,
                         help='number of samples for computing ref metrics')
 
     args1 = integrator_params.parse_known_args(integrator_params.argfile)

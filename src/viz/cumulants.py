@@ -8,7 +8,7 @@ import numpy as np
 
 def make_fig_gridspec(nrows=2,ncols=6):
 
-    # Plotting the cumulants
+    #Plotting the cumulants
     fig1 = plt.figure(figsize=(15, 8))#, constrained_layout=True)
 
     # Create a grid 
@@ -167,7 +167,7 @@ def plot_cumulants(t_vec,cumulants,labels,test_samples,
                                           test_samples)
       
         if add_free_diffusion:
-            assert epsilon is not None
+            assert epsilon is not None #check that epsilon is passed correctly
             add_freediffusion_cumulants_subplot(ax,cumulant[1],t_vec,cumulant_vec,epsilon) 
 
         if benchmark is not None:

@@ -102,6 +102,10 @@ class FourierFeatures(nn.Module):
         t = torch.cat((t.sin(), t.cos()), dim=-1)
         return t
 
+class MyActivation(nn.Module):
+    def forward(self,x):
+        return torch.sin(x)
+
 #@torch.compile
 class NeuralNetwork(nn.Module):
     def __init__(self,boundary,device=None,nn_params=None):
@@ -132,7 +136,7 @@ class NeuralNetwork(nn.Module):
         #self.tencoding = TimeConder(1,self.hidden_layer_neurons) #fourier positional encoding goes here! 
         self.NNt = nn.Sequential(
             nn.Linear(2*self.params["duhiddenlayerneurons"], self.params["duhiddenlayerneurons"] ),  #
-            nn.GELU(), #MyActivation(),
+            MyActivation(),
             nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
             #nn.GELU(), #MyActivation(),
             #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
@@ -140,22 +144,22 @@ class NeuralNetwork(nn.Module):
             ).to(self.device)
         self.NNx = nn.Sequential(
             nn.Linear(1, self.params["duhiddenlayerneurons"] ),  #input x
-            nn.GELU(),
+            MyActivation(),
             nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
             ).to(self.device) 
         self.NN1 = nn.Sequential(
             nn.Linear(2*self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
-            nn.GELU(),
+            MyActivation(),
             nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            nn.GELU(),
+            MyActivation(),
             nn.Linear(self.params["duhiddenlayerneurons"] , 1)).to(self.device)  
         self.NN2 = nn.Sequential(
             nn.Linear(2*self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
-            nn.GELU(),
+            MyActivation(),
             nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            nn.GELU(),
+            MyActivation(),
             nn.Linear(self.params["duhiddenlayerneurons"] , 1),   #64 outputs
-            nn.ReLU(), #must be positive
+            #nn.ReLU(), #must be positive
             ).to(self.device) 
         self.FourierFeatures = FourierFeatures(2*self.params["duhiddenlayerneurons"]).to(self.device)
 
