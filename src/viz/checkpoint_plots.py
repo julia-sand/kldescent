@@ -171,9 +171,9 @@ class PlotUtils():
         else:
             self.benchmark=None
 
-        self.make_drift_plot(numplots=5)
+        self.make_drift_plot(numplots=10)
         self.make_sde_plots(mcsamples,usebenchmark)
-        #self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
+        self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
         
     def load_ref_solution(self):
         """initialise the reference solution and add to the class""" 
@@ -343,8 +343,8 @@ class PlotUtils():
             x_du = self.integrator.update_ref_statistics(time=plottimes[i]).cpu().numpy()
             
             #UPDATE NET FOR INTEGRATOR
-            self.integrator.net = self.benchmark.du_net_benchmark
-            x_ref = self.integrator.update_ref_statistics(time=plottimes[i]).cpu().numpy()
+            #self.integrator.net = self.benchmark.du_net_benchmark
+            x_ref = x_du#self.integrator.update_ref_statistics(time=plottimes[i]).cpu().numpy()
                         
             self.plotter.marginal_distribution(axs[i],[x_du,x_ref],plottimes[i],benchmark=self.benchmark)
             

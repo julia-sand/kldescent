@@ -12,6 +12,7 @@ def girsanov_scheme(xinit,du_bar,dt,dw,t,sigma0,epsilon):
 
     return xinit
 
+@torch.no_grad
 def compute_pdf(x0,
                     net,
                     sigma0,
@@ -48,6 +49,8 @@ def compute_pdf(x0,
             estimate of the pdf at time Tf at location xinit
     ====
     """
+    
+    net.eval()
 
     #todo fix this
     args = integrator_params()
