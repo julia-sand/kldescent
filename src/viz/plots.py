@@ -226,9 +226,13 @@ class PlotFuns():
     
     #add perturbative analytic predictions distributions to plots if available
     if benchmark is not None:
-      xref,posref = benchmark.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped",time_type="t0")   
-      ax_pos.plot(xref,posref,color="green",alpha=0.5,label="Benchmark Prediction")
-      label2 = "Benchmark Evolved"
+      try:
+        xref,posref = benchmark.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped",time_type="t0")   
+        ax_pos.plot(xref,posref,color="green",alpha=0.5,label="Benchmark Prediction")
+        label2 = "Benchmark Evolved"
+      except ValueError: 
+        print(f"Benchmark data not available for t = {plottime}")
+        label2 = "Free Diffusion"
     else:
       label2 = "Free Diffusion"
     #set iteration properties

@@ -98,6 +98,7 @@ class SDEBase():
             self.net.eval()
 
             t_vec = self.generate_time_grid(benchmark)
+            
             #initialise x values as samples from assigned initial distribution
             xinit = torch.tensor(self.boundary.generate_samples(self.testing_samples,"initial"),requires_grad=False,dtype=torch.float32).to(self.device)
             xinit_ref = torch.clone(xinit).to(self.device)
@@ -106,15 +107,17 @@ class SDEBase():
             kldyn = torch.zeros((self.testing_samples,1),requires_grad=False,dtype=torch.float32).to(self.device)
             
             for i in range(0,len(t_vec)-1):
+                #get time interval
                 dt = (t_vec[i+1]-t_vec[i])
             
                 xinit,du_bar = self.integration_step(xinit,dt,t_vec[i])
         
                 xinit_ref = self.benchmark_integration_step(xinit_ref,dt,t_vec[i],benchmark)
                 
+                #add to integral
                 kldyn = kldyn + dt*(du_bar**2)
             
-        return 0.5*torch.mean(kldyn).item(), xinit.cpu().numpy(),xinit_ref.cpu().numpy()
+        return 0.5*torch.mean(kldyn).detach().cpu().numpy(), xinit.cpu().numpy(),xinit_ref.cpu().numpy()
         # kl_static, mean0, var0 
     
     @torch.no_grad
@@ -135,6 +138,8 @@ class SDEBase():
         ====
         """
 
+        self.net.eval()
+        
         if time is None: 
             time = self.boundary.params["Tf"] 
             #t_steps = self.sde_params["tsteps"]
@@ -145,8 +150,6 @@ class SDEBase():
         if testing_samples == None: #default to the integrator 
             testing_samples = self.testing_samples
 
-        self.net.eval()
-        
         with torch.no_grad():
 
             t_vec = self.uniform_random_time_grid(time,t_steps)#torch.linspace(0,time,t_steps)
@@ -294,6 +297,7 @@ class EulerMaruyamaSDE(SDEBase):
         """
         
         self.net.train()
+        
         t_vec = self.uniform_random_time_grid(self.boundary.params["Tf"],self.sde_params["tsteps"])
 
         #initialise x values 

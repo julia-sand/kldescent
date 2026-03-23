@@ -81,8 +81,8 @@ class MLE(TerminalCost):
         x = integrator.update_ref_statistics()
 
         #set new mean and variance and covariance
-        self.pos_mean0 = torch.nanmean(x[...,0]).item() 
-        self.pos_var0 = torch.var(x[...,0]).item()
+        self.pos_mean0 = torch.nanmean(x[...,0])
+        self.pos_var0 = torch.var(x[...,0])
                
     def get_half_logpdf(self,x):
 
