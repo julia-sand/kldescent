@@ -163,7 +163,7 @@ class NeuralNetwork(nn.Module):
             ).to(self.device) 
         self.FourierFeatures = FourierFeatures(2*self.params["duhiddenlayerneurons"]).to(self.device)
 
-        self.layer_norm = nn.LayerNorm(2*self.params["duhiddenlayerneurons"])
+        self.layer_norm = nn.LayerNorm(self.params["duhiddenlayerneurons"])
         self.checkpoint_path = fetch_checkpoint_path()
         if self.checkpoint_path is not None: #automatically loads a checkpoint from the command line
             try: 
@@ -175,13 +175,13 @@ class NeuralNetwork(nn.Module):
 
     def forward(self, input_vec):   #how the model should evaluate
 
-        x = self.NNx(input_vec[...,[1]])
+        x = self.layer_norm(self.NNx(input_vec[...,[1]]))
         t = self.FourierFeatures(input_vec[...,[0]])#
 
         tout = self.NNt(t)
        
         #concatenate the outputs and put them through the part 2
-        out = self.NN1(self.layer_norm(torch.column_stack((tout,x))))  + self.NN2(t)*self.boundary.scorefinal(input_vec[...,[1]])
+        out = self.NN1(torch.column_stack((tout,x)))  + self.NN2(t)*self.boundary.scorefinal(input_vec[...,[1]])
         
         return out
 

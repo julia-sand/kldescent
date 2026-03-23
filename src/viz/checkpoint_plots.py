@@ -171,7 +171,7 @@ class PlotUtils():
         else:
             self.benchmark=None
 
-        self.make_drift_plot(numplots=10)
+        self.make_drift_plot(numplots=4)
         self.make_sde_plots(mcsamples,usebenchmark)
         self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
         
@@ -359,8 +359,8 @@ class PlotUtils():
         
         fig.tight_layout()
         
-        if self.wandb_run is not None:
-            self.wandb_run.log({"inthists":fig})
+        #if self.wandb_run is not None:
+        #    self.wandb_run.log({"inthists":fig})
 
         save_fig_(fig,"histograms_all",loc=self.resultsdir)
         plt.close()
@@ -449,8 +449,8 @@ class PlotUtils():
                                                         add_free_diffusion=False)
         save_fig_(fig,"cumulants_errors",loc=self.resultsdir)
         
-        if self.wandb_run is not None:
-            self.wandb_run.log({"cumerrs":fig})
+        #if self.wandb_run is not None:
+        #    self.wandb_run.log({"cumerrs":fig})
 
     def make_drift_error_plot(self):    
 
@@ -488,7 +488,7 @@ class PlotUtils():
                                                 add_free_diffusion,
                                                 self.boundary_cond.params["epsilon"])
         if self.wandb_run is not None:
-            self.wandb_run.log({"cums":fig})
+            self.wandb_run.log({"cumulants":fig})
 
         save_fig_(fig,"cumulants",loc=self.resultsdir)
         save_cumulants_csv(t_vec,cumulants_nn,loc=self.resultsdir)

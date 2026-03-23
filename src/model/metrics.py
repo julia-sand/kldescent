@@ -2,11 +2,19 @@ import torch
 import numpy as np 
 
 import wandb
+import psutil
 
 from ..model.nn import save_nn_checkpoint
 from ..sde.kl import static_kl_divergence
 from ..utils.parser import metric_params
 from ..benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmarkSolution
+
+def log_cpu(wandb_run):
+    wandb_run.log({
+        "cpu_percent": psutil.cpu_percent(),
+        "cpu_per_core": psutil.cpu_percent(percpu=True),
+        "num_threads": psutil.Process().num_threads(),
+    })
 
 class Metrics():
     """
@@ -78,9 +86,6 @@ class Metrics():
             else:
                 loss_out = 0 #TODO: compute the loss independently here
 
-            if np.isnan(loss_out):
-                raise ValueError('Loss function is NaN. Terminating training process')
-        
             with torch.no_grad():
 
                 kl_dynamic,xinit,xref = self.integrator.compute_metrics(self.benchmark_)
@@ -92,6 +97,7 @@ class Metrics():
                                         "statickl": kl_static, 
                                         "action":self.actioncost,
                                         "lr":self.lr})
+                    log_cpu(self.wandb_run)
 
                 self.metrics_logger.write_data_row(epoch,
                                             loss_out,

@@ -14,7 +14,10 @@ def train_loop_du(epoch,
 
         #update the drift nn with the current learned final distribution  
         loss_out = trainer.train_step()
-                    
+        
+        if loss_out!=loss_out:
+            raise ValueError('Loss function is NaN. Terminating training process')
+            
         #if epoch<trainer.milestone:
         #trainer.scheduler1.step()#metric_.actioncost)
       
