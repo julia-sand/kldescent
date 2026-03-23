@@ -19,6 +19,7 @@ def zchop(x,tol=1e-6):
    
     return np.where(np.abs(x)<tol,0,x)
 
+@torch.no_grad
 def generate_mesh(x_samples,qmax=6):
     """
     generates a mesh in two dimensional phase space to evaluate and plot the joint distribution 
@@ -28,11 +29,11 @@ def generate_mesh(x_samples,qmax=6):
             number of samples in the space discretisation
     """
 
-    p_init = np.linspace(-qmax,qmax,x_samples)
-    q_init = np.linspace(-qmax,qmax,x_samples)
+    p_init = torch.linspace(-qmax,qmax,x_samples, requires_grad=False,dtype=torch.float32)
+    #q_init = torch.linspace(-qmax,qmax,x_samples, requires_grad=False,dtype=torch.float32)
     
-    Q,P = np.meshgrid(q_init,p_init)
-    return Q,P
+    
+    return torch.meshgrid(p_init,p_init,indexing='ij')
 
 @torch.no_grad
 def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=None):
@@ -58,7 +59,8 @@ def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=No
     
     #generate xmesh
     Q,P = generate_mesh(x_samples,qmax=5)
-    xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
+    xinit = torch.stack((X, Y), dim=-1).reshape(-1, 2)
+    #torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
     
     #intiialise pdf 
     pdf_out = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
@@ -70,7 +72,6 @@ def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=No
                                     self.boundary.params["epsilon"],
                                     self.boundary.p_initial,
                                     self.boundary.params["Tf"]).cpu().numpy())
-        #print(pdf) 
     return xinit.cpu().numpy(),pdf_out.cpu().numpy()
 
 class PlotUtils():
@@ -173,7 +174,7 @@ class PlotUtils():
 
         self.make_drift_plot(numplots=4)
         self.make_sde_plots(mcsamples,usebenchmark)
-        self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
+        #self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
         
     def load_ref_solution(self):
         """initialise the reference solution and add to the class""" 
@@ -217,8 +218,8 @@ class PlotUtils():
             self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref)
         
         #marginal distribution fig
-        fig = self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,benchmark=self.benchmark)
-        save_fig_(fig,f"marginal_time_{final_plot_time}",loc=self.resultsdir)
+        #fig = self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,benchmark=self.benchmark)
+        #save_fig_(fig,f"marginal_time_{final_plot_time}",loc=self.resultsdir)
         
         plt.close("all")
     
@@ -227,8 +228,8 @@ class PlotUtils():
         net.eval()
         with torch.no_grad():
             #computes neural network output (forward pass) to use in plotting
-            return net(torch.column_stack((time*torch.ones((1000,1),requires_grad=False,dtype=torch.float32).to(net.device)
-                                                        ,torch.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000,requires_grad=False).to(net.device)))).cpu().numpy()
+            return net(torch.cat((time*torch.ones((1000,1),requires_grad=False,dtype=torch.float32).to(net.device)
+                                                        ,torch.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000,requires_grad=False).unsqueeze(1).to(net.device)),dim=-1)).cpu().numpy()
         
     def make_drift_plot(self,numplots):
 
@@ -265,7 +266,6 @@ class PlotUtils():
         for t in range(len(times)):
             
             if self.benchmark is None:
-                #ref_vals.append(np.zeros((1000,1)))
                 ref_vals = None
             else:
                 if self.benchmark.du_net_benchmark is not None:
@@ -395,7 +395,7 @@ class PlotUtils():
 
             #generate xmesh
             Q,P = generate_mesh(x_samples,qmax=6)
-            xinit = torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
+            xinit = torch.stack((X, Y), dim=-1).reshape(-1, 2)
             
             pdf_out = self.rhonet(xinit.detach().clone())
 

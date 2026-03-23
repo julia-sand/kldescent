@@ -103,7 +103,7 @@ class PlotFuns():
     self.folder = os.path.dirname(__file__)
     
     #borders of xaxis
-    self.qmax = 8
+    self.qmax = 2.5
     
     #colors
     self.c1 = "#1f78b4" #darkblue

@@ -79,8 +79,8 @@ def compute_pdf(x0,
             dw = (dt**0.5)*torch.randn_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(net.device)
 
             #evaluate neural network approximated drift 
-            du_bar = net(torch.column_stack((t_vec[-i]*torch.ones_like(xinit,dtype=torch.float32).to(net.device)
-                                                        ,xinit[...,[0]])))
+            du_bar = net(torch.cat((t_vec[-i]*torch.ones_like(xinit,dtype=torch.float32).to(net.device)
+                                                        ,xinit[...,[0]]),dim=-1))
             
             #one backward step of euler maruyama scheme of stochastic evolution
             xinit = girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[-i],

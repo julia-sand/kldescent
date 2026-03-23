@@ -5,8 +5,6 @@ from scipy.integrate import solve_bvp
 
 from .utilfunctions import save_array
 
-#from ..utils.parser import gaussian_params,boundary_params
-
 class GaussBVP():
 
     def __init__(self,
@@ -171,7 +169,6 @@ class GaussBVP():
         return sol1 
 
     def get_half_sol(self,):
-        print("hello, integrating the half bridge. ")
         
         t_vec = np.linspace(0,self.Tf,num=10000)
 

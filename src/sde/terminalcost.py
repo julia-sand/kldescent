@@ -159,15 +159,15 @@ class MLE(TerminalCost):
         x = integrator.update_ref_statistics()
 
         #set new mean and variance and covariance
-        self.pos_mean0 = torch.nanmean(x[...,0])
-        self.mom_mean0 = torch.nanmean(x[...,1])
+        self.pos_mean0 = torch.nanmean(x[...,[0]])
+        self.mom_mean0 = torch.nanmean(x[...,[1]])
 
         #self.Sigma_matrix = torch.cov(x)
 
         self.pos_var0 = torch.var(x[...,[0]])
         self.mom_var0 = torch.var(x[...,[1]])
 
-        self.cc0 = (torch.sum((x[...,1]-self.mom_mean0)*(x[...,0]-self.pos_mean0))/(len(x[...,0])))
+        self.cc0 = (torch.sum((x[...,[1]]-self.mom_mean0)*(x[...,[0]]-self.pos_mean0))/(len(x[...,0])))
 
 
     def multivariate_U(self,x):

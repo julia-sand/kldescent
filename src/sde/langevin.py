@@ -249,8 +249,8 @@ class EulerMaruyamaSDE(SDEBase):
             du = torch.zeros_like(xinit[...,[0]],dtype=torch.float32,requires_grad=False)
         else:
             if benchmark.du_net_benchmark is not None:
-                du = benchmark.du_net_benchmark(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
-                                                            ,xinit[...,[0]])))
+                du = benchmark.du_net_benchmark(torch.cat((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
+                                                            ,xinit[...,[0]]),dim=-1))
             else:
                 du = torch.as_tensor(benchmark.get_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
             
@@ -262,8 +262,8 @@ class EulerMaruyamaSDE(SDEBase):
         dw = self.generate_innovation(dt,size_like=xinit[...,[0]])#self.testing_samples)
 
         #compute du 
-        du = self.net(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
-                                                            ,xinit[...,[0]]))).detach()
+        du = self.net(torch.cat((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
+                                                            ,xinit[...,[0]]),dim=-1)).detach()
                     
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt)
 
@@ -316,8 +316,8 @@ class EulerMaruyamaSDE(SDEBase):
             dw = self.generate_innovation(dt,xinit[...,[0]])
            
             #get neural network drift
-            du = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
-                                                    ,xinit[...,[0]])))
+            du = self.net(torch.cat((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
+                                                    ,xinit[...,[0]]),dim=-1))
                     
             a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True) ** 2) 
             
@@ -329,14 +329,14 @@ class EulerMaruyamaSDE(SDEBase):
                 abar = abar + dt*(torch.linalg.norm(du_bar, axis=1, keepdim=True) ** 2) 
                 bbar = bbar + dt*(self.boundary.f(xinit,t_vec[i])) 
                 
-            xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
+                xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
 
         with torch.no_grad():
             #compute terminal cost
             gvals = self.TerminalCost.gfun(xinit.detach().clone(),self.net,self.sde_params["testsamples"]).to(self.device)
 
         #compute value of Lhat
-        Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
+        Lhat = torch.mean(0.25 * a + ((0.25 * abar + bbar + gvals) * c))
         
         return Lhat
     
@@ -364,8 +364,8 @@ class VerletSDE(SDEBase):
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
 
         #compute du 
-        du = self.net(torch.column_stack((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
-                                                            ,xinit[...,[0]]))).detach()
+        du = self.net(torch.cat((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
+                                                            ,xinit[...,[0]]),dim=-1)).detach()
                     
         #Update the velocity
         xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du)*dt \
@@ -436,8 +436,8 @@ class VerletSDE(SDEBase):
             xinit[...,[0]] += self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)      
             
             #get neural network drift
-            du = self.net(torch.column_stack((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
-                                                        ,xinit[...,[0]])))
+            du = self.net(torch.cat((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
+                                                        ,xinit[...,[0]]),dim=-1))
                            
             a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True)**2) 
             
@@ -457,7 +457,7 @@ class VerletSDE(SDEBase):
             gvals = self.TerminalCost.gfun(xinit.detach().clone(),self.net,self.sde_params["testsamples"]).to(self.device)
                 
         #compute value of Lhat
-        Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
+        Lhat = torch.mean(0.25 * a + ((0.25 * abar + bbar + gvals) * c))
         
         return Lhat
             

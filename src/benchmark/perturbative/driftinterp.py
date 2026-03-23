@@ -72,7 +72,6 @@ def contour(plotter,net):
     fig.savefig("test_contour_distribution.png",bbox_inches="tight")        
 
     plt.close()
-    plotter.plot_drift(times = [0,2.5,5],net=net)
     
 if __name__=="__main__":
     from ..benchmark import *

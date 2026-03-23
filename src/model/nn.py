@@ -182,7 +182,7 @@ class NeuralNetwork(nn.Module):
 
         tout = self.NNt(t)
         
-        combined = torch.cat((tout,x), dim=-1) # torch.column_stack((tout, x))
+        combined = torch.cat((tout,x), dim=-1) 
         combined = self.layer_norm_combined(combined)
         #concatenate the outputs and put them through the part 2
         out = self.NN1(combined)  + self.NN2(t)*self.boundary.scorefinal(input_vec[...,[1]])
