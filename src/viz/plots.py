@@ -183,7 +183,7 @@ class PlotFuns():
     legend.set_bbox_to_anchor(bbox=(0.95,0.07))
 
     plt.tight_layout()
-    fig.subplots_adjust(top=0.8,bottom=0.15)
+    fig.subplots_adjust(bottom=0.15)
     return fig
 
   def fit_kde(self,xs):

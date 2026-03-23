@@ -12,8 +12,8 @@ from ..benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmar
 def log_cpu(wandb_run):
     wandb_run.log({
         "cpu_percent": psutil.cpu_percent(),
-        "cpu_per_core": psutil.cpu_percent(percpu=True),
         "num_threads": psutil.Process().num_threads(),
+        "ram_percent": psutil.virtual_memory().percent
     })
 
 class Metrics():
@@ -80,7 +80,7 @@ class Metrics():
         """
         
         with torch.no_grad():
-
+            print("CPU percent per core",psutil.cpu_percent(percpu=True))
             if loss_out is not None:
                 loss_out = loss_out
             else:
