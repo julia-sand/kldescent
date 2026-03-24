@@ -124,7 +124,7 @@ class Train():
 
         self.clip = 0.001 #gradient clipping
 
-        self.optimiser = SGD(self.net.parameters(), lr=self.lr)
+        self.optimiser = Adam(self.net.parameters(), lr=self.lr, weight_decay=1e-3)
         self.milestone = 400 #how often to decay learning rate
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541

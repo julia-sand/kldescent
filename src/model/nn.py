@@ -136,35 +136,35 @@ class NeuralNetwork(nn.Module):
         #self.tencoding = TimeConder(1,self.hidden_layer_neurons) #fourier positional encoding goes here! 
         self.NNt = nn.Sequential(
             nn.Linear(2*self.params["duhiddenlayerneurons"], self.params["duhiddenlayerneurons"] ),  #
-            nn.GELU(),
+            nn.Tanh(),
             nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   
             nn.Softplus(),  #must be positive
             ).to(self.device)
         self.NNx = nn.Sequential(
             nn.Linear(1, self.params["duhiddenlayerneurons"] ),  #input x
-            nn.LayerNorm(self.params["duhiddenlayerneurons"]),
-            nn.GELU(),
+            #nn.LayerNorm(self.params["duhiddenlayerneurons"]),
+            nn.Tanh(),
             nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            nn.LayerNorm(self.params["duhiddenlayerneurons"]),
+            #nn.LayerNorm(self.params["duhiddenlayerneurons"]),
             ).to(self.device) 
         self.NN1 = nn.Sequential(
             nn.Linear(2*self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
-            nn.GELU(),
+            nn.Tanh(),
             nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            nn.GELU(),
+            nn.Tanh(),
             nn.Linear(self.params["duhiddenlayerneurons"] , 1)).to(self.device)  
         self.NN2 = nn.Sequential(
             nn.Linear(2*self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
-            nn.GELU(),
+            nn.Tanh(),
             nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            nn.GELU(),
+            nn.Tanh(),
             nn.Linear(self.params["duhiddenlayerneurons"] , 1),   #64 outputs
             nn.Softplus(), #must be positive
             ).to(self.device) 
         self.FourierFeatures = FourierFeatures(2*self.params["duhiddenlayerneurons"]).to(self.device)
         
-        self.layer_norm_combined = nn.LayerNorm(2*self.params["duhiddenlayerneurons"])
-        self.layer_norm = nn.LayerNorm(self.params["duhiddenlayerneurons"])
+        #self.layer_norm_combined = nn.LayerNorm(2*self.params["duhiddenlayerneurons"])
+        #self.layer_norm = nn.LayerNorm(self.params["duhiddenlayerneurons"])
         
         self.checkpoint_path = fetch_checkpoint_path()
         if self.checkpoint_path is not None: #automatically loads a checkpoint from the command line
@@ -182,10 +182,10 @@ class NeuralNetwork(nn.Module):
 
         tout = self.NNt(t)
         
-        combined = torch.cat((tout,x), dim=-1) 
-        combined = self.layer_norm_combined(combined)
+        #combined = torch.cat((tout,x), dim=-1) 
+        #combined = self.layer_norm_combined(combined)
         #concatenate the outputs and put them through the part 2
-        out = self.NN1(combined)  + self.NN2(t)*self.boundary.scorefinal(input_vec[...,[1]])
+        out = self.NN1(torch.cat((tout,x), dim=-1))  + self.NN2(t)*self.boundary.scorefinal(input_vec[...,[1]])
         
         return out
 
