@@ -336,7 +336,7 @@ class EulerMaruyamaSDE(SDEBase):
             gvals = self.TerminalCost.gfun(xinit.detach().clone(),self.net,self.sde_params["testsamples"]).to(self.device)
 
         #compute value of Lhat
-        Lhat = torch.mean(0.25 * a + ((0.25 * abar + bbar + gvals) * c))
+        Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
         
         return Lhat
     
@@ -457,7 +457,7 @@ class VerletSDE(SDEBase):
             gvals = self.TerminalCost.gfun(xinit.detach().clone(),self.net,self.sde_params["testsamples"]).to(self.device)
                 
         #compute value of Lhat
-        Lhat = torch.mean(0.25 * a + ((0.25 * abar + bbar + gvals) * c))
+        Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
         
         return Lhat
             

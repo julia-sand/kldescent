@@ -176,6 +176,8 @@ class PlotUtils():
         self.make_sde_plots(mcsamples,usebenchmark)
         #self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
         
+        plt.close("all")
+
     def load_ref_solution(self):
         """initialise the reference solution and add to the class""" 
 
@@ -194,6 +196,7 @@ class PlotUtils():
         #self.make_intermediate_histograms(plottimes=plottimes)
         self.make_drift_plot(numplots=4)
 
+    @torch.no_grad
     def make_sde_plots(self,mcsamples,usebenchmark):
         """Make plots and save results of sde integration 
         1. compute final point clouds

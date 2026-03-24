@@ -24,26 +24,12 @@ class GaussBVP():
         self.epsilon = epsilon
         self.Tf = Tf 
         self.M = M #weighting of boundary conditions
-        
-    def drho_final(self,QT,CT,PT):
-        return np.array([(-1/2)*PT*CT/((QT*PT)**(3/2)),
-                        1/np.sqrt(QT*PT),
-                        (-1/2)*QT*CT/((QT*PT)**(3/2))])
-
+      
     def rho_final(self,QT,CT,PT):
         return CT/np.sqrt(QT*PT)
 
-    def drho_denom(self,QT,CT,PT):
-        return self.drho_final(QT,CT,PT)*(-2*self.rho_final(QT,CT,PT))
-      
     def rho_denom(self,QT,CT,PT):
         return 1-self.rho_final(QT,CT,PT)**2
-
-    def dfinal_v11(self,QT,CT,PT):
-
-        return np.array([-self.drho_denom(QT,CT,PT)[0]/(QT*self.rho_denom(QT,CT,PT)**2)-1/((QT**2)*self.rho_denom(QT,CT,PT)),
-                        -self.drho_denom(QT,CT,PT)[1]/(QT*self.rho_denom(QT,CT,PT)**2),
-                        -self.drho_denom(QT,CT,PT)[2]/(QT*self.rho_denom(QT,CT,PT)**2)])
 
     def marginal_half_final_v11(self,QT):
         return (1/self.sigmafinal**2) - 1/QT
@@ -51,21 +37,9 @@ class GaussBVP():
     def final_v11(self,QT,CT,PT):
         return (1/self.sigmafinal**2) - (1/(QT*self.rho_denom(QT,CT,PT)))
 
-    def dfinal_v12(self,QT,CT,PT):
-
-        return np.array([-(CT/(QT*PT))*self.drho_denom(QT,CT,PT)[0]*(CT/(QT*PT))/(self.rho_denom(QT,CT,PT)**2)-(CT/((QT**2)*PT))/(self.rho_denom(QT,CT,PT)),
-                        -(CT/(QT*PT))*self.drho_denom(QT,CT,PT)[1]/(QT*self.rho_denom(QT,CT,PT)**2)+(1/((QT)*PT))/(self.rho_denom(QT,CT,PT)),
-                        -(CT/(QT*PT))*self.drho_denom(QT,CT,PT)[2]/(QT*self.rho_denom(QT,CT,PT)**2)-(CT/(QT*(PT**2)))/(self.rho_denom(QT,CT,PT))])
-
     def final_v12(self,QT,CT,PT):
         return (CT/(QT*PT))/self.rho_denom(QT,CT,PT)
         #np.sqrt(1/(PT*QT))*self.rho_final(QT,CT,PT)/(1-self.rho_final(QT,CT,PT)**2)
-
-    def dfinal_v22(self,QT,CT,PT):
-
-        return np.array([-self.drho_denom(QT,CT,PT)[0]/(PT*self.rho_denom(QT,CT,PT)**2),
-                        -self.drho_denom(QT,CT,PT)[1]/(PT*self.rho_denom(QT,CT,PT)**2),
-                        -self.drho_denom(QT,CT,PT)[2]/(PT*self.rho_denom(QT,CT,PT)**2)-1/((PT**2)*self.rho_denom(QT,CT,PT))])
 
     def final_v22(self,QT,CT,PT):
         return 1 - (1/(PT*self.rho_denom(QT,CT,PT)))

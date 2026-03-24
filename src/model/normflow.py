@@ -87,7 +87,7 @@ class RhoNormFlow():
         self.model = nf.NormalizingFlow(base, flows=flows)
         
         #set optimiser
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=5e-4, weight_decay=1e-5)
+        self.optimiser = torch.optim.Adam(self.model.parameters(), lr=5e-4, weight_decay=1e-5)
 
     def make_flows_1d(self,num_layers=1):
                 
@@ -126,15 +126,15 @@ class RhoNormFlow():
 
     def train_step(self,x,it,loss_hist):
         
-        self.optimizer.zero_grad()
+        self.optimiser.zero_grad()
         
         # Compute loss
         loss = self.model.forward_kld(x) 
         
-        # Do backprop and optimizer step
+        # Do backprop and optimiser step
         if ~(torch.isnan(loss) | torch.isinf(loss)):
             loss.backward()
-            self.optimizer.step()
+            self.optimiser.step()
             
         else:
             raise ValueError('Loss function is NaN. Terminating training process')

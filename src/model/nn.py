@@ -136,28 +136,28 @@ class NeuralNetwork(nn.Module):
         #self.tencoding = TimeConder(1,self.hidden_layer_neurons) #fourier positional encoding goes here! 
         self.NNt = nn.Sequential(
             nn.Linear(2*self.params["duhiddenlayerneurons"], self.params["duhiddenlayerneurons"] ),  #
-            nn.Tanh(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   
+            #nn.Tanh(),
+            #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   
             nn.Softplus(),  #must be positive
             ).to(self.device)
         self.NNx = nn.Sequential(
             nn.Linear(1, self.params["duhiddenlayerneurons"] ),  #input x
             #nn.LayerNorm(self.params["duhiddenlayerneurons"]),
             nn.Tanh(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
+            #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
             #nn.LayerNorm(self.params["duhiddenlayerneurons"]),
             ).to(self.device) 
         self.NN1 = nn.Sequential(
             nn.Linear(2*self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
             nn.Tanh(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            nn.Tanh(),
+            #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
+            #nn.Tanh(),
             nn.Linear(self.params["duhiddenlayerneurons"] , 1)).to(self.device)  
         self.NN2 = nn.Sequential(
             nn.Linear(2*self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
             nn.Tanh(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            nn.Tanh(),
+            #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
+            #nn.Tanh(),
             nn.Linear(self.params["duhiddenlayerneurons"] , 1),   #64 outputs
             nn.Softplus(), #must be positive
             ).to(self.device) 

@@ -85,8 +85,8 @@ class Pretrain():
         
         #set up training parameters
         loss_fn = torchnn.MSELoss()  
-        optimizer = Adam(net.parameters(), lr=self.lr)
-        scheduler = ExponentialLR(optimizer, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
+        optimiser = Adam(net.parameters(), lr=self.lr)
+        scheduler = ExponentialLR(optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
 
         Xtemp,ytemp = self.get_pretraining_data()
         X,y = self.transform_data(Xtemp,ytemp)
@@ -96,12 +96,12 @@ class Pretrain():
             #generate random batch 
             idx = torch.randint(low=0,high=X.shape[0],size=(self.minibatch_samples,))
 
-            optimizer.zero_grad()
+            optimiser.zero_grad()
             y_pred = net(X[idx,:])
             loss = loss_fn(y_pred,y[idx])
             clip_grad_norm_(net.parameters(), self.clip)
             loss.backward()
-            optimizer.step()       
+            optimiser.step()       
 
             if epoch % self.milestone == 0:
                 scheduler.step()
@@ -212,7 +212,7 @@ class TrainRho():
         Lhat = self.loss(ypred,yobs)
         clip_grad_norm_(self.rhonet.parameters(), self.clip)
              
-        # Do backprop and optimizer step
+        # Do backprop and optimiser step
         if ~(torch.isnan(Lhat) | torch.isinf(Lhat)):
             ##training##
             Lhat.backward()
