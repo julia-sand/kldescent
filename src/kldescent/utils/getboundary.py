@@ -1,0 +1,26 @@
+"""
+initialise parameters and boundary conditions from file
+"""
+
+import yaml 
+
+from kldescent.sde import boundary as boundaries 
+from kldescent.utils.parser import *
+
+def init_params_from_file(folder):
+    try:
+        # Read YAML file
+        with open(folder+'/data.yaml', 'r') as stream:
+            data_loaded = yaml.safe_load(stream)
+
+        boundary_cond = getattr(boundaries,data_loaded["boundary"])(params=data_loaded)
+    except FileNotFoundError: #if no yaml file is provided, use the defaults
+        print("No parameter file found in the specified folder. The plots will be created using the default values. See -h for values.")
+
+        data_loaded = None
+        
+        run_params = overdamped_argparser()
+        boundary_cond = getattr(boundaries,run_params["boundary"])()
+    
+    return boundary_cond, data_loaded
+
