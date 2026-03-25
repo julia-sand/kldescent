@@ -132,6 +132,12 @@ class NeuralNetwork(nn.Module):
         self.boundary = boundary
 
         super(NeuralNetwork, self).__init__()
+
+        # store normalization constants (not trainable)
+        #qmax = self.boundary.qmax
+        self.register_buffer("xmax", torch.tensor(5))
+        self.register_buffer("xmin", torch.tensor(-5))
+        
         self.flatten = nn.Flatten()
         #self.tencoding = TimeConder(1,self.hidden_layer_neurons) #fourier positional encoding goes here! 
         self.NNt = nn.Sequential(
@@ -176,8 +182,9 @@ class NeuralNetwork(nn.Module):
                 pass
 
     def forward(self, input_vec):   #how the model should evaluate
+        xnorm = 2 * (input_vec[...,[1]] - self.xmin) / (self.xmax - self.xmin + 1e-8) - 1
 
-        x = self.NNx(input_vec[...,[1]])
+        x = self.NNx(xnorm)
         t = self.FourierFeatures(input_vec[...,[0]])#
 
         tout = self.NNt(t)
