@@ -12,12 +12,23 @@ def compute_rho(phi_t,hatphi_t):
     
     return np.nan_to_num(phi_t*hatphi_t,nan=0,posinf=0,neginf=0)
 
-def compute_V(phi_t,A,B):
+def compute_dV(q,hatphi_t,phi_t,A,B,bridge_type):
     
     with warnings.catch_warnings(): #ignore log(0) error as this is handled later
         warnings.simplefilter("ignore") 
-        
-        return -(A/B)*np.log(phi_t)
+        if bridge_type=="half":
+            
+            #return v00
+
+            dphi_t = np.gradient(phi_t,q)
+            dhatphi_t = np.gradient(hatphi_t,q)
+
+            term1 = -dphi_t/(np.sqrt(A)*phi_t)
+            term2 = -B*np.sqrt(A)*np.trapezoid(hatphi_t*dphi_t,q)/(A*(A-B))
+            term3 = (hatphi_t*dphi_t + phi_t*dhatphi_t)*((1/np.sqrt(A))-1)/2
+            return term1 + term2 + term3
+        else:
+            return -(A/B)*np.log(phi_t)
 
 def get_solution_in_time(cell,integrator,
                                 xnum = 1000,
@@ -105,7 +116,7 @@ def compute_overdamped(boundary,save_location,bridge_type="half",
         csv saved in savelocation
     """
 
-    cell = CellProblem(boundary,save_location,bridge_type=bridge_type)
+    cell = CellProblem(boundary,save_location,bridge_type=bridge_type,A=A,B=B)
     cell.iteration(integrator=mcintegrator,
                     max_iters=20)
 
@@ -115,7 +126,9 @@ def compute_overdamped(boundary,save_location,bridge_type="half",
 
     arr  = zchop(arr,tol=1e-6)
     
-    save_array(arr,save_location)
+    save_array(arr,save_location,filename="overdamped",header="t,q,rho,dV")
+
+    return 
 
 if __name__=="__main__":
     boundary = UnderdampedLandauer()

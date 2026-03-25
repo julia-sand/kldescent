@@ -103,7 +103,9 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
                 print("Overdamped results not available. Solving cell problem...")
 
                 #compute overdamped solution
-                compute_overdamped(self.boundary,self.get_benchmark_path(),bridge_type=bridge_type)
+                compute_overdamped(self.boundary,
+                                    self.get_benchmark_path(),
+                                    bridge_type=bridge_type)
 
                 print("Cell problem completed.")
                 overdamped_arr = self.get_benchmark_data(data="overdamped")

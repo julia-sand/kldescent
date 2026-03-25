@@ -167,7 +167,7 @@ if __name__=="__main__":
     phi_benchmark = Gaussian_Overdamped_Ref(boundary)
     Tf2 = boundary.params["Tf"]*(boundary.params["epsilon"]**2)
     
-    beta = 1/(boundary.afun(boundary.params["Tf"]))
+    beta = 1/(afun(boundary.params["Tf"]))
     nsamples = 150
 
     def makeplot(phifun,tinit,nsamples):

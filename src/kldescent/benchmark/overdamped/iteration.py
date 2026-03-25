@@ -3,13 +3,16 @@ import warnings #ignore divide by zeros for the boundaries
 import numpy as np
 import matplotlib.pyplot as plt 
 
-from ..heatintegrators import proximal_fpk,mcintegrator
-from .gauss import *
-from ..utilfunctions import *
+from kldescent.benchmark.heatintegrators import proximal_fpk,mcintegrator
+from kldescent.benchmark.overdamped.gauss import *
+from kldescent.benchmark.utilfunctions import *
 
 class CellProblem():
 
-    def __init__(self,boundary,save_location,bridge_type,num_samples=400):
+    def __init__(self,boundary,
+                      save_location,
+                      bridge_type,
+                      num_samples=400):
         """
         class for solving the cell problem using an iteration algorithm
 
@@ -40,8 +43,8 @@ class CellProblem():
 
         ######################################
         #bridge type parameters
-        self.B = self.bfun(self.boundary.params["Tf"])
-        self.A = self.afun(self.boundary.params["Tf"])
+        self.B = bfun(self.bridge_type,self.boundary.params["Tf"])
+        self.A = afun(self.bridge_type,self.boundary.params["Tf"])
         self.beta = 1/np.sqrt(self.A)
 
         self.power = self.compute_power()
@@ -71,24 +74,6 @@ class CellProblem():
         else:  
             print("Bridge type not found. Default value used.")
             return 1
-
-    def bfun(self,Tf):
-        
-        if self.bridge_type=="marginal":
-            return 1 - (1-np.exp(-Tf))*(3-np.exp(-Tf))/(2*Tf)
-        elif self.bridge_type =="half":
-            return -(np.tanh(Tf/2)/Tf)*((1-np.exp(-Tf))**2)/(1+4*np.exp(-Tf)+np.exp(-2*Tf))
-        else:
-            return 1 
-
-    def afun(self,Tf):
-       
-        if self.bridge_type=="marginal":
-            return (Tf - 1 + np.exp(-Tf))/Tf
-        elif self.bridge_type =="half":
-            return -(-1 + (2*np.tanh(Tf/2)/Tf)-self.B)  
-        else:
-            return 1 
 
     def compute_boundary_value(self,xhatphi,hatphiT,psi0,xpsi):
         if self.bridge_type == "marginal":

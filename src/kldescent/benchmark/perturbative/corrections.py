@@ -1,9 +1,13 @@
 import numpy as np
 
+from kldescent.benchmark.utilfunctions import *
 
 class Perturbation():
 
-    def __init__(self,boundary,overdamped_arr,ref_path):
+    def __init__(self,boundary,
+                        overdamped_arr,
+                        ref_path,
+                        ):
         
         self.boundary = boundary
         
@@ -46,10 +50,10 @@ class Perturbation():
 
         return round(t2/(self.epsilon**2),6)
 
-    def v00(self,t2):
-        """fetch value function at time t2"""
+    def dv00(self,t2):
+        """fetch gradient of the value function at time t2"""
 
-        return np.squeeze(self.overdamped_arr[np.where(self.overdamped_arr[:,0]==t2),-1]) #v00 
+        return np.squeeze(self.overdamped_arr[np.where(self.overdamped_arr[:,0]==t2),-1]) #dv00 
 
     def f00(self,t2):
         """fetch rho at time t2"""
@@ -141,6 +145,9 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
         Perturbation.__init__(self,boundary,overdamped_arr,ref_path)
 
+        self.B = bfun("marginal half",self.Tf)
+        self.A = afun("marginal half",self.Tf)
+        
         return
 
     def DU(self,t0,t2):
@@ -162,7 +169,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
         coeff = 1 - np.exp(t0-self.Tf)
 
         temp = np.zeros(self.xnum)
-        temp = self.d_(self.apply_filter(self.v00(t2)),self.qaxis)
+        temp = self.apply_filter(self.v00(t2))
 
         return 2*coeff*temp
     
@@ -288,13 +295,16 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
                 sets the input and output locations
         """
 
-        #MarginalHalfBridgePerturbation.__init__(self,boundary,overdamped_arr,ref_path)
+        Perturbation.__init__(self,boundary,overdamped_arr,ref_path)
 
-        raise(NotImplementedError)
+        self.B = bfun("half",self.Tf)
+        self.A = afun("half",self.Tf)
+
+        return 
 
     def DU(self,t0,t2):
         """
-        Compute the perturbative drift for the marginal half bridge
+        Compute the perturbative drift for the half bridge
         args:
             t0 : float
                 fast time
@@ -304,8 +314,37 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
             du : ndarray
                 analytic prediction of drift 
         """
+
+        idx = self.get_rhomask(t2)
+        f00_arr = self.apply_filter(self.f00(t2))[idx]
+        dv00_arr = self.apply_filter(self.dv00(t2)) 
         
-        return 0
+        df00 = self.d_(f00_arr,self.qaxis[idx])
+        f11 = self.f11()
+
+        return 
+
+
+    def coeff_G111_G112(self,):
+        return 3/(np.exp(-self.Tf)*(2+np.cosh(Tf)))
+
+    def f11(self,t0,t2):
+        return 0 
+
+    def f11_term1(self,t0,t2):
+        return self.G11()
+
+    def G11(self,t0):
+        return 2*np.sinh(t0/2)*(np.sinh(t0/2)-np.cosh(t0/2)*np.tanh(self.Tf/2))
+
+    def G12(self,t0):
+        return -((1-np.exp(-t0))/3)*(((1+np.exp(t0))/(1+np.exp(self.Tf)))-np.exp(-2*(self.Tf-t0)))
+
+    def d_G11(self,t0):
+        return np.sinh(t0)-np.cosh(t0)*np.tanh(self.Tf/2)
+
+    def d_G12(self,t0):
+        return 2*(np.exp(t0)-1)*np.exp(t0-2*self.Tf)/3 - 2*np.cosh(t0)/(3*(1+np.exp(self.Tf)))
 
     def f02(self,t0,t2):
         

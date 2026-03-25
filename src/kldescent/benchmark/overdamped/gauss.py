@@ -1,6 +1,6 @@
 #benchmark solution for gaussian full bridge
 import numpy as np 
-from ..utilfunctions import *
+from kldescent.benchmark.utilfunctions import *
 
 class Gaussian_Overdamped_Ref():
 
@@ -12,8 +12,8 @@ class Gaussian_Overdamped_Ref():
         self.muT = 0 #self.boundary.gauss_boundary["mufinal"]
         self.sigma0 = self.boundary.gauss_boundary["sigmainitial"]
         self.sigmaT = self.boundary.gauss_boundary["sigmafinal"]
-        self.A = self.boundary.afun(self.boundary.params["Tf"])
-        self.B = self.boundary.bfun(self.boundary.params["Tf"])
+        self.A = afun("full",self.boundary.params["Tf"])
+        self.B = bfun("full",self.boundary.params["Tf"])
         self.Tf2 = self.boundary.params["Tf"]*(self.boundary.params["epsilon"]**2)
         self.sq = np.sqrt(self.Tf2**2 + (self.sigma0*self.sigmaT)**2)
         #self.beta = 1/self.A
