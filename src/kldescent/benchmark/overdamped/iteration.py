@@ -96,16 +96,16 @@ class CellProblem():
 
     def compute_boundary_value(self,xhatphi,hatphiT,psi0,xpsi):
         if self.bridge_type == "marginal":
-            return zchop(self.boundary.q_marginal_final(xhatphi)/hatphiT)
+            return zchop(self.boundary.q_marginal_final_np(xhatphi)/hatphiT)
         elif self.bridge_type == "full":
-            return zchop(self.boundary.q_marginal_final(xhatphi)/hatphiT)
+            return zchop(self.boundary.q_marginal_final_np(xhatphi)/hatphiT)
         elif self.bridge_type == "half":
             #print(r"$\alpha$=",self.alpha)
             varkappa = self.compute_varkappa(hatphiT,psi0,xpsi)
             #print(r"$\kappa$=",varkappa)
             C = np.exp(self.constant_hboundary_exponent(xhatphi,varkappa))
             #print(r"$\gamma$=",C)
-            return (hatphiT**self.alpha)*C*(self.boundary.q_marginal_final(xhatphi)**self.M)
+            return (hatphiT**self.alpha)*C*(self.boundary.q_marginal_final_np(xhatphi)**self.M)
         
     def constant_hboundary_exponent(self,q,varkappa):
         """Compute the constant for the value function boundary condition
@@ -175,7 +175,7 @@ class CellProblem():
                 xpsi,psiT = integrator(xhatphi,psi0,self.Tf2,self.beta)
 
                 #compute hatphi0 
-                hatphi0 = np.nan_to_num(zchop(self.boundary.q_marginal_initial(xpsi)/psiT),posinf=0,neginf=0,nan=0)
+                hatphi0 = np.nan_to_num(zchop(self.boundary.q_marginal_initial_np(xpsi)/psiT),posinf=0,neginf=0,nan=0)
 
                 #integrate phihat to Tf
                 xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
@@ -227,8 +227,8 @@ class CellProblem():
         plt.plot(self.q,normalise(self.q,rhoT), label="rhoT")
         plt.plot(self.q,normalise(self.q,rho0), label="rho0")
 
-        plt.plot(self.q,self.boundary.q_marginal_final(self.q),linestyle="dashed",color="gray",alpha=0.5)
-        plt.plot(self.q,self.boundary.q_marginal_initial(self.q),linestyle="dashed",color="gray",alpha=0.5)
+        plt.plot(self.q,self.boundary.q_marginal_final_np(self.q),linestyle="dashed",color="gray",alpha=0.5)
+        plt.plot(self.q,self.boundary.q_marginal_initial_np(self.q),linestyle="dashed",color="gray",alpha=0.5)
 
         plt.legend()
         plt.savefig(self.save_location+f"/boundary_test_iter_{iters}.png")

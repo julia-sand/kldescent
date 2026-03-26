@@ -119,6 +119,14 @@ class OverdampedFullLandauer(Boundaries):
         #unnormalised final reference marginal distribution
         return torch.exp(-self.Ufinal(q)) 
 
+    def qfinal_np(self,q):
+        #unnormalised final reference marginal distribution
+        return np.exp(-self.Ufinal(q)) 
+
+    def q_marginal_final_np(self,q): 
+        #numpy normalised final reference distribution of the configuration
+        return self.qfinal_np(q)/self.pf_norm.numpy()
+
     def q_marginal_final(self,q): 
         #normalised final reference distribution of the configuration
         return self.qfinal(q)/self.pf_norm
@@ -179,9 +187,17 @@ class OverdampedLandauer(OverdampedFullLandauer):
 
         return torch.exp(-self.Uinitial(q))
 
+    def qinitial_np(self,q):
+
+        return np.exp(-self.Uinitial(q))
+
     def q_marginal_initial(self,q):
 
         return self.qinitial(q)/self.pi_norm
+
+    def q_marginal_initial_np(self,q):
+
+        return self.qinitial_np(q)/self.pi_norm.numpy()
 
     def generate_samples(self,batch_samples,mode):
         r"""sample points from the intial distribution for q 
@@ -227,9 +243,17 @@ class LinearOU(Boundaries):
 
         return torch.exp(-(q**2))/torch.sqrt(torch.tensor(torch.pi))
 
+    def q_marginal_initial_np(self,q):
+
+        return np.exp(-(q**2))/np.sqrt(np.pi)
+
     def q_marginal_final(self,q): 
         
         return torch.exp(-(q**2)/2)/torch.sqrt(2*torch.tensor(torch.pi))
+
+    def q_marginal_final_np(self,q): 
+        
+        return np.exp(-(q**2)/2)/np.sqrt(2*np.pi)
 
     def generate_samples(self,batch_samples,mode):
         r"""sample points from the intial distribution for q 
@@ -247,16 +271,13 @@ class LinearOU(Boundaries):
 
         #from where to sample the q marginals
         if mode=="initial":
-            out = torch.randn((batch_samples, 1),requires_grad=False,dtype=torch.float32) * (0.5 ** 0.5)
+            return torch.randn((batch_samples, 1),requires_grad=False,dtype=torch.float32) * (0.5 ** 0.5)
         elif mode=="final": 
-            out = torch.zeros((batch_samples,1),requires_grad=False,dtype=torch.float32)
-            #q_marginal = self.q_marginal_final
+            return torch.zeros((batch_samples,1),requires_grad=False,dtype=torch.float32)
         
-        return out
 
     def analytic_sol(self,time):
         return -self.sigma0*torch.exp(self.A*(self.params["Tf"]-time))*self.gamma
-
 
     def get_reference_data(self,time):
 
@@ -311,7 +332,7 @@ class LinearOU(Boundaries):
                      + self.sigma0*du_bar)*dt + self.sigma0*dw
 
 class UnderdampedLandauer(OverdampedLandauer):
-    def __init__(self,params=None,logfile=None):
+    def __init__(self,params=None,gauss_params=None,logfile=None):
         OverdampedLandauer.__init__(self,params,logfile)
         self.sigma0 = torch.sqrt(torch.tensor(2.0))
         self.qmax = 6

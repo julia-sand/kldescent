@@ -13,7 +13,7 @@ def init_params_from_file(folder):
         with open(folder+'/data.yaml', 'r') as stream:
             data_loaded = yaml.safe_load(stream)
 
-        boundary_cond = getattr(boundaries,data_loaded["boundary"])(params=data_loaded)
+        boundary_cond = getattr(boundaries,data_loaded["boundary"])(params=data_loaded,gauss_params=data_loaded)
     except FileNotFoundError: #if no yaml file is provided, use the defaults
         print("No parameter file found in the specified folder. The plots will be created using the default values. See -h for values.")
 

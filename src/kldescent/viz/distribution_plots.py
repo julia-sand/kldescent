@@ -151,7 +151,7 @@ def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
     else:
         label2 = "Free Diffusion"
     #set iteration properties
-    colors = [self.c1,"orange"]
+    colors = ["midnightblue","orange"]
     labels = ["Controlled by NN.",label2]
 
     for x in enumerate(xs):
@@ -161,9 +161,9 @@ def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
         ax_pos.plot(np.linspace(-qmax,qmax,num=1000), np.exp(fit_kde(x[1][:,0],qmax)), color=colors[x[0]],label=labels[x[0]]) 
         
     #add target boundary distributions to plots
-    ax_pos.fill_between(np.linspace(-qmax,qmax,num=1000),
-            self.boundary.q_marginal_final(np.linspace(-qmax,qmax,num=1000)),
-            color="gray",alpha=0.1,label="target")
+    #ax_pos.fill_between(np.linspace(-qmax,qmax,num=1000),
+    #        self.boundary.q_marginal_final(np.linspace(-qmax,qmax,num=1000)),
+    #        color="gray",alpha=0.1,label="target")
     ax_mom.fill_between(np.linspace(-qmax,qmax,num=1000),
         normal_distribution(np.linspace(-qmax,qmax,num=1000),mu=0,sigmasq=1),
                     color="gray",alpha=0.1,label="target")

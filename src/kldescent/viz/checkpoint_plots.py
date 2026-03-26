@@ -186,7 +186,7 @@ class PlotUtils():
 
         self.make_drift_plot(numplots=4)
         self.make_sde_plots(mcsamples,usebenchmark)
-        #self.make_intermediate_histograms(plottimes= [0,1,2,3,4,5])
+        #self.make_intermediate_histograms()
         
         plt.close("all")
 
@@ -195,17 +195,19 @@ class PlotUtils():
 
         if self.benchmark is None:
             if "Gauss" in f"{self.boundary_cond.__class__.__name__}":  
-                self.benchmark = GaussBenchmarkSolution(boundary=self.boundary_cond,folder_name=self.folder)
+                self.benchmark = GaussBenchmarkSolution(boundary=self.boundary_cond,
+                                                            folder_name=self.folder)
             
             else:
-                self.benchmark = PerturbativeBenchmarkSolution(boundary=self.boundary_cond,folder_name=self.folder)
+                self.benchmark = PerturbativeBenchmarkSolution(boundary=self.boundary_cond,
+                                                                folder_name=self.folder)
             
     def perturbative_plots_du(self,plottimes):
         """make plots to show the results of the evolution under perturbative drift"""
         
         self.load_perturbative_du_checkpoint()
         
-        #self.make_intermediate_histograms(plottimes=plottimes)
+        #self.make_intermediate_histograms()
         self.make_drift_plot(numplots=4)
 
     @torch.no_grad
@@ -222,9 +224,12 @@ class PlotUtils():
             mcsamples = self.data_loaded["testsamples"]
 
         final_plot_time = self.boundary_cond.params["Tf"]
-        
-        t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde_cumulants(benchmark=self.benchmark,mcsamples=mcsamples)
-               
+
+        try:
+            t_vec,cumulants_nn,cumulants_ref = self.load_cumulant_csvs()
+        except FileNotFoundError:
+            t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde_cumulants(benchmark=self.benchmark,mcsamples=mcsamples)
+                
         self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples,
                                         add_free_diffusion=False,)
         if usebenchmark:
@@ -360,7 +365,9 @@ class PlotUtils():
         self.make_rhonet_marginals_plot()
         plt.close("all")
 
-    def make_intermediate_histograms(self,plottimes):
+    def make_intermediate_histograms(self):#,plottimes):
+        
+        plottimes = self.generate_times(6)
 
         #make figure object
         fig,axs = make_fig_subplots(ncols=int(np.ceil(len(plottimes)/2)),nrows=2)
@@ -371,11 +378,18 @@ class PlotUtils():
             
             self.integrator.net = self.net
             x_du = self.integrator.update_ref_statistics(time=plottimes[i]).cpu().numpy()
+            print(x_du.shape)
+            if self.benchmark is not None:
+
+                if self.benchmark.du_net_benchmark is not None:  
+                    #UPDATE NET FOR INTEGRATOR
+                    self.integrator.net = self.benchmark.du_net_benchmark
+                    x_ref = x_du#self.integrator.update_ref_statistics(time=plottimes[i]).cpu().numpy()
+                else:
+                    x_ref = np.zeros_like(x_du)
+                    #x_ref[:,[0]] = self.benchmark.get_quantity(plottimes[i],"underdamped marginal")[1,np.newaxis]
+                    #print(x_ref.shape)
             
-            #UPDATE NET FOR INTEGRATOR
-            #self.integrator.net = self.benchmark.du_net_benchmark
-            x_ref = x_du#self.integrator.update_ref_statistics(time=plottimes[i]).cpu().numpy()
-                        
             marginal_distribution(axs[i],[x_du,x_ref],plottimes[i],benchmark=self.benchmark)
             
         h,l = get_all_subplot_handles_labels(fig)
@@ -560,6 +574,7 @@ if __name__=="__main__":
 
     plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark)
     #plot_utils.make_cumulant_error_plot_from_csv()
+    #plot_utils.make_intermediate_histograms()
 
     if plot_utils.data_loaded["terminalcost"]=="GirsanovNet":
         plot_utils.make_girsanov_net_plots()

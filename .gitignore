@@ -14,6 +14,6 @@ timeprofile.py
 *.pdf
 core.*
 scratch
-gauss_*
+*.sh
 namelist*
 wandb*

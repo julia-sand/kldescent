@@ -22,7 +22,7 @@ def plot_drift(times,net_vals,benchmark_vals=None,err_vals =None, qmax = 5):
         qmax : float
             Default 5, maximum value to plot. 
     """
-
+    qmax=2.5
     fig,ax = make_fig_subplots(nrows=1,ncols=len(times),squeeze=True)
 
     for t in range(len(times)):  
