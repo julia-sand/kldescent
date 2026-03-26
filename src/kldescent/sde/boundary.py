@@ -15,6 +15,7 @@ Includes classes defining the initial and reference distributions
 """
 
 import os
+import torch
 
 import numpy as np 
 
@@ -49,7 +50,7 @@ class Boundaries():
             file to save the parameters 
         """
 
-        self.sigma0 = 1 #np.sqrt(2)
+        self.sigma0 = 1 
         
         #get params 
         if params is not None:
@@ -98,8 +99,7 @@ class OverdampedFullLandauer(Boundaries):
     
     def __init__(self,params=None,logfile=None):
         Boundaries.__init__(self,params,logfile)
-        self.pf_norm = np.trapezoid(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
-        #self.pi_norm = np.trapezoid(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
+        self.pf_norm = torch.trapz(self.qfinal(torch.linspace(-8,8,5000)),torch.linspace(-8,8,5000))
         self.qmax = 6
 
     def overwrite_ref_path(self,new_path):
@@ -117,7 +117,7 @@ class OverdampedFullLandauer(Boundaries):
 
     def qfinal(self,q):
         #unnormalised final reference marginal distribution
-        return np.exp(-self.Ufinal(q)) 
+        return torch.exp(-self.Ufinal(q)) 
 
     def q_marginal_final(self,q): 
         #normalised final reference distribution of the configuration
@@ -140,16 +140,18 @@ class OverdampedFullLandauer(Boundaries):
 
         #from where to sample the q marginals
         if mode=="initial":
-            out = np.zeros((batch_samples,1))
+            
+            return torch.zeros((batch_samples,1),requires_grad=False,dtype=torch.float32)
 
         elif mode=="final": 
 
-            probs = self.q_marginal_final(np.linspace(-8,8,10000))/np.sum(self.q_marginal_final(np.linspace(-8,8,10000)))
-            out = np.random.choice(np.linspace(-8,8,10000),
-                                (batch_samples,1),
-                                p=probs)
-        
-        return out
+            x = torch.linspace(-8,8,10000,dtype =torch.float32,requires_grad=False)
+            probs = self.q_marginal_final(x)
+            probs = probs/probs.sum()
+
+            idx = torch.multinomial(probs,num_samples=batch_samples,replacement=True)
+                        
+            return x[idx].unsqueeze(1)
        
     def gfun(self,q):
         #we use the -log of the final distribution. See Prop. 3 in ref for details. This is function U
@@ -167,8 +169,7 @@ class OverdampedLandauer(OverdampedFullLandauer):
 
     def __init__(self,params=None,logfile=None):
         OverdampedFullLandauer.__init__(self,params,logfile)
-        #self.pf_norm = np.trapezoid(self.qfinal(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))
-        self.pi_norm = np.trapezoid(self.qinitial(np.linspace(-8,8,1000)),np.linspace(-8,8,1000))       
+        self.pi_norm = torch.trapz(self.qinitial(torch.linspace(-8,8,1000)),torch.linspace(-8,8,1000))       
         self.qmax = 6
 
     def Uinitial(self,q):
@@ -176,11 +177,11 @@ class OverdampedLandauer(OverdampedFullLandauer):
 
     def qinitial(self,q):
 
-        return np.exp(-self.Uinitial(q))
+        return torch.exp(-self.Uinitial(q))
 
     def q_marginal_initial(self,q):
 
-        return self.qinitial(q)/(self.pi_norm)
+        return self.qinitial(q)/self.pi_norm
 
     def generate_samples(self,batch_samples,mode):
         r"""sample points from the intial distribution for q 
@@ -196,20 +197,22 @@ class OverdampedLandauer(OverdampedFullLandauer):
                 samples in the shape (batch_samples,) from the initial or final distribution 
         """
 
+        x = torch.linspace(-8,8,10000,requires_grad=False,dtype=torch.float32)
+        
         #from where to sample the q marginals
         if mode=="initial":
 
-            probs = self.q_marginal_initial(np.linspace(-8,8,10000))/np.sum(self.q_marginal_final(np.linspace(-8,8,10000)))
+            probs = self.q_marginal_initial(x)
 
         elif mode=="final": 
 
-            probs = self.q_marginal_final(np.linspace(-8,8,10000))/np.sum(self.q_marginal_final(np.linspace(-8,8,10000)))
+            probs = self.q_marginal_final(x)
         
-        out = np.random.choice(np.linspace(-8,8,10000),
-                            (batch_samples,1),
-                            p=probs)
+        probs = probs/probs.sum()
         
-        return out
+        idx = torch.multinomial(probs, batch_samples, replacement=True)
+        
+        return x[idx].unsqueeze(1)
 
 class LinearOU(Boundaries):
     def __init__(self,d=1):
@@ -222,11 +225,11 @@ class LinearOU(Boundaries):
 
     def q_marginal_initial(self,q):
 
-        return np.exp(-(q**2))/np.sqrt(np.pi)
+        return torch.exp(-(q**2))/torch.sqrt(torch.pi)
 
     def q_marginal_final(self,q): 
         
-        return np.exp(-(q**2)/2)/np.sqrt(2*np.pi)
+        return torch.exp(-(q**2)/2)/torch.sqrt(2*torch.pi)
 
     def generate_samples(self,batch_samples,mode):
         r"""sample points from the intial distribution for q 
@@ -244,15 +247,15 @@ class LinearOU(Boundaries):
 
         #from where to sample the q marginals
         if mode=="initial":
-            out = self.Generator.normal(loc=0,scale=np.sqrt(0.5),size=(batch_samples,1))
+            out = torch.randn((batch_samples, 1),requires_grad=False,dtype=torch.float32) * (0.5 ** 0.5)
         elif mode=="final": 
-            out = np.zeros((batch_samples,1))
+            out = torch.zeros((batch_samples,1),requires_grad=False,dtype=torch.float32)
             #q_marginal = self.q_marginal_final
         
         return out
 
     def analytic_sol(self,time):
-        return -self.sigma0*np.exp(self.A*(self.params["Tf"]-time))*self.gamma
+        return -self.sigma0*torch.exp(self.A*(self.params["Tf"]-time))*self.gamma
 
 
     def get_reference_data(self,time):
@@ -262,14 +265,14 @@ class LinearOU(Boundaries):
         ut = self.analytic_sol(time)
 
         #RETURNS X, DU
-        return np.linspace(-4,4,num=50),ut*np.ones(50)
+        return torch.linspace(-4,4,50,requires_grad=False,dtype=torch.float32),ut*torch.ones(50,requires_grad=False,dtype=torch.float32)
 
 
     def du_benchmark(self,q,time):
 
         ut = self.analytic_sol(time)
         
-        return np.ones(q.shape)*ut
+        return torch.ones(q.shape)*ut
 
     def gfun(self,q):
 
@@ -310,16 +313,16 @@ class LinearOU(Boundaries):
 class UnderdampedLandauer(OverdampedLandauer):
     def __init__(self,params=None,logfile=None):
         OverdampedLandauer.__init__(self,params,logfile)
-        self.sigma0 = np.sqrt(2)
+        self.sigma0 = torch.sqrt(torch.tensor(2.0))
         self.qmax = 6
 
     def p_initial(self,q,p):
 
-        return (self.q_marginal_initial(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
+        return (self.q_marginal_initial(q)*torch.exp(-(p**2)/2))/torch.sqrt(2*torch.pi)
 
     def p_final(self,q,p): 
         
-        return (self.q_marginal_final(q)*np.exp(-(p**2)/2))/np.sqrt(2*np.pi)
+        return (self.q_marginal_final(q)*torch.exp(-(p**2)/2))/torch.sqrt(2*torch.pi)
 
     def log_pfinal(self,q,p):
         #unnormalised positive final log density 
@@ -345,12 +348,14 @@ class UnderdampedLandauer(OverdampedLandauer):
         elif mode=="final": 
             q_marginal = self.q_marginal_final
 
-        probs = q_marginal(np.linspace(-8,8,10000))/np.sum(q_marginal(np.linspace(-8,8,10000)))
-        out = np.random.choice(np.linspace(-8,8,10000),
-                                (batch_samples,1),
-                                p=probs)
-            
-        return out                
+        x = torch.linspace(-8,8,10000,requires_grad=False,dtype=torch.float32)
+        probs = q_marginal(x)
+
+        probs = probs/probs.sum()
+        idx = torch.multinomial(probs,num_samples=batch_samples,replacement=True)
+        
+    
+        return x[idx].unsqueeze(1)       
        
     #generate the initial data
     def generate_samples(self,batch_samples,mode):
@@ -366,9 +371,8 @@ class UnderdampedLandauer(OverdampedLandauer):
                 samples from "mode" distribution with shape(batch_samples,2)    
         """
 
-        return np.column_stack((self.generate_samples_q(batch_samples,mode)
-                                ,self.Generator.standard_normal(size=(batch_samples,1))))
-    
+        return torch.cat((self.generate_samples_q(batch_samples, mode), torch.randn((batch_samples, 1),requires_grad=False,dtype=torch.float32)), dim=1)
+        
     def f(self,x,t):
 
         return 0
@@ -410,7 +414,7 @@ class UnderdampedGaussian(UnderdampedLandauer):
                         gauss_params=None,
                         logfile=None):
         Boundaries.__init__(self,params,logfile)
-        self.sigma0 = np.sqrt(2)
+        self.sigma0 = torch.sqrt(torch.tensor(2.0))
         self.qmax = 25
 
         if gauss_params is not None: #read from file if available
@@ -421,8 +425,8 @@ class UnderdampedGaussian(UnderdampedLandauer):
         if logfile is not None:
             save_params(self.gauss_boundary,logfile) #add to log
         
-        self.pi_norm = np.sqrt(2*np.pi)*self.gauss_boundary["sigmainitial"]
-        self.pf_norm = np.sqrt(2*np.pi)*self.gauss_boundary["sigmafinal"]
+        self.pi_norm = torch.sqrt(2*torch.pi)*self.gauss_boundary["sigmainitial"]
+        self.pf_norm = torch.sqrt(2*torch.pi)*self.gauss_boundary["sigmafinal"]
         
 
     def overwrite_ref_path(self,new_path):

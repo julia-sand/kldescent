@@ -2,13 +2,13 @@ import os
 
 import numpy as np 
 
-from ..sde.boundary import *
-from ..utils.parser import fetch_results_folder_from_cmd
-from ..model.nn import MLP,NeuralNetwork
-from .utilfunctions import *
-from .perturbative.driftinterp import perturbative_du_interp,train_and_save_perturbative_du
-from .perturbative.corrections import MarginalHalfBridgePerturbation,HalfBridgePerturbation
-from .overdamped.sol import compute_overdamped
+from kldescent.sde.boundary import *
+from kldescent.utils.parser import fetch_results_folder_from_cmd
+from kldescent.model.nn import MLP,NeuralNetwork
+from kldescent.benchmark.utilfunctions import *
+from kldescent.benchmark.perturbative.driftinterp import perturbative_du_interp,train_and_save_perturbative_du
+from kldescent.benchmark.perturbative.corrections import MarginalHalfBridgePerturbation,HalfBridgePerturbation
+from kldescent.benchmark.overdamped.sol import compute_overdamped
 from .gaussian import GaussBVP
 
 class BaseBenchmarkSolution():

@@ -206,7 +206,7 @@ class TrainRho():
         optimiser.zero_grad()
         
         #initialise x values 
-        x0 = torch.tensor(integrator.boundary.generate_samples(self.rho_batch,mode="initial"),dtype=torch.float32,requires_grad=True) 
+        x0 = integrator.boundary.generate_samples(self.rho_batch,mode="initial") 
         # (-5 - 5)*torch.rand(self.rho_batch, 2, dtype=torch.float32,requires_grad=True) + 5
 
         yobs = self.generate_training_data(x0.clone().detach(),integrator)

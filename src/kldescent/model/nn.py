@@ -142,31 +142,31 @@ class NeuralNetwork(nn.Module):
         #self.tencoding = TimeConder(1,self.hidden_layer_neurons) #fourier positional encoding goes here! 
         self.NNt = nn.Sequential(
             nn.Linear(2*self.params["duhiddenlayerneurons"], self.params["duhiddenlayerneurons"] ),  #
-            #nn.Tanh(),
-            #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   
+            nn.GELU(), #MyActivation(),
+            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
+            #nn.GELU(), #MyActivation(),
+            #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
             nn.ReLU(),  #must be positive
             ).to(self.device)
         self.NNx = nn.Sequential(
             nn.Linear(1, self.params["duhiddenlayerneurons"] ),  #input x
-            #nn.LayerNorm(self.params["duhiddenlayerneurons"]),
             nn.GELU(),
-            #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            #nn.LayerNorm(self.params["duhiddenlayerneurons"]),
-            ).to(self.device) 
+            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
+            ).to(self.device)   
         self.NN1 = nn.Sequential(
             nn.Linear(2*self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
             nn.GELU(),
-            #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            #nn.Tanh(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , 1)).to(self.device)  
+            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
+            nn.GELU(),
+            nn.Linear(self.params["duhiddenlayerneurons"] , 1)).to(self.device) 
         self.NN2 = nn.Sequential(
             nn.Linear(2*self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
             nn.GELU(),
-            #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            #nn.Tanh(),
+            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
+            nn.GELU(),
             nn.Linear(self.params["duhiddenlayerneurons"] , 1),   #64 outputs
             nn.ReLU(), #must be positive
-            ).to(self.device) 
+            ).to(self.device)
         self.FourierFeatures = FourierFeatures(2*self.params["duhiddenlayerneurons"]).to(self.device)
         
         #self.layer_norm_combined = nn.LayerNorm(2*self.params["duhiddenlayerneurons"])
@@ -184,7 +184,7 @@ class NeuralNetwork(nn.Module):
     def forward(self, input_vec):   #how the model should evaluate
         xnorm = 2 * (input_vec[...,[1]] - self.xmin) / (self.xmax - self.xmin + 1e-8) - 1
 
-        x = self.NNx(xnorm)
+        x = self.NNx(xnorm.to(self.device))
         t = self.FourierFeatures(input_vec[...,[0]])#
 
         tout = self.NNt(t)
@@ -292,7 +292,7 @@ if __name__ == "__main__":
     from torchinfo import summary
 
     import pdb
-    from ..sde.boundary import UnderdampedGaussian
+    from kldescent.sde.boundary import UnderdampedGaussian
     boundary_cond = UnderdampedGaussian() #getattr(boundaries,run_params["boundary"])()
     
     net = NeuralNetwork(boundary_cond)

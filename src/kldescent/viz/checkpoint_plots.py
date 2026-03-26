@@ -253,14 +253,17 @@ class PlotUtils():
                                                         ,torch.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000,requires_grad=False).unsqueeze(1).to(net.device)),dim=-1)).cpu().numpy()
         
     def generate_times(self,numplots):
+        
         if self.benchmark is not None:
 
             if self.benchmark.du_net_benchmark is None:
+                print("hello")
                 #get the timegrid where data is available
                 t_vec = self.benchmark.get_timegrid()
                 #choose numplot random times to show
                 times = t_vec[np.random.randint(low=0,high=len(t_vec),size=numplots)]
-                return times.sort()
+                return np.sort(times)
+            
             else:
                 times = np.sort(np.random.uniform(0, self.boundary_cond.params["Tf"],numplots))
                 return times
@@ -268,7 +271,6 @@ class PlotUtils():
             times = np.sort(np.random.uniform(0, self.boundary_cond.params["Tf"],numplots))
             return times
     
-
     def make_drift_plot(self,numplots):
     
         times = self.generate_times(numplots)

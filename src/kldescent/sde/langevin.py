@@ -100,7 +100,7 @@ class SDEBase():
             t_vec = self.generate_time_grid(benchmark)
             
             #initialise x values as samples from assigned initial distribution
-            xinit = torch.tensor(self.boundary.generate_samples(self.testing_samples,"initial"),requires_grad=False,dtype=torch.float32).to(self.device)
+            xinit = self.boundary.generate_samples(self.testing_samples,"initial").to(self.device)
             xinit_ref = torch.clone(xinit).to(self.device)
 
             #preallocate storing kl divergence 
@@ -156,7 +156,7 @@ class SDEBase():
             
 
             if x0_samples == None: #default to the integrator 
-                xinit = torch.tensor(self.boundary.generate_samples(testing_samples,"initial"),requires_grad=False,dtype=torch.float32).to(self.device)
+                xinit = self.boundary.generate_samples(testing_samples,"initial").to(self.device)
             else:
                 xinit = x0_samples.clone().to(self.device)
 
@@ -199,7 +199,7 @@ class SDEBase():
         t_vec = self.generate_time_grid(benchmark)
         
         #initialise x values at \delta_0 (i.e. x=0)
-        xinit = torch.tensor(self.boundary.generate_samples(mcsamples,"initial"),requires_grad=False,dtype=torch.float32).to(self.device)
+        xinit = self.boundary.generate_samples(mcsamples,"initial").to(self.device)
         xref = torch.clone(xinit).to(self.device)
 
         #save the cumulants of the evolutions
@@ -301,7 +301,7 @@ class EulerMaruyamaSDE(SDEBase):
         t_vec = self.uniform_random_time_grid(self.boundary.params["Tf"],self.sde_params["tsteps"])
 
         #initialise x values 
-        xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32).to(self.device)
+        xinit = self.boundary.generate_samples(self.sde_params["batchsamples"],"initial").to(self.device)
         
         #set up a,abar,c,cbar
         a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
@@ -418,7 +418,7 @@ class VerletSDE(SDEBase):
         t_vec = self.uniform_random_time_grid(self.boundary.params["Tf"],self.sde_params["tsteps"])
 
         #initialise x values 
-        xinit = torch.tensor(self.boundary.generate_samples(self.sde_params["batchsamples"],"initial"),requires_grad=False,dtype=torch.float32).to(self.device)
+        xinit = self.boundary.generate_samples(self.sde_params["batchsamples"],"initial").to(self.device)
         
         #set up a,abar,c,cbar
         a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)

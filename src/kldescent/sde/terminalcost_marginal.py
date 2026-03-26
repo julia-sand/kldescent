@@ -152,10 +152,11 @@ class NormFlow(TerminalCost):
         """train a normalising flow to approximate the final distribution"""
 
         #get initial samples
-        x0 = torch.tensor(self.boundary.generate_samples(integrator.sde_params["testsamples"] ,"initial"),requires_grad=False,dtype=torch.float32)
+        x0 = self.boundary.generate_samples(integrator.sde_params["testsamples"] ,"initial")
         
         #integrate and get final samples
-        x = torch.tensor(self.boundary.generate_samples(8192,"final"),dtype=torch.float32)
+        x = self.boundary.generate_samples(8192,"final")
+        x.requires_grad_(True)
         #integrator.sde_params["testsamples"] ,"final"),dtype=torch.float32)
 
         #put model in train mode
