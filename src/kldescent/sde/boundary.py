@@ -225,11 +225,11 @@ class LinearOU(Boundaries):
 
     def q_marginal_initial(self,q):
 
-        return torch.exp(-(q**2))/torch.sqrt(torch.pi)
+        return torch.exp(-(q**2))/torch.sqrt(torch.tensor(torch.pi))
 
     def q_marginal_final(self,q): 
         
-        return torch.exp(-(q**2)/2)/torch.sqrt(2*torch.pi)
+        return torch.exp(-(q**2)/2)/torch.sqrt(2*torch.tensor(torch.pi))
 
     def generate_samples(self,batch_samples,mode):
         r"""sample points from the intial distribution for q 
@@ -318,11 +318,11 @@ class UnderdampedLandauer(OverdampedLandauer):
 
     def p_initial(self,q,p):
 
-        return (self.q_marginal_initial(q)*torch.exp(-(p**2)/2))/torch.sqrt(2*torch.pi)
+        return (self.q_marginal_initial(q)*torch.exp(-(p**2)/2))/torch.sqrt(2*torch.tensor(torch.pi))
 
     def p_final(self,q,p): 
         
-        return (self.q_marginal_final(q)*torch.exp(-(p**2)/2))/torch.sqrt(2*torch.pi)
+        return (self.q_marginal_final(q)*torch.exp(-(p**2)/2))/torch.sqrt(2*torch.tensor(torch.pi))
 
     def log_pfinal(self,q,p):
         #unnormalised positive final log density 
@@ -354,7 +354,6 @@ class UnderdampedLandauer(OverdampedLandauer):
         probs = probs/probs.sum()
         idx = torch.multinomial(probs,num_samples=batch_samples,replacement=True)
         
-    
         return x[idx].unsqueeze(1)       
        
     #generate the initial data
@@ -425,8 +424,8 @@ class UnderdampedGaussian(UnderdampedLandauer):
         if logfile is not None:
             save_params(self.gauss_boundary,logfile) #add to log
         
-        self.pi_norm = torch.sqrt(2*torch.pi)*self.gauss_boundary["sigmainitial"]
-        self.pf_norm = torch.sqrt(2*torch.pi)*self.gauss_boundary["sigmafinal"]
+        self.pi_norm = torch.sqrt(2*torch.tensor(torch.pi))*self.gauss_boundary["sigmainitial"]
+        self.pf_norm = torch.sqrt(2*torch.tensor(torch.pi))*self.gauss_boundary["sigmafinal"]
         
 
     def overwrite_ref_path(self,new_path):
@@ -486,12 +485,11 @@ class UnderdampedGaussian(UnderdampedLandauer):
 
         #from where to sample the q marginals
         if mode=="initial":
-            out = self.Generator.normal(loc=self.gauss_boundary["muinitial"],scale=self.gauss_boundary["sigmainitial"],size=(batch_samples,1))     
+            return torch.normal(mean=self.gauss_boundary["muinitial"], std=self.gauss_boundary["sigmainitial"], size=(batch_samples, 1))
+            # self.Generator.normal(loc=self.gauss_boundary["muinitial"],scale=self.gauss_boundary["sigmainitial"],size=(batch_samples,1))     
         elif mode=="final": 
-            out = self.Generator.normal(loc=self.gauss_boundary["mufinal"],scale=self.gauss_boundary["sigmafinal"],size=(batch_samples,1))     
+            return torch.normal(mean=self.gauss_boundary["mufinal"], std=self.gauss_boundary["sigmafinal"], size=(batch_samples, 1))
             
-        return out                           
-
 
 if __name__=="__main__":
 

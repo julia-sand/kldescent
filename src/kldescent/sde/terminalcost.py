@@ -11,6 +11,7 @@ Methods
 
 import numpy as np 
 import torch
+from functorch import vmap
 
 from kldescent.sde.kl import kl_div
 from kldescent.viz.distribution_plots import *
@@ -74,13 +75,19 @@ class GirsanovMC(TerminalCost):
     def get_logpdf(self,x,net,mc_samples):
         
         pdf = torch.zeros_like(x[...,[0]]).to(net.device)
-        for i in range(pdf.shape[0]):
-            pdf[i] = torch.mean(compute_pdf(x[i,None],net,
-                                    self.boundary.sigma0,
-                                    self.boundary.params["epsilon"],
-                                    self.boundary.p_initial,
-                                    self.boundary.params["Tf"],
-                                    mc_samples))
+        pdf = torch.vmap(lambda xi: torch.mean(compute_pdf(xi[None],net,
+                                                self.boundary.sigma0,
+                                                self.boundary.params["epsilon"],
+                                                self.boundary.p_initial,
+                                                self.boundary.params["Tf"],
+                                                mc_samples)), randomness='different')(x)    
+        #for i in range(pdf.shape[0]):
+        #    pdf[i] = torch.mean(compute_pdf(x[i,None],net,
+        #                            self.boundary.sigma0,
+        #                            self.boundary.params["epsilon"],
+        #                            self.boundary.p_initial,
+        #                            self.boundary.params["Tf"],
+        #                            mc_samples))
         #print(pdf)
         return torch.log(pdf)
 

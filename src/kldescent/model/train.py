@@ -6,6 +6,7 @@ from torch import nn as torchnn
 from torch.optim import Adam,SGD
 from torch.optim.lr_scheduler import CosineAnnealingLR,ExponentialLR,ReduceLROnPlateau
 from torch.nn.utils import clip_grad_norm_
+from functorch import vmap
 
 from tqdm import tqdm
 
@@ -191,14 +192,14 @@ class TrainRho():
         with torch.no_grad():
             yobs = torch.zeros_like(x0[...,[0]])
 
-            for i in range(yobs.shape[0]):
-                yobs[i] = compute_pdf(x0[i,None],integrator.net,
-                                    integrator.boundary.sigma0,
-                                    integrator.boundary.params["epsilon"],
-                                    integrator.boundary.p_initial,
-                                    integrator.boundary.params["Tf"],
-                                    mc_samples=1)
-        return yobs
+            yobs = torch.vmap(lambda xi: compute_pdf(xi[None],integrator.net,
+                                                integrator.boundary.sigma0,
+                                                integrator.boundary.params["epsilon"],
+                                                integrator.boundary.p_initial,
+                                                integrator.boundary.params["Tf"],
+                                                mc_samples=1), randomness='different')(x0)
+
+            return yobs
 
     def train_step(self,optimiser,integrator):  
 

@@ -180,7 +180,7 @@ class PlotUtils():
         
         self.load_du_checkpoint()
         if usebenchmark:
-            self.load_ref_solution()
+            self.load_benchmark_solution()
         else:
             self.benchmark=None
 
@@ -190,7 +190,7 @@ class PlotUtils():
         
         plt.close("all")
 
-    def load_ref_solution(self):
+    def load_benchmark_solution(self):
         """initialise the reference solution and add to the class""" 
 
         if self.benchmark is None:
@@ -257,7 +257,6 @@ class PlotUtils():
         if self.benchmark is not None:
 
             if self.benchmark.du_net_benchmark is None:
-                print("hello")
                 #get the timegrid where data is available
                 t_vec = self.benchmark.get_timegrid()
                 #choose numplot random times to show
