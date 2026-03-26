@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import torch
 
 from kldescent.viz.plots import *
-from kldescent.viz.checkpoint_plots import PlotUtils,compute_rho_girsanov
 
 ##creates the contour plot showing the full joint pdf
 

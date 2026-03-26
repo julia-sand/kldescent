@@ -34,7 +34,7 @@ class Pretrain():
         self.lr = 0.01 #initial learning rate
         self.gamma = 0.1 #decay rate of learning rate
         self.milestone = 1000 #frequency of learning rate decay (in epochs)
-        self.n_epochs = 60000 #total number of epochs
+        self.n_epochs = 600 #total number of epochs
 
         self.minibatch_samples = 512 #number of datarows to use per parameter update
 
@@ -76,10 +76,13 @@ class Pretrain():
         """
 
         if self.benchmark is not None:
+        
             X[:,0] /= self.benchmark.boundary.params["epsilon"]**2 #use t0 
             y *= (-(self.benchmark.boundary.params["epsilon"]/(2**0.5)))
+        
+        idx = np.nonzero(y)
 
-        return X,y
+        return X[idx,:],y[idx]
 
     def pretraining(self,net):   
         

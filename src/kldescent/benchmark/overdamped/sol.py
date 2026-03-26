@@ -32,8 +32,8 @@ def compute_dV(q,hatphi_t,phi_t,A,B,bridge_type):
             return -(A/B)*np.gradient(phi_t,q)/phi_t
 
 def get_solution_in_time(cell,integrator,
-                                xnum = 5000,
-                                tnum = 101):
+                                xnum = 50,
+                                tnum = 11):
     """
     Evaluate the schrödinger factors along the time horizon and use them to compute 
     the probability distribution and value function in the horizon [0,Tf2]

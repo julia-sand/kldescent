@@ -7,16 +7,19 @@ import torch
 import numpy as np
 
 from kldescent.model.nn import RhoNeuralNetwork,NeuralNetwork,load_checkpoint
-from kldescent.viz.plots import *
 from kldescent.sde import langevin
 from kldescent.sde.girsanovpdf import compute_pdf
 from kldescent.utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd,metric_params
 from kldescent.utils.getboundary import init_params_from_file
 from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmarkSolution
+
+from kldescent.viz.plots import *
 from kldescent.viz.cumulants import plot_cumulants
+from kldescent.viz.drift import plot_drift
+from kldescent.viz.distribution_plots import marginal_distribution,make_marginal_distribution_fig
+
 
 def zchop(x,tol=1e-6):
-   
     return np.where(np.abs(x)<tol,0,x)
 
 @torch.no_grad
@@ -31,8 +34,7 @@ def generate_mesh(x_samples,qmax=6):
 
     p_init = torch.linspace(-qmax,qmax,x_samples, requires_grad=False,dtype=torch.float32)
     #q_init = torch.linspace(-qmax,qmax,x_samples, requires_grad=False,dtype=torch.float32)
-    
-    
+        
     return torch.meshgrid(p_init,p_init,indexing='ij')
 
 @torch.no_grad
@@ -89,7 +91,18 @@ class PlotUtils():
     6. adds reference solutions if they are available
     """
 
-    def __init__(self,benchmark=None,folder=None,epoch=None,wandb_run=None):
+    def __init__(self,epoch=None,benchmark=None,folder=None,wandb_run=None):
+        """
+        args:
+            epoch : int
+                Epoch which will be plotted. Default to command line argument.
+            benchmark : class
+                Default None. If passed, plots will include the benchmarks 
+            folder : str
+                Default to command line argument. If passed, overwrites cmd line and uses different folder to find the checkpoints and save plots
+            wandbrun :
+                Default None. If passed, plots are saved in the wandb run 
+        """
         
         update_mpl()
 
@@ -119,7 +132,7 @@ class PlotUtils():
         else:
             self.epoch = epoch
        
-        self.plotter = PlotFuns(boundary_cond)
+        #self.plotter = PlotFuns(boundary_cond)
 
         self.boundary_cond.overwrite_ref_path(self.folder)
             
@@ -129,7 +142,6 @@ class PlotUtils():
         os.makedirs(self.folder+f"/plots_{self.epoch}", exist_ok = True) 
 
         self.resultsdir = self.folder+f"/plots_{self.epoch}"
-        self.plotter.setresultsdir(self.resultsdir)
 
         self.wandb_run = wandb_run
 
@@ -212,22 +224,29 @@ class PlotUtils():
         final_plot_time = self.boundary_cond.params["Tf"]
         
         t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde_cumulants(benchmark=self.benchmark,mcsamples=mcsamples)
-        
-        self.plotter.update_final_cumulants(cumulants_nn[-1,:])
-        
+               
         self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples,
                                         add_free_diffusion=False,)
         if usebenchmark:
             self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref)
         
         #marginal distribution fig
-        #fig = self.plotter.make_marginal_distribution_fig([xinit,xref],final_plot_time,benchmark=self.benchmark)
+        #fig = make_marginal_distribution_fig([xinit,xref],final_plot_time,benchmark=self.benchmark)
         #save_fig_(fig,f"marginal_time_{final_plot_time}",loc=self.resultsdir)
         
         plt.close("all")
     
     @torch.no_grad
     def evaluate_net_output(self,net,time):
+        """Evaluate neural network at time on 100 space coordinates 
+        args:
+            net : class
+                neural network to evaluate
+            time : float
+
+        """
+
+
         net.eval()
         with torch.no_grad():
             #computes neural network output (forward pass) to use in plotting
@@ -237,20 +256,25 @@ class PlotUtils():
     def make_drift_plot(self,numplots):
 
         if self.benchmark is not None:
-            #get the timegrid where data is available
-            t_vec = self.benchmark.get_timegrid()
-            #choose numplot random times to show
-            times = t_vec[np.random.randint(low=0,high=len(t_vec),size=numplots)]
-            times.sort()
+
+            if self.benchmark.du_net_benchmark is None:
+                #get the timegrid where data is available
+                t_vec = self.benchmark.get_timegrid()
+                #choose numplot random times to show
+                times = t_vec[np.random.randint(low=0,high=len(t_vec),size=numplots)]
+                times.sort()
+            else:
+                times = np.sort(np.random.uniform(0, self.boundary_cond.params["Tf"],numplots))
+                print(times)
         else:
             times = np.sort(np.random.uniform(0, self.boundary_cond.params["Tf"],numplots))
             #times.sort()        
 
         net_vals, ref_vals = self.get_drift_data(times)
 
-        fig = self.plotter.plot_drift(times,
-                                net_vals,
-                                ref_vals)
+        fig = plot_drift(times,
+                            net_vals,
+                            ref_vals,qmax=self.boundary_cond.qmax)
         
         if self.wandb_run is not None:
             self.wandb_run.log({"drift":fig})
@@ -309,7 +333,7 @@ class PlotUtils():
         self.load_rho_checkpoint()
 
         #generate empty figure
-        fig = self.plotter.make_marginal_distribution_fig(xvals=[],plottime=self.boundary_cond.params["Tf"])
+        fig = make_marginal_distribution_fig(xvals=[],plottime=self.boundary_cond.params["Tf"])
 
         ax0 = fig.get_axes()
         ax_list = get_inset_axes(ax0[0])
@@ -349,7 +373,7 @@ class PlotUtils():
             #self.integrator.net = self.benchmark.du_net_benchmark
             x_ref = x_du#self.integrator.update_ref_statistics(time=plottimes[i]).cpu().numpy()
                         
-            self.plotter.marginal_distribution(axs[i],[x_du,x_ref],plottimes[i],benchmark=self.benchmark)
+            marginal_distribution(axs[i],[x_du,x_ref],plottimes[i],benchmark=self.benchmark)
             
         h,l = get_all_subplot_handles_labels(fig)
         

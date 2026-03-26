@@ -40,8 +40,8 @@ def train_loop_du(epoch,
     
             #uncomment to make plots
             #!! creating plots will run perturbative calculations
-            plot_utils = PlotUtils(benchmark=metric_.benchmark_,
-                                    epoch=epoch,
+            plot_utils = PlotUtils(epoch=epoch,                                  
+                                    benchmark=metric_.benchmark_,
                                     wandb_run = metric_.wandb_run)
 
             plot_utils.checkpoint_plots_du(usebenchmark=metric_.usebenchmark,mcsamples=2048)
