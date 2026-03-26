@@ -8,7 +8,20 @@ def format_drift_ax(ax1,time):
     ax1.set_title(f"t={time:.4f}")
     ax1.set_xlabel("q")
 
-def plot_drift(times,net_vals,benchmark_vals,qmax = 5):
+def plot_drift(times,net_vals,benchmark_vals=None,err_vals =None, qmax = 5):
+    """Make plot of drift at difference times
+    args:
+        times : arr
+            number of t
+        netvals : arr
+            evaluated neural network values
+        benchmarkvals : arr
+            benchmark values to plot. Default None, in which case none are plotted.
+        errbars : arr
+            error bars to put on the netvals. Default None, in which case no error bars 
+        qmax : float
+            Default 5, maximum value to plot. 
+    """
 
     fig,ax = make_fig_subplots(nrows=1,ncols=len(times),squeeze=True)
 
@@ -31,14 +44,20 @@ def plot_drift(times,net_vals,benchmark_vals,qmax = 5):
         
         else:
             pass
-            #print("No reference solution was given. Plots will not include reference values.")
+
+        if err_vals is not None: 
+            ax[t].fill_between(np.linspace(-qmax,qmax,1000),
+                            net_vals[t] - 3*err_vals[t],
+                            net_vals[t] + 3*err_vals[t],
+                            label=r"90% confidence interval",
+                            alpha=0.2)
 
     h,l = ax[0].get_legend_handles_labels()
-    #plt.legend()
+
     legend = fig.legend(h,l,
                 frameon = False,
                 handlelength = 1,
-                ncols = 2)
+                ncols = 3)
 
     #move the legend
     legend.set_bbox_to_anchor(bbox=(0.95,0.07))
