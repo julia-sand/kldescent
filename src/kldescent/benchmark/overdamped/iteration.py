@@ -12,7 +12,7 @@ class CellProblem():
     def __init__(self,boundary,
                       save_location,
                       bridge_type,
-                      num_samples=400):
+                      num_samples=1000):
         """
         class for solving the cell problem using an iteration algorithm
 
@@ -43,8 +43,8 @@ class CellProblem():
 
         ######################################
         #bridge type parameters
-        self.B = bfun(self.bridge_type,self.boundary.params["Tf"])
-        self.A = afun(self.bridge_type,self.boundary.params["Tf"])
+        self.B = self.bfun()
+        self.A = self.afun()
         self.beta = 1/np.sqrt(self.A)
 
         self.power = self.compute_power()
@@ -59,6 +59,25 @@ class CellProblem():
         self.psi0 = np.ones_like(self.xhatphi) #np.empty_like(xpsi) 
         self.psiT = np.ones_like(self.xhatphi) 
         self.xpsi = self.xhatphi 
+
+    def bfun(self):
+        
+        if self.bridge_type=="marginal":
+            return 1 - (1-np.exp(-self.Tf))*(3-np.exp(-self.Tf))/(2*self.Tf)
+        elif self.bridge_type =="half":
+            return -(np.tanh(self.Tf/2)/self.Tf)*((1-np.exp(-self.Tf))**2)/(1+4*np.exp(-self.Tf)+np.exp(-2*self.Tf))
+        else:
+            return 1 
+
+    def afun(self):
+        
+        if self.bridge_type=="marginal":
+            return (self.Tf - 1 + np.exp(-self.Tf))/self.Tf
+        elif self.bridge_type =="half":
+            return 1 + self.bfun() - 2*np.tanh(self.Tf/2)/self.Tf #-(-1 + (2*np.tanh(Tf/2)/Tf)-self.B)  
+        else:
+            return 1 
+
 
     def compute_power(self):
         if self.bridge_type =="marginal":
@@ -161,16 +180,16 @@ class CellProblem():
                 #integrate phihat to Tf
                 xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
             
-                #plot the final output
-                self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-                
-                self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-                self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-
                 if (self.l2err(hatphiT,self.hatphiT)<tol and self.l2err(psiT,self.psiT)<tol):
                     break
                 else: 
                     iters += 1
+
+            #plot the final output
+            self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+            
+            self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+            self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
 
         #set new iterates
         self.xhatphi = zchop(xhatphi)

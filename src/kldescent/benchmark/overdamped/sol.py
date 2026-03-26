@@ -28,11 +28,12 @@ def compute_dV(q,hatphi_t,phi_t,A,B,bridge_type):
             term3 = (hatphi_t*dphi_t + phi_t*dhatphi_t)*((1/np.sqrt(A))-1)/2
             return term1 + term2 + term3
         else:
-            return -(A/B)*np.log(phi_t)
+
+            return -(A/B)*np.gradient(phi_t,q)/phi_t
 
 def get_solution_in_time(cell,integrator,
-                                xnum = 1000,
-                                tnum = 11):
+                                xnum = 5000,
+                                tnum = 101):
     """
     Evaluate the schrödinger factors along the time horizon and use them to compute 
     the probability distribution and value function in the horizon [0,Tf2]
@@ -90,16 +91,15 @@ def get_solution_in_time(cell,integrator,
 
         arr_out[t*xnum:(t+1)*xnum] = np.column_stack((tvec[t]*np.ones(xnum),q,
                                                             normalise(q,compute_rho(phi_t,hatphi_t)),
-                                                            compute_V(phi_t,cell.A,cell.B)))
-
+                                                            compute_dV(q,hatphi_t,phi_t,cell.A,cell.B,cell.bridge_type)))
         #compute next step of the hatphi evolution 
         xhatphi_t,hatphi_temp = integrator(xhatphi_t,hatphi_temp,dt,cell.beta,num_steps=int(np.floor(1000/tnum)))
              
     return np.nan_to_num(arr_out,nan=0,posinf=0,neginf=0)
 
 def compute_overdamped(boundary,save_location,bridge_type="half",
-                            xnum=100,
-                            tnum=11):
+                            xnum=5000,
+                            tnum=101):
     """Compute the overdamped cell problem
     params:
         boundary : class
@@ -116,7 +116,7 @@ def compute_overdamped(boundary,save_location,bridge_type="half",
         csv saved in savelocation
     """
 
-    cell = CellProblem(boundary,save_location,bridge_type=bridge_type,A=A,B=B)
+    cell = CellProblem(boundary,save_location,bridge_type=bridge_type)
     cell.iteration(integrator=mcintegrator,
                     max_iters=20)
 

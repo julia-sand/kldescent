@@ -42,7 +42,7 @@ class BaseBenchmarkSolution():
             pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name)
         
         elif bridge_type == "half":  #update this to compute the half bridge solution
-            pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name)
+            pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name)
             
         else: 
         
@@ -430,6 +430,7 @@ def plot_data(benchmark_,quantity,data):
 
 if __name__=="__main__":
     import matplotlib.pyplot as plt
+    
     boundary = UnderdampedLandauer()
     benchmark_ = PerturbativeBenchmarkSolution(boundary)
     plot_data(benchmark_,quantity="value",data="overdamped")

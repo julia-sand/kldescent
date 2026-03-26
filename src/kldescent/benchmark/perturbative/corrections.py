@@ -1,6 +1,9 @@
+
 import numpy as np
 
 from kldescent.benchmark.utilfunctions import *
+
+import pdb
 
 class Perturbation():
 
@@ -38,6 +41,11 @@ class Perturbation():
         """convolve with box filter"""
         out = np.convolve(y,(1/self.filter_delta)*np.ones(self.filter_delta),'same')
         #apply convolution with moving averages
+        return out
+
+    def fill_zeros(self,y,idx):
+        out = np.zeros(len(self.qaxis))
+        out[idx] = y
         return out
 
     def get_rhomask(self,t2):
@@ -145,9 +153,6 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
         Perturbation.__init__(self,boundary,overdamped_arr,ref_path)
 
-        self.B = bfun("marginal half",self.Tf)
-        self.A = afun("marginal half",self.Tf)
-        
         return
 
     def DU(self,t0,t2):
@@ -168,10 +173,10 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
         coeff = 1 - np.exp(t0-self.Tf)
 
-        temp = np.zeros(self.xnum)
-        temp = self.apply_filter(self.v00(t2))
+        #temp = np.zeros(self.xnum)
+        #temp = self.apply_filter(self.dv00(t2))
 
-        return 2*coeff*temp
+        return 0#2*coeff*temp
     
     def f02_term2(self,idx,f00_arr):
         """Compute second deriv of f00_arr"""
@@ -297,9 +302,6 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
 
         Perturbation.__init__(self,boundary,overdamped_arr,ref_path)
 
-        self.B = bfun("half",self.Tf)
-        self.A = afun("half",self.Tf)
-
         return 
 
     def DU(self,t0,t2):
@@ -314,25 +316,37 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
             du : ndarray
                 analytic prediction of drift 
         """
+        #pdb.set_trace()
 
         idx = self.get_rhomask(t2)
-        f00_arr = self.apply_filter(self.f00(t2))[idx]
-        dv00_arr = self.apply_filter(self.dv00(t2)) 
+        f00 = self.fill_zeros(self.apply_filter(self.f00(t2)[idx]),idx)
+        df00 = self.d_f00(idx,f00[idx])
+        dv00 = self.apply_filter(self.dv00(t2)) 
         
-        df00 = self.d_(f00_arr,self.qaxis[idx])
-        f11 = self.f11()
+        kappa = self.kappa(f00,dv00)
 
-        return 
-
+        f11 = self.f11(df00,f00,dv00,kappa,t0)
+        dt_f11 = self.dt_f11(df00,f00,dv00,kappa,t0)
+        
+        return -np.nan_to_num((df00 + dt_f11 + f11)/f00,posinf=0,neginf=0)
 
     def coeff_G111_G112(self,):
-        return 3/(np.exp(-self.Tf)*(2+np.cosh(Tf)))
+        return 3/(np.exp(-self.Tf)*(2+np.cosh(self.Tf)))
 
-    def f11(self,t0,t2):
-        return 0 
+    def f11(self,df00,f00,dv00,kappa,t0):
+        return self.G11(t0)*self.f11_term1(df00,f00,dv00,t0) + self.G12(t0)*self.f11_term2(df00,f00,dv00,kappa,t0)
+     
+    def dt_f11(self,df00,f00,dv00,kappa,t0):
+        return self.dt_G11(t0)*self.f11_term1(df00,f00,dv00,t0) + self.dt_G12(t0)*self.f11_term2(df00,f00,dv00,kappa,t0)
+        
+    def d_v20_f00(self,df00,f00,dv00,kappa):
+        return -self.coeff_G111_G112()*(df00 + f00*(2*dv00 - kappa))/4
 
-    def f11_term1(self,t0,t2):
-        return self.G11()
+    def f11_term1(self,df00,f00,dv00,t0):
+        return df00+2*f00*dv00
+
+    def f11_term2(self,df00,f00,dv00,kappa,t0):
+        return 4*self.d_v20_f00(df00,f00,dv00,kappa)
 
     def G11(self,t0):
         return 2*np.sinh(t0/2)*(np.sinh(t0/2)-np.cosh(t0/2)*np.tanh(self.Tf/2))
@@ -340,15 +354,14 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
     def G12(self,t0):
         return -((1-np.exp(-t0))/3)*(((1+np.exp(t0))/(1+np.exp(self.Tf)))-np.exp(-2*(self.Tf-t0)))
 
-    def d_G11(self,t0):
+    def dt_G11(self,t0):
         return np.sinh(t0)-np.cosh(t0)*np.tanh(self.Tf/2)
 
-    def d_G12(self,t0):
+    def dt_G12(self,t0):
         return 2*(np.exp(t0)-1)*np.exp(t0-2*self.Tf)/3 - 2*np.cosh(t0)/(3*(1+np.exp(self.Tf)))
 
-    def f02(self,t0,t2):
-        
-        return 0
+    def kappa(self,f00,dv00):
+        return 2*np.trapezoid(f00*dv00,self.qaxis)
         
     def xcorr(self,t0,t2,posmean,mommean):
         return 0 -(posmean*mommean)
@@ -369,15 +382,21 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
     def mommean(self,t0,t2):
         return 0
 
-    def posmean(self,t0,t2):
+    def posmean(self,t0,t2,t2_idx):
         return 0
 
 if __name__=="__main__":
-    from ..benchmark import PerturbativeBenchmarkSolution
-    from ...sde.boundary import *
+    from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution
+    from kldescent.sde.boundary import *
     
     boundary = UnderdampedLandauer()
-    benchmark = PerturbativeBenchmarkSolution(boundary=boundary,folder_name="results_temp6")
-    pertsol = MarginalHalfBridgePerturbation(boundary,benchmark)
+
+    #compute overdamped solution
+    compute_overdamped(boundary,
+                        folder_name,
+                        bridge_type="half")
+
+    #compute perturbative
+    pertsol = HalfBridgePerturbation(boundary,benchmark.get_benchmark_data(data="overdamped"),benchmark.folder_name)
     pertsol.save_perturbative()
     pertsol.save_perturbative_cumulants()

@@ -6,8 +6,7 @@ def train_loop_du(epoch,
                     terminal_cost,
                     integrator,
                     trainer,
-                    logstep,
-                    usebenchmark = False):
+                    logstep):
 
         #update the terminal cost with current final distribution
         terminal_cost.update_cost_params(integrator,epoch)

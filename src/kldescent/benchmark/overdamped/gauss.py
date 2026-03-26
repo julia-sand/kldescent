@@ -4,7 +4,7 @@ from kldescent.benchmark.utilfunctions import *
 
 class Gaussian_Overdamped_Ref():
 
-    def __init__(self,boundary):   
+    def __init__(self,boundary,A,B):   
         
         self.boundary = boundary 
 
@@ -12,8 +12,8 @@ class Gaussian_Overdamped_Ref():
         self.muT = 0 #self.boundary.gauss_boundary["mufinal"]
         self.sigma0 = self.boundary.gauss_boundary["sigmainitial"]
         self.sigmaT = self.boundary.gauss_boundary["sigmafinal"]
-        self.A = afun("full",self.boundary.params["Tf"])
-        self.B = bfun("full",self.boundary.params["Tf"])
+        self.A = A#
+        self.B = B#
         self.Tf2 = self.boundary.params["Tf"]*(self.boundary.params["epsilon"]**2)
         self.sq = np.sqrt(self.Tf2**2 + (self.sigma0*self.sigmaT)**2)
         #self.beta = 1/self.A
