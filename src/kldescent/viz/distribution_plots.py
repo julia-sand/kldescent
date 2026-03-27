@@ -74,8 +74,6 @@ def distribution_plot(plot_loc,model,Tf,epoch=1,qmax=5):
     #find probabilities 
     pdf_temp = torch.exp(model.log_prob(zz))
     pdf_temp[torch.isnan(pdf_temp)] = 0
-    #pdf_temp2 = torch.exp(model.log_prob(zz))
-    #pdf_temp2[torch.isnan(pdf_temp2)] = 0
 
     fig = plt.figure()
     fig.set_figheight(15)
@@ -96,17 +94,16 @@ def distribution_plot(plot_loc,model,Tf,epoch=1,qmax=5):
     plt.close()
 
 
-def format_distribution_ax(self,ax1):
-    ax1.set_xlim((-self.qmax,self.qmax))
+def format_distribution_ax(ax1):
+    ax1.set_xlim((-5,5))
     ax1.set_xlabel("q")
     ax1.set_ylim(bottom=-0.01)
 
-def fit_kde(self,xs,qmax=5):
+def fit_kde(xs,qmax=5):
 
     kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(xs[np.isfinite(xs)].reshape(-1,1))
     return kde.score_samples(np.linspace(-qmax,qmax,num =1000).reshape(-1,1))
 
-##scatter plot of final distribution 
 def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
     """
     Function that plots the an estimate of the marginal densities
@@ -117,11 +114,12 @@ def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
         sampled positions for the position and momentum
       plottime : float
         time at which the samples were taken. Defaults to final time from boundary
+      qmax : float
+        x axis limits
+      benchmark : class
+        fetch benchmark analytic results, if available. Default None 
     """
-    
-    #if plottime is None:
-    #    plottime = self.boundary.params["Tf"]
-    
+
     ax_pos = ax.inset_axes([0,0,0.48,1],sharey=ax)
     ax_mom = ax.inset_axes([0.52,0,0.48,1],sharey=ax)#divider.append_axes("left", size="50%", pad=0.1, sharey=ax)
     
@@ -142,30 +140,28 @@ def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
     #add perturbative analytic predictions distributions to plots if available
     if benchmark is not None:
         try:
-            xref,posref = benchmark.get_quantity(plottime,"underdamped marginal", data="perturbative underdamped",time_type="t0")   
-            ax_pos.plot(xref,posref,color="green",alpha=0.5,label="Benchmark Prediction")
-            label2 = "Benchmark Evolved"
+            xref,posref = benchmark.get_benchmark_quantity(plottime,"underdamped marginal", data="perturbative underdamped",time_type="t0")   
+            ax_pos.plot(xref,posref,color="green",alpha=0.5,label="Benchmark Analytic Prediction")
         except ValueError: 
             print(f"Benchmark data not available for t = {plottime}")
-            label2 = "Free Diffusion"
-    else:
-        label2 = "Free Diffusion"
+        
+        #add target boundary distributions to plots
+        ax_pos.fill_between(np.linspace(-10,10,num=5000),
+                benchmark.boundary.q_marginal_final_np(np.linspace(-10,10,num=5000)),
+                color="gray",alpha=0.1,label="target")
+    
     #set iteration properties
     colors = ["midnightblue","orange"]
-    labels = ["Controlled by NN.",label2]
+    labels = ["Controlled by NN.","Benchmark Evolution Prediction"]
 
     for x in enumerate(xs):
-        
+
         #plot kde fitted distributions
-        ax_mom.plot(np.linspace(-qmax,qmax,num=1000), np.exp(fit_kde(x[1][:,1],qmax)), color=colors[x[0]],label=labels[x[0]])
-        ax_pos.plot(np.linspace(-qmax,qmax,num=1000), np.exp(fit_kde(x[1][:,0],qmax)), color=colors[x[0]],label=labels[x[0]]) 
+        ax_mom.plot(np.linspace(-10,10,num=1000), np.exp(fit_kde(x[1][:,1],10)), color=colors[x[0]],label=labels[x[0]])
+        ax_pos.plot(np.linspace(-10,10,num=1000), np.exp(fit_kde(x[1][:,0],10)), color=colors[x[0]],label=labels[x[0]]) 
         
-    #add target boundary distributions to plots
-    #ax_pos.fill_between(np.linspace(-qmax,qmax,num=1000),
-    #        self.boundary.q_marginal_final(np.linspace(-qmax,qmax,num=1000)),
-    #        color="gray",alpha=0.1,label="target")
-    ax_mom.fill_between(np.linspace(-qmax,qmax,num=1000),
-        normal_distribution(np.linspace(-qmax,qmax,num=1000),mu=0,sigmasq=1),
+    ax_mom.fill_between(np.linspace(-10,10,num=5000),
+        normal_distribution(np.linspace(-10,10,num=5000),mu=0,sigmasq=1),
                     color="gray",alpha=0.1,label="target")
     
     #add formatting
@@ -177,8 +173,8 @@ def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
     ax_mom.yaxis.set_label_position("right")
     
     #set plot limits
-    ax_mom.set_xlim((-5,5))
-    ax_pos.set_xlim((-3,3))
+    ax_mom.set_xlim((-qmax,qmax))
+    ax_pos.set_xlim((-qmax,qmax))
     
     return 
   
@@ -188,7 +184,7 @@ def make_marginal_distribution_fig(xvals,plottime,benchmark=None):
     fig = plt.figure(figsize=(15,8))
     ax0 = plt.subplot(1,1,1)
 
-    marginal_distribution(ax0,xvals,plottime,benchmark)
+    marginal_distribution(ax0,xvals,plottime,benchmark=benchmark)
     
     h,l = get_all_subplot_handles_labels(fig)
 

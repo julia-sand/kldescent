@@ -93,3 +93,22 @@ def compute_pdf(x0,
         pdfout = p_initial(xinit[...,[0]],xinit[...,[1]])*torch.exp(-girs)
 
     return pdfout
+
+def plot_scatter_(x,pdf):
+    plt.scatter(x[...,0].cpu().numpy(), x[...,1].cpu().numpy(), c=pdf.cpu().numpy())
+    randint= random.randint(1, 100000) 
+    plt.savefig(f"test_{randint}.png")
+
+if __name__=="__main__":
+    import matplotlib.pyplot as plt
+    import random
+    from kldescent.sde.boundary import UnderdampedLandauer
+    from kldescent.model.nn import NeuralNetwork
+    compute_pdf(x0,
+                    net,
+                    sigma0,
+                    epsilon,
+                    p_initial,
+                    Tf,
+                    mc_samples=None,
+                    tsteps=None)        

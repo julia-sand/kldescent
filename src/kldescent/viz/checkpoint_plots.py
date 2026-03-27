@@ -154,6 +154,8 @@ class PlotUtils():
 
             self.integrator = langevin.EulerMaruyamaSDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
+
+
     def load_du_checkpoint(self):
         """Load neural network and initialise integration method"""
 
@@ -229,15 +231,15 @@ class PlotUtils():
             t_vec,cumulants_nn,cumulants_ref = self.load_cumulant_csvs()
         except FileNotFoundError:
             t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde_cumulants(benchmark=self.benchmark,mcsamples=mcsamples)
-                
+              
+            #marginal distribution fig
+            fig = make_marginal_distribution_fig([xinit,xref],final_plot_time,benchmark=self.benchmark)
+            save_fig_(fig,f"marginal_time_{final_plot_time}",loc=self.resultsdir)
+            
         self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples,
                                         add_free_diffusion=False,)
         if usebenchmark:
             self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref)
-        
-        #marginal distribution fig
-        #fig = make_marginal_distribution_fig([xinit,xref],final_plot_time,benchmark=self.benchmark)
-        #save_fig_(fig,f"marginal_time_{final_plot_time}",loc=self.resultsdir)
         
         plt.close("all")
     
@@ -278,7 +280,11 @@ class PlotUtils():
     def make_drift_plot(self,numplots):
     
         times = self.generate_times(numplots)
-        net_vals, ref_vals = self.get_drift_data(times)
+        #[0,1.100000,2.300000,4.150000,5]
+        
+        #self.generate_times(numplots)
+        net_vals = self.get_drift_data(times)
+        ref_vals = self.get_benchmark_drift_data(times)
 
         fig = plot_drift(times,
                             net_vals,
@@ -290,12 +296,11 @@ class PlotUtils():
         save_fig_(fig,"drift",self.resultsdir)
         plt.close()
         return
-
+    
     @torch.no_grad
-    def get_drift_data(self,times):
+    def get_benchmark_drift_data(self,times):
         
         #initialise the arrays
-        net_vals = []
         ref_vals = []
 
         for t in range(len(times)):
@@ -308,9 +313,19 @@ class PlotUtils():
                 else: 
                     ref_vals.append(self.benchmark.get_drift_gaussian(times[t])*np.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000))
 
+        return ref_vals
+
+    @torch.no_grad
+    def get_drift_data(self,times):
+        
+        #initialise the arrays
+        net_vals = []
+
+        for t in range(len(times)):
+            
             net_vals.append(self.evaluate_net_output(self.net,times[t]).flatten())
         
-        return net_vals,ref_vals
+        return net_vals
 
     def compute_drift_errs(self,time):
 
@@ -339,7 +354,6 @@ class PlotUtils():
         """compute rho data and plot"""
 
         self.load_rho_checkpoint()
-
         #generate empty figure
         fig = make_marginal_distribution_fig(xvals=[],plottime=self.boundary_cond.params["Tf"])
 
@@ -387,7 +401,7 @@ class PlotUtils():
                     x_ref = x_du#self.integrator.update_ref_statistics(time=plottimes[i]).cpu().numpy()
                 else:
                     x_ref = np.zeros_like(x_du)
-                    #x_ref[:,[0]] = self.benchmark.get_quantity(plottimes[i],"underdamped marginal")[1,np.newaxis]
+                    #x_ref[:,[0]] = self.benchmark.get_benchmark_quantity(plottimes[i],"underdamped marginal")[1,np.newaxis]
                     #print(x_ref.shape)
             
             marginal_distribution(axs[i],[x_du,x_ref],plottimes[i],benchmark=self.benchmark)

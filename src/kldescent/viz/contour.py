@@ -14,14 +14,14 @@ def add_boundary_conditions_scatter_panel(ax_pmarginal,ax_qmarginal,time,boundar
 
     if time==0:
         ax_qmarginal.fill_between(
-                boundary.q_marginal_initial(np.linspace(-boundary.qmax,boundary.qmax,)),np.linspace(-boundary.qmax,boundary.qmax,),color="orange",label="Assigned Initial Distribution")
+                boundary.q_marginal_initial_np(np.linspace(-boundary.qmax,boundary.qmax,)),np.linspace(-boundary.qmax,boundary.qmax,),color="orange",label="Assigned Initial Distribution")
         
         ax_pmarginal.fill_between(np.linspace(-boundary.qmax,boundary.qmax,),
                 normal_distribution(np.linspace(-boundary.qmax,boundary.qmax,),0,1),color="orange",label="Assigned Initial Distribution")
 
     elif time==boundary.params["Tf"]:
         ax_qmarginal.fill_between(
-                boundary.q_marginal_final(np.linspace(-boundary.qmax,boundary.qmax,)),np.linspace(-boundary.qmax,boundary.qmax,),color="orange",label="Target Final Distribution")
+                boundary.q_marginal_final_np(np.linspace(-boundary.qmax,boundary.qmax,)),np.linspace(-boundary.qmax,boundary.qmax,),color="orange",label="Target Final Distribution")
         
         ax_pmarginal.fill_between(np.linspace(-boundary.qmax,boundary.qmax,),
                 normal_distribution(np.linspace(-boundary.qmax,boundary.qmax,),0,1),color="darkorange",label="Target Final Distribution")
@@ -173,7 +173,7 @@ def joint_distributions_scatter_panel(
 
     if benchmark is not None:
         #plot marginals
-        x,ptx = benchmark.get_quantity(np.round(time,6),quantity = "underdamped marginal",data="perturbative underdamped",time_type="t0")
+        x,ptx = benchmark.get_benchmark_quantity(np.round(time,6),quantity = "underdamped marginal",data="perturbative underdamped",time_type="t0")
         ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Benchmark Evolved")
 
     #plot joint distribution

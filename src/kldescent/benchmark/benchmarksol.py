@@ -2,11 +2,11 @@ import os
 
 import numpy as np 
 
-from kldescent.sde.boundary import *
+#from kldescent.sde.boundary import *
 from kldescent.utils.parser import fetch_results_folder_from_cmd
 from kldescent.model.nn import MLP,NeuralNetwork
 from kldescent.benchmark.utilfunctions import *
-from kldescent.benchmark.perturbative.driftinterp import perturbative_du_interp,train_and_save_perturbative_du
+from kldescent.benchmark.perturbative.driftinterp import *
 from kldescent.benchmark.perturbative.corrections import MarginalHalfBridgePerturbation,HalfBridgePerturbation
 from kldescent.benchmark.overdamped.sol import compute_overdamped
 from .gaussian import GaussBVP
@@ -62,7 +62,7 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
             Fetches time discretisation from benchmark solution
         get_benchmark_data()
             fetches benchmark data found in benchmark sol path
-        get_quantity()
+        get_benchmark_quantity()
         get_perturbative_cumulants_array()
         get_perturbative_cumulant()
     """
@@ -151,7 +151,7 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         arr = self.get_benchmark_data(data="overdamped")
         return np.unique(arr[:,0])
         
-    def get_quantity(self,time,quantity,data=None,arr=None,time_type="t2"):
+    def get_benchmark_quantity(self,time,quantity,data=None,arr=None,time_type="t2"):
         """
         Get quantities to plot for the benchmark solution 
         args:
@@ -248,7 +248,7 @@ class GaussBenchmarkSolution(BaseBenchmarkSolution):
         get_timegrid()
         get_perturbative_cumulant()
         du_benchmark()
-        get_quantity()
+        get_benchmark_quantity()
     """
 
     def __init__(self,bridge_type="half",boundary=None,folder_name=None):   
@@ -366,7 +366,7 @@ class GaussBenchmarkSolution(BaseBenchmarkSolution):
             #TODO handle this error better or add msg
             return np.zeros_like(q) 
  
-    def get_quantity(self,time,quantity,data=None,arr=None,time_type="t0"):
+    def get_benchmark_quantity(self,time,quantity,data=None,arr=None,time_type="t0"):
         """
         Get quantities to plot for the benchmark solution 
         args:
@@ -420,19 +420,25 @@ def plot_data(benchmark_,quantity,data):
     fig.set_figwidth(25)
 
     for time in enumerate(times):
-        q, ptq = benchmark_.get_quantity(time[1], quantity, data=data)
+        q, ptq = benchmark_.get_benchmark_quantity(time[1], quantity, data=data)
         axs[time[0]].plot(q,ptq)
         axs[time[0]].set_title(f"t={time[1]}")
         
+        if quantity=="underdamped drift":
+            x = np.linspace(-5,5,1000)
+            benchmark_evaluate_net(benchmark_.du_net_benchmark,x,time[1])
+
+
     fig.tight_layout()
 
     fig.savefig(benchmark_.folder_name+f"/{data}_{quantity}.png",bbox_inches="tight")        
 
 if __name__=="__main__":
+    from kldescent.sde.boundary import *
     import matplotlib.pyplot as plt
     
     boundary = UnderdampedLandauer()
-    benchmark_ = PerturbativeBenchmarkSolution(boundary)
+    benchmark_ = PerturbativeBenchmarkSolution(boundary=boundary)
     plot_data(benchmark_,quantity="value",data="overdamped")
     plot_data(benchmark_,quantity="marginal",data="overdamped")
     plot_data(benchmark_,quantity="underdamped drift",data="perturbative underdamped")

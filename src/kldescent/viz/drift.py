@@ -3,10 +3,28 @@ import matplotlib.pyplot as plt
 
 from kldescent.viz.plots import make_fig_subplots
 
-def format_drift_ax(ax1,time):
 
-    ax1.set_title(f"t={time:.4f}")
-    ax1.set_xlabel("q")
+def format_drift_plot(axs,fig):
+
+    for ax in axs:
+        ax.set_xlabel("q")
+        ax.set_xlim((-5,5))
+
+        ax.set_ylabel(r"$\mathbb{U}$")
+        #ax[t].set_ylim((-5,5))
+
+    h,l = axs[0].get_legend_handles_labels()
+
+    legend = fig.legend(h,l,
+                frameon = False,
+                handlelength = 1,
+                ncols = 3)
+
+    #move the legend
+    legend.set_bbox_to_anchor(bbox=(0.95,0.07))
+
+    plt.tight_layout()
+    fig.subplots_adjust(bottom=0.15)
 
 def plot_drift(times,net_vals,benchmark_vals=None,err_vals =None, qmax = 5):
     """Make plot of drift at difference times
@@ -22,25 +40,21 @@ def plot_drift(times,net_vals,benchmark_vals=None,err_vals =None, qmax = 5):
         qmax : float
             Default 5, maximum value to plot. 
     """
-    qmax=2.5
+    
     fig,ax = make_fig_subplots(nrows=1,ncols=len(times),squeeze=True)
 
     for t in range(len(times)):  
-        
+        ax[t].set_title(f"t={times[t]:.4f}")
+
         ax[t].plot(np.linspace(-qmax,qmax,1000),
                 net_vals[t],
                 label="N.N.")
-        
-        format_drift_ax(ax[t],times[t])
-
-        ax[t].set_ylabel(r"$\mathbb{U}$")
-        #ax[t].set_ylim((-5,5))
-        
+                
         if benchmark_vals is not None:
             
             ax[t].plot(np.linspace(-qmax,qmax,1000),
-                benchmark_vals[t],
-                label="Benchmark N.N.")
+                        benchmark_vals[t],
+                        label="Benchmark N.N.")
         
         else:
             pass
@@ -51,18 +65,7 @@ def plot_drift(times,net_vals,benchmark_vals=None,err_vals =None, qmax = 5):
                             net_vals[t] + 3*err_vals[t],
                             label=r"90% confidence interval",
                             alpha=0.2)
-
-    h,l = ax[0].get_legend_handles_labels()
-
-    legend = fig.legend(h,l,
-                frameon = False,
-                handlelength = 1,
-                ncols = 3)
-
-    #move the legend
-    legend.set_bbox_to_anchor(bbox=(0.95,0.07))
-
-    plt.tight_layout()
-    fig.subplots_adjust(bottom=0.15)
-
+    format_drift_plot(ax,fig)
     return fig
+
+

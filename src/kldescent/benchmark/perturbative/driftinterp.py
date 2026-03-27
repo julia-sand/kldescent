@@ -45,6 +45,16 @@ def train_and_save_perturbative_du(benchmark,mlp_net):
     run_pretrain(mlp_net,benchmark)
     save_nn_checkpoint(mlp_net,loc=benchmark.get_benchmark_path()+f"/perturbative_underdamped_drift.pt")
     
+def benchmark_evaluate_net(mlp_net,x,time):
+
+    mlp_net.eval()
+    with torch.no_grad():
+        x_tensor = torch.from_numpy(x).to(dtype=torch.float32)
+        
+        #computes neural network output (forward pass) to use in plotting
+        return mlp_net(torch.cat((time*torch.ones((1000,1),requires_grad=False,dtype=torch.float32).to(mlp_net.device)
+                                                    ,x_tensor.unsqueeze(1).to(mlp_net.device)),dim=-1)).cpu().numpy()
+    
 
 def contour(plotter,net):
     """Plots a contour plot of the solution to the Fokker-Planck 
@@ -74,8 +84,8 @@ def contour(plotter,net):
     plt.close()
     
 if __name__=="__main__":
-    from ..benchmark import *
-    from ...sde.boundary import *
+    from kldescent.benchmark.benchmarksol import *
+    from kldescent.sde.boundary import *
     
     boundary = UnderdampedLandauer()
 
