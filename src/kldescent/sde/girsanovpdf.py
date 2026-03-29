@@ -1,6 +1,9 @@
 import torch
 
 from kldescent.utils.parser import integrator_params
+from functorch import vmap
+
+import pdb
 
 @torch.no_grad
 def girsanov_scheme(xinit,du_bar,dt,dw,t,sigma0,epsilon):
@@ -50,6 +53,7 @@ def compute_pdf(x0,
     ====
     """
     
+    #pdb.set_trace()
     net.eval()
 
     #todo fix this
@@ -79,7 +83,7 @@ def compute_pdf(x0,
             dw = (dt**0.5)*torch.randn_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(net.device)
 
             #evaluate neural network approximated drift 
-            du_bar = net(torch.cat((t_vec[-i]*torch.ones_like(xinit,dtype=torch.float32).to(net.device)
+            du_bar = net(torch.cat((t_vec[-i]*torch.ones_like(xinit[...,[0]],dtype=torch.float32).to(net.device)
                                                         ,xinit[...,[0]]),dim=-1))
             
             #one backward step of euler maruyama scheme of stochastic evolution
@@ -95,20 +99,30 @@ def compute_pdf(x0,
     return pdfout
 
 def plot_scatter_(x,pdf):
-    plt.scatter(x[...,0].cpu().numpy(), x[...,1].cpu().numpy(), c=pdf.cpu().numpy())
+    plt.scatter(x[...,0].cpu().numpy(), x[...,1].cpu().numpy(), c=pdf.cpu().numpy(),cmap='RdYlGn_r')
+    plt.title(f"{pdf.cpu().numpy().max()}")
     randint= random.randint(1, 100000) 
-    plt.savefig(f"test_{randint}.png")
+    plt.savefig(f"test_tests1.png")
+    plt.close()
 
 if __name__=="__main__":
     import matplotlib.pyplot as plt
     import random
     from kldescent.sde.boundary import UnderdampedLandauer
     from kldescent.model.nn import NeuralNetwork
-    compute_pdf(x0,
-                    net,
-                    sigma0,
-                    epsilon,
-                    p_initial,
-                    Tf,
-                    mc_samples=None,
-                    tsteps=None)        
+    boundary = UnderdampedLandauer()
+    nn_temp = NeuralNetwork(boundary)
+    testing_samples = 1000
+    xf = torch.tensor
+    #pdf = torch.zeros_like(xf[...,[0]]).to(nn_temp.device)
+    #pdf = compute_pdf(xf,
+    #                                        nn_temp,
+    #                                        boundary.sigma0,
+    #                                        boundary.params["epsilon"],
+    #                                        boundary.p_initial,
+    #                                        boundary.params["Tf"],
+    #                                        mc_samples=1,
+    #                                        tsteps=21)#torch.vmap(lambda xi: torch.mean(), randomness='different')(xf) 
+              
+    #plot_scatter_(xf, pdf)
+
