@@ -8,16 +8,22 @@ from kldescent.utils.parser import du_network_params,rho_network_params,fetch_ch
 
 def load_checkpoint(net,checkpointpath):
     try:
-        net.load_state_dict(torch.load(checkpointpath, weights_only=True))
-        print(net.net_name+": Checkpoint loaded successfully.")    
+        if torch.cuda.is_available():
+            net.load_state_dict(torch.load(checkpointpath, weights_only=True))
+        else:
+            net.load_state_dict(torch.load(checkpointpath, weights_only=True,map_location=torch.device('cpu')))
+        
+        print(net.net_name+f": Checkpoint loaded successfully on {net.device}.")   
     except FileNotFoundError:
         print("The checkpoint file at "+checkpointpath+" was not found")
         print("Hint: The filepath must be provided from the current working directory. Use --epoch to specify which epoch to load when using a default with --folder. For loading a specific checkpoint file with a different filename, use the --checkpointpath option.")
         print("Continuing with default initialisation")
         raise BaseException
     except RuntimeError:
+     
         print("The format of the checkpoint file at "+checkpointpath+" did not match the initialised network.")
         print("Continuing with default initialisation")
+    
         raise BaseException
     except AttributeError:
         print("Checkpoint could not be loaded. Checkpoint format not compatible with initialised network. Continuing with default initialisation-")
