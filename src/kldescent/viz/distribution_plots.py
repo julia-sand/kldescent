@@ -144,6 +144,7 @@ def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
             ax_pos.plot(xref,posref,color="green",alpha=0.5,label="Benchmark Analytic Prediction")
         except ValueError: 
             print(f"Benchmark data not available for t = {plottime}")
+            pass
         
         #add target boundary distributions to plots
         ax_pos.fill_between(np.linspace(-10,10,num=5000),
@@ -178,7 +179,7 @@ def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
     
     return 
   
-def make_marginal_distribution_fig(xvals,plottime,benchmark=None):
+def make_marginal_distribution_fig(xvals,plottime,benchmark):
 
     #make figure object
     fig = plt.figure(figsize=(15,8))

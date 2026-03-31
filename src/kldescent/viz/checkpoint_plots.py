@@ -227,15 +227,15 @@ class PlotUtils():
 
         final_plot_time = self.boundary_cond.params["Tf"]
 
-        try:
-            t_vec,cumulants_nn,cumulants_ref = self.load_cumulant_csvs()
-        except FileNotFoundError:
-            t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde_cumulants(benchmark=self.benchmark,mcsamples=mcsamples)
-              
-            #marginal distribution fig
-            fig = make_marginal_distribution_fig([xinit,xref],final_plot_time,benchmark=self.benchmark)
-            save_fig_(fig,f"marginal_time_{final_plot_time}",loc=self.resultsdir)
+        #try:
+        #    t_vec,cumulants_nn,cumulants_ref = self.load_cumulant_csvs()
+        #except FileNotFoundError:
+        t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde_cumulants(benchmark=self.benchmark,mcsamples=mcsamples)
             
+        #marginal distribution fig
+        fig = make_marginal_distribution_fig([xinit,xref],final_plot_time,benchmark=self.benchmark)
+        save_fig_(fig,f"marginal_time_{final_plot_time}",loc=self.resultsdir)
+        
         self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples,
                                         add_free_diffusion=False,)
         if usebenchmark:
@@ -282,13 +282,12 @@ class PlotUtils():
         times = self.generate_times(numplots)
         #[0,1.100000,2.300000,4.150000,5]
         
-        #self.generate_times(numplots)
         net_vals = self.get_drift_data(times)
         ref_vals = self.get_benchmark_drift_data(times)
 
         fig = plot_drift(times,
                             net_vals,
-                            ref_vals,qmax=self.boundary_cond.qmax)
+                            ref_vals)
         
         if self.wandb_run is not None:
             self.wandb_run.log({"drift":fig})
@@ -297,6 +296,41 @@ class PlotUtils():
         plt.close()
         return
     
+    def make_inverted_drift_plot(self,numplots):
+        """show the drift as a function of time at different values of x
+        """
+    
+        xcoords = np.sort(np.random.uniform(-5,5,numplots))
+        
+        #self.generate_times(numplots)
+        net_vals = []
+        ref_vals = []
+        
+        self.net.eval()
+
+        with torch.no_grad():
+            for xcoord in xcoords:    
+                #computes neural network output (forward pass) to use in plotting
+                net_vals.append(self.net(torch.cat((torch.linspace(0,self.boundary_cond.params["Tf"],1000,requires_grad=False).unsqueeze(1).to(self.net.device),
+                        xcoord*torch.ones((1000,1),requires_grad=False,dtype=torch.float32).to(self.net.device)),dim=-1)).cpu().numpy())
+                if self.benchmark is not None:
+                    if self.benchmark.du_net_benchmark is not None:
+                        pass    
+                    else:
+                        ref_vals.append((-1)*xcoord*np.ones(1000)*self.boundary_cond.params["epsilon"]*self.benchmark.get_underdamped_drift_array()[:,1]/np.sqrt(2))
+        fig = plot_drift(xcoords,
+                            net_vals,
+                            ref_vals,
+                            xaxis=np.linspace(0,self.boundary_cond.params["Tf"],1000),
+                            invert_labels=True)
+        
+        if self.wandb_run is not None:
+            self.wandb_run.log({"drift":fig})
+
+        save_fig_(fig,"drift_inverted",self.resultsdir)
+        plt.close()
+        return
+
     @torch.no_grad
     def get_benchmark_drift_data(self,times):
         
@@ -317,6 +351,18 @@ class PlotUtils():
 
     @torch.no_grad
     def get_drift_data(self,times):
+        
+        #initialise the arrays
+        net_vals = []
+
+        for t in range(len(times)):
+            
+            net_vals.append(self.evaluate_net_output(self.net,times[t]).flatten())
+        
+        return net_vals
+    
+    @torch.no_grad
+    def get_inverted_drift_data(self,times):
         
         #initialise the arrays
         net_vals = []
@@ -485,6 +531,8 @@ class PlotUtils():
         return zchop(np.abs(test_vec-ref_vec)**2)/np.maximum(np.abs(ref_vec),np.abs(test_vec))
 
     def load_cumulant_csvs(self,):
+        """return tvec, nn cumulants and benchmark cumulants from csvs"""
+
         cumulants_nn = np.loadtxt(open(self.resultsdir+"/cumulants.csv"),
                         delimiter=",",skiprows=1) 
         cumulants_ref = np.loadtxt(open(self.resultsdir+"/ref_cumulants.csv"),
@@ -495,6 +543,7 @@ class PlotUtils():
     def make_cumulant_error_plot_from_csv(self,):
         #mcsamples = self.data_loaded["testsamples"]
         t_vec,cumulants_nn,cumulants_ref = self.load_cumulant_csvs()
+        self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples=0)
         self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref)
 
     def make_cumulant_error_plot(self,t_vec,cumulants_nn,cumulants_ref):    
@@ -586,9 +635,16 @@ if __name__=="__main__":
     plot_utils = PlotUtils()
     usebenchmark,_ = metric_params()
 
-    plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark)
+    plot_utils.load_du_checkpoint()
+    if usebenchmark:
+        plot_utils.load_benchmark_solution()
+
+    plot_utils.make_drift_plot(numplots=5)
+    plot_utils.make_inverted_drift_plot(numplots=5)
+    #plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark)
     #plot_utils.make_cumulant_error_plot_from_csv()
     #plot_utils.make_intermediate_histograms()
+    plot_utils.make_cumulant_error_plot_from_csv()
 
     if plot_utils.data_loaded["terminalcost"]=="GirsanovNet":
         plot_utils.make_girsanov_net_plots()

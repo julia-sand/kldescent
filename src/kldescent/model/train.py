@@ -120,7 +120,7 @@ class Train():
     def __init__(self, net, integrator):
 
         #set defaults of training process
-        self.lr = 0.005 #initial learning rate
+        self.lr = 0.0005 #initial learning rate
         self.integrator = integrator
         self.net = net
 

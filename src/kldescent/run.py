@@ -39,7 +39,8 @@ def run():
     boundaryconditions = getattr(boundaries,args["boundary"])(logfile=metrics_logger.datayaml)
        
     net = nn.NeuralNetwork(boundaryconditions,args["device"])
-    
+    model = torch.compile(net, mode="max-autotune")
+
     terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,fileloc=metrics_logger.newpath,filename=metrics_logger.datayaml)
     
     #intialise sde integration 

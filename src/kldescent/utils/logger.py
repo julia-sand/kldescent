@@ -27,7 +27,6 @@ class LossLogger():
 
     Attributes
     ----------
-    
 
     Methods
     -------
