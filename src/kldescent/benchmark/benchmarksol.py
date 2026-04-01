@@ -411,6 +411,7 @@ class GaussBenchmarkSolution(BaseBenchmarkSolution):
         
         #return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx]) #((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
 
+
 def plot_data(benchmark_,quantity,data):
     
     times = [0,0.06,0.12,0.2]
@@ -419,16 +420,19 @@ def plot_data(benchmark_,quantity,data):
     fig.set_figheight(15)
     fig.set_figwidth(25)
 
+    eps = benchmark_.boundary.params["epsilon"]
     for time in enumerate(times):
-        q, ptq = benchmark_.get_benchmark_quantity(time[1], quantity, data=data)
+        q, ptq = benchmark_.get_benchmark_quantity(time[1], quantity, data=data,time_type="t2")
         axs[time[0]].plot(q,ptq)
         axs[time[0]].set_title(f"t={time[1]}")
-        
+
         if quantity=="underdamped drift":
             x = np.linspace(-5,5,1000)
-            benchmark_evaluate_net(benchmark_.du_net_benchmark,x,time[1])
+            y = -(2**0.5/eps)*benchmark_evaluate_net(benchmark_.du_net_benchmark,x,time[1]/(eps**2))
+            axs[time[0]].plot(x,y)
+            axs[time[0]].set_ylim((-20,20))
 
-
+        axs[time[0]].set_xlim((-5,5))
     fig.tight_layout()
 
     fig.savefig(benchmark_.folder_name+f"/{data}_{quantity}.png",bbox_inches="tight")        
@@ -438,7 +442,8 @@ if __name__=="__main__":
     import matplotlib.pyplot as plt
     
     boundary = UnderdampedLandauer()
-    benchmark_ = PerturbativeBenchmarkSolution(boundary=boundary)
+    benchmark_ = PerturbativeBenchmarkSolution(boundary=boundary,
+                        folder_name="../BENCHMARK_TESTS1")
     plot_data(benchmark_,quantity="value",data="overdamped")
     plot_data(benchmark_,quantity="marginal",data="overdamped")
     plot_data(benchmark_,quantity="underdamped drift",data="perturbative underdamped")

@@ -313,11 +313,15 @@ class PlotUtils():
                 #computes neural network output (forward pass) to use in plotting
                 net_vals.append(self.net(torch.cat((torch.linspace(0,self.boundary_cond.params["Tf"],1000,requires_grad=False).unsqueeze(1).to(self.net.device),
                         xcoord*torch.ones((1000,1),requires_grad=False,dtype=torch.float32).to(self.net.device)),dim=-1)).cpu().numpy())
-                if self.benchmark is not None:
+                if self.benchmark is None:
+                    ref_vals = None
+                else:
                     if self.benchmark.du_net_benchmark is not None:
-                        pass    
+                        ref_vals.append(self.benchmark.du_net_benchmark(torch.cat((torch.linspace(0,self.boundary_cond.params["Tf"],1000,requires_grad=False).unsqueeze(1).to(self.net.device),
+                                        xcoord*torch.ones((1000,1),requires_grad=False,dtype=torch.float32).to(self.net.device)),dim=-1)).cpu().numpy())
                     else:
                         ref_vals.append((-1)*xcoord*np.ones(1000)*self.boundary_cond.params["epsilon"]*self.benchmark.get_underdamped_drift_array()[:,1]/np.sqrt(2))
+        
         fig = plot_drift(xcoords,
                             net_vals,
                             ref_vals,
@@ -641,10 +645,11 @@ if __name__=="__main__":
 
     plot_utils.make_drift_plot(numplots=5)
     plot_utils.make_inverted_drift_plot(numplots=5)
+    plot_utils.make_sde_plots(2048, usebenchmark)
     #plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark)
     #plot_utils.make_cumulant_error_plot_from_csv()
     #plot_utils.make_intermediate_histograms()
-    plot_utils.make_cumulant_error_plot_from_csv()
+    #plot_utils.make_cumulant_error_plot_from_csv()
 
     if plot_utils.data_loaded["terminalcost"]=="GirsanovNet":
         plot_utils.make_girsanov_net_plots()

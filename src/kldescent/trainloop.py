@@ -1,6 +1,8 @@
 from kldescent.viz.checkpoint_plots import PlotUtils
 from kldescent.model.nn import save_nn_checkpoint
 
+batches = 5
+
 def train_loop_du(epoch,
                     metric_,
                     terminal_cost,
@@ -11,12 +13,13 @@ def train_loop_du(epoch,
         #update the terminal cost with current final distribution
         terminal_cost.update_cost_params(integrator,epoch)
 
+        #for _ in range(batches):
         #update the drift nn with the current learned final distribution  
         loss_out = trainer.train_step()
-        
+            
         if loss_out!=loss_out:
             raise ValueError('Loss function is NaN. Terminating training process')
-            
+    
         #if epoch<trainer.milestone:
         #trainer.scheduler1.step()#metric_.actioncost)
       
@@ -40,9 +43,9 @@ def train_loop_du(epoch,
     
             #uncomment to make plots
             #!! creating plots will run perturbative calculations
-            plot_utils = PlotUtils(epoch=epoch,                                  
-                                    benchmark=metric_.benchmark_,
-                                    wandb_run = metric_.wandb_run)
+            #plot_utils = PlotUtils(epoch=epoch,                                  
+            #                        benchmark=metric_.benchmark_,
+            #                        wandb_run = metric_.wandb_run)
 
-            plot_utils.checkpoint_plots_du(usebenchmark=metric_.usebenchmark,mcsamples=2048)
+            #plot_utils.checkpoint_plots_du(usebenchmark=metric_.usebenchmark,mcsamples=2048)
             

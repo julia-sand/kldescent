@@ -33,7 +33,6 @@ def save_nn_checkpoint(net,loc):
         
     torch.save(net.state_dict(),loc) 
 
-##SOURCE: https://github.com/miaotianyi 
 
 class FourierFeatures(nn.Module):
     def __init__(self,in_features,out_features, scale, device):
@@ -43,12 +42,18 @@ class FourierFeatures(nn.Module):
         self.device = device
 
         #initialise randn 
-        self.B = scale*torch.randn(in_features, out_features//2).to(self.device)
-
+        #self.B = scale*torch.randn(in_features, out_features//2).to(self.device)
+        self.B_layer = nn.Linear(in_features, out_features//2, bias=False, dtype=torch.float32).to(self.device)
+        for param in self.B_layer.parameters():
+            param.requires_grad_(True)
+        
+        #initialise the weights normally
+        nn.init.normal_(self.B_layer.weight.data, mean=0.0, std=scale)
+    
     def forward(self, t: torch.Tensor) -> torch.Tensor:
         
-        t_proj = 2 * math.pi * t @ self.B
-        return torch.cat([torch.sin(t_proj), torch.cos(t_proj)], dim=-1).to(self.device)
+        t_proj = 2 * math.pi * self.B_layer(t) #t @ self.B
+        return torch.cat((torch.sin(t_proj), torch.cos(t_proj)), dim=-1).to(self.device)
 
 
 class MyActivation(nn.Module): 
@@ -56,9 +61,53 @@ class MyActivation(nn.Module):
         return torch.sin(x)
 
 #@torch.compile
+class NeuralNetwork_layers(nn.Module):
+    def __init__(self,device,hidden_layer_neurons):
+        
+        self.net_name = "du_layers_only"
+               
+        super().__init__()
+
+        # store normalization constants (not trainable)
+        
+        self.flatten = nn.Flatten()
+        #self.tencoding = TimeConder(1,self.hidden_layer_neurons) #fourier positional encoding goes here! 
+        self.NNt = nn.Sequential(
+            nn.Linear(1, hidden_layer_neurons ),  #
+            #nn.Linear(2*self.params["duhiddenlayerneurons"], self.params["duhiddenlayerneurons"] ),  #
+            nn.GELU(), #MyActivation(),
+            nn.Linear(hidden_layer_neurons , hidden_layer_neurons),   #64 outputs
+            #nn.GELU(), #MyActivation(),
+            #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
+            nn.ReLU(),  #must be positive
+            ).to(device)
+        self.NNx = nn.Sequential(
+            nn.Linear(1,hidden_layer_neurons ),  #input x
+            nn.GELU(),
+            nn.Linear(hidden_layer_neurons, hidden_layer_neurons),   #64 outputs
+            ).to(device)   
+        self.NN1 = nn.Sequential(
+            nn.Linear(2*hidden_layer_neurons, hidden_layer_neurons),  #input 2x64 features: concatenated output of NNt and NNx t and x 
+            nn.GELU(),
+            nn.Linear(hidden_layer_neurons,hidden_layer_neurons),   #64 outputs
+            nn.GELU(),
+            nn.Linear(hidden_layer_neurons , 1)).to(device) 
+        self.NN2 = nn.Sequential(
+            nn.Linear(2*hidden_layer_neurons , hidden_layer_neurons),  #input 2x64 features: concatenated output of NNt and NNx t and x 
+            nn.GELU(),
+            nn.Linear(hidden_layer_neurons, hidden_layer_neurons),   #64 outputs
+            nn.GELU(),
+            nn.Linear(hidden_layer_neurons , 1),   #64 outputs
+            nn.ReLU(), #must be positive
+            ).to(device)
+        self.layer_norm_combined = nn.LayerNorm(2*hidden_layer_neurons).to(device)
+
+#@torch.compile
 class NeuralNetwork(nn.Module):
     def __init__(self,boundary,device=None,nn_params=None):
         
+        super().__init__()
+  
         self.net_name = "du"
         
         if device=="cpu":
@@ -69,8 +118,6 @@ class NeuralNetwork(nn.Module):
             else:
                 print("No GPU available. Training on CPU")
                 self.device = "cpu"
-    
-
         
         if nn_params is not None:
             self.params = nn_params    
@@ -80,50 +127,20 @@ class NeuralNetwork(nn.Module):
         #params
         self.boundary = boundary
 
-        super(NeuralNetwork, self).__init__()
-
         # store normalization constants (not trainable)
         #qmax = self.boundary.qmax
         self.register_buffer("xmax", torch.tensor(7))
         self.register_buffer("xmin", torch.tensor(-7))
-        self.register_buffer("tmax", torch.tensor(5))
+        self.register_buffer("tmax", torch.tensor(self.boundary.params["Tf"]))
         
         self.flatten = nn.Flatten()
-        #self.tencoding = TimeConder(1,self.hidden_layer_neurons) #fourier positional encoding goes here! 
-        self.NNt = nn.Sequential(
-            nn.Linear(1, self.params["duhiddenlayerneurons"] ),  #
-            #nn.Linear(2*self.params["duhiddenlayerneurons"], self.params["duhiddenlayerneurons"] ),  #
-            nn.GELU(), #MyActivation(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            #nn.GELU(), #MyActivation(),
-            #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            nn.ReLU(),  #must be positive
-            ).to(self.device)
-        self.NNx = nn.Sequential(
-            nn.Linear(1, self.params["duhiddenlayerneurons"] ),  #input x
-            nn.GELU(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            ).to(self.device)   
-        self.NN1 = nn.Sequential(
-            nn.Linear(2*self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
-            nn.GELU(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            nn.GELU(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , 1)).to(self.device) 
-        self.NN2 = nn.Sequential(
-            nn.Linear(2*self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),  #input 2x64 features: concatenated output of NNt and NNx t and x 
-            nn.GELU(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            nn.GELU(),
-            nn.Linear(self.params["duhiddenlayerneurons"] , 1),   #64 outputs
-            nn.ReLU(), #must be positive
-            ).to(self.device)
-        self.FourierFeatures = FourierFeatures(1,2*self.params["duhiddenlayerneurons"],scale=0.5,device=self.device)
         
-        self.layer_norm_combined = nn.LayerNorm(2*self.params["duhiddenlayerneurons"]).to(self.device)
-        #self.layer_norm = nn.LayerNorm(self.params["duhiddenlayerneurons"])
+        self.FeedForwardLayers = NeuralNetwork_layers(self.device, self.params["duhiddenlayerneurons"])
+        
+        self.FourierFeatures = FourierFeatures(1,2*self.params["duhiddenlayerneurons"],scale=1,device=self.device)
         
         self.checkpoint_path = fetch_checkpoint_path()
+        
         if self.checkpoint_path is not None: #automatically loads a checkpoint from the command line
             try: 
                 load_checkpoint(self,self.checkpoint_path)
@@ -148,14 +165,14 @@ class NeuralNetwork(nn.Module):
         #x = self.NNx(xnorm.to(self.device))
         #t = self.FourierFeatures(input_vec[...,[0]])#
         
-        x = self.NNx(self.x_minmax_norm(input_vec[...,[1]]))
+        x = self.FeedForwardLayers.NNx(self.x_minmax_norm(input_vec[...,[1]]))
         t = self.FourierFeatures(self.t_minmax_norm(input_vec[...,[0]]))#
 
-        tout = self.NNt(self.t_minmax_norm(input_vec[...,[0]]))
+        tout = self.FeedForwardLayers.NNt(self.t_minmax_norm(input_vec[...,[0]]))
         
-        combined = self.layer_norm_combined(torch.cat((tout,x), dim=-1) )
+        combined = self.FeedForwardLayers.layer_norm_combined(torch.cat((tout,x), dim=-1) )
         #concatenate the outputs and put them through the part 2
-        out = self.NN1(combined) + self.NN2(t)*self.boundary.scorefinal(input_vec[...,[1]])
+        out = self.FeedForwardLayers.NN1(combined) + self.FeedForwardLayers.NN2(t)*self.boundary.scorefinal(input_vec[...,[1]])
         
         return out
 
@@ -165,6 +182,8 @@ class NeuralNetwork(nn.Module):
                 torch.nn.init.xavier_uniform_(m.weight,gain=2)
                 #if m.bias is not None:
                 #    torch.nn.init.xavier_uniform_(m.bias, gain=1)
+
+
 
 #@torch.compile
 class RhoNeuralNetwork(nn.Module):

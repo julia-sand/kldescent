@@ -206,7 +206,7 @@ class SDEBase():
         cumulants_nn = []#self.save_cumulants(torch.empty((0,5),requires_grad=False,dtype=torch.float32),xinit).to(self.device)
         cumulants_ref = []#self.save_cumulants(torch.empty((0,5),requires_grad=False,dtype=torch.float32),xref).to(self.device)
         cumulants_nn.append(self.compute_cumulant_row(xinit))
-        cumulants_ref.append(self.compute_cumulant_row(xinit))
+        cumulants_ref.append(self.compute_cumulant_row(xref))
 
         with torch.no_grad():
 
@@ -217,7 +217,7 @@ class SDEBase():
         
                 xref = self.benchmark_integration_step(xref,dt,t_vec[i],benchmark)
                 
-                cumulants_nn.append(self.compute_cumulant_row(xinit))#self.save_cumulants(cumulants_nn,xinit)
+                cumulants_nn.append(self.compute_cumulant_row(xinit))
                 cumulants_ref.append(self.compute_cumulant_row(xref))
         
         #save as numpy arrays and return to cpu for plots
@@ -225,22 +225,6 @@ class SDEBase():
         cumulants_ref = self.save_cumulants(cumulants_ref)
 
         return t_vec.cpu().numpy(), xinit.cpu().numpy(), xref.cpu().numpy(), cumulants_nn,cumulants_ref #cumulants_nn.cpu(), cumulants_ref.cpu()
-
-class EulerMaruyamaSDE(SDEBase):
-
-    def __init__(self,
-                    boundary_data,
-                    terminal_cost=None, 
-                    net=None,
-                    sde_params=None,
-                    device="cpu"):
-        
-        SDEBase.__init__(self,boundary_data=boundary_data,sde_params=sde_params)
-
-        self.TerminalCost = terminal_cost
-        self.net = net 
-        self.testing_samples =self.sde_params["testsamples"]
-        self.device = self.net.device
 
     @torch.no_grad
     def compute_benchmark_drift(self,xinit,t,benchmark):
@@ -256,6 +240,22 @@ class EulerMaruyamaSDE(SDEBase):
             
         
         return du
+        
+class EulerMaruyamaSDE(SDEBase):
+
+    def __init__(self,
+                    boundary_data,
+                    terminal_cost=None, 
+                    net=None,
+                    sde_params=None):
+        
+        SDEBase.__init__(self,boundary_data=boundary_data,sde_params=sde_params)
+
+        self.TerminalCost = terminal_cost
+        self.net = net 
+        self.testing_samples =self.sde_params["testsamples"]
+        self.device = self.net.device
+
 
     def integration_step(self,xinit,dt,t):
 
@@ -284,7 +284,6 @@ class EulerMaruyamaSDE(SDEBase):
                                                 + self.boundary.sigma0*dw
             
         return xinit
-
 
     def loss_fn(self):
         """
@@ -322,18 +321,24 @@ class EulerMaruyamaSDE(SDEBase):
             a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True) ** 2) 
             
             c = c + (du*dw)
+
             du_bar = du.detach() #copy without gradient 
 
             with torch.no_grad(): #no gradient 
 
                 abar = abar + dt*(torch.linalg.norm(du_bar, axis=1, keepdim=True) ** 2) 
-                bbar = bbar + dt*(self.boundary.f(xinit,t_vec[i])) 
+                #abar = abar + dt*(torch.linalg.norm(du_bar, axis=1, keepdim=True) ** 2) 
+                bbar = bbar #+ dt*(self.boundary.f(xinit,t_vec[i])) 
                 
                 xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
 
         with torch.no_grad():
             #compute terminal cost
             gvals = self.TerminalCost.gfun(xinit.detach().clone(),self.net,self.sde_params["testsamples"]).to(self.device)
+
+            #max_val = torch.max(xinit.detach().clone())
+
+            #print(max_val)
 
         #compute value of Lhat
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
@@ -346,15 +351,15 @@ class VerletSDE(SDEBase):
                     boundary_data,
                     terminal_cost=None, 
                     net=None,
-                    sde_params=None,
-                    device="cpu"):
+                    sde_params=None):
         
         SDEBase.__init__(self,boundary_data)
 
         self.TerminalCost = terminal_cost
         self.net = net 
         self.testing_samples =self.sde_params["testsamples"]
-        
+        self.device = self.net.device
+
     @torch.no_grad()
     def integration_step(self,xinit,dt,t):
 
@@ -421,11 +426,11 @@ class VerletSDE(SDEBase):
         xinit = self.boundary.generate_samples(self.sde_params["batchsamples"],"initial").to(self.device)
         
         #set up a,abar,c,cbar
-        a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
-        abar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32)
-        bbar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32)
-        c = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32)
-        dw = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32)
+        a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
+        abar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32).to(self.device)
+        bbar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32).to(self.device)
+        c = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
+        dw = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32).to(self.device)
 
         for i in range(0,self.sde_params["tsteps"]-1):
             dt = (t_vec[i+1]-t_vec[i])
@@ -447,7 +452,7 @@ class VerletSDE(SDEBase):
             with torch.no_grad(): #no gradient 
 
                 abar = abar + dt*(torch.linalg.norm(du_bar, axis=1, keepdim=True) ** 2) 
-                bbar = bbar + dt*(self.boundary.f(xinit,t_vec[i])) 
+                #bbar = bbar + dt*(self.boundary.f(xinit,t_vec[i])) 
                     
                 #integrate one step 
                 xinit = self.verlet_half_step(xinit, du_bar, dt, dw, t_vec[i])

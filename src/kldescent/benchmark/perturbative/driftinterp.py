@@ -49,11 +49,11 @@ def benchmark_evaluate_net(mlp_net,x,time):
 
     mlp_net.eval()
     with torch.no_grad():
-        x_tensor = torch.from_numpy(x).to(dtype=torch.float32)
+        x_tensor = torch.from_numpy(x).to(dtype=torch.float32).unsqueeze(1)
         
         #computes neural network output (forward pass) to use in plotting
-        return mlp_net(torch.cat((time*torch.ones((1000,1),requires_grad=False,dtype=torch.float32).to(mlp_net.device)
-                                                    ,x_tensor.unsqueeze(1).to(mlp_net.device)),dim=-1)).cpu().numpy()
+        return mlp_net(torch.cat((time*torch.ones_like(x_tensor,requires_grad=False,dtype=torch.float32).to(mlp_net.device)
+                                                    ,x_tensor.to(mlp_net.device)),dim=-1)).cpu().numpy()
     
 
 def contour(plotter,net):

@@ -3,7 +3,7 @@ import os
 import numpy as np 
 import torch
 from torch import nn as torchnn
-from torch.optim import Adam,SGD
+from torch.optim import Adam,SGD,AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR,ExponentialLR,ReduceLROnPlateau
 from torch.nn.utils import clip_grad_norm_
 from functorch import vmap
@@ -35,7 +35,7 @@ class Pretrain():
         self.lr = 0.01 #initial learning rate
         self.gamma = 0.1 #decay rate of learning rate
         self.milestone = 1000 #frequency of learning rate decay (in epochs)
-        self.n_epochs = 600 #total number of epochs
+        self.n_epochs = 60000 #total number of epochs
 
         self.minibatch_samples = 512 #number of datarows to use per parameter update
 
@@ -128,14 +128,16 @@ class Train():
 
         self.clip = 0.001 #gradient clipping
 
-        self.optimiser = Adam(self.net.parameters(), lr=self.lr, weight_decay=1e-3)
+        self.optimiser_feedforward = AdamW(self.net.parameters(), lr=self.lr, weight_decay=1e-3)
+        self.optimiser_fourier = AdamW(self.net.FourierFeatures.parameters(), lr=0.01)
+
         self.milestone = 400 #how often to decay learning rate
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
-        self.scheduler1 = CosineAnnealingLR(self.optimiser, 
+        self.scheduler1 = CosineAnnealingLR(self.optimiser_feedforward, 
                                         T_max=100, eta_min=1e-10)
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
-        self.scheduler2 = ReduceLROnPlateau(self.optimiser,
+        self.scheduler2 = ReduceLROnPlateau(self.optimiser_fourier,
                                             mode="min",
                                             factor=0.9,
                                             patience=1, #how many steps to wait before 
@@ -147,15 +149,18 @@ class Train():
         self.net.train() #set neural net into train mode
 
         #reset gradients 
-        self.optimiser.zero_grad()
+        self.optimiser_feedforward.zero_grad()
+        self.optimiser_fourier.zero_grad()
         
         Lhat = self.integrator.loss_fn()
         #clip_grad_norm_(self.net.parameters(), self.clip)
 
         ##training##
         Lhat.backward()
-        self.optimiser.step()
-            
+
+        self.optimiser_feedforward.step()
+        self.optimiser_fourier.step()
+
         return Lhat.detach().cpu().numpy()
 
 class TrainRho():

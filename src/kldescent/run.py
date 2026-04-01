@@ -44,7 +44,8 @@ def run():
     terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,fileloc=metrics_logger.newpath,filename=metrics_logger.datayaml)
     
     #intialise sde integration 
-    integrator = langevin.EulerMaruyamaSDE(boundaryconditions, net=net, terminal_cost=terminal_cost)
+    integrator = langevin.VerletSDE(boundaryconditions, net=net, terminal_cost=terminal_cost)
+    #langevin.EulerMaruyamaSDE(boundaryconditions, net=net, terminal_cost=terminal_cost)
     
     #initialise trainer
     trainer = train.Train(net,integrator) 

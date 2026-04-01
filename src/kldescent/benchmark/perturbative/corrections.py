@@ -199,9 +199,9 @@ class MarginalHalfBridgePerturbation(Perturbation):
         f02_temp = np.zeros(self.xnum)
 
         #compute gradient 
-        f02_temp[idx] = self.d_(f00_arr,self.qaxis[idx]) 
+        f02_temp[idx] = self.apply_filter(self.d_(f00_arr,self.qaxis[idx]))
 
-        return f02_temp 
+        return f02_temp
     
             
     def f02(self,t0,t2):
@@ -319,33 +319,37 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
         #pdb.set_trace()
 
         idx = self.get_rhomask(t2)
+        
         f00 = self.fill_zeros(self.apply_filter(self.f00(t2)[idx]),idx)
         df00 = self.d_f00(idx,f00[idx])
         dv00 = self.apply_filter(self.dv00(t2)) 
         
         kappa = self.kappa(f00,dv00)
-
-        f11 = self.f11(df00,f00,dv00,kappa,t0)
-        dt_f11 = self.dt_f11(df00,f00,dv00,kappa,t0)
+        f11_term1 = self.f11_term1(df00,f00,dv00)
+        f11_term2 = self.f11_term2(df00,f00,dv00,kappa)
         
-        return -np.nan_to_num((df00 + dt_f11 + f11)/f00,posinf=0,neginf=0)
+        f11 = self.f11(f11_term1,f11_term2,t0)
+        dt_f11 = self.dt_f11(f11_term1,f11_term2,t0)
+        
+        du_out = np.nan_to_num((df00 + dt_f11 + f11)/f00,posinf=0,neginf=0)
+        return -self.apply_filter(du_out)
 
     def coeff_G111_G112(self,):
         return 3/(np.exp(-self.Tf)*(2+np.cosh(self.Tf)))
 
-    def f11(self,df00,f00,dv00,kappa,t0):
-        return self.G11(t0)*self.f11_term1(df00,f00,dv00,t0) + self.G12(t0)*self.f11_term2(df00,f00,dv00,kappa,t0)
+    def f11(self,f11_term1,f11_term2,t0):
+        return self.G11(t0)*f11_term1 + self.G12(t0)*f11_term2
      
-    def dt_f11(self,df00,f00,dv00,kappa,t0):
-        return self.dt_G11(t0)*self.f11_term1(df00,f00,dv00,t0) + self.dt_G12(t0)*self.f11_term2(df00,f00,dv00,kappa,t0)
+    def dt_f11(self,f11_term1,f11_term2,t0):
+        return self.dt_G11(t0)*f11_term1 + self.dt_G12(t0)*f11_term2
         
     def d_v20_f00(self,df00,f00,dv00,kappa):
         return -self.coeff_G111_G112()*(df00 + f00*(2*dv00 - kappa))/4
 
-    def f11_term1(self,df00,f00,dv00,t0):
+    def f11_term1(self,df00,f00,dv00):
         return df00+2*f00*dv00
 
-    def f11_term2(self,df00,f00,dv00,kappa,t0):
+    def f11_term2(self,df00,f00,dv00,kappa):
         return 4*self.d_v20_f00(df00,f00,dv00,kappa)
 
     def G11(self,t0):
