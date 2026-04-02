@@ -197,12 +197,18 @@ class TrainRho():
         with torch.no_grad():
             yobs = torch.zeros_like(x0[...,[0]])
 
-            yobs = torch.vmap(lambda xi: compute_pdf(xi[None],integrator.net,
-                                                integrator.boundary.sigma0,
-                                                integrator.boundary.params["epsilon"],
-                                                integrator.boundary.p_initial,
-                                                integrator.boundary.params["Tf"],
-                                                mc_samples=1), randomness='different')(x0)
+            yobs = compute_pdf(x0,integrator.net,
+                                integrator.boundary.sigma0,
+                                integrator.boundary.params["epsilon"],
+                                integrator.boundary.p_initial,
+                                integrator.boundary.params["Tf"],
+                                mc_samples=1)
+                                                #torch.vmap(lambda xi: compute_pdf(xi[None],integrator.net,
+                                                #integrator.boundary.sigma0,
+                                                #integrator.boundary.params["epsilon"],
+                                                #integrator.boundary.p_initial,
+                                                #integrator.boundary.params["Tf"],
+                                                #mc_samples=1), randomness='different')(x0)
 
             return yobs
 

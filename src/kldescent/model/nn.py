@@ -79,7 +79,7 @@ class NeuralNetwork_layers(nn.Module):
             nn.Linear(hidden_layer_neurons , hidden_layer_neurons),   #64 outputs
             #nn.GELU(), #MyActivation(),
             #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
-            nn.ReLU(),  #must be positive
+            nn.GELU(),  #must be positive
             ).to(device)
         self.NNx = nn.Sequential(
             nn.Linear(1,hidden_layer_neurons ),  #input x
@@ -98,7 +98,7 @@ class NeuralNetwork_layers(nn.Module):
             nn.Linear(hidden_layer_neurons, hidden_layer_neurons),   #64 outputs
             nn.GELU(),
             nn.Linear(hidden_layer_neurons , 1),   #64 outputs
-            nn.ReLU(), #must be positive
+            nn.GELU(), #must be positive
             ).to(device)
         self.layer_norm_combined = nn.LayerNorm(2*hidden_layer_neurons).to(device)
 
