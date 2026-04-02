@@ -10,6 +10,8 @@ from kldescent.benchmark.perturbative.driftinterp import *
 from kldescent.benchmark.perturbative.corrections import MarginalHalfBridgePerturbation,HalfBridgePerturbation
 from kldescent.benchmark.overdamped.sol import compute_overdamped
 from .gaussian import GaussBVP
+from kldescent.viz.drift import plot_drift
+from kldescent.viz.plots import update_mpl
 
 class BaseBenchmarkSolution():
 
@@ -411,7 +413,34 @@ class GaussBenchmarkSolution(BaseBenchmarkSolution):
         
         #return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx]) #((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
 
+def plot_benchmark_drift(benchmark_):
+    
+    update_mpl()
 
+    times = [0,0.06,0.12,0.2]
+    x = np.unique(benchmark_.get_benchmark_quantity(times[0], "underdamped drift", data="perturbative underdamped",time_type="t2")[0])
+
+    net_vals = []
+    benchmark_vals = []
+    for time in times:
+        
+        net_vals.append(benchmark_evaluate_net(benchmark_.du_net_benchmark,x,time))
+        benchmark_vals.append((-benchmark_.boundary.params["epsilon"]/2**0.5)*benchmark_.get_benchmark_quantity(time, "underdamped drift", data="perturbative underdamped",time_type="t2")[1])
+
+    fig = plot_drift(times,net_vals,
+                        benchmark_vals,
+                        xaxis = x)
+    
+    for ax in fig.get_axes():
+        ax.set_xlim((-5,5))
+        ax.set_ylim((-20,20))
+
+    
+
+    fig.savefig(benchmark_.folder_name+f"/perturbative_drift.png",bbox_inches="tight")        
+
+
+    
 def plot_data(benchmark_,quantity,data):
     
     times = [0,0.06,0.12,0.2]
@@ -426,11 +455,6 @@ def plot_data(benchmark_,quantity,data):
         axs[time[0]].plot(q,ptq)
         axs[time[0]].set_title(f"t={time[1]}")
 
-        if quantity=="underdamped drift":
-            x = np.linspace(-5,5,1000)
-            y = -(2**0.5/eps)*benchmark_evaluate_net(benchmark_.du_net_benchmark,x,time[1]/(eps**2))
-            axs[time[0]].plot(x,y)
-            axs[time[0]].set_ylim((-20,20))
 
         axs[time[0]].set_xlim((-5,5))
     fig.tight_layout()
@@ -439,11 +463,14 @@ def plot_data(benchmark_,quantity,data):
 
 if __name__=="__main__":
     from kldescent.sde.boundary import *
+    from kldescent.utils.parser import fetch_results_folder_from_cmd
+
     import matplotlib.pyplot as plt
     
     boundary = UnderdampedLandauer()
     benchmark_ = PerturbativeBenchmarkSolution(boundary=boundary,
-                        folder_name="../BENCHMARK_TESTS1")
+                        folder_name=fetch_results_folder_from_cmd())
     plot_data(benchmark_,quantity="value",data="overdamped")
     plot_data(benchmark_,quantity="marginal",data="overdamped")
-    plot_data(benchmark_,quantity="underdamped drift",data="perturbative underdamped")
+    #plot_data(benchmark_,quantity="underdamped drift",data="perturbative underdamped")
+    plot_benchmark_drift(benchmark_)

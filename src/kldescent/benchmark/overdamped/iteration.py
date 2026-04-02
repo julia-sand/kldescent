@@ -6,13 +6,13 @@ import matplotlib.pyplot as plt
 from kldescent.benchmark.heatintegrators import proximal_fpk,mcintegrator
 from kldescent.benchmark.overdamped.gauss import *
 from kldescent.benchmark.utilfunctions import *
+from kldescent.utils.parser import cell_argparser
 
 class CellProblem():
 
     def __init__(self,boundary,
                       save_location,
-                      bridge_type,
-                      num_samples=1000):
+                      bridge_type):
         """
         class for solving the cell problem using an iteration algorithm
 
@@ -38,11 +38,15 @@ class CellProblem():
         self.M = self.boundary.params["weight"]
         
         self.qmax = self.boundary.qmax
-        self.num_samples=400
-        self.q = np.linspace(-self.qmax,self.qmax,self.num_samples) #for plotting 
+        
+        cell_args = cell_argparser()
+        self.num_samples = cell_args["cellxnum"]
+        self.num_tsteps = cell_args["celltnum"]
+
+        self.q = np.linspace(-self.qmax,self.qmax,self.num_samples)  
 
         ######################################
-        #bridge type parameters
+        #parameters dependent on bridge type
         self.B = self.bfun()
         self.A = self.afun()
         self.beta = 1/np.sqrt(self.A)

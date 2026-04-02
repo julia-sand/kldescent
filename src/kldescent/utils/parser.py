@@ -56,6 +56,23 @@ def fetch_checkpoint_path():
 
     return args6[0].checkpointpath
 
+def cell_argparser():
+    """Parse arguments for solving the cell problem and computing perturbative corrections"""
+    # Instantiate the parser
+    parser = CustomArgParse()
+
+    parser.add_argument('-cellxnum','--cellxnum', type=int, default="1000",
+                        help='how many x values to use in the spacial discretisation')
+    
+    parser.add_argument('-celltnum','--celltnum', type=int, default=1,
+                        help='how many t values to use in the temporal discretisation')
+    
+    args = parser.parse_known_args(parser.argfile)
+
+    return vars(args[0])
+
+
+
 def overdamped_argparser():
     #general configs for the training process
     # Instantiate the parser

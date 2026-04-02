@@ -44,6 +44,8 @@ def plot_drift(times,net_vals,benchmark_vals=None,err_vals =None,
             error bars to put on the netvals. Default None, in which case no error bars 
         qmax : float
             Default 5, maximum value to plot. 
+    return 
+        fig
     """
     
     fig,ax = make_fig_subplots(nrows=1,ncols=len(times),squeeze=True)
