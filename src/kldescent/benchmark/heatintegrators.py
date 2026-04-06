@@ -6,7 +6,7 @@ from kldescent.utils.parser import seed
 def mcintegrator(x0,y0,
                     Tf,
                     beta,
-                    num_steps = 20,
+                    num_steps = 30,
                     mc_samples = 2000):
     """
     Integrates a heat equation by the monte carlo method

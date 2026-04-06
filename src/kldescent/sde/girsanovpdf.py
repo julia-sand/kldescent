@@ -67,7 +67,8 @@ def compute_pdf(x0,
         if mc_samples == 1:
             xinit = x0.clone().to(net.device)
         else:
-            xinit = torch.broadcast_to(x0,(mc_samples,2)).clone().to(net.device)
+            xinit =  x0.unsqueeze(0).expand(mc_samples, -1, -1).clone().to(net.device)
+            #torch.broadcast_to(x0,(mc_samples,2)).clone().to(net.device)
 
         t_vec = torch.linspace(0,Tf,tsteps,requires_grad=False,dtype=torch.float32).to(net.device)
 
@@ -96,7 +97,7 @@ def compute_pdf(x0,
                         
         pdfout = p_initial(xinit[...,[0]],xinit[...,[1]])*torch.exp(-girs)
 
-    return pdfout
+    return torch.mean(pdfout,dim=0)
 
 def plot_scatter_(x,pdf):
     plt.scatter(x[...,0].cpu().numpy(), x[...,1].cpu().numpy(), c=pdf.cpu().numpy(),cmap='RdYlGn_r')
@@ -110,19 +111,22 @@ if __name__=="__main__":
     import random
     from kldescent.sde.boundary import UnderdampedLandauer
     from kldescent.model.nn import NeuralNetwork
+
     boundary = UnderdampedLandauer()
     nn_temp = NeuralNetwork(boundary)
     testing_samples = 1000
-    xf = torch.tensor
-    #pdf = torch.zeros_like(xf[...,[0]]).to(nn_temp.device)
-    #pdf = compute_pdf(xf,
-    #                                        nn_temp,
-    #                                        boundary.sigma0,
-    #                                        boundary.params["epsilon"],
-    #                                        boundary.p_initial,
-    #                                        boundary.params["Tf"],
-    #                                        mc_samples=1,
-    #                                        tsteps=21)#torch.vmap(lambda xi: torch.mean(), randomness='different')(xf) 
-              
-    #plot_scatter_(xf, pdf)
+    with torch.no_grad():
+        xf = boundary.generate_samples(testing_samples,mode="final")
+
+        pdf = torch.zeros_like(xf[...,[0]]).to(nn_temp.device)
+        pdf = compute_pdf(xf,
+                                                nn_temp,
+                                                boundary.sigma0,
+                                                boundary.params["epsilon"],
+                                                boundary.p_initial,
+                                                boundary.params["Tf"],
+                                                mc_samples=2,
+                                                tsteps=21)#torch.vmap(lambda xi: torch.mean(), randomness='different')(xf) 
+                
+    plot_scatter_(xf, pdf)
 

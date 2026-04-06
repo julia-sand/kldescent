@@ -7,4 +7,4 @@
 #SBATCH --time=00:15:00
 
 module load pytorch
-python src --terminalcost="MLE" --duhiddenlayerneurons=16 --folder="../../../../scratch/project_2011332/BASELINE_16" --weight=20 --boundary="UnderdampedLandauer" --testsamples=4096 --usebenchmark=True
+python -m src.kldescent.benchmark.benchmarksol --duhiddenlayerneurons=64 --folder="../../../../scratch/project_2011332/BASELINE_64_M20" --weight=20 --boundary="UnderdampedLandauer" --cellxnum=50000 --celltnum=1001 --usebenchmark=True

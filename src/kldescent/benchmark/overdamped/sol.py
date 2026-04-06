@@ -18,8 +18,6 @@ def compute_dV(q,hatphi_t,phi_t,A,B,bridge_type):
         warnings.simplefilter("ignore") 
         if bridge_type=="half":
             
-            #return v00
-
             dphi_t = np.gradient(phi_t,q)
             dhatphi_t = np.gradient(hatphi_t,q)
 
@@ -31,9 +29,7 @@ def compute_dV(q,hatphi_t,phi_t,A,B,bridge_type):
 
             return -(A/B)*np.gradient(phi_t,q)/phi_t
 
-def get_solution_in_time(cell,integrator,
-                                xnum = 50,
-                                tnum = 11):
+def get_solution_in_time(cell,integrator):
     """
     Evaluate the schrödinger factors along the time horizon and use them to compute 
     the probability distribution and value function in the horizon [0,Tf2]
@@ -43,35 +39,31 @@ def get_solution_in_time(cell,integrator,
             class containing solution of the cell problem
         integrator : function
             method to use for integrating the heat equations
-        xnum : int
-            number of coordinates in the space discretisation 
-        tnum : int
-            number of coordinates in the time discretisation
-
+        
     returns:
         arr_out : arr
             array of shape (n,4) with columns containing [t,q,rho(t,q),V(t,q)]
     """
 
     #define a grid for q
-    q = np.linspace(-cell.qmax,cell.qmax,num=xnum)
+    q = np.linspace(-cell.qmax,cell.qmax,num=cell.num_samples)
 
     #define timepoints to save solution 
     #time points in the slow time (t2)
-    tvec = np.linspace(0,cell.Tf2,num=tnum)
+    tvec = np.linspace(0,cell.Tf2,num=cell.num_tsteps)
     dt = tvec[1] 
 
     hatphi0 = cell.hatphi0
 
     #preallocate arrays
-    arr_out = np.empty((tnum*xnum,4))
+    arr_out = np.empty((cell.num_tsteps*cell.num_samples,4))
 
     #preallocate arrays and set 
-    phi_out = np.empty((tnum,len(cell.xhatphi),2))
+    phi_out = np.empty((cell.num_tsteps,len(cell.xhatphi),2))
     phi_out[0,:,0] = cell.xhatphi
     phi_out[0,:,1] = cell.psi0 
     
-    for t in range(1,tnum):
+    for t in range(1,cell.num_tsteps):
         
         #compute one step phi evolution 
         xphi_Tt,phi_Ttemp = integrator(phi_out[t-1,:,0],phi_out[t-1,:,1],dt,cell.beta,num_steps=1)
@@ -83,23 +75,21 @@ def get_solution_in_time(cell,integrator,
     #iterate over times to compute the solution at each timepoint
     xhatphi_t,hatphi_temp = cell.xpsi.copy(),cell.hatphi0.copy()
     
-    for t in range(tnum):
+    for t in range(cell.num_tsteps):
 
         #interpolate 
         phi_t = interpolate_(q,phi_out[-t-1,:,0],phi_out[-t-1,:,1])
         hatphi_t = interpolate_(q,xhatphi_t,hatphi_temp)       
 
-        arr_out[t*xnum:(t+1)*xnum] = np.column_stack((tvec[t]*np.ones(xnum),q,
+        arr_out[t*cell.num_samples:(t+1)*cell.num_samples] = np.column_stack((tvec[t]*np.ones(cell.num_samples),q,
                                                             normalise(q,compute_rho(phi_t,hatphi_t)),
                                                             compute_dV(q,hatphi_t,phi_t,cell.A,cell.B,cell.bridge_type)))
         #compute next step of the hatphi evolution 
-        xhatphi_t,hatphi_temp = integrator(xhatphi_t,hatphi_temp,dt,cell.beta,num_steps=int(np.floor(1000/tnum)))
+        xhatphi_t,hatphi_temp = integrator(xhatphi_t,hatphi_temp,dt,cell.beta,num_steps=int(np.floor(1000/cell.num_tsteps)))
              
     return np.nan_to_num(arr_out,nan=0,posinf=0,neginf=0)
 
-def compute_overdamped(boundary,save_location,bridge_type="half",
-                            xnum=5000,
-                            tnum=101):
+def compute_overdamped(boundary,save_location,bridge_type="half"):
     """Compute the overdamped cell problem
     params:
         boundary : class
@@ -108,10 +98,7 @@ def compute_overdamped(boundary,save_location,bridge_type="half",
             location where to save csv
         bridgetype : str 
             determines the type of the cell problem
-        xnum : int
-            number of x values
-        tnum : int
-            number of t values
+        
     returns:
         csv saved in savelocation
     """
@@ -120,9 +107,7 @@ def compute_overdamped(boundary,save_location,bridge_type="half",
     cell.iteration(integrator=mcintegrator,
                     max_iters=20)
 
-    arr = get_solution_in_time(cell,integrator=mcintegrator,
-                                                    xnum=xnum,
-                                                    tnum=tnum)
+    arr = get_solution_in_time(cell,integrator=mcintegrator)
 
     arr  = zchop(arr,tol=1e-6)
     

@@ -61,10 +61,10 @@ def cell_argparser():
     # Instantiate the parser
     parser = CustomArgParse()
 
-    parser.add_argument('-cellxnum','--cellxnum', type=int, default="1000",
+    parser.add_argument('-cellxnum','--cellxnum', type=int, default=1000,
                         help='how many x values to use in the spacial discretisation')
     
-    parser.add_argument('-celltnum','--celltnum', type=int, default=1,
+    parser.add_argument('-celltnum','--celltnum', type=int, default=11,
                         help='how many t values to use in the temporal discretisation')
     
     args = parser.parse_known_args(parser.argfile)

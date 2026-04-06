@@ -76,6 +76,7 @@ def plot_drift(times,net_vals,benchmark_vals=None,err_vals =None,
                             net_vals[t] + 3*err_vals[t],
                             label=r"90% confidence interval",
                             alpha=0.2)
+    
     format_drift_plot(ax,fig,invert_labels)
     return fig
 

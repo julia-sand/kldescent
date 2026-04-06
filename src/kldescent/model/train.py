@@ -203,13 +203,7 @@ class TrainRho():
                                 integrator.boundary.p_initial,
                                 integrator.boundary.params["Tf"],
                                 mc_samples=1)
-                                                #torch.vmap(lambda xi: compute_pdf(xi[None],integrator.net,
-                                                #integrator.boundary.sigma0,
-                                                #integrator.boundary.params["epsilon"],
-                                                #integrator.boundary.p_initial,
-                                                #integrator.boundary.params["Tf"],
-                                                #mc_samples=1), randomness='different')(x0)
-
+                                                
             return yobs
 
     def train_step(self,optimiser,integrator):  
