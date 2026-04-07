@@ -257,7 +257,6 @@ class GaussBenchmarkSolution(BaseBenchmarkSolution):
         
         BaseBenchmarkSolution.__init__(self,bridge_type="half",boundary=boundary,folder_name=folder_name)
         
-        
         #set different filename for underdamped cumulants 
         self.underdamped_cumulants_loc = self.folder_name+"/underdamped_cumulants.csv"
         self.underdamped_loc = self.folder_name+"/underdamped.csv"

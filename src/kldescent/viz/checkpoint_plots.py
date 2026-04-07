@@ -153,7 +153,7 @@ class PlotUtils():
             self.benchmark = PerturbativeBenchmarkSolution(boundary_cond,folder_name=self.folder)
             self.net = self.benchmark.du_net_benchmark 
 
-            self.integrator = langevin.EulerMaruyamaSDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
+            self.integrator = langevin.VerletSDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
 
 
@@ -301,33 +301,27 @@ class PlotUtils():
     def evaluate_net_output_inverted(self,net,xcoord):
         return net(torch.cat((torch.linspace(0,self.boundary_cond.params["Tf"],1000,requires_grad=False).unsqueeze(1).to(net.device),
                         xcoord*torch.ones((1000,1),requires_grad=False,dtype=torch.float32).to(net.device)),dim=-1)).cpu().numpy()
-    
-    def get_drift_data_inverted(self,xcoords):
-
-        net_vals = []
-        for xcoord in xcoords:    
-            #computes neural network output (forward pass) to use in plotting
-            net_vals.append(self.evaluate_net_output_inverted(self.net,xcoord))
-
-        return net_vals    
+       
 
 
     def get_benchmark_drift_data_inverted(self,xcoords):
-        benchmark_vals = []
-        for xcoord in xcoords:
-            benchmark_vals.append(self.evaluate_benchmark_drift_inverted(xcoord))
-
-        return benchmark_vals
-
-    def evaluate_benchmark_drift_inverted(self,xcoord):
         if self.benchmark is None:
             return None
         else:
-            if self.benchmark.du_net_benchmark is not None:
-                return self.benchmark.du_net_benchmark(torch.cat((torch.linspace(0,self.boundary_cond.params["Tf"],1000,requires_grad=False).unsqueeze(1).to(self.net.device),
-                                xcoord*torch.ones((1000,1),requires_grad=False,dtype=torch.float32).to(self.net.device)),dim=-1)).cpu().numpy()
-            else:
-                return (-1)*xcoord*np.ones(1000)*self.boundary_cond.params["epsilon"]*self.benchmark.get_underdamped_drift_array()[:,1]/np.sqrt(2)
+            benchmark_vals = []
+            for xcoord in xcoords:
+                benchmark_vals.append(self.evaluate_benchmark_drift_inverted(xcoord))
+
+            return benchmark_vals
+
+    def evaluate_benchmark_drift_inverted(self,xcoord):
+    
+        if self.benchmark.du_net_benchmark is not None:
+            return self.evaluate_net_output_inverted(self.benchmark.du_net_benchmark,xcoord) 
+            #self.benchmark.du_net_benchmark(torch.cat((torch.linspace(0,self.boundary_cond.params["Tf"],1000,requires_grad=False).unsqueeze(1).to(self.net.device),
+                    #         xcoord*torch.ones((1000,1),requires_grad=False,dtype=torch.float32).to(self.net.device)),dim=-1)).cpu().numpy()
+        else:
+            return (-1)*xcoord*np.ones(1000)*self.boundary_cond.params["epsilon"]*self.benchmark.get_underdamped_drift_array()[:,1]/np.sqrt(2)
 
 
     def make_inverted_drift_plot(self,numplots):
@@ -335,17 +329,16 @@ class PlotUtils():
         """
     
         xcoords = np.sort(np.random.uniform(-5,5,numplots))
-        
-        
+                
         self.net.eval()
 
         with torch.no_grad():
-            ref_vals = self.get_benchmark_drift_data_inverted(xcoords)
+            benchmark_vals = self.get_benchmark_drift_data_inverted(xcoords)
             net_vals = self.get_drift_data_inverted(xcoords)
         
         fig = plot_drift(xcoords,
                             net_vals,
-                            ref_vals,
+                            benchmark_vals,
                             xaxis=np.linspace(0,self.boundary_cond.params["Tf"],1000),
                             invert_labels=True)
         
@@ -358,15 +351,16 @@ class PlotUtils():
 
     @torch.no_grad
     def get_benchmark_drift_data(self,times):
+    
+        if self.benchmark is None:
+            ref_vals = None
         
-        #initialise the arrays
-        ref_vals = []
+        else:
+            #initialise the arrays
+            ref_vals = []
 
-        for t in range(len(times)):
+            for t in range(len(times)):
             
-            if self.benchmark is None:
-                ref_vals = None
-            else:
                 if self.benchmark.du_net_benchmark is not None:
                     ref_vals.append(self.evaluate_net_output(self.benchmark.du_net_benchmark,times[t]).flatten())
                 else: 
@@ -386,6 +380,15 @@ class PlotUtils():
         
         return net_vals
     
+    def get_drift_data_inverted(self,xcoords):
+
+        net_vals = []
+        for xcoord in xcoords:    
+            #computes neural network output (forward pass) to use in plotting
+            net_vals.append(self.evaluate_net_output_inverted(self.net,xcoord).flatten())
+
+        return net_vals 
+
     def compute_drift_errs(self,time):
 
         net_val,ref_val = self.get_drift_data([time])

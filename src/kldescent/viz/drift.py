@@ -29,7 +29,7 @@ def format_drift_plot(axs,fig,invert_labels):
     plt.tight_layout()
     fig.subplots_adjust(bottom=0.15)
 
-def plot_drift(times,net_vals,benchmark_vals=None,err_vals =None, 
+def plot_drift(times,net_vals,benchmark_vals=None,err_vals = None, 
                 xaxis = np.linspace(-5,5,1000),
                 invert_labels=False):
     """Make plot of drift at difference times
@@ -67,8 +67,8 @@ def plot_drift(times,net_vals,benchmark_vals=None,err_vals =None,
                         benchmark_vals[t],
                         label="Benchmark N.N.")
         
-        else:
-            pass
+        #else:
+        #    pass
 
         if err_vals is not None: 
             ax[t].fill_between(xaxis,
