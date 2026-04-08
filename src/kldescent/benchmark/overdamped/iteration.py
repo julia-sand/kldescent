@@ -82,7 +82,6 @@ class CellProblem():
         else:
             return 1 
 
-
     def compute_power(self):
         if self.bridge_type =="marginal":
                          
@@ -104,11 +103,8 @@ class CellProblem():
         elif self.bridge_type == "full":
             return zchop(self.boundary.q_marginal_final_np(xhatphi)/hatphiT)
         elif self.bridge_type == "half":
-            #print(r"$\alpha$=",self.alpha)
             varkappa = self.compute_varkappa(hatphiT,psi0,xpsi)
-            #print(r"$\kappa$=",varkappa)
             C = np.exp(self.constant_hboundary_exponent(xhatphi,varkappa))
-            #print(r"$\gamma$=",C)
             return (hatphiT**self.alpha)*C*(self.boundary.q_marginal_final_np(xhatphi)**self.M)
         
     def constant_hboundary_exponent(self,q,varkappa):
@@ -137,8 +133,8 @@ class CellProblem():
         return np.mean((x-y)**2)
 
     def iteration(self,integrator,
-                        tol=1e-4,
-                        max_iters=4):
+                        tol=1e-5,
+                        max_iters=30):
         """
         Implementation of Iteration in 1912.01244
         'Wasserstein Proximal Algorithms for the Schr¨odinger Bridge Problem:
@@ -155,6 +151,7 @@ class CellProblem():
         returns
             hatphiT : arr
             psiT : arr
+                equal to phi0
         """
 
         #initialise iterates
@@ -167,11 +164,12 @@ class CellProblem():
 
         iters = 0
         
+        print("Starting iteration")
         with warnings.catch_warnings(): #dont print divide by zero warnings (these are handled in the script)
             warnings.simplefilter("ignore")
             
             while iters < max_iters:
-
+                print("Iteration ",iters)
                 #compute psi0/phiT
                 psi0 = np.nan_to_num(self.compute_boundary_value(xhatphi,hatphiT,psi0,xpsi),posinf=0,neginf=0,nan=0)**self.power
 
@@ -202,7 +200,7 @@ class CellProblem():
         self.psiT = zchop(psiT)
         self.hatphi0 = zchop(hatphi0)
         self.psi0 = zchop(psi0)
-
+        print("Iteration complete.")
         return 
 
     def plot_factors_HATPHI(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):

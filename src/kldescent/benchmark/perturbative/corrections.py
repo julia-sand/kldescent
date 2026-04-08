@@ -29,7 +29,7 @@ class Perturbation():
         self.xnum = len(self.qaxis) #int(self.overdamped_arr.shape[0]/len(self.t2vec))
 
         #size of convolution filter is 5pc of the datavector. 
-        self.filter_delta = int(np.floor(self.xnum*0.05))
+        self.filter_delta = int(np.floor(self.xnum*0.005))
 
         #compute muvec for cumulants 
         self.mu_1_vec = np.zeros_like(self.t2vec)
@@ -389,18 +389,27 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
     def posmean(self,t0,t2,t2_idx):
         return 0
 
+
 if __name__=="__main__":
     from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution
     from kldescent.sde.boundary import *
-    
+    from kldescent.utils.parser import fetch_results_folder_from_cmd
+
     boundary = UnderdampedLandauer()
 
-    #compute overdamped solution
-    compute_overdamped(boundary,
-                        folder_name,
-                        bridge_type="half")
+    folder_name = fetch_results_folder_from_cmd()
+
+    #try:
+    overdamped_arr = np.loadtxt(open(folder_name+"/overdamped.csv"),
+                        delimiter=",",skiprows=1) 
+        #compute overdamped solution
+    #    compute_overdamped(boundary,
+    #                        folder_name,
+    #                        bridge_type="half")
+    #    overdamped_arr = np.loadtxt(open(folder_name+"/overdamped.csv"),
+    #                    delimiter=",",skiprows=1) 
 
     #compute perturbative
-    pertsol = HalfBridgePerturbation(boundary,benchmark.get_benchmark_data(data="overdamped"),benchmark.folder_name)
+    pertsol = HalfBridgePerturbation(boundary,overdamped_arr,folder_name)
     pertsol.save_perturbative()
     pertsol.save_perturbative_cumulants()

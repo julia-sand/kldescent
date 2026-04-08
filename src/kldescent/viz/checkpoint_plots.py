@@ -463,7 +463,7 @@ class PlotUtils():
                     x_ref = x_du#self.integrator.update_ref_statistics(time=plottimes[i]).cpu().numpy()
                 else:
                     x_ref = np.zeros_like(x_du)
-                    #x_ref[:,[0]] = self.benchmark.get_benchmark_quantity(plottimes[i],"underdamped marginal")[1,np.newaxis]
+                    #x_ref[:,[0]] = self.benchmark.get_benchmark_quantity(plottimes[i],"underdamped marginal", data="perturbative underdamped")[1,np.newaxis]
                     #print(x_ref.shape)
             
             marginal_distribution(axs[i],[x_du,x_ref],plottimes[i],benchmark=self.benchmark)

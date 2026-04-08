@@ -23,7 +23,6 @@ class Pretrain():
     #define the training parameters and loop for any pretraining. 
     def __init__(self,benchmark=None,path_to_pretrain=None):
         
-        
         if path_to_pretrain is None:
             self.benchmark = benchmark 
             self.path = self.benchmark.perturb_underdamped_loc #overdamped_loc        
@@ -41,7 +40,7 @@ class Pretrain():
 
         self.clip = 0.1 #size of gradient clipping
 
-    def get_pretraining_data(self):
+    def get_pretraining_data(self,transform=True):
         """Load data from csv to be used in training the network""" 
 
         arr = np.loadtxt(self.path,
@@ -54,10 +53,15 @@ class Pretrain():
         
         y = torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
         
-        return X,y
+        if transform:
+            X,y = self.transform_data(X,y)
+
+        idx = np.flatnonzero(y)
+
+        return X[idx,:],y[idx]
 
     def transform_data(self,X,y):
-        r"""Implement a transformation for the data which can be customised depending on
+        r"""Implement in place transformation for the data which can be customised depending on
         what the pre-training is doing. 
         
         This is based on the transformation
@@ -81,9 +85,7 @@ class Pretrain():
             X[:,0] /= self.benchmark.boundary.params["epsilon"]**2 #use t0 
             y *= (-(self.benchmark.boundary.params["epsilon"]/(2**0.5)))
         
-        idx = np.nonzero(y)
-
-        return X[idx,:],y[idx]
+        return X,y 
 
     def pretraining(self,net):   
         
@@ -92,9 +94,11 @@ class Pretrain():
         optimiser = Adam(net.parameters(), lr=self.lr)
         scheduler = ExponentialLR(optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
 
-        Xtemp,ytemp = self.get_pretraining_data()
-        X,y = self.transform_data(Xtemp,ytemp)
+        X,y = self.get_pretraining_data(transform=True)
+        #X,y = self.transform_data(Xtemp,ytemp)
+        print(X.shape)
  
+        net.train()
         for epoch in tqdm(range(1,self.n_epochs+1)):
             
             #generate random batch 
@@ -109,8 +113,21 @@ class Pretrain():
 
             if epoch % self.milestone == 0:
                 scheduler.step()
-                #print(f'Finished epoch {epoch}, loss {loss}')
-        
+                print(f'Finished epoch {epoch}, loss {loss}')
+                with torch.no_grad():    
+                    self.plot_training_process_drift(X,y,net,epoch)
+                net.train()
+
+    @torch.no_grad
+    def plot_training_process_drift(self,X,y,net,epoch):
+        import matplotlib.pyplot as plt
+        net.eval()
+        plt.plot(X[np.where(X[:,0]==0),1].cpu().numpy().flatten(),y[np.where(X[:,0]==0)].cpu().numpy().flatten())
+        plt.plot(X[np.where(X[:,0]==0),1].cpu().numpy().flatten(),net(X[np.where(X[:,0]==0),:]).cpu().numpy().flatten())
+        plt.ylim((-5,5))
+        plt.savefig(f"training_{epoch}_.png")
+        plt.close("all")
+
 class Train():
     """
     Defines the parameters of the training process and the training steps

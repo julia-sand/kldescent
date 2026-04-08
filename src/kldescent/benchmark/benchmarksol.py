@@ -153,7 +153,7 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         arr = self.get_benchmark_data(data="overdamped")
         return np.unique(arr[:,0])
         
-    def get_benchmark_quantity(self,time,quantity,data=None,arr=None,time_type="t2"):
+    def get_benchmark_quantity(self,time,quantity,data,arr=None,time_type="t0"):
         """
         Get quantities to plot for the benchmark solution 
         args:
@@ -177,7 +177,7 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         """
 
         if arr is None: #default overdamped
-            arr = self.get_benchmark_data(data="overdamped")  
+            arr = self.get_benchmark_data(data=data)  
 
         if time_type=="t0":
             #multiply by eps**2 to get t2 from t0 
@@ -189,6 +189,7 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
 
         if quantity =="value":
             idx=3
+             
         elif quantity =="marginal":
             idx=2
         elif quantity =="underdamped drift":
@@ -416,30 +417,27 @@ def plot_benchmark_drift(benchmark_):
     
     update_mpl()
 
-    times = [0,0.06,0.12,0.2]
+    times = [0,1.5,3,5]
     x = np.unique(benchmark_.get_benchmark_quantity(times[0], "underdamped drift", data="perturbative underdamped",time_type="t2")[0])
 
     net_vals = []
     benchmark_vals = []
+    
     for time in times:
         
         net_vals.append(benchmark_evaluate_net(benchmark_.du_net_benchmark,x,time))
-        benchmark_vals.append((-benchmark_.boundary.params["epsilon"]/2**0.5)*benchmark_.get_benchmark_quantity(time, "underdamped drift", data="perturbative underdamped",time_type="t2")[1])
-
+        benchmark_vals.append((-benchmark_.boundary.params["epsilon"]/2**0.5)*benchmark_.get_benchmark_quantity(time, "underdamped drift", data="perturbative underdamped")[1])
+        
     fig = plot_drift(times,net_vals,
                         benchmark_vals,
                         xaxis = x)
     
     for ax in fig.get_axes():
         ax.set_xlim((-5,5))
-        ax.set_ylim((-20,20))
-
-    
+        ax.set_ylim((-20,20))   
 
     fig.savefig(benchmark_.folder_name+f"/perturbative_drift.png",bbox_inches="tight")        
 
-
-    
 def plot_data(benchmark_,quantity,data):
     
     times = [0,0.06,0.12,0.2]
@@ -454,8 +452,8 @@ def plot_data(benchmark_,quantity,data):
         axs[time[0]].plot(q,ptq)
         axs[time[0]].set_title(f"t={time[1]}")
 
-
         axs[time[0]].set_xlim((-5,5))
+    
     fig.tight_layout()
 
     fig.savefig(benchmark_.folder_name+f"/{data}_{quantity}.png",bbox_inches="tight")        
@@ -469,7 +467,10 @@ if __name__=="__main__":
     boundary = UnderdampedLandauer()
     benchmark_ = PerturbativeBenchmarkSolution(boundary=boundary,
                         folder_name=fetch_results_folder_from_cmd())
+    
+    
     plot_data(benchmark_,quantity="value",data="overdamped")
     plot_data(benchmark_,quantity="marginal",data="overdamped")
+    plot_data(benchmark_,quantity="marginal",data="perturbative underdamped")
     #plot_data(benchmark_,quantity="underdamped drift",data="perturbative underdamped")
     plot_benchmark_drift(benchmark_)

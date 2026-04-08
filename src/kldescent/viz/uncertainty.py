@@ -13,7 +13,7 @@ import pdb
 def plot_drift_uncertainty_errors(folders,epoch,numplots=5,invert=False,use_benchmark=True):
 
     if invert:
-        times = np.sort(np.random.uniform(-5, 5,numplots))
+        times = [-1,-0.5,0,0.5,1]#np.sort(np.random.uniform(-5, 5,numplots))
         xaxis = np.linspace(0,5,1000)
     else:
         times = np.sort(np.random.uniform(0, 5,numplots))
@@ -34,7 +34,7 @@ def plot_drift_uncertainty_errors(folders,epoch,numplots=5,invert=False,use_benc
     fig = plot_drift(times,net_vals,benchmark_vals=benchmark_vals,err_vals = err_vals,
                         xaxis=xaxis,
                         invert_labels=invert)
-    fig.savefig("test_gauss_invert.png")
+    fig.savefig("test_gauss_invert_1.png")
     plt.close("all")
 
 @torch.no_grad
