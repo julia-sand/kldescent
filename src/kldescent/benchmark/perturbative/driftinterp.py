@@ -10,8 +10,8 @@ import torch
 
 import matplotlib.pyplot as plt 
 
-from ...model.nn import save_nn_checkpoint,load_checkpoint
-from ...model.pretrain import run_pretrain
+from kldescent.model.nn import save_nn_checkpoint,load_checkpoint
+from kldescent.model.pretrain import run_pretrain
 
 
 def perturbative_du_interp(benchmark,mlp_net):
@@ -42,7 +42,9 @@ def perturbative_du_interp(benchmark,mlp_net):
     return 
 
 def train_and_save_perturbative_du(benchmark,mlp_net):
-    run_pretrain(mlp_net,benchmark)
+    run_pretrain(mlp_net,
+                    path_to_pretrain = benchmark.perturb_underdamped_loc,
+                    epsilon = benchmark.boundary.params["epsilon"])
     save_nn_checkpoint(mlp_net,loc=benchmark.get_benchmark_path()+f"/perturbative_underdamped_drift.pt")
     
 def benchmark_evaluate_net(mlp_net,x,time):

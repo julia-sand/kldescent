@@ -3,10 +3,10 @@ import warnings #ignore divide by zeros for the boundaries
 
 import numpy as np
 
-from ...sde.boundary import UnderdampedGaussian,UnderdampedLandauer
-from ..heatintegrators import *
-from .iteration import CellProblem
-from ..utilfunctions import * 
+from kldescent.benchmark.heatintegrators import *
+from kldescent.benchmark.overdamped.iteration import CellProblem
+from kldescent.benchmark.utilfunctions import * 
+
 
 def compute_rho(phi_t,hatphi_t):
     
@@ -24,12 +24,13 @@ def compute_dV(q,hatphi_t,phi_t,A,B,bridge_type):
             term1 = -dphi_t/(np.sqrt(A)*phi_t)
             term2 = -B*np.sqrt(A)*np.trapezoid(hatphi_t*dphi_t,q)/(A*(A-B))
             term3 = (hatphi_t*dphi_t + phi_t*dhatphi_t)*((1/np.sqrt(A))-1)/2
-            return term1 + term2 + term3
+            
+            return np.nan_to_num(term1 + term2 + term3,posinf=0,neginf=0,nan=0)
         else:
 
             return -(A/B)*np.gradient(phi_t,q)/phi_t
 
-def get_solution_in_time(cell,integrator):
+def save_solution_in_time(cell,filename_full,integrator):
     """
     Evaluate the schrödinger factors along the time horizon and use them to compute 
     the probability distribution and value function in the horizon [0,Tf2]
@@ -37,6 +38,8 @@ def get_solution_in_time(cell,integrator):
     args: 
         cell : class
             class containing solution of the cell problem
+        filename : str
+            location of csv where results will be saved
         integrator : function
             method to use for integrating the heat equations
         
@@ -53,41 +56,32 @@ def get_solution_in_time(cell,integrator):
     tvec = np.linspace(0,cell.Tf2,num=cell.num_tsteps)
     dt = tvec[1] 
 
-    hatphi0 = cell.hatphi0
-
-    #preallocate arrays
-    arr_out = np.empty((cell.num_tsteps*cell.num_samples,4))
-
-    #preallocate arrays and set 
-    phi_out = np.empty((cell.num_tsteps,len(cell.xhatphi),2))
-    phi_out[0,:,0] = cell.xhatphi
-    phi_out[0,:,1] = cell.psi0 
-    
-    for t in range(1,cell.num_tsteps):
-        
-        #compute one step phi evolution 
-        xphi_Tt,phi_Ttemp = integrator(phi_out[t-1,:,0],phi_out[t-1,:,1],dt,cell.beta,num_steps=1)
-        
-        #save phi_(T-t)
-        phi_out[t,:,0] = xphi_Tt
-        phi_out[t,:,1] = phi_Ttemp
-
     #iterate over times to compute the solution at each timepoint
-    xhatphi_t,hatphi_temp = cell.xpsi.copy(),cell.hatphi0.copy()
-    
+    xhatphi_t,hatphi_t = cell.xpsi.copy(),cell.hatphi0.copy()
+    xphi_t = cell.xpsi.copy() 
+    phi_t = cell.psiT.copy() #phi 0 
+
     for t in range(cell.num_tsteps):
 
-        #interpolate 
-        phi_t = interpolate_(q,phi_out[-t-1,:,0],phi_out[-t-1,:,1])
-        hatphi_t = interpolate_(q,xhatphi_t,hatphi_temp)       
+        #interpolate (skip for MC method)
+        #phi_t = interpolate_(q,xphi_t,phi_temp)
+        #hatphi_t = interpolate_(q,xhatphi_t,hatphi_temp)       
+        
+        arr_temp = np.column_stack((tvec[t]*np.ones(cell.num_samples),q,
+                                        normalise(q,compute_rho(phi_t,hatphi_t)),
+                                        compute_dV(q,hatphi_t,phi_t,cell.A,cell.B,cell.bridge_type)))
+        
+        arr_temp = zchop(arr_temp, tol=1e-6)
 
-        arr_out[t*cell.num_samples:(t+1)*cell.num_samples] = np.column_stack((tvec[t]*np.ones(cell.num_samples),q,
-                                                            normalise(q,compute_rho(phi_t,hatphi_t)),
-                                                            compute_dV(q,hatphi_t,phi_t,cell.A,cell.B,cell.bridge_type)))
-        #compute next step of the hatphi evolution 
-        xhatphi_t,hatphi_temp = integrator(xhatphi_t,hatphi_temp,dt,cell.beta,num_steps=int(np.floor(1000/cell.num_tsteps)))
-             
-    return np.nan_to_num(arr_out,nan=0,posinf=0,neginf=0)
+        append_array_to_csv(filename_full,arr_temp)#[arr_temp[:,-1]!=0])
+
+        del arr_temp 
+
+        #compute next step of the hatphi and phi evolutions 
+        xhatphi_t,hatphi_t = integrator(xhatphi_t,hatphi_t,dt,cell.beta,num_steps=np.minimum(1,int(np.floor(1000/cell.num_tsteps))))
+        xphi_t,phi_t = integrator(xphi_t,phi_t,cell.Tf2-dt,cell.beta,num_steps=np.minimum(1,int(np.floor(1000/cell.num_tsteps))))
+
+    return 
 
 def compute_overdamped(boundary,save_location,bridge_type="half"):
     """Compute the overdamped cell problem
@@ -103,19 +97,27 @@ def compute_overdamped(boundary,save_location,bridge_type="half"):
         csv saved in savelocation
     """
 
+    #make folder for results if not exists
+    os.makedirs(save_location,exist_ok=True)
+
     cell = CellProblem(boundary,save_location,bridge_type=bridge_type)
     cell.iteration(integrator=mcintegrator,
                     max_iters=20)
 
-    arr = get_solution_in_time(cell,integrator=mcintegrator)
+    filename_full = make_csv_and_header(save_location,filename="overdamped",header="#t,q,rho,dV")
+    save_solution_in_time(cell,
+                                filename_full,
+                                integrator=mcintegrator)
 
-    arr  = zchop(arr,tol=1e-6)
+    #arr  = zchop(arr,tol=1e-6)
     
-    save_array(arr,save_location,filename="overdamped",header="t,q,rho,dV")
+    #save_array(arr,save_location,filename="overdamped",header="t,q,rho,dV")
 
     return 
 
 if __name__=="__main__":
+    from ...sde.boundary import UnderdampedGaussian,UnderdampedLandauer
+
     boundary = UnderdampedLandauer()
     compute_overdamped(boundary,"results",bridge_type="half")
     

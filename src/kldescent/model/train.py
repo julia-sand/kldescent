@@ -2,131 +2,15 @@ import os
 
 import numpy as np 
 import torch
-from torch import nn as torchnn
+#from torch import nn as torchnn
 from torch.optim import Adam,SGD,AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR,ExponentialLR,ReduceLROnPlateau
 from torch.nn.utils import clip_grad_norm_
-from functorch import vmap
 
 from tqdm import tqdm
 
 from kldescent.sde.girsanovpdf import compute_pdf
 
-class Pretrain():
-    """
-    Class for training a neural network to interpolate CSV
-    data to be useable as a function
-    Used for eg. initialising a drift or training a secondary model to easier compute
-    the perturbative evolutions
-    """
-    
-    #define the training parameters and loop for any pretraining. 
-    def __init__(self,benchmark=None,path_to_pretrain=None):
-        
-        if path_to_pretrain is None:
-            self.benchmark = benchmark 
-            self.path = self.benchmark.perturb_underdamped_loc #overdamped_loc        
-        else:
-            self.benchmark = None  #overwrites the reference solution and learn straight from the csv
-            self.path = path_to_pretrain 
-
-        #set defaults of training process
-        self.lr = 0.01 #initial learning rate
-        self.gamma = 0.1 #decay rate of learning rate
-        self.milestone = 1000 #frequency of learning rate decay (in epochs)
-        self.n_epochs = 60000 #total number of epochs
-
-        self.minibatch_samples = 512 #number of datarows to use per parameter update
-
-        self.clip = 0.1 #size of gradient clipping
-
-    def get_pretraining_data(self,transform=True):
-        """Load data from csv to be used in training the network""" 
-
-        arr = np.loadtxt(self.path,
-                        delimiter=",", skiprows=1)
-        
-        #remove zero probability areas
-        #arr = arrtemp[np.where(arrtemp[:,2]>0)] 
-
-        X = torch.tensor(arr[:,0:2], dtype=torch.float32)
-        
-        y = torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
-        
-        if transform:
-            X,y = self.transform_data(X,y)
-
-        idx = np.flatnonzero(y)
-
-        return X[idx,:],y[idx]
-
-    def transform_data(self,X,y):
-        r"""Implement in place transformation for the data which can be customised depending on
-        what the pre-training is doing. 
-        
-        This is based on the transformation
-        (**) \mathbb{U}_t(q_t) = -\frac{\varepsilon}{2}\partial U_t(q_t)
-        See the paper for more details.
-
-        args:
-            X : ndarray
-                (t,q) coordinates 
-            y : ndarray
-                du(t,q)
-        returns:
-            X : ndarray
-                same as input
-            y : ndarray
-                left hand side of (**) 
-        """
-
-        if self.benchmark is not None:
-        
-            X[:,0] /= self.benchmark.boundary.params["epsilon"]**2 #use t0 
-            y *= (-(self.benchmark.boundary.params["epsilon"]/(2**0.5)))
-        
-        return X,y 
-
-    def pretraining(self,net):   
-        
-        #set up training parameters
-        loss_fn = torchnn.MSELoss()  
-        optimiser = Adam(net.parameters(), lr=self.lr)
-        scheduler = ExponentialLR(optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
-
-        X,y = self.get_pretraining_data(transform=True)
-        #X,y = self.transform_data(Xtemp,ytemp)
-        print(X.shape)
- 
-        net.train()
-        for epoch in tqdm(range(1,self.n_epochs+1)):
-            
-            #generate random batch 
-            idx = torch.randint(low=0,high=X.shape[0],size=(self.minibatch_samples,))
-
-            optimiser.zero_grad()
-            y_pred = net(X[idx,:])
-            loss = loss_fn(y_pred,y[idx])
-            clip_grad_norm_(net.parameters(), self.clip)
-            loss.backward()
-            optimiser.step()       
-
-            if epoch % self.milestone == 0:
-                scheduler.step()
-                print(f'Finished epoch {epoch}, loss {loss}')
-                with torch.no_grad():    
-                    self.plot_training_process_drift(X,y,net,epoch)
-                net.train()
-
-    @torch.no_grad
-    def plot_training_process_drift(self,X,y,net,epoch):
-        import matplotlib.pyplot as plt
-        net.eval()
-        plt.plot(X[np.where(X[:,0]==0),1].cpu().numpy().flatten(),y[np.where(X[:,0]==0)].cpu().numpy().flatten())
-        plt.plot(X[np.where(X[:,0]==0),1].cpu().numpy().flatten(),net(X[np.where(X[:,0]==0),:]).cpu().numpy().flatten())
-        plt.ylim((-5,5))
-        plt.savefig(f"training_{epoch}_.png")
-        plt.close("all")
 
 class Train():
     """
@@ -283,4 +167,4 @@ class TrainRho():
         self.rhonet.eval() #return neural net into eval mode
 
 if __name__=="__main__":
-    Pretrain(path="src/refsolution/UnderdampedHalfNet/benchmark.csv").get_pretraining_data()
+    Pretrain(path_to_pretrain="src/refsolution/UnderdampedHalfNet/benchmark.csv").get_pretraining_data()

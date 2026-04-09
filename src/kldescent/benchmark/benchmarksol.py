@@ -8,7 +8,7 @@ from kldescent.model.nn import MLP,NeuralNetwork
 from kldescent.benchmark.utilfunctions import *
 from kldescent.benchmark.perturbative.driftinterp import *
 from kldescent.benchmark.perturbative.corrections import MarginalHalfBridgePerturbation,HalfBridgePerturbation
-from kldescent.benchmark.overdamped.sol import compute_overdamped
+from kldescent.benchmark.overdamped.computesol import compute_overdamped
 from .gaussian import GaussBVP
 from kldescent.viz.drift import plot_drift
 from kldescent.viz.plots import update_mpl
@@ -440,7 +440,7 @@ def plot_benchmark_drift(benchmark_):
 
 def plot_data(benchmark_,quantity,data):
     
-    times = [0,0.06,0.12,0.2]
+    times = [0,0.066667,0.111111,0.2]
 
     fig,axs = plt.subplots(ncols=len(times),nrows=1)
     fig.set_figheight(15)

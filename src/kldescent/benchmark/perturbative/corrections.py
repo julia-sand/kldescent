@@ -1,9 +1,6 @@
-
 import numpy as np
 
 from kldescent.benchmark.utilfunctions import *
-
-import pdb
 
 class Perturbation():
 
@@ -28,8 +25,8 @@ class Perturbation():
         self.qaxis = np.unique(overdamped_arr[:,1])
         self.xnum = len(self.qaxis) #int(self.overdamped_arr.shape[0]/len(self.t2vec))
 
-        #size of convolution filter is 5pc of the datavector. 
-        self.filter_delta = int(np.floor(self.xnum*0.005))
+        #size of convolution filter is 0.5pc of the datavector. 
+        self.filter_delta = int(np.floor(self.xnum*0.05))
 
         #compute muvec for cumulants 
         self.mu_1_vec = np.zeros_like(self.t2vec)
@@ -97,19 +94,29 @@ class Perturbation():
         position using analytic expressions.
         Results are added to a csv and saved
         """
-        pertsol = np.c_[self.overdamped_arr, np.ones(self.xnum*len(self.t2vec)), np.ones(self.xnum*len(self.t2vec))] 
         
+        #make file with header 
+        filename_full = make_csv_and_header(save_location=self.ref_path,
+                                filename="perturbative_underdamped",
+                                header="#t,q,f,DU")
+
         for t in range(len(self.t2vec)):
 
             #perturbative drift 
-            pertsol[t*self.xnum:(t+1)*self.xnum,-1] = self.DU(self.get_t0(self.t2vec[t]),self.t2vec[t])
+            #pertsol[t*self.xnum:(t+1)*self.xnum,-1] = self.DU(self.get_t0(self.t2vec[t]),self.t2vec[t])
             
             #perturbative marginal
-            pertsol[t*self.xnum:(t+1)*self.xnum,-2] = self.marginal_perturbative(self.get_t0(self.t2vec[t]),self.t2vec[t])
+            #pertsol[t*self.xnum:(t+1)*self.xnum,-2] = self.marginal_perturbative(self.get_t0(self.t2vec[t]),self.t2vec[t])
 
-        #save pertsol 
-        np.savetxt(self.ref_path+"/perturbative_underdamped.csv",pertsol,fmt="%10.6f",header = "t,q,rho,V,f,DU",delimiter=',')
+            arr_temp = np.c_[self.overdamped_arr[t*self.xnum:(t+1)*self.xnum,:2], self.DU(self.get_t0(self.t2vec[t]),self.t2vec[t]), self.marginal_perturbative(self.get_t0(self.t2vec[t]),self.t2vec[t])]
+
+            append_array_to_csv(filename=filename_full,data=arr_temp[arr_temp[:,2] != 0])
         
+        #save pertsol without zero entries 
+        #np.savetxt(self.ref_path+"/perturbative_underdamped.csv",
+        #                pertsol[pertsol[:, 2] != 0],
+        #                fmt="%10.6f",,delimiter=',')
+
     def save_perturbative_cumulants(self,):
         """
         computes estiamtes of the perturbative cumulants and saves as a csv
@@ -316,7 +323,6 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
             du : ndarray
                 analytic prediction of drift 
         """
-        #pdb.set_trace()
 
         idx = self.get_rhomask(t2)
         
@@ -388,7 +394,6 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
 
     def posmean(self,t0,t2,t2_idx):
         return 0
-
 
 if __name__=="__main__":
     from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution

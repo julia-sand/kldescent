@@ -132,6 +132,15 @@ class CellProblem():
     def l2err(self,x,y):
         return np.mean((x-y)**2)
 
+    def set_new_iterates(self,xhatphi,xpsi,hatphiT,psiT,hatphi0,psi0):
+        self.xhatphi = zchop(xhatphi)
+        self.xpsi = zchop(xpsi) 
+        self.hatphiT = zchop(hatphiT)
+        self.psiT = zchop(psiT)
+        self.hatphi0 = zchop(hatphi0)
+        self.psi0 = zchop(psi0)
+    
+
     def iteration(self,integrator,
                         tol=1e-5,
                         max_iters=30):
@@ -181,10 +190,12 @@ class CellProblem():
 
                 #integrate phihat to Tf
                 xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
-            
-                if (self.l2err(hatphiT,self.hatphiT)<tol and self.l2err(psiT,self.psiT)<tol):
+                #print("Error:",self.l2err(psiT,self.psiT))
+                if (self.l2err(psi0,self.psi0)<tol and self.l2err(hatphiT,self.hatphiT)<tol):
+                    self.set_new_iterates(xhatphi,xpsi,hatphiT,psiT,hatphi0,psi0)
                     break
                 else: 
+                    self.set_new_iterates(xhatphi,xpsi,hatphiT,psiT,hatphi0,psi0)
                     iters += 1
 
             #plot the final output
@@ -193,13 +204,6 @@ class CellProblem():
             self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
             self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
 
-        #set new iterates
-        self.xhatphi = zchop(xhatphi)
-        self.xpsi = zchop(xpsi) 
-        self.hatphiT = zchop(hatphiT)
-        self.psiT = zchop(psiT)
-        self.hatphi0 = zchop(hatphi0)
-        self.psi0 = zchop(psi0)
         print("Iteration complete.")
         return 
 

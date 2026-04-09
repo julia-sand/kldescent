@@ -30,9 +30,9 @@ def load_checkpoint(net,checkpointpath):
         raise BaseException
 
 def save_nn_checkpoint(net,loc):
-        
-    torch.save(net.state_dict(),loc) 
+    """save checkpoint"""
 
+    torch.save(net.state_dict(),loc) 
 
 class FourierFeatures(nn.Module):
     def __init__(self,in_features,out_features, scale, device):
@@ -102,6 +102,30 @@ class NeuralNetwork_layers(nn.Module):
             ).to(device)
         self.layer_norm_combined = nn.LayerNorm(2*hidden_layer_neurons).to(device)
 
+class MinMaxNorm_layers(nn.Module):
+    def __init__(self,xmax,tmax,device):
+        
+        self.net_name = "minmaxlayers"
+               
+        super().__init__()
+
+        # store normalization constants (not trainable)
+        #qmax = self.boundary.qmax
+        self.register_buffer("xmax", torch.tensor(xmax,dtype=torch.float32))
+        self.register_buffer("xmin", torch.tensor(-xmax,dtype=torch.float32))
+
+        self.register_buffer("tmax", torch.tensor(tmax,dtype=torch.float32))
+
+        self.device = device
+
+    def x_minmax_norm(self,x):
+        xnorm = (x - self.xmin) / (self.xmax - self.xmin + 1e-8)
+        return xnorm.to(self.device)
+
+    def t_minmax_norm(self,x):
+        xnorm = x / self.tmax
+        return xnorm.to(self.device)
+
 #@torch.compile
 class NeuralNetwork(nn.Module):
     def __init__(self,boundary,device=None,nn_params=None):
@@ -127,17 +151,13 @@ class NeuralNetwork(nn.Module):
         #params
         self.boundary = boundary
 
-        # store normalization constants (not trainable)
-        #qmax = self.boundary.qmax
-        self.register_buffer("xmax", torch.tensor(7))
-        self.register_buffer("xmin", torch.tensor(-7))
-        self.register_buffer("tmax", torch.tensor(self.boundary.params["Tf"]))
-        
         self.flatten = nn.Flatten()
         
         self.FeedForwardLayers = NeuralNetwork_layers(self.device, self.params["duhiddenlayerneurons"])
         
         self.FourierFeatures = FourierFeatures(1,2*self.params["duhiddenlayerneurons"],scale=1,device=self.device)
+        
+        self.MinMaxNorms = MinMaxNorm_layers(xmax=4,tmax=self.boundary.params["Tf"], device=self.device)
         
         self.checkpoint_path = fetch_checkpoint_path()
         
@@ -149,28 +169,15 @@ class NeuralNetwork(nn.Module):
                 #print(f"Checkpoint at {self.checkpoint_path} loaded successfully.")
                 pass
 
-    def x_minmax_norm(self,x):
-        xnorm = (x - self.xmin) / (self.xmax - self.xmin + 1e-8)
-        return xnorm.to(self.device)
-
-    def t_minmax_norm(self,x):
-        xnorm = x / self.tmax
-        return xnorm.to(self.device)
-
     def forward(self, input_vec):   #how the model should evaluate
         
-        #minmax norm on x
-        #xnorm = 2 * (input_vec[...,[1]] - self.xmin) / (self.xmax - self.xmin + 1e-8) - 1
+        x = self.FeedForwardLayers.NNx(self.MinMaxNorms.x_minmax_norm(input_vec[...,[1]]))
+        t = self.FourierFeatures(self.MinMaxNorms.t_minmax_norm(input_vec[...,[0]]))#
 
-        #x = self.NNx(xnorm.to(self.device))
-        #t = self.FourierFeatures(input_vec[...,[0]])#
-        
-        x = self.FeedForwardLayers.NNx(self.x_minmax_norm(input_vec[...,[1]]))
-        t = self.FourierFeatures(self.t_minmax_norm(input_vec[...,[0]]))#
-
-        tout = self.FeedForwardLayers.NNt(self.t_minmax_norm(input_vec[...,[0]]))
+        tout = self.FeedForwardLayers.NNt(self.MinMaxNorms.t_minmax_norm(input_vec[...,[0]]))
         
         combined = self.FeedForwardLayers.layer_norm_combined(torch.cat((tout,x), dim=-1) )
+        
         #concatenate the outputs and put them through the part 2
         out = self.FeedForwardLayers.NN1(combined) + self.FeedForwardLayers.NN2(t)*self.boundary.scorefinal(input_vec[...,[1]])
         
@@ -182,8 +189,6 @@ class NeuralNetwork(nn.Module):
                 torch.nn.init.xavier_uniform_(m.weight,gain=2)
                 #if m.bias is not None:
                 #    torch.nn.init.xavier_uniform_(m.bias, gain=1)
-
-
 
 #@torch.compile
 class RhoNeuralNetwork(nn.Module):
@@ -220,12 +225,11 @@ class RhoNeuralNetwork(nn.Module):
 
 #@torch.compile
 class MLP(nn.Module):
-    """Defines a simple flexible model
-    used for simple regression problems. 
+    """Defines a simple flexible model used for interpolating the benchmark solution 
     """
 
     def __init__(self,checkpointpath=None,net_name="pert"):
-        """Initialises a neural network called mlp.
+        """Initialise a neural network called mlp.
         This is a two layer feed forward network with 128 neurons per layer
         It can be used to conveniently interpolate functions from a csv
 
@@ -236,31 +240,33 @@ class MLP(nn.Module):
                 descriptive identifier for loading saved checkpoints
         """
 
-
         #identifier to use in saving the checkpoint
         self.net_name = net_name
 
         self.params = du_network_params()
         neurons = 16 #self.params["duhiddenlayerneurons"]
         
+        self.device = "cpu"
+
         super(MLP, self).__init__()
         self.flatten = nn.Flatten()
         self.linear_stack = nn.Sequential(
             nn.Linear(2, neurons ),  #two inputs
-            nn.GELU(),
+            nn.Tanh(),
             nn.Linear(neurons , neurons),   #hidden layer
-            nn.GELU(),
-            nn.Linear(neurons , neurons),   #hidden layer
-            nn.GELU(),
-            nn.Linear(neurons , neurons),   #hidden layer
-            nn.GELU(),
+            nn.Tanh(),
             nn.Linear(neurons , 1)     #one output
-        )    
-        self.initialize_weights()   
+        ).to(self.device)    
 
-    def forward(self, x):   #how the model should evaluate
-        x = self.flatten(x)
-        out = self.linear_stack(x)
+        self.MinMaxNorms = MinMaxNorm_layers(xmax=3,tmax=5,device=self.device)
+        #self.initialize_weights()   
+
+    def forward(self, input_vec):   #how the model should evaluate
+
+        t = self.MinMaxNorms.t_minmax_norm(input_vec[...,[0]])
+        x = self.MinMaxNorms.x_minmax_norm(input_vec[...,[1]])
+
+        out = self.linear_stack(torch.cat((t,x), dim=-1))
         return out
 
     def initialize_weights(self):   #sets all the weights to zero.

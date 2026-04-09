@@ -46,7 +46,7 @@ def mcintegrator(x0,y0,
 
     #generate trajectories
     traj =  np.tile(qax[:,np.newaxis],(1,mc_samples)) + \
-        np.sqrt(2*dt_temp/beta)*np.sum(Generator.standard_normal((num_qsamples,mc_samples,num_steps)),axis=2)
+        np.sqrt(2*np.abs(dt_temp)/beta)*np.sum(Generator.standard_normal((num_qsamples,mc_samples,num_steps)),axis=2)
     
     #traj = np.flip(traj,axis = 1) #flip along columns
     yT = np.mean(phifinal(traj,qax,y0),axis=1) 

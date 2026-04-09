@@ -133,8 +133,6 @@ class PlotUtils():
         else:
             self.epoch = epoch
        
-        #self.plotter = PlotFuns(boundary_cond)
-
         self.boundary_cond.overwrite_ref_path(self.folder)
             
         self.benchmark = benchmark
@@ -154,8 +152,6 @@ class PlotUtils():
             self.net = self.benchmark.du_net_benchmark 
 
             self.integrator = langevin.VerletSDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
-
-
 
     def load_du_checkpoint(self):
         """Load neural network and initialise integration method"""
