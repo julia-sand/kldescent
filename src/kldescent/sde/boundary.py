@@ -336,6 +336,7 @@ class UnderdampedLandauer(OverdampedLandauer):
         OverdampedLandauer.__init__(self,params,logfile)
         self.sigma0 = torch.sqrt(torch.tensor(2.0))
         self.qmax = 6
+        self.norm_qmax = 3
 
     def p_initial(self,q,p):
 
@@ -436,6 +437,7 @@ class UnderdampedGaussian(UnderdampedLandauer):
         Boundaries.__init__(self,params,logfile)
         self.sigma0 = torch.sqrt(torch.tensor(2.0))
         self.qmax = 25
+        self.norm_qmax = 5
 
         if gauss_params is not None: #read from file if available
             self.gauss_boundary = gauss_params

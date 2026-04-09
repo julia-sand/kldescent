@@ -97,7 +97,10 @@ def compute_pdf(x0,
                         
         pdfout = p_initial(xinit[...,[0]],xinit[...,[1]])*torch.exp(-girs)
 
-    return torch.mean(pdfout,dim=0)
+    if pdfout.dim() > 2:
+        return torch.mean(pdfout, dim=0)
+    else:
+        return pdfout
 
 def plot_scatter_(x,pdf):
     plt.scatter(x[...,0].cpu().numpy(), x[...,1].cpu().numpy(), c=pdf.cpu().numpy(),cmap='RdYlGn_r')

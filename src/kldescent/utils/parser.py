@@ -93,7 +93,7 @@ def overdamped_argparser():
     parser.add_argument('-boundary','--boundary', type=str, default="UnderdampedLandauer",
                         help='which set of boundary conditions to use. See Sde.Boundary for options')
     
-    parser.add_argument('-terminalcost','--terminalcost', type=str, default="GirsanovNet",
+    parser.add_argument('-terminalcost','--terminalcost', type=str, default="GirsanovMC",
                         help='How the terminal cost should be evaluated. See Sde.terminalcost for options')
     
     #TODO... move into model module?

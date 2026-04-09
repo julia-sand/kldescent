@@ -80,19 +80,20 @@ class TrainRho():
 
         self.rhonet = rhonet 
 
-        self.lr = 0.01 #initial learning rate
+        self.lr = 0.0001 #initial learning rate
         #self.integrator = integrator
 
         self.gamma = 0.1 #rate of learning rate decrease.
 
         self.clip = 0.01 #gradient clipping
 
-        self.rho_epochs = 3 #total number of training epochs
+        self.rho_epochs = 3000 #total number of training epochs
         self.milestone = 512 #how often to decay learning rate
         self.rho_batch = 128 #size of batch 
 
         self.loss = torch.nn.MSELoss()
 
+    @torch.no_grad
     def generate_training_data(self,x0,integrator):
         
         with torch.no_grad():
@@ -104,7 +105,8 @@ class TrainRho():
                                 integrator.boundary.p_initial,
                                 integrator.boundary.params["Tf"],
                                 mc_samples=1)
-                                                
+            print(yobs.max())
+            print(torch.isnan(yobs).any())                    
             return yobs
 
     def train_step(self,optimiser,integrator):  
@@ -114,12 +116,13 @@ class TrainRho():
         
         #initialise x values 
         x0 = integrator.boundary.generate_samples(self.rho_batch,mode="initial") 
-        # (-5 - 5)*torch.rand(self.rho_batch, 2, dtype=torch.float32,requires_grad=True) + 5
 
         yobs = self.generate_training_data(x0.clone().detach(),integrator)
 
         ypred = self.rhonet(x0)
+
         Lhat = self.loss(ypred,yobs)
+
         clip_grad_norm_(self.rhonet.parameters(), self.clip)
              
         # Do backprop and optimiser step
@@ -130,8 +133,11 @@ class TrainRho():
             
         else:
             raise ValueError('Girsanov net: Loss function is NaN. Terminating training process')
+            #TODO this error may be raised when the initialisation of the drift 
+            #network is too large. Fix this in future by adding a conditional warmstart
+            #to DUNET whenever terminal cost is GirsanovNet
 
-        return #loss_out
+        return 
 
 
     def train_loop(self, integrator, rho_epochs=None):
@@ -159,7 +165,7 @@ class TrainRho():
                 for __ in range(self.milestone):
                     self.train_step(optimiser,integrator) #repeat training step
             
-                    scheduler.step() #decrease learning rate
+                scheduler.step() #decrease learning rate
                 
                 t.postfix[1]["value"] = rho_epoch
                 t.update()

@@ -76,11 +76,11 @@ class GirsanovMC(TerminalCost):
         
         pdf = torch.zeros_like(x[...,[0]]).to(net.device)
         pdf = compute_pdf(x,net,
-                                            self.boundary.sigma0,
-                                            self.boundary.params["epsilon"],
-                                            self.boundary.p_initial,
-                                            self.boundary.params["Tf"],
-                                            mc_samples)
+                            self.boundary.sigma0,
+                            self.boundary.params["epsilon"],
+                            self.boundary.p_initial,
+                            self.boundary.params["Tf"],
+                            mc_samples)
         
         return torch.log(pdf)
 

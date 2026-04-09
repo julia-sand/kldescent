@@ -42,7 +42,7 @@ def run():
     
     #initialise neural network and compile model
     net = nn.NeuralNetwork(boundaryconditions,args["device"])
-    net = torch.compile(net, mode="max-autotune")
+    #net = torch.compile(net, backend="eager")
 
     #intialise sde integration method
     integrator = langevin.VerletSDE(boundaryconditions, net=net, terminal_cost=terminal_cost)
@@ -72,7 +72,6 @@ def run():
                         integrator,
                         trainer,
                         logstep=args["logstep"])
-    
     
     if metric_.wandb_run is not None:
         metric_.wandb_run.finish()
