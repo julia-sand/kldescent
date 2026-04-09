@@ -68,9 +68,10 @@ class NeuralNetwork_layers(nn.Module):
                
         super().__init__()
 
+        # store normalization constants (not trainable)
+        
         self.flatten = nn.Flatten()
         #self.tencoding = TimeConder(1,self.hidden_layer_neurons) #fourier positional encoding goes here! 
-        
         self.NNt = nn.Sequential(
             nn.Linear(1, hidden_layer_neurons ),  #
             #nn.Linear(2*self.params["duhiddenlayerneurons"], self.params["duhiddenlayerneurons"] ),  #
@@ -80,32 +81,28 @@ class NeuralNetwork_layers(nn.Module):
             #nn.Linear(self.params["duhiddenlayerneurons"] , self.params["duhiddenlayerneurons"] ),   #64 outputs
             nn.GELU(),  #must be positive
             ).to(device)
-        
         self.NNx = nn.Sequential(
             nn.Linear(1,hidden_layer_neurons ),  #input x
             nn.GELU(),
             nn.Linear(hidden_layer_neurons, hidden_layer_neurons),   #64 outputs
             ).to(device)   
-        
-        self.NN1 = nn.Sequential(
-            nn.Linear(2*hidden_layer_neurons, hidden_layer_neurons),  #input 2x64 features: concatenated output of NNt and NNx t and x 
-            nn.GELU(),
-            nn.Linear(hidden_layer_neurons,hidden_layer_neurons),   #64 outputs
-            nn.GELU(),
-            nn.Linear(hidden_layer_neurons , 1)).to(device) 
-        
-        self.NN2 = NN2(device,hidden_layer_neurons)
-
+        self.NN1 = NN2(device,hidden_layer_neurons).to(device) 
+        #nn.Sequential(
+        #    nn.Linear(2*hidden_layer_neurons, hidden_layer_neurons),  #input 2x64 features: concatenated output of NNt and NNx t and x 
+        #    nn.GELU(),
+        #    nn.Linear(hidden_layer_neurons,hidden_layer_neurons),   #64 outputs
+        #    nn.GELU(),
+        #    nn.Linear(hidden_layer_neurons , 1)).to(device) 
+        self.NN2 = NN2(device,hidden_layer_neurons).to(device) 
         self.layer_norm_combined = nn.LayerNorm(2*hidden_layer_neurons).to(device)
 
 class NN2(nn.Module):
 
     def __init__(self,device,hidden_layer_neurons):
         super().__init__()
-        self.to(device)
-        self.layer1 = nn.Linear(2*hidden_layer_neurons , hidden_layer_neurons)
-        self.layer2 = nn.Linear(hidden_layer_neurons , hidden_layer_neurons)
-        self.layer3 = nn.Linear(hidden_layer_neurons , 1)
+        self.layer1 = nn.Linear(2*hidden_layer_neurons , hidden_layer_neurons).to(device) 
+        self.layer2 = nn.Linear(hidden_layer_neurons , hidden_layer_neurons).to(device) 
+        self.layer3 = nn.Linear(hidden_layer_neurons , 1).to(device) 
         self.gelu = nn.GELU()
 
     def forward(self,input_vec):

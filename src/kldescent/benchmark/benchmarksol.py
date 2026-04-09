@@ -194,10 +194,10 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
             idx=2
         
         elif quantity =="underdamped drift":
-            idx=-1
+            idx=-2
         
         elif quantity =="underdamped marginal":
-            idx=-2
+            idx=-1
         
         return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx]) #((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
 
@@ -457,7 +457,7 @@ def plot_data(benchmark_,quantity,data):
 
         axs[time[0]].set_xlim((-5,5))
         if quantity == "underdamped drift":
-            du_net = benchmark_evaluate_net(benchmark_.du_net_benchmark,q,time[1])
+            du_net = -(2**0.5/eps)*benchmark_evaluate_net(benchmark_.du_net_benchmark,q,time[1]/eps**2)
             axs[time[0]].plot(q,du_net)
 
     fig.tight_layout()
@@ -473,7 +473,6 @@ if __name__=="__main__":
     boundary = UnderdampedLandauer()
     benchmark_ = PerturbativeBenchmarkSolution(boundary=boundary,
                         folder_name=fetch_results_folder_from_cmd())
-    
     
     plot_data(benchmark_,quantity="value",data="overdamped")
     plot_data(benchmark_,quantity="marginal",data="overdamped")

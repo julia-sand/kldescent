@@ -49,9 +49,6 @@ def fetch_benchmark_sol(times,folder,epoch,invert):
     else:
         return plot_utils.get_benchmark_drift_data(times)
 
-
-
-
 @torch.no_grad
 def compute_uncertainty_estimate(time,folders,epoch,invert=False):
     #pdb.set_trace()
@@ -72,10 +69,10 @@ def compute_uncertainty_estimate(time,folders,epoch,invert=False):
 
 if __name__=="__main__":
     params = checkpoint_plot_params()
-    epoch = 500
+    epoch = 450
     folders = []
     for i in range(1,20):
         print(i)
-        folders.append(f"../../../../../scratch/project_2011332/kldescent_gauss_seed/SEED_{i}")#kldescent_seed/SEED_{i}")
+        folders.append(f"../../../../../scratch/project_2011332/kldescent_gauss_seed_3/SEED_{i}")#kldescent_seed/SEED_{i}")
     
     plot_drift_uncertainty_errors(folders,epoch,invert=True)

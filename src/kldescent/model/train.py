@@ -35,15 +35,15 @@ class Train():
         self.milestone = 400 #how often to decay learning rate
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
-        self.scheduler1 = CosineAnnealingLR(self.optimiser_feedforward, 
+        self.scheduler1 = CosineAnnealingLR(self.optimiser_fourier, 
                                         T_max=100, eta_min=1e-10)
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
-        self.scheduler2 = ReduceLROnPlateau(self.optimiser_fourier,
+        self.scheduler2 = ReduceLROnPlateau(self.optimiser_feedforward,
                                             mode="min",
                                             factor=0.9,
                                             patience=1, #how many steps to wait before 
                                             eps=1e-8,
-                                            cooldown=30) #Decays the learning rate based on a passed metric
+                                            cooldown=5) #Decays the learning rate based on a passed metric
         
     def train_step(self):  
         
