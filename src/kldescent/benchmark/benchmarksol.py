@@ -192,8 +192,10 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
              
         elif quantity =="marginal":
             idx=2
+        
         elif quantity =="underdamped drift":
             idx=-1
+        
         elif quantity =="underdamped marginal":
             idx=-2
         
@@ -426,21 +428,21 @@ def plot_benchmark_drift(benchmark_):
     for time in times:
         
         net_vals.append(benchmark_evaluate_net(benchmark_.du_net_benchmark,x,time))
-        benchmark_vals.append((-benchmark_.boundary.params["epsilon"]/2**0.5)*benchmark_.get_benchmark_quantity(time, "underdamped drift", data="perturbative underdamped")[1])
+        #benchmark_vals.append((-benchmark_.boundary.params["epsilon"]/2**0.5)*benchmark_.get_benchmark_quantity(time, "underdamped drift", data="perturbative underdamped")[1])
         
     fig = plot_drift(times,net_vals,
-                        benchmark_vals,
+                        benchmark_vals=None,
                         xaxis = x)
     
     for ax in fig.get_axes():
         ax.set_xlim((-5,5))
         ax.set_ylim((-20,20))   
 
-    fig.savefig(benchmark_.folder_name+f"/perturbative_drift.png",bbox_inches="tight")        
+    fig.savefig(benchmark_.folder_name+f"/perturbative_drift_trained.png",bbox_inches="tight")        
 
 def plot_data(benchmark_,quantity,data):
     
-    times = [0,0.066667,0.111111,0.2]
+    times = [0,0.06,0.12,0.2]
 
     fig,axs = plt.subplots(ncols=len(times),nrows=1)
     fig.set_figheight(15)
@@ -450,10 +452,14 @@ def plot_data(benchmark_,quantity,data):
     for time in enumerate(times):
         q, ptq = benchmark_.get_benchmark_quantity(time[1], quantity, data=data,time_type="t2")
         axs[time[0]].plot(q,ptq)
+    
         axs[time[0]].set_title(f"t={time[1]}")
 
         axs[time[0]].set_xlim((-5,5))
-    
+        if quantity == "underdamped drift":
+            du_net = benchmark_evaluate_net(benchmark_.du_net_benchmark,q,time[1])
+            axs[time[0]].plot(q,du_net)
+
     fig.tight_layout()
 
     fig.savefig(benchmark_.folder_name+f"/{data}_{quantity}.png",bbox_inches="tight")        
@@ -472,5 +478,5 @@ if __name__=="__main__":
     plot_data(benchmark_,quantity="value",data="overdamped")
     plot_data(benchmark_,quantity="marginal",data="overdamped")
     plot_data(benchmark_,quantity="marginal",data="perturbative underdamped")
-    #plot_data(benchmark_,quantity="underdamped drift",data="perturbative underdamped")
+    plot_data(benchmark_,quantity="underdamped drift",data="perturbative underdamped")
     plot_benchmark_drift(benchmark_)

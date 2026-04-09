@@ -1,9 +1,21 @@
-"""Useful functions used in computing perturbative corrections"""
+"""Useful functions used in computing perturbative solution"""
 
 import os
 import csv
 
-import numpy as np 
+import numpy as np
+
+def apply_filter(y,filter_delta=None):
+    """convolve array with box filter"""
+    
+    if filter_delta is None:
+        #default to 5pc of the data vector
+        filter_delta = int(np.floor(len(y)*0.05))
+
+    #apply convolution with moving averages
+    out = np.convolve(y,(1/filter_delta)*np.ones(filter_delta),'same')
+    
+    return out
 
 def append_array_to_csv(filename,data):
     """append numpy array to a csv"""
@@ -11,8 +23,9 @@ def append_array_to_csv(filename,data):
     with open(filename,"a") as file:
       np.savetxt(file,data,fmt="%10.6f",delimiter=',')
   
-
 def interpolate_(q,xs,phis):
+    """Interpolate function phi from data points xs to q"""
+
     idx = np.argsort(xs)
 
     return np.interp(q,xs[idx],phis[idx],left=0,right=0)
@@ -34,7 +47,6 @@ def make_csv_and_header(save_location,filename,header):
         writer.writerow(header)
     
     return filename_full
-
 
 def save_array(arr_out,save_location,filename,header):
     """saves an array as a csv to the given location

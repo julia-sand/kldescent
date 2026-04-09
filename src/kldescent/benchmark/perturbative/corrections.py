@@ -33,12 +33,7 @@ class Perturbation():
         self.mu_2_vec = np.zeros_like(self.t2vec)
         self.dmu_1_vec = np.zeros_like(self.t2vec)
         self.dmu_2_vec = np.zeros_like(self.t2vec)
-        
-    def apply_filter(self,y):
-        """convolve with box filter"""
-        out = np.convolve(y,(1/self.filter_delta)*np.ones(self.filter_delta),'same')
-        #apply convolution with moving averages
-        return out
+       
 
     def fill_zeros(self,y,idx):
         out = np.zeros(len(self.qaxis))
@@ -69,7 +64,7 @@ class Perturbation():
         """compute the gradient dy/dx and smooth 
         y and x must have same length"""
         
-        return self.apply_filter(np.gradient(y,x))
+        return apply_filter(np.gradient(y,x),filter_delta=self.filter_delta)
 
     def mu_1_t2(self,t2):
 
@@ -181,7 +176,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
         coeff = 1 - np.exp(t0-self.Tf)
 
         #temp = np.zeros(self.xnum)
-        #temp = self.apply_filter(self.dv00(t2))
+        #temp = apply_filter(self.dv00(t2))
 
         return 0#2*coeff*temp
     
@@ -206,7 +201,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
         f02_temp = np.zeros(self.xnum)
 
         #compute gradient 
-        f02_temp[idx] = self.apply_filter(self.d_(f00_arr,self.qaxis[idx]))
+        f02_temp[idx] = apply_filter(self.d_(f00_arr,self.qaxis[idx]),filter_delta=self.filter_delta)
 
         return f02_temp
     
@@ -220,7 +215,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
         idx = self.get_rhomask(t2)
 
-        f00_arr = self.apply_filter(self.f00(t2)[idx])
+        f00_arr = apply_filter(self.f00(t2)[idx],filter_delta=self.filter_delta)
         
         d_f00_2 = self.d_f00(idx,f00_arr)
         d_f00_3 = self.d_f00(idx,d_f00_2[idx])
@@ -249,7 +244,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
         idx = self.get_rhomask(t2)
 
         #get rho 
-        f00_arr = self.apply_filter(self.f00(t2)[idx])
+        f00_arr = apply_filter(self.f00(t2)[idx],filter_delta=self.filter_delta)
         
         #preallocate
         rho00 = np.zeros(self.xnum)
@@ -326,9 +321,9 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
 
         idx = self.get_rhomask(t2)
         
-        f00 = self.fill_zeros(self.apply_filter(self.f00(t2)[idx]),idx)
+        f00 = self.fill_zeros(apply_filter(self.f00(t2)[idx],filter_delta=self.filter_delta),idx)
         df00 = self.d_f00(idx,f00[idx])
-        dv00 = self.apply_filter(self.dv00(t2)) 
+        dv00 = apply_filter(self.dv00(t2),filter_delta=self.filter_delta) 
         
         kappa = self.kappa(f00,dv00)
         f11_term1 = self.f11_term1(df00,f00,dv00)
@@ -338,7 +333,7 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
         dt_f11 = self.dt_f11(f11_term1,f11_term2,t0)
         
         du_out = np.nan_to_num((df00 + dt_f11 + f11)/f00,posinf=0,neginf=0)
-        return -self.apply_filter(du_out)
+        return -apply_filter(du_out,filter_delta=self.filter_delta)
 
     def coeff_G111_G112(self,):
         return 3/(np.exp(-self.Tf)*(2+np.cosh(self.Tf)))

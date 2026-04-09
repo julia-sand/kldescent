@@ -10,7 +10,7 @@ from kldescent.benchmark.utilfunctions import *
 
 def compute_rho(phi_t,hatphi_t):
     
-    return np.nan_to_num(phi_t*hatphi_t,nan=0,posinf=0,neginf=0)
+    return phi_t*hatphi_t
 
 def compute_dV(q,hatphi_t,phi_t,A,B,bridge_type):
     
@@ -67,6 +67,10 @@ def save_solution_in_time(cell,filename_full,integrator):
         #phi_t = interpolate_(q,xphi_t,phi_temp)
         #hatphi_t = interpolate_(q,xhatphi_t,hatphi_temp)       
         
+        #apply convolution filters for smoothing
+        #phi_t = apply_filter(phi_t)
+        #hatphi_t = apply_filter(hatphi_t)
+        
         arr_temp = np.column_stack((tvec[t]*np.ones(cell.num_samples),q,
                                         normalise(q,compute_rho(phi_t,hatphi_t)),
                                         compute_dV(q,hatphi_t,phi_t,cell.A,cell.B,cell.bridge_type)))
@@ -79,7 +83,7 @@ def save_solution_in_time(cell,filename_full,integrator):
 
         #compute next step of the hatphi and phi evolutions 
         xhatphi_t,hatphi_t = integrator(xhatphi_t,hatphi_t,dt,cell.beta,num_steps=np.minimum(1,int(np.floor(1000/cell.num_tsteps))))
-        xphi_t,phi_t = integrator(xphi_t,phi_t,cell.Tf2-dt,cell.beta,num_steps=np.minimum(1,int(np.floor(1000/cell.num_tsteps))))
+        xphi_t,phi_t = integrator(cell.xpsi.copy(),cell.psi0.copy(),cell.Tf2-(t+1)*dt,cell.beta,num_steps=np.minimum(1,int(np.floor((cell.num_tsteps-t)*1000/cell.num_tsteps))))
 
     return 
 
