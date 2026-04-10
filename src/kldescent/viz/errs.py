@@ -1,5 +1,4 @@
-"""plot relative errors for cumulants
-"""
+"""Plot relative errors for cumulants"""
 
 from kldescent.viz.checkpoint_plots import PlotUtils
 

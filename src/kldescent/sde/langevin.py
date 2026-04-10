@@ -41,10 +41,15 @@ class SDEBase():
                 return torch.from_numpy(benchmark.get_timegrid()).to(self.device)
         
     @torch.no_grad
-    def uniform_random_time_grid(self,Tf,tsteps):
+    def uniform_random_time_grid(self,Tf=None,tsteps=None):
         """
         Generate a randomly sampled time grid to be used in integration
         """
+        if Tf is None:
+            Tf = self.boundary.params["Tf"]
+        if tsteps is None:
+            tsteps = self.sde_params["tsteps"]
+
         return torch.concatenate([torch.zeros(1),
                                 Tf*torch.sort(torch.rand(tsteps,dtype=torch.float32,requires_grad=False))[0],
                                 Tf*torch.ones(1)]).to(self.device)   
@@ -196,7 +201,8 @@ class SDEBase():
         if mcsamples is None: #default to test samples
             mcsamples = self.sde_params["testsamples"]
 
-        t_vec = self.generate_time_grid(benchmark)
+        t_vec = self.uniform_random_time_grid()
+        #self.generate_time_grid(benchmark)
         
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = self.boundary.generate_samples(mcsamples,"initial").to(self.device)
@@ -236,8 +242,11 @@ class SDEBase():
                 du = benchmark.du_net_benchmark(torch.cat((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
                                                             ,xinit[...,[0]]),dim=-1))
             else:
-                du = torch.as_tensor(benchmark.get_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
-            
+                try:
+                    du = torch.as_tensor(benchmark.get_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
+                except: 
+                    du = torch.zeros_like(xinit[...,[0]],dtype=torch.float32,requires_grad=False)
+          
         
         return du
         
@@ -297,7 +306,7 @@ class EulerMaruyamaSDE(SDEBase):
         
         self.net.train()
         
-        t_vec = self.uniform_random_time_grid(self.boundary.params["Tf"],self.sde_params["tsteps"])
+        t_vec = self.uniform_random_time_grid()
 
         #initialise x values 
         xinit = self.boundary.generate_samples(self.sde_params["batchsamples"],"initial").to(self.device)
@@ -420,7 +429,7 @@ class VerletSDE(SDEBase):
         """
         
         self.net.train()
-        t_vec = self.uniform_random_time_grid(self.boundary.params["Tf"],self.sde_params["tsteps"])
+        t_vec = self.uniform_random_time_grid()
 
         #initialise x values 
         xinit = self.boundary.generate_samples(self.sde_params["batchsamples"],"initial").to(self.device)

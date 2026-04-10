@@ -5,8 +5,6 @@ import matplotlib.pyplot as plt
 from kldescent.viz.plots import get_all_subplot_handles_labels
 from kldescent.viz.contour import *
 
-#update_mpl()
-
 def plot_histogram(plot_loc,hist,xloc,epoch=1):
     
     fig = plt.figure(figsize=(15, 15))
@@ -18,8 +16,6 @@ def plot_histogram(plot_loc,hist,xloc,epoch=1):
 
 @torch.no_grad
 def make_histogram(plot_loc,x,model,boundary):
-    
-    #plot_loc = self.logger.newpath 
     
     #make a plot of final points vs estimated distribution
     x_samples,_ = model.sample(5000)

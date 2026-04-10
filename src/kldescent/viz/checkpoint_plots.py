@@ -25,11 +25,13 @@ def zchop(x,tol=1e-6):
 @torch.no_grad
 def generate_mesh(x_samples,qmax=6):
     """
-    generates a mesh in two dimensional phase space to evaluate and plot the joint distribution 
+    generate a mesh in two dimensional phase space to evaluate and plot the joint distribution 
     
     args:
-        x_samples:
+        xsamples : int
             number of samples in the space discretisation
+        qmax : float
+            maximum value of the xaxis, symmetric in positive and negative
     """
 
     p_init = torch.linspace(-qmax,qmax,x_samples, requires_grad=False,dtype=torch.float32)
@@ -360,7 +362,9 @@ class PlotUtils():
                 if self.benchmark.du_net_benchmark is not None:
                     ref_vals.append(self.evaluate_net_output(self.benchmark.du_net_benchmark,times[t]).flatten())
                 else: 
-                    ref_vals.append(self.benchmark.get_drift_gaussian(times[t])*np.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000))
+                    temp = self.benchmark.du_benchmark(times[t],np.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000))
+                    ref_vals.append(temp)
+                    #ref_vals.append(self.benchmark.get_drift_gaussian(times[t])*np.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000))
 
         return ref_vals
 
@@ -652,7 +656,7 @@ if __name__=="__main__":
         plot_utils.load_benchmark_solution()
 
     plot_utils.make_drift_plot(numplots=5)
-    plot_utils.make_inverted_drift_plot(numplots=5)
+    #plot_utils.make_inverted_drift_plot(numplots=5)
     plot_utils.make_sde_plots(2048, usebenchmark)
     #plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark)
     #plot_utils.make_cumulant_error_plot_from_csv()

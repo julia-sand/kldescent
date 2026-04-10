@@ -9,7 +9,7 @@ from kldescent.benchmark.utilfunctions import *
 from kldescent.benchmark.perturbative.driftinterp import *
 from kldescent.benchmark.perturbative.corrections import MarginalHalfBridgePerturbation,HalfBridgePerturbation
 from kldescent.benchmark.overdamped.computesol import compute_overdamped
-from .gaussian import GaussBVP
+from kldescent.benchmark.gaussian import GaussBVP
 from kldescent.viz.drift import plot_drift
 from kldescent.viz.plots import update_mpl
 
@@ -68,6 +68,7 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         get_perturbative_cumulants_array()
         get_perturbative_cumulant()
     """
+    #TODO update the perturbative solution to save in terms of t0!!!!
 
     def __init__(self, bridge_type="half", boundary=None, folder_name=None):
         r"""
@@ -83,7 +84,8 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         """
         
         BaseBenchmarkSolution.__init__(self,bridge_type,boundary,folder_name)
-        self.initialise_net(bridge_type)
+        #self.initialise_net(bridge_type)
+        self.du_net_benchmark = None
 
     def initialise_net(self,bridge_type):
 
@@ -150,7 +152,8 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         return arr 
 
     def get_timegrid(self,time=None):
-        arr = self.get_benchmark_data(data="overdamped")
+        """Return the t0 time grid"""
+        arr = self.get_benchmark_data(data="perturbative underdamped")
         return np.unique(arr[:,0])
         
     def get_benchmark_quantity(self,time,quantity,data,arr=None,time_type="t0"):
@@ -166,9 +169,9 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
             data : str 
                 which dataset to use. Choose from overdamped (cell problem solution) or underdamped (saved perturbative solution)        
             arr : array
-                if the dataset is already loaded in the script, this can be used to return the correct result
+                if the dataset is already loaded in runtime, this can be passed directly
             time_type : str
-                if "t0", change it first to t2. 
+                if "t0", change it first to t2 by dividing by epsilon squared. 
         returns:
             x : arr 
                 array of shape (n,) of positions
@@ -176,30 +179,37 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
                 specified quantity evaluated at points x, with shape (n,)
         """
 
-        if arr is None: #default overdamped
-            arr = self.get_benchmark_data(data=data)  
-
-        if time_type=="t0":
-            #multiply by eps**2 to get t2 from t0 
-            time *= self.boundary.params["epsilon"]**2
-
+        #ensure correct time scale
+        if data == "overdamped":
+            if time_type=="t0":
+                #multiply by eps**2 to get t2 from t0 
+                time *= self.boundary.params["epsilon"]**2
+        if data == "perturbative underdamped":
+            if time_type=="t2":
+                #divide by eps**2 to get t0 from t2 
+                time /= self.boundary.params["epsilon"]**2
+               
+        if quantity =="value":
+            
+            index2=3
+             
+        elif quantity =="marginal":
+            index2=2
+        
+        elif quantity =="underdamped drift":
+            index2=-1
+        
+        elif quantity =="underdamped marginal":
+            index2=-2
+        
+        if arr is None: 
+            arr = self.get_benchmark_data(data=data) 
+        
         ##fetch the approximation data
         arrtemp = arr[np.where(arr[:,0]==np.round(time,6))] 
         arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
-
-        if quantity =="value":
-            idx=3
-             
-        elif quantity =="marginal":
-            idx=2
-        
-        elif quantity =="underdamped drift":
-            idx=-2
-        
-        elif quantity =="underdamped marginal":
-            idx=-1
-        
-        return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx]) #((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
+    
+        return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,index2]) 
 
     def get_perturbative_cumulants_array(self,idx=None):
         """return the array for predicted cumulants using perturbation theory"""
@@ -239,6 +249,21 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
 
         return np.squeeze(arr[:,0]),np.squeeze(arr[:,1])
 
+    def du_benchmark(self,time,q):
+        """Return drift for t,q coordinate
+        Warning: only use this function for plotting if there is no other option. 
+        
+        THIS WILL RUN ****VERY**** SLOWLY FOR INTEGRATION
+        TODO update with new t0 logic"""
+        
+        arr = self.get_benchmark_data(data="perturbative underdamped")
+        arrtemp = arr[np.where(arr[:,0]==np.round(time*(self.boundary.params["epsilon"]**2),6))] 
+        arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
+        x = arrtemp[:,1].flatten()
+        y = arrtemp[:,-2].flatten()
+        du_out = np.interp(q,x,y)
+        return -(self.boundary.params["epsilon"])*du_out.flatten()/(2**0.5)
+ 
 
 class GaussBenchmarkSolution(BaseBenchmarkSolution):
     r"""Compile the gaussian versions of the benchmark solutions

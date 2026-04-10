@@ -191,18 +191,18 @@ class CellProblem():
                 #integrate phihat to Tf
                 xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
                 #print("Error:",self.l2err(psiT,self.psiT))
-                if (self.l2err(psi0,self.psi0)<tol and self.l2err(hatphiT,self.hatphiT)<tol):
+                if self.l2err(psi0,self.psi0)<tol:# and self.l2err(hatphiT,self.hatphiT)<tol):
                     self.set_new_iterates(xhatphi,xpsi,hatphiT,psiT,hatphi0,psi0)
                     break
                 else: 
                     self.set_new_iterates(xhatphi,xpsi,hatphiT,psiT,hatphi0,psi0)
                     iters += 1
 
-            #plot the final output
-            self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-            
-            self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-            self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+                #plot the final output
+                self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+                
+                self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+                self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
 
         print("Iteration complete.")
         return 

@@ -121,8 +121,9 @@ def compute_overdamped(boundary,save_location,bridge_type="half"):
 
 if __name__=="__main__":
     from ...sde.boundary import UnderdampedGaussian,UnderdampedLandauer
-
+    from kldescent.utils.parser import fetch_results_folder_from_cmd
     boundary = UnderdampedLandauer()
-    compute_overdamped(boundary,"results",bridge_type="half")
+    folder = fetch_results_folder_from_cmd() 
+    compute_overdamped(boundary,folder,bridge_type="half")
     
     

@@ -28,13 +28,14 @@ class Perturbation():
         #size of convolution filter is 0.5pc of the datavector. 
         self.filter_delta = int(np.floor(self.xnum*0.05))
 
+    def initialise_mu_vecs(self):
+
         #compute muvec for cumulants 
         self.mu_1_vec = np.zeros_like(self.t2vec)
         self.mu_2_vec = np.zeros_like(self.t2vec)
         self.dmu_1_vec = np.zeros_like(self.t2vec)
         self.dmu_2_vec = np.zeros_like(self.t2vec)
        
-
     def fill_zeros(self,y,idx):
         out = np.zeros(len(self.qaxis))
         out[idx] = y
@@ -76,6 +77,7 @@ class Perturbation():
 
     def compute_mu_vecs(self):
         """compute mu expressions for cumulant calculations"""
+        self.initialise_mu_vecs()
 
         for t2 in enumerate(self.t2vec):
             self.mu_1_vec[t2[0]] = self.mu_1_t2(t2[1])
@@ -95,23 +97,17 @@ class Perturbation():
                                 filename="perturbative_underdamped",
                                 header="#t,q,f,DU")
 
-        for t in range(len(self.t2vec)):
+        for t2 in self.t2vec:
 
-            #perturbative drift 
-            #pertsol[t*self.xnum:(t+1)*self.xnum,-1] = self.DU(self.get_t0(self.t2vec[t]),self.t2vec[t])
+            t0 = self.get_t0(t2)
             
-            #perturbative marginal
-            #pertsol[t*self.xnum:(t+1)*self.xnum,-2] = self.marginal_perturbative(self.get_t0(self.t2vec[t]),self.t2vec[t])
-
-            arr_temp = np.c_[self.overdamped_arr[t*self.xnum:(t+1)*self.xnum,:2], self.DU(self.get_t0(self.t2vec[t]),self.t2vec[t]), self.marginal_perturbative(self.get_t0(self.t2vec[t]),self.t2vec[t])]
+            arr_temp = np.c_[t0*np.ones_like(self.qaxis),
+                                self.qaxis, 
+                                self.marginal_perturbative(t0,t2),
+                                self.DU(t0,t2)]
 
             append_array_to_csv(filename=filename_full,data=arr_temp[arr_temp[:,2] != 0])
         
-        #save pertsol without zero entries 
-        #np.savetxt(self.ref_path+"/perturbative_underdamped.csv",
-        #                pertsol[pertsol[:, 2] != 0],
-        #                fmt="%10.6f",,delimiter=',')
-
     def save_perturbative_cumulants(self,):
         """
         computes estiamtes of the perturbative cumulants and saves as a csv

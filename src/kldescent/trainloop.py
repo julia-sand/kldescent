@@ -31,14 +31,14 @@ def train_loop_du(epoch,
         trainer.scheduler2.step(metric_.actioncost)
         trainer.scheduler1.step()
         
-        #metric_.lr = trainer.scheduler2.get_last_lr()[0]
+        metric_.lr = trainer.scheduler2.get_last_lr()[0]
 
         if epoch % logstep == 0:
         
             #if epoch<trainer.milestone:
 
             #update metrics 
-            metric_.update_metrics(epoch, loss_out)
+            #metric_.update_metrics(epoch, loss_out)
             #else:
             #    pass
 
