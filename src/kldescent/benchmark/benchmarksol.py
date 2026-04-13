@@ -84,8 +84,8 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         """
         
         BaseBenchmarkSolution.__init__(self,bridge_type,boundary,folder_name)
-        #self.initialise_net(bridge_type)
-        self.du_net_benchmark = None
+        self.initialise_net(bridge_type)
+        #self.du_net_benchmark = None
 
     def initialise_net(self,bridge_type):
 

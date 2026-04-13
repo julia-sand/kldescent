@@ -8,4 +8,4 @@
 
 module load pytorch
 cd src
-python -m kldescent.benchmark.overdamped.computesol --folder="../../../../../scratch/project_2011332/BASELINE_NONLIN_M20" --weight=20 --boundary="UnderdampedLandauer" --cellxnum=8000 --celltnum=11 --usebenchmark=True
+python -m kldescent.benchmark.overdamped.computesol --folder="../../../../../scratch/project_2011332/BASELINE_NONLIN_M20_v2" --weight=20 --boundary="UnderdampedLandauer" --cellxnum=16000 --celltnum=11 --usebenchmark=True
