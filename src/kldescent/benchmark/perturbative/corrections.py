@@ -280,7 +280,49 @@ class MarginalHalfBridgePerturbation(Perturbation):
         """compute cross correllation"""
         return -self.epsilon*(self.little_bdot(t0)*self.little_a(self.Tf)/self.little_b(self.Tf)- self.little_adot(t0)) - (posmean*mommean)
 
-class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
+class FullBridgePerturbation(MarginalHalfBridgePerturbation):
+    """Functions for computing corrections from the cell problem for 
+    a full bridge transition between fixed endpoint data. 
+    Part of the corrections in the half bridge perturbation theory  
+
+    """
+
+    def __init__(self,):
+        super().__init__()
+
+        self.alpha = 1
+
+    def momvar(self,t0,t2):
+        return 0
+
+    def posvar(self,t0,t2,t2_idx):
+        """Compute position variance
+        args: 
+        t0 : fast time
+        t2 : slow time
+        t2_idx : index of t2
+        """
+
+        return 0
+
+    def mommean(self,t0,t2):
+        return 0
+
+    def posmean(self,t0,t2,t2_idx):
+        return 0
+
+    def xcorr(self,t0):
+
+        #Cross correlation
+        def script_k(t0):#varsigma dot
+        temp_vals = q_axis*rho_dsigma_alpha_rho(t0)
+        return -np.trapz(temp_vals,q_axis) - kappa(t0)*mean_t0(t0)
+
+        def cross_correlation(t0):
+        return epsilon*a(t0)*script_k(t0)/A
+
+
+class HalfBridgePerturbation(FullBridgePerturbation):
     """Class to contain the functions for computing perturbative 
     corrections from overdamped data for the Half Bridge:
     when the terminal cost is specified by the KL divergence between the 
@@ -364,28 +406,6 @@ class HalfBridgePerturbation(MarginalHalfBridgePerturbation):
     def kappa(self,f00,dv00):
         return 2*np.trapezoid(f00*dv00,self.qaxis)
         
-    def xcorr(self,t0,t2,posmean,mommean):
-        return 0 -(posmean*mommean)
-
-    def momvar(self,t0,t2):
-        return 0
-
-    def posvar(self,t0,t2,t2_idx):
-        """Compute position variance
-        args: 
-        t0 : fast time
-        t2 : slow time
-        t2_idx : index of t2
-        """
-
-        return 0
-
-    def mommean(self,t0,t2):
-        return 0
-
-    def posmean(self,t0,t2,t2_idx):
-        return 0
-
 if __name__=="__main__":
     from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution
     from kldescent.sde.boundary import *

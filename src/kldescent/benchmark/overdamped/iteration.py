@@ -47,8 +47,8 @@ class CellProblem():
 
         ######################################
         #parameters dependent on bridge type
-        self.B = self.bfun()
-        self.A = self.afun()
+        self.B = bfun(self.bridge_type,self.Tf)#self.bfun()
+        self.A = afun(self.bridge_type,self.Tf)
         self.beta = 1/np.sqrt(self.A)
 
         self.power = self.compute_power()
@@ -64,24 +64,6 @@ class CellProblem():
         self.psiT = np.ones_like(self.xhatphi) 
         self.xpsi = self.xhatphi 
 
-    def bfun(self):
-        
-        if self.bridge_type=="marginal":
-            return 1 - (1-np.exp(-self.Tf))*(3-np.exp(-self.Tf))/(2*self.Tf)
-        elif self.bridge_type =="half":
-            return -(np.tanh(self.Tf/2)/self.Tf)*((1-np.exp(-self.Tf))**2)/(1+4*np.exp(-self.Tf)+np.exp(-2*self.Tf))
-        else:
-            return 1 
-
-    def afun(self):
-        
-        if self.bridge_type=="marginal":
-            return (self.Tf - 1 + np.exp(-self.Tf))/self.Tf
-        elif self.bridge_type =="half":
-            return 1 + self.bfun() - 2*np.tanh(self.Tf/2)/self.Tf #-(-1 + (2*np.tanh(Tf/2)/Tf)-self.B)  
-        else:
-            return 1 
-
     def compute_power(self):
         if self.bridge_type =="marginal":
                          
@@ -91,22 +73,23 @@ class CellProblem():
        
             return 1
         elif self.bridge_type == "half":
-            self.alpha = ((1-np.sqrt(self.A))/(2*self.A))-self.M
-            return np.sqrt(self.A)/(1-np.sqrt(self.A)*self.alpha)
+            self.alpha = ((1-np.sqrt(self.A))/(2*np.sqrt(self.A))) - self.M #((1-np.sqrt(self.A))/(2*self.A))-self.M
+            return ((1+np.sqrt(self.A))/(2*np.sqrt(self.A))) + self.M
         else:  
             print("Bridge type not found. Default value used.")
             return 1
 
     def compute_boundary_value(self,xhatphi,hatphiT,psi0,xpsi):
         if self.bridge_type == "marginal":
-            return zchop(self.boundary.q_marginal_final_np(xhatphi)/hatphiT)
+            return np.nan_to_num(zchop(self.boundary.q_marginal_final_np(xhatphi)/hatphiT),posinf=0,neginf=0,nan=0)
         elif self.bridge_type == "full":
-            return zchop(self.boundary.q_marginal_final_np(xhatphi)/hatphiT)
+            return np.nan_to_num(zchop(self.boundary.q_marginal_final_np(xhatphi)/hatphiT),posinf=0,neginf=0,nan=0)
         elif self.bridge_type == "half":
             varkappa = self.compute_varkappa(hatphiT,psi0,xpsi)
             C = np.exp(self.constant_hboundary_exponent(xhatphi,varkappa))
-            return (hatphiT**self.alpha)*C*(self.boundary.q_marginal_final_np(xhatphi)**self.M)
-        
+            out = (hatphiT**self.alpha)*C*(self.boundary.q_marginal_final_np(xhatphi)**self.M)
+            return np.nan_to_num(out,posinf=0,neginf=0,nan=0)
+    
     def constant_hboundary_exponent(self,q,varkappa):
         """Compute the constant for the value function boundary condition
         """
@@ -180,7 +163,7 @@ class CellProblem():
             while iters < max_iters:
                 print("Iteration ",iters)
                 #compute psi0/phiT
-                psi0 = np.nan_to_num(self.compute_boundary_value(xhatphi,hatphiT,psi0,xpsi),posinf=0,neginf=0,nan=0)**self.power
+                psi0 = self.compute_boundary_value(xhatphi,hatphiT,psi0,xpsi)**self.power
 
                 #integrate psi to Tf
                 xpsi,psiT = integrator(xhatphi,psi0,self.Tf2,self.beta)
