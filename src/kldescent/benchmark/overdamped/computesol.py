@@ -12,6 +12,17 @@ def compute_rho(phi_t,hatphi_t):
     
     return phi_t*hatphi_t
 
+def compute_sigma(phi_t,A,B,bridge_type):
+    
+    with warnings.catch_warnings(): #ignore log(0) error as this is handled later
+        warnings.simplefilter("ignore") 
+        if bridge_type=="half":
+            
+            return -2*np.sqrt(A)*np.nan_to_num(np.log(phi_t),posinf=0,neginf=0,nan=0)
+        else:
+
+            return 0#-(A/B)*np.gradient(phi_t,q)/phi_t
+
 def compute_dV(q,hatphi_t,phi_t,A,B,bridge_type):
     
     with warnings.catch_warnings(): #ignore log(0) error as this is handled later
@@ -23,7 +34,7 @@ def compute_dV(q,hatphi_t,phi_t,A,B,bridge_type):
 
             term1 = -dphi_t/(np.sqrt(A)*phi_t)
             term2 = -B*np.sqrt(A)*np.trapezoid(hatphi_t*dphi_t,q)/(A*(A-B))
-            term3 = (hatphi_t*dphi_t + phi_t*dhatphi_t)*((1/np.sqrt(A))-1)/2
+            term3 = ((1/np.sqrt(A)) - 1)*(hatphi_t*dphi_t + phi_t*dhatphi_t)/(2*hatphi_t*phi_t)
             
             return np.nan_to_num(term1 + term2 + term3,posinf=0,neginf=0,nan=0)
         else:
@@ -73,7 +84,7 @@ def save_solution_in_time(cell,filename_full,integrator):
         
         arr_temp = np.column_stack((tvec[t]*np.ones(cell.num_samples),q,
                                         normalise(q,compute_rho(phi_t,hatphi_t)),
-                                        compute_dV(q,hatphi_t,phi_t,cell.A,cell.B,cell.bridge_type)))
+                                        compute_dsigma(q,hatphi_t,phi_t,cell.A,cell.B,cell.bridge_type)))
         
         arr_temp = zchop(arr_temp, tol=1e-6)
 
@@ -108,7 +119,7 @@ def compute_overdamped(boundary,save_location,bridge_type="half"):
     cell.iteration(integrator=mcintegrator,
                     max_iters=20)
 
-    filename_full = make_csv_and_header(save_location,filename="overdamped",header="#t,q,rho,dV")
+    filename_full = make_csv_and_header(save_location,filename="overdamped",header="#t,q,rho,sigma")
     save_solution_in_time(cell,
                                 filename_full,
                                 integrator=mcintegrator)

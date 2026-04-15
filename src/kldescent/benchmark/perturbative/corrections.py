@@ -27,7 +27,7 @@ class Perturbation():
 
         #size of convolution filter is 0.5pc of the datavector. 
         self.filter_delta = int(np.floor(self.xnum*0.05))
-
+        
     def initialise_mu_vecs(self):
 
         #compute muvec for cumulants 
@@ -51,10 +51,10 @@ class Perturbation():
 
         return round(t2/(self.epsilon**2),6)
 
-    def dv00(self,t2):
+    def sigma(self,t2):
         """fetch gradient of the value function at time t2"""
 
-        return np.squeeze(self.overdamped_arr[np.where(self.overdamped_arr[:,0]==t2),-1]) #dv00 
+        return np.squeeze(self.overdamped_arr[np.where(self.overdamped_arr[:,0]==t2),-1]) #sigma 
 
     def f00(self,t2):
         """fetch rho at time t2"""
@@ -151,6 +151,9 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
         Perturbation.__init__(self,boundary,overdamped_arr,ref_path)
 
+        self.B = bfun("marginal half",self.Tf)
+        self.A = afun("marginal half",self.Tf)
+    
         return
 
     def DU(self,t0,t2):
@@ -170,9 +173,6 @@ class MarginalHalfBridgePerturbation(Perturbation):
         idx = self.get_rhomask(t2)
 
         coeff = 1 - np.exp(t0-self.Tf)
-
-        #temp = np.zeros(self.xnum)
-        #temp = apply_filter(self.dv00(t2))
 
         return 0#2*coeff*temp
     
@@ -292,6 +292,9 @@ class FullBridgePerturbation(MarginalHalfBridgePerturbation):
 
         self.alpha = 1
 
+        self.B = bfun("full",self.Tf)
+        self.A = afun("full",self.Tf)
+    
     def momvar(self,t0,t2):
         return 0
 
@@ -312,17 +315,9 @@ class FullBridgePerturbation(MarginalHalfBridgePerturbation):
         return 0
 
     def xcorr(self,t0):
+        return 0
 
-        #Cross correlation
-        def script_k(t0):#varsigma dot
-        temp_vals = q_axis*rho_dsigma_alpha_rho(t0)
-        return -np.trapz(temp_vals,q_axis) - kappa(t0)*mean_t0(t0)
-
-        def cross_correlation(t0):
-        return epsilon*a(t0)*script_k(t0)/A
-
-
-class HalfBridgePerturbation(FullBridgePerturbation):
+class HalfBridgePerturbation(Perturbation):
     """Class to contain the functions for computing perturbative 
     corrections from overdamped data for the Half Bridge:
     when the terminal cost is specified by the KL divergence between the 
@@ -342,6 +337,9 @@ class HalfBridgePerturbation(FullBridgePerturbation):
 
         Perturbation.__init__(self,boundary,overdamped_arr,ref_path)
 
+        self.B = bfun("half",self.Tf)
+        self.A = afun("half",self.Tf)
+    
         return 
 
     def DU(self,t0,t2):
@@ -360,10 +358,14 @@ class HalfBridgePerturbation(FullBridgePerturbation):
         idx = self.get_rhomask(t2)
         
         f00 = self.fill_zeros(apply_filter(self.f00(t2)[idx],filter_delta=self.filter_delta),idx)
-        df00 = self.d_f00(idx,f00[idx])
-        dv00 = apply_filter(self.dv00(t2),filter_delta=self.filter_delta) 
         
+
+        df00 = self.d_f00(idx,f00[idx])
+        sigma = apply_filter(apply_filter(self.sigma(t2)[idx],filter_delta=self.filter_delta),idx)
+        dsigma = self.d_f00(idx,sigma[idx])
+
         kappa = self.kappa(f00,dv00)
+        
         f11_term1 = self.f11_term1(df00,f00,dv00)
         f11_term2 = self.f11_term2(df00,f00,dv00,kappa)
         
@@ -403,8 +405,9 @@ class HalfBridgePerturbation(FullBridgePerturbation):
     def dt_G12(self,t0):
         return 2*(np.exp(t0)-1)*np.exp(t0-2*self.Tf)/3 - 2*np.cosh(t0)/(3*(1+np.exp(self.Tf)))
 
-    def kappa(self,f00,dv00):
-        return 2*np.trapezoid(f00*dv00,self.qaxis)
+    def kappa(self,f00,dsigma):
+        return np.trapezoid(f00*dsigma,self.qaxis)/(self.A-self.B)
+        #2*np.trapezoid(f00*dv00,self.qaxis)
         
 if __name__=="__main__":
     from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution
@@ -418,13 +421,7 @@ if __name__=="__main__":
     #try:
     overdamped_arr = np.loadtxt(open(folder_name+"/overdamped.csv"),
                         delimiter=",",skiprows=1) 
-        #compute overdamped solution
-    #    compute_overdamped(boundary,
-    #                        folder_name,
-    #                        bridge_type="half")
-    #    overdamped_arr = np.loadtxt(open(folder_name+"/overdamped.csv"),
-    #                    delimiter=",",skiprows=1) 
-
+        
     #compute perturbative
     pertsol = HalfBridgePerturbation(boundary,overdamped_arr,folder_name)
     pertsol.save_perturbative()
