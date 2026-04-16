@@ -88,7 +88,26 @@ def plot_loss_metrics(folder):
   return
 
 
+def plot_lr_loss(folder):
+  
+  epoch,_,cost,_,_,_,lr = np.loadtxt(folder+"/loss.csv",delimiter=",",skiprows=1,unpack=True)  
+
+  fig, ax1 = plt.subplots()
+
+  # First line (left y-axis)
+  ax1.plot(epoch, cost, color='blue', label='Action cost')
+  ax1.set_ylabel('Action cost', color='blue')
+
+  # Second line (right y-axis)
+  ax2 = ax1.twinx()
+  ax2.plot(epoch, lr, color='red', label='Learning Rate')
+  ax2.set_ylabel('LR', color='red')
+
+  fig.savefig(folder+"/"+"lr_v_loss.png", bbox_inches='tight')
+
+
 if __name__=="__main__":
   update_mpl()
   folder = fetch_results_folder_from_cmd()
   plot_loss_metrics(folder)
+  plot_lr_loss(folder)

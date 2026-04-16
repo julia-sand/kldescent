@@ -198,7 +198,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
         coeff = 1 - np.exp(t0-self.Tf)
 
-        return 0#2*coeff*temp
+        return 0 #2*coeff*temp
     
     def f02_term2(self,idx,f00_arr):
         """Compute second deriv of f00_arr"""
@@ -358,14 +358,14 @@ class HalfBridgePerturbation(Perturbation):
     def f02(self,t0,f00,df00,dsigma,ddf00,ddsigma,kappa):
         
         term1 = (ddf00*(np.cosh(t0)-1))/(2*self.M*np.sinh(self.Tf))
-        coeff1_term2 = (self.B*(self.G110(t0)-(t0/self.Tf)*self.G110(self.Tf)))/self.A
-        coeff2_term2 = (self.A-self.B)*self.coeff_G111_G112()*(self.G114(t0)-(t0/self.Tf)*self.G114(self.Tf)+self.dt_G12(self.Tf)*(np.cosh(t0)-1)/(2*self.M*np.sinh(self.Tf)))
-        term2 = kappa*df00
-        coeff1_term34 = self.G110(t0)-(t0/self.Tf)*self.G110(self.Tf)
-        coeff2_term34 = -self.coeff_G111_G112()*(self.G114(t0)-(t0/self.Tf)*self.G114(self.Tf)+self.dt_G12(self.Tf)*(np.cosh(t0)-1)/(2*self.M*np.sinh(self.Tf)))
-        term3 = df00*dsigma + f00*ddsigma
-        term4 = np.sqrt(self.A)*ddf00
-        return term1 + (coeff1_term2 + coeff2_term2)*term2 + (coeff1_term34+coeff2_term34)*(term3+term4)
+        coeff1_term2 = self.G110(t0)-(t0/self.Tf)*self.G110(self.Tf)
+        coeff2_term2 = self.coeff_G111_G112()*(self.G114(t0)-(t0/self.Tf)*self.G114(self.Tf)+self.dt_G12(self.Tf)*(np.cosh(t0)-1)/(2*self.M*np.sinh(self.Tf)))
+        term2 = kappa*df00/self.A
+        coeff1_term34 = coeff1_term2#self.G110(t0)-(t0/self.Tf)*self.G110(self.Tf)
+        coeff2_term34 = -coeff2_term2#self.coeff_G111_G112()*(self.G114(t0)-(t0/self.Tf)*self.G114(self.Tf)+self.dt_G12(self.Tf)*(np.cosh(t0)-1)/(2*self.M*np.sinh(self.Tf)))
+        term3 = (df00*dsigma + f00*ddsigma)/self.A
+        term4 = ddf00/np.sqrt(self.A)
+        return term1 + (self.B*coeff1_term2 + (self.A-self.B)*coeff2_term2)*term2 + (coeff1_term34+coeff2_term34)*(term3+term4)
 
     def marginal_perturbative(self,t0,f00,df00,dsigma,ddf00,ddsigma,kappa):
         
@@ -402,7 +402,7 @@ class HalfBridgePerturbation(Perturbation):
     def f11(self,f11_term1,f11_term2,t0):
         return self.G11(t0)*f11_term1 + self.G12(t0)*f11_term2
      
-    def dt_f11(self,f11_term1,f11_term2,t0):
+    def df11(self,f11_term1,f11_term2,t0):
         return self.dt_G11(t0)*f11_term1 + self.dt_G12(t0)*f11_term2
         
     def d_v20_f00(self,df00,f00,dv00,kappa):
@@ -448,10 +448,33 @@ class HalfBridgePerturbation(Perturbation):
     def G114(self,t0):
         return ((np.exp(-self.Tf + t0)*(1-np.exp(-t0))**2)/12)*((2/(1+np.exp(-self.Tf)))-np.exp(-self.Tf+t0))
 
-    def momvar(self,t0,t2):
-        return 0
+    def momvar(self,t0,t2,t2_idx,f00,df00,ddf00,dsigma,ddsigma,kappa):
+            
+        # First term: 1
+        term1 = 1
 
-    def posvar(self,t0,t2,t2_idx):
+        # Second term: ε^2 * (self.G11(t0) - (self.G12(t0) * G_tf_111) / G_tf_112)^2 * ∫ dq f_tz_00 ( (1/√A) ∂_q ln f_tz_00 + (1/A) ∂_q σ_tz_00 )^2
+        integrand_1 = ddf00**2/f00 + 2*df00*ddsigma/self.A + (ddsigma/self.A)**2
+
+        integral_1 = np.trapezoid(integrand_1,self.qaxis)
+        term2 = self.epsilon**2 * (self.G11(t0) - self.coeff_G111_G112()*self.G12(t0))**2 * integral_1
+
+        integrand_2 = ddf00/np.sqrt(self.A) - (df00**2)/f00 + ddsigma/self.A
+        integral_2 = np.trapezoid(integrand_2,self.qaxis)
+
+        integral_3 = np.trapezoid(self.integrand_3(self.t2_vec[:t2_idx+1]/self.epsilon**2,t0),self.t2_vec[:t2_idx+1])
+
+        term3 = -self.epsilon**2 * integral_2 * integral_3
+
+        # Fourth term: -ε^2 * ((A - B)**2 * kappa**2) / A**2 * (self.G11(t0) - (self.G12(t0) * G_tf_111) / G_tf_112)**2
+        term4 = -(self.epsilon * (self.A - self.B) * kappa * (self.G11(t0) - self.G12(t0) *self.coeff_G111_G112())/self.A)**2
+
+        return term1 + term2 + term3 + term4
+
+    def integrand_3(self,s,t0):
+        return np.exp(-2 * (t0 - s)) * (self.G11(s) - self.coeff_G111_G112()*self.G12(s))
+
+    def posvar(self,t0,t2_idx):
         """Compute position variance
         
         args: 
@@ -460,7 +483,19 @@ class HalfBridgePerturbation(Perturbation):
             t2_idx : index of t2
         """
 
-        return 0
+        # First term: μ^{(2)}_{t_z} - (μ^{(2)}_{t_z})^2
+        term1 = self.mu_2_vec[t2_idx] - self.mu_1_vec[t2_idx]**2
+
+        # Second term: ε^2 * ∂_{t_z} [(μ^{(2)}_{t_z} - (μ^{(1)}_{t_z})^2) / A] * (G_to_10 - (t0 / self.Tf) * G_tf_10 - (G_tf_114 / G_tf_112) * (G_to_14 - (t0 / self.Tf) * G_tf_14 + (G_tf_dot_12 * (np.cosh(t0) - 1)) / (2 * M * np.sinh(self.Tf))))
+        term2 = (self.epsilon**2 / self.A) * (self.dmu_2_vec[t2_idx] - self.dmu_1_vec[t2_idx]**2) * (
+            self.G110(t0) - (t0 / self.Tf) * self.G110(self.Tf) - self.coeff_G111_G112() * (
+                self.G114(t0) - (t0 / self.Tf) * self.G114(self.Tf) + (self.dt_G12(self.Tf) * (np.cosh(t0) - 1)) / (2 * self.M * np.sinh(self.Tf))))
+
+        # Third term: (ε^2 / M) * (1 - (1 + G_tf_dot_11)) * ((np.cosh(t0) - 1) / np.sinh(self.Tf))
+        term3 = (self.epsilon**2 / self.M) * (np.cosh(t0) - 1) / np.sinh(self.Tf)
+
+        return term1 + term2 + term3
+
 
     def mommean(self,t0,kappa):
         return kappa*self.G11(t0)*self.epsilon**2
@@ -468,9 +503,26 @@ class HalfBridgePerturbation(Perturbation):
     def posmean(self,t0,t2,t2_idx,kappa):
         return self.mu_1_vec[t2_idx] - (self.G110(t0)-(t0/self.Tf)*self.G110(self.Tf))*kappa*self.epsilon**2
 
-    def xcorr(self,t0):
-        return 0
-    
+    def xcorr(self,t0,t2,t2_idx,kappa,f00,dsigma):
+            
+        # First term: (ε / A) * (self.G11(self.Tf) - (self.G12(self.Tf)^2 * self.G11(self.Tf)) / self.G12(self.Tf)) * (integral - sqrt(A) - (A - B) * self.mu_1_t2[t2_idx] * kappa)
+        integral_1 = np.trapezoid(f00*self.qaxis*dsigma,self.qaxis)
+        #quad(integrand_1, -np.inf, np.inf)
+        term1 = (self.epsilon / self.A) * (self.G11(t0) - self.G12(t0) * self.coeff_G111_G112()) * (integral_1 - np.sqrt(self.A) - (self.A - self.B) * self.mu_1_t2[t2_idx] * kappa)
+
+        # Second term: (ε * sinh(self.Tf)) / (2 * M * sinh(self.Tf))
+        term2 = (self.epsilon * np.sinh(t0)) / (2 * M * np.sinh(self.Tf))
+
+        # Third term: - (ε * self.G11(self.Tf)2 * self.G12(self.Tf)_dot / (2 * M * self.G12(self.Tf) * A)) * (kappa * (A - B) * self.mu_1_t2[t2_idx] - integral_1 + sqrt(A))
+        term3 = - (self.epsilon * self.dt_G12(self.Tf) * self.coeff_G111_G112()) / (2 * self.M * self.A) * (kappa * (self.A - self.B) * self.mu_1_t2[t2_idx] - integral_1 + np.sqrt(self.A)) * (np.sinh(t0) / np.sinh(self.Tf))
+
+        # Fourth term: -ε * (integral_3 - self.mu_1_t2[t2_idx] * integral_4) * (sinh(self.Tf) / sinh(self.Tf)) / (2 * M)
+        integral_3 = 0#quad(integrand_3, -np.inf, np.inf)
+        integral_4 = 0#quad(integrand_4, -np.inf, np.inf)
+        term4 = 0 #-self.epsilon * (integral_3 - self.mu_1_t2[t2_idx] * integral_4) * (np.sinh(self.Tf) / np.sinh(self.Tf)) / (2 * self.M)
+
+        return term1 + term2 + term3 
+        
     def save_perturbative_cumulants(self,):
         """
         computes estiamtes of the perturbative cumulants and saves as a csv
@@ -482,14 +534,13 @@ class HalfBridgePerturbation(Perturbation):
         #compute mu vectors in time. 
         self.compute_mu_vecs()
 
-        for t in range(len(self.t2vec)):
+        for t2_idx in range(len(self.t2vec)):
+                  
+            t0 = self.get_t0(self.t2vec[t2_idx])
+            t2 = self.t2vec[t2_idx]
+            idx = self.get_rhomask(t2)
             
-            
-            t0 = self.get_t0(self.t2vec[t])
-                
-            idx = self.get_rhomask(self.t2vec[t])
-            
-            f00 = self.fill_zeros(apply_filter(self.f00(self.t2vec[t])[idx],filter_delta=self.filter_delta),idx)
+            f00 = self.fill_zeros(apply_filter(self.f00(t2)[idx],filter_delta=self.filter_delta),idx)
             df00 = self.d_f00(idx,f00[idx])
             ddf00 = self.d_f00(idx,df00[idx])
             
@@ -499,12 +550,12 @@ class HalfBridgePerturbation(Perturbation):
 
             kappa = self.kappa(f00,dsigma)
 
-            pertcumulants[t,0] = self.get_t0(self.t2vec[t])
-            pertcumulants[t,1] = self.posmean(self.get_t0(self.t2vec[t]),self.t2vec[t],t,kappa)
-            pertcumulants[t,2] = self.mommean(self.get_t0(self.t2vec[t]),self.t2vec[t])
-            pertcumulants[t,3] = self.posvar(self.get_t0(self.t2vec[t]),self.t2vec[t],t)
-            pertcumulants[t,4] = self.momvar(self.get_t0(self.t2vec[t]),self.t2vec[t])
-            pertcumulants[t,5] = self.xcorr(self.get_t0(self.t2vec[t]))#,self.t2vec[t],pertcumulants[t,1],pertcumulants[t,2])
+            pertcumulants[t,0] = self.get_t0(t2)
+            pertcumulants[t,1] = self.posmean(t0,t2,t2_idx,kappa)
+            pertcumulants[t,2] = self.mommean(t0,kappa)
+            pertcumulants[t,3] = self.posvar(t0,t2_idx)
+            pertcumulants[t,4] = self.momvar(t0,t2,t2_idx,f00,df00,ddf00,dsigma,ddsigma,kappa)
+            pertcumulants[t,5] = self.xcorr(t0,t2,t2_idx,kappa,f00,dsigma)#,self.t2vec[t],pertcumulants[t,1],pertcumulants[t,2])
 
         #save pertsol 
         np.savetxt(self.ref_path+"/perturbative_cumulants.csv",pertcumulants,fmt="%10.6f",header = "t0,posmean,mommean,posvar,momvar,xcorr",delimiter=',')

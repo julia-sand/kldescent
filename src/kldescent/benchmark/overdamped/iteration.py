@@ -116,14 +116,14 @@ class CellProblem():
         return np.mean((x-y)**2)
 
     def set_new_iterates(self,xhatphi,xpsi,hatphiT,psiT,hatphi0,psi0):
-        self.xhatphi = zchop(xhatphi)
-        self.xpsi = zchop(xpsi) 
-        self.hatphiT = zchop(hatphiT)
-        self.psiT = zchop(psiT)
-        self.hatphi0 = zchop(hatphi0)
-        self.psi0 = zchop(psi0)
+        
+        self.xhatphi = zchop(np.nan_to_num(xhatphi,posinf=0,neginf=0,nan=0))
+        self.xpsi = zchop(np.nan_to_num(xpsi,posinf=0,neginf=0,nan=0))
+        self.hatphiT = zchop(np.nan_to_num(hatphiT,posinf=0,neginf=0,nan=0))
+        self.psiT = zchop(np.nan_to_num(psiT,posinf=0,neginf=0,nan=0))
+        self.hatphi0 = zchop(np.nan_to_num(hatphi0,posinf=0,neginf=0,nan=0))
+        self.psi0 = zchop(np.nan_to_num(psi0,posinf=0,neginf=0,nan=0))
     
-
     def iteration(self,integrator,
                         tol=1e-5,
                         max_iters=30):

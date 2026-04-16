@@ -476,15 +476,16 @@ def plot_data(benchmark_,quantity,data):
     eps = benchmark_.boundary.params["epsilon"]
     for time in enumerate(times):
         q, ptq = benchmark_.get_benchmark_quantity(time[1], quantity, data=data,time_type="t2")
-        axs[time[0]].plot(q,ptq)
+        axs[time[0]].plot(q,ptq,label="Benchmark data")
     
         axs[time[0]].set_title(f"t={time[1]}")
 
         axs[time[0]].set_xlim((-5,5))
         if quantity == "underdamped drift":
-            du_net = -(2**0.5/eps)*benchmark_evaluate_net(benchmark_.du_net_benchmark,q,time[1]/eps**2)
-            axs[time[0]].plot(q,du_net)
+            du_net = -(2**0.5/eps)*benchmark_evaluate_net(benchmark_.du_net_benchmark,q,time[1])
+            axs[time[0]].plot(q,du_net, label="NN interpolation")
 
+    fig.legend()
     fig.tight_layout()
 
     fig.savefig(benchmark_.folder_name+f"/{data}_{quantity}.png",bbox_inches="tight")        
@@ -495,6 +496,8 @@ if __name__=="__main__":
 
     import matplotlib.pyplot as plt
     
+    update_mpl()
+
     boundary = UnderdampedLandauer()
     benchmark_ = PerturbativeBenchmarkSolution(boundary=boundary,
                         folder_name=fetch_results_folder_from_cmd())

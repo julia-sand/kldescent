@@ -80,7 +80,8 @@ def save_solution_in_time(cell,filename_full,integrator):
         #apply convolution filters for smoothing
         #phi_t = apply_filter(phi_t)
         #hatphi_t = apply_filter(hatphi_t)
-        
+        phi_t = np.nan_to_num(phi_t,posinf=0,neginf=0,nan=0)
+        hatphi_t = np.nan_to_num(hatphi_t,posinf=0,neginf=0,nan=0)
         arr_temp = np.column_stack((tvec[t]*np.ones(cell.num_samples),q,
                                         normalise(q,compute_rho(phi_t,hatphi_t)),
                                         compute_sigma(phi_t,cell.A,cell.bridge_type)))

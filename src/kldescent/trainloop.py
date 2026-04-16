@@ -1,8 +1,6 @@
 from kldescent.viz.checkpoint_plots import PlotUtils
 from kldescent.model.nn import save_nn_checkpoint
 
-batches = 5
-
 def train_loop_du(epoch,
                     metric_,
                     terminal_cost,
@@ -26,19 +24,21 @@ def train_loop_du(epoch,
         #    metric_.lr = trainer.scheduler1.get_last_lr()[0]
         #else:
         
-        metric_.update_metrics(epoch, loss_out)
         
-        trainer.scheduler2.step(metric_.actioncost)
         trainer.scheduler1.step()
-        
-        metric_.lr = trainer.scheduler2.get_last_lr()[0]
+        trainer.scheduler2.step()
+
+        metric_.lr = trainer.scheduler1.get_last_lr()[0]
 
         if epoch % logstep == 0:
         
-            #if epoch<trainer.milestone:
-
+            #if epoch<trainer.start_decay:
+        
+            #trainer.scheduler2.step(metric_.actioncost)
+            
             #update metrics 
-            #metric_.update_metrics(epoch, loss_out)
+            metric_.update_metrics(epoch, loss_out)
+           
             #else:
             #    pass
 
