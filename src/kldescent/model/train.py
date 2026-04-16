@@ -33,12 +33,12 @@ class Train():
         self.optimiser_feedforward = torch.optim.AdamW(self.net.FeedForwardLayers.parameters(),
                                                         lr=2.5e-4,
                                                         betas=(0.9, 0.999),
-                                                        eps=1e-8,
+                                                        eps=1e-7,
                                                         weight_decay=5e-4
                                                     )
         
         #AdamW(self.net.parameters(), lr=self.lr, weight_decay=5e-4)
-        self.optimiser_fourier = AdamW(self.net.FourierFeatures.parameters(), lr=0.001)
+        self.optimiser_fourier = AdamW(self.net.FourierFeatures.parameters(), lr=0.0001)
 
         self.milestone = 200 #how often to decay learning rate
         self.start_decay = 20 #when to start decaying learning rate 
@@ -47,11 +47,11 @@ class Train():
         self.scheduler1 = CosineAnnealingLR(self.optimiser_feedforward,
                                                 T_max=200,
                                                 eta_min=1e-5)             
-    #CosineAnnealingLR(self.optimiser_fourier, 
-    #                                    T_max=120, eta_min=1e-5)
+        #CosineAnnealingLR(self.optimiser_fourier, 
+        #                                    T_max=120, eta_min=1e-5)
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
         self.scheduler2 = CosineAnnealingLR(self.optimiser_fourier, 
-                                        T_max=120, eta_min=1e-5) #ReduceLROnPlateau(self.optimiser_feedforward,
+                                        T_max=200, eta_min=1e-5) #ReduceLROnPlateau(self.optimiser_feedforward,
                           #                  mode="min",
                           #                  factor=0.9,
                           #                  patience=1, #how many steps to wait before 

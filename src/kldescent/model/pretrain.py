@@ -33,11 +33,11 @@ class Pretrain():
 
         #set defaults of training process
         self.lr = 0.0001 #initial learning rate
-        self.gamma = 0.1 #decay rate of learning rate
+        self.gamma = 0.9 #decay rate of learning rate
         self.milestone = 1000 #frequency of learning rate decay (in epochs)
-        self.n_epochs = 10 #total number of epochs
+        self.n_epochs = 10000 #total number of epochs
 
-        self.minibatch_samples = 512 #number of datarows to use per parameter update
+        self.minibatch_samples = 128 #number of datarows to use per parameter update
 
         self.clip = 0.1 #size of gradient clipping
 
@@ -83,7 +83,7 @@ class Pretrain():
                 left hand side of (**) 
         """
 
-        X[:,0] /= self.epsilon**2 #get t0 from t2
+        #X[:,0] /= self.epsilon**2 #get t0 from t2
         y *= (-(self.epsilon/(2**0.5))) #transformation (**)
         
         return X,y 
@@ -119,7 +119,7 @@ class Pretrain():
                 scheduler.step()
                 with torch.no_grad():    
                     net.eval()
-                    #print(f'Finished epoch {epoch}, loss {loss}')
+                    print(f'Finished epoch {epoch}, loss {loss}')
                     self.plot_training_process_drift(X.clone(),y.clone(),net,epoch)
                 net.train()
 
@@ -127,9 +127,9 @@ class Pretrain():
     def plot_training_process_drift(self,X,y,net,epoch):
         import matplotlib.pyplot as plt
         net.eval()
-        plt.scatter(net(X[X[:,0]==5,:]).cpu().numpy().flatten(),y[X[:,0]==5].cpu().numpy().flatten())
-        #plt.plot(X[X[:,0]==5,1].cpu().numpy().flatten(),y[X[:,0]==5].cpu().numpy().flatten())
-        #plt.plot(X[X[:,0]==5,1].cpu().numpy().flatten(),net(X[X[:,0]==5,:]).cpu().numpy().flatten())
+        #plt.scatter(net(X[X[:,0]==5,:]).cpu().numpy().flatten(),y[X[:,0]==5].cpu().numpy().flatten())
+        plt.plot(X[X[:,0]==5,1].cpu().numpy().flatten(),y[X[:,0]==5].cpu().numpy().flatten())
+        plt.plot(X[X[:,0]==5,1].cpu().numpy().flatten(),net(X[X[:,0]==5,:]).cpu().numpy().flatten())
         #plt.ylim((-5,5))
         plt.savefig(f"training_{epoch}_.png")
         plt.close("all")
