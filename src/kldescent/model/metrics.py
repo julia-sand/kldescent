@@ -90,7 +90,7 @@ class Metrics():
 
                 kl_dynamic,xinit,xref = self.integrator.compute_metrics(self.benchmark_)
 
-                kl_static_from_ref,kl_static = static_kl_divergence(xinit,xref,self.integrator.boundary)
+                kl_static_from_ref,kl_static =0,0# static_kl_divergence(xinit,xref,self.integrator.boundary)
                 self.actioncost = kl_dynamic + self.integrator.boundary.params["weight"]*kl_static_from_ref
                 if self.wandb_run is not None:
                     self.wandb_run.log({"dynamickl": kl_dynamic, 

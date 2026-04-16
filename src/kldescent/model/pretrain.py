@@ -35,7 +35,7 @@ class Pretrain():
         self.lr = 0.0001 #initial learning rate
         self.gamma = 0.1 #decay rate of learning rate
         self.milestone = 1000 #frequency of learning rate decay (in epochs)
-        self.n_epochs = 60000 #total number of epochs
+        self.n_epochs = 10 #total number of epochs
 
         self.minibatch_samples = 512 #number of datarows to use per parameter update
 

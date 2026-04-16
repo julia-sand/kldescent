@@ -21,46 +21,59 @@ class Train():
     def __init__(self, net, integrator):
 
         #set defaults of training process
-        self.lr = 0.0005 #initial learning rate
+        self.lr = 2.5e-4
+        #0.0005 #initial learning rate
         self.integrator = integrator
         self.net = net
 
         self.gamma = 0.1 #rate of learning rate decrease.
 
-        self.clip = 0.001 #gradient clipping
+        self.clip = 0.5 #gradient clipping
 
-        self.optimiser_feedforward = AdamW(self.net.parameters(), lr=self.lr, weight_decay=1e-3)
-        self.optimiser_fourier = AdamW(self.net.FourierFeatures.parameters(), lr=0.01)
+        self.optimiser_feedforward = torch.optim.AdamW(self.net.FeedForwardLayers.parameters(),
+                                                        lr=2.5e-4,
+                                                        betas=(0.9, 0.999),
+                                                        eps=1e-8,
+                                                        weight_decay=5e-4
+                                                    )
+        
+        #AdamW(self.net.parameters(), lr=self.lr, weight_decay=5e-4)
+        self.optimiser_fourier = AdamW(self.net.FourierFeatures.parameters(), lr=0.001)
 
-        self.milestone = 400 #how often to decay learning rate
+        self.milestone = 200 #how often to decay learning rate
+        self.start_decay = 20 #when to start decaying learning rate 
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
-        self.scheduler1 = CosineAnnealingLR(self.optimiser_fourier, 
-                                        T_max=100, eta_min=1e-10)
+        self.scheduler1 = CosineAnnealingLR(self.optimiser_feedforward,
+                                                T_max=200,
+                                                eta_min=1e-5)             
+    #CosineAnnealingLR(self.optimiser_fourier, 
+    #                                    T_max=120, eta_min=1e-5)
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
-        self.scheduler2 = ReduceLROnPlateau(self.optimiser_feedforward,
-                                            mode="min",
-                                            factor=0.9,
-                                            patience=1, #how many steps to wait before 
-                                            eps=1e-8,
-                                            cooldown=5) #Decays the learning rate based on a passed metric
+        self.scheduler2 = CosineAnnealingLR(self.optimiser_fourier, 
+                                        T_max=120, eta_min=1e-5) #ReduceLROnPlateau(self.optimiser_feedforward,
+                          #                  mode="min",
+                          #                  factor=0.9,
+                          #                  patience=1, #how many steps to wait before 
+                          #                  eps=1e-8,
+                          #                  cooldown=5) #Decays the learning rate based on a passed metric
         
     def train_step(self):  
         
         self.net.train() #set neural net into train mode
 
-        #reset gradients 
-        self.optimiser_feedforward.zero_grad()
-        self.optimiser_fourier.zero_grad()
         
         Lhat = self.integrator.loss_fn()
-        #clip_grad_norm_(self.net.parameters(), self.clip)
 
         ##training##
         Lhat.backward()
-
+        clip_grad_norm_(self.net.FeedForwardLayers.parameters(), 0.5)
         self.optimiser_feedforward.step()
         self.optimiser_fourier.step()
+
+        #reset gradients 
+        self.optimiser_feedforward.zero_grad()
+        self.optimiser_fourier.zero_grad()
 
         return Lhat.detach().cpu().numpy()
 
