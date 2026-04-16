@@ -138,7 +138,7 @@ def boundary_params():
     boundary_params.add_argument('-epsilon','--epsilon', type=float, default=0.2,
                         help='constant')
 
-    boundary_params.add_argument('-weight','--weight', type=float, default=1,
+    boundary_params.add_argument('-weight','--weight', type=float, default=20,
                         help='M, baldovin constant')
 
     boundary_params.add_argument('-g','--g', type=float, default=0,

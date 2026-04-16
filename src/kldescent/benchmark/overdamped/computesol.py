@@ -7,12 +7,11 @@ from kldescent.benchmark.heatintegrators import *
 from kldescent.benchmark.overdamped.iteration import CellProblem
 from kldescent.benchmark.utilfunctions import * 
 
-
 def compute_rho(phi_t,hatphi_t):
     
     return phi_t*hatphi_t
 
-def compute_sigma(phi_t,A,B,bridge_type):
+def compute_sigma(phi_t,A,bridge_type):
     
     with warnings.catch_warnings(): #ignore log(0) error as this is handled later
         warnings.simplefilter("ignore") 
@@ -84,7 +83,7 @@ def save_solution_in_time(cell,filename_full,integrator):
         
         arr_temp = np.column_stack((tvec[t]*np.ones(cell.num_samples),q,
                                         normalise(q,compute_rho(phi_t,hatphi_t)),
-                                        compute_dsigma(q,hatphi_t,phi_t,cell.A,cell.B,cell.bridge_type)))
+                                        compute_sigma(phi_t,cell.A,cell.bridge_type)))
         
         arr_temp = zchop(arr_temp, tol=1e-6)
 

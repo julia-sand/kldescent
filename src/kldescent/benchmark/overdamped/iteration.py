@@ -74,7 +74,7 @@ class CellProblem():
             return 1
         elif self.bridge_type == "half":
             self.alpha = ((1-np.sqrt(self.A))/(2*np.sqrt(self.A))) - self.M #((1-np.sqrt(self.A))/(2*self.A))-self.M
-            return ((1+np.sqrt(self.A))/(2*np.sqrt(self.A))) + self.M
+            return 1/(((1+np.sqrt(self.A))/(2*np.sqrt(self.A))) + self.M)
         else:  
             print("Bridge type not found. Default value used.")
             return 1
