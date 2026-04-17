@@ -47,7 +47,7 @@ class CellProblem():
 
         ######################################
         #parameters dependent on bridge type
-        self.B = bfun(self.bridge_type,self.Tf)#self.bfun()
+        self.B = bfun(self.bridge_type,self.Tf) #self.bfun()
         self.A = afun(self.bridge_type,self.Tf)
         self.beta = 1/np.sqrt(self.A)
 
@@ -69,10 +69,10 @@ class CellProblem():
                          
             return (self.M*self.B)/(self.A+self.M*self.B)
         elif self.bridge_type == "full":
-            #to be updated 
-       
+        
             return 1
         elif self.bridge_type == "half":
+        
             self.alpha = ((1-np.sqrt(self.A))/(2*np.sqrt(self.A))) - self.M #((1-np.sqrt(self.A))/(2*self.A))-self.M
             return 1/(((1+np.sqrt(self.A))/(2*np.sqrt(self.A))) + self.M)
         else:  
@@ -125,7 +125,7 @@ class CellProblem():
         self.psi0 = zchop(np.nan_to_num(psi0,posinf=0,neginf=0,nan=0))
     
     def iteration(self,integrator,
-                        tol=1e-5,
+                        tol=1e-8,
                         max_iters=30):
         """
         Implementation of Iteration in 1912.01244
@@ -165,11 +165,15 @@ class CellProblem():
                 #compute psi0/phiT
                 psi0 = self.compute_boundary_value(xhatphi,hatphiT,psi0,xpsi)**self.power
 
+                #normalise
+                psi0 = normalise(psi0,xpsi)
+
                 #integrate psi to Tf
                 xpsi,psiT = integrator(xhatphi,psi0,self.Tf2,self.beta)
 
                 #compute hatphi0 
                 hatphi0 = np.nan_to_num(zchop(self.boundary.q_marginal_initial_np(xpsi)/psiT),posinf=0,neginf=0,nan=0)
+                hatphi0 = normalise(hatphi0,xpsi)
 
                 #integrate phihat to Tf
                 xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
@@ -192,7 +196,7 @@ class CellProblem():
 
     def plot_factors_HATPHI(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
 
-        plt.scatter(xpsi,hatphiT, label="t=T")
+        plt.scatter(self.xpsi,self.hatphiT, label="t=T")
 
         plt.legend()
         plt.savefig(self.save_location+f"/factors0_hatphi_{iters}.png")
@@ -201,8 +205,8 @@ class CellProblem():
     def plot_factors_PHI(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
         
         
-        plt.scatter(xhatphi,psi0, label="t=0",zorder=100)
-        plt.scatter(xpsi,psiT, label="t=T",zorder=100)
+        plt.scatter(self.xhatphi,self.psi0, label="t=0",zorder=100)
+        plt.scatter(self.xpsi,self.psiT, label="t=T",zorder=100)
 
         plt.legend()
         plt.savefig(self.save_location+f"/factors_phi_{iters}.png")
@@ -210,8 +214,8 @@ class CellProblem():
 
     def plot_boundary(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
         
-        rhoT = interpolate_(self.q,xpsi,hatphiT)*interpolate_(self.q,xhatphi,psi0)
-        rho0 = interpolate_(self.q,xpsi,hatphi0)*interpolate_(self.q,xhatphi,psiT) #interpolate_(self.q,xhatphi,hatphi0)*interpolate_(self.q,xpsi,psiT)
+        rhoT = interpolate_(self.q,self.xpsi,self.hatphiT)*interpolate_(self.q,self.xhatphi,self.psi0)
+        rho0 = interpolate_(self.q,self.xpsi,self.hatphi0)*interpolate_(self.q,self.xhatphi,self.psiT) #interpolate_(self.q,xhatphi,hatphi0)*interpolate_(self.q,xpsi,psiT)
         
         plt.plot(self.q,normalise(self.q,rhoT), label="rhoT")
         plt.plot(self.q,normalise(self.q,rho0), label="rho0")

@@ -467,7 +467,9 @@ def plot_benchmark_drift(benchmark_):
 
 def plot_data(benchmark_,quantity,data):
     
-    times = [0,0.06,0.12,0.2]
+    times = benchmark_.get_timegrid()
+    
+    #[0,0.06,0.12,0.2]
 
     fig,axs = plt.subplots(ncols=len(times),nrows=1)
     fig.set_figheight(15)
@@ -493,13 +495,16 @@ def plot_data(benchmark_,quantity,data):
 if __name__=="__main__":
     from kldescent.sde.boundary import *
     from kldescent.utils.parser import fetch_results_folder_from_cmd
+    from kldescent.utils.parser import overdamped_argparser
 
     import matplotlib.pyplot as plt
     
     update_mpl()
 
+    bridgetype = overdamped_argparser()["bridgetype"]
+
     boundary = UnderdampedLandauer()
-    benchmark_ = PerturbativeBenchmarkSolution(boundary=boundary,
+    benchmark_ = PerturbativeBenchmarkSolution(bridge_type=bridgetype,boundary=boundary,
                         folder_name=fetch_results_folder_from_cmd())
     
     plot_data(benchmark_,quantity="value",data="overdamped")
