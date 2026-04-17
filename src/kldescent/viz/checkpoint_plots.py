@@ -14,7 +14,7 @@ from kldescent.utils.getboundary import init_params_from_file
 from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmarkSolution
 
 from kldescent.viz.plots import *
-from kldescent.viz.cumulants import plot_cumulants
+from kldescent.viz.cumulants import plot_cumulants,load_cumulant_csvs
 from kldescent.viz.drift import plot_drift
 from kldescent.viz.distribution_plots import marginal_distribution,make_marginal_distribution_fig
 
@@ -235,10 +235,10 @@ class PlotUtils():
         fig = make_marginal_distribution_fig([xinit,xref],final_plot_time,benchmark=self.benchmark)
         save_fig_(fig,f"marginal_time_{final_plot_time}",loc=self.resultsdir)
         
-        self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples,
+        self.make_cumulant_plot(t_vec,t_vec,cumulants_nn,cumulants_ref,mcsamples,
                                         add_free_diffusion=False,)
         if usebenchmark:
-            self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref)
+            self.make_cumulant_error_plot(t_vec,t_vec,cumulants_nn,cumulants_ref)
         
         plt.close("all")
     
@@ -546,26 +546,16 @@ class PlotUtils():
 
         return zchop(np.abs(test_vec-ref_vec)**2)/np.maximum(np.abs(ref_vec),np.abs(test_vec))
 
-    def load_cumulant_csvs(self,):
-        """return tvec, nn cumulants and benchmark cumulants from csvs"""
-
-        cumulants_nn = np.loadtxt(open(self.resultsdir+"/cumulants.csv"),
-                        delimiter=",",skiprows=1) 
-        cumulants_ref = np.loadtxt(open(self.resultsdir+"/ref_cumulants.csv"),
-                        delimiter=",",skiprows=1)
-
-        return cumulants_nn[:,0],cumulants_nn[:,1:],cumulants_ref[:,1:]
-    
     def make_cumulant_error_plot_from_csv(self,):
         #mcsamples = self.data_loaded["testsamples"]
-        t_vec,cumulants_nn,cumulants_ref = self.load_cumulant_csvs()
-        self.make_cumulant_plot(t_vec,cumulants_nn,cumulants_ref,mcsamples=0)
-        self.make_cumulant_error_plot(t_vec,cumulants_nn,cumulants_ref)
+        t_vec1,t_vec2,cumulants_nn,cumulants_ref = load_cumulant_csvs(folder=self.resultsdir)
+        self.make_cumulant_plot(t_vec1,t_vec2,cumulants_nn,cumulants_ref,mcsamples=0)
+        self.make_cumulant_error_plot(t_vec1,t_vec2,cumulants_nn,cumulants_ref)
 
-    def make_cumulant_error_plot(self,t_vec,cumulants_nn,cumulants_ref):    
+    def make_cumulant_error_plot(self,t_vec1,t_vec2,cumulants_nn,cumulants_ref):    
         l1_err = self.l1_error(cumulants_nn,cumulants_ref)
         l2_err = self.l2_error(cumulants_nn,cumulants_ref)
-        fig = plot_cumulants(t_vec,[l1_err,l2_err],
+        fig = plot_cumulants(t_vec1,t_vec2,[l1_err,l2_err],
                                                         ["Relative L1","Relative L2"],
                                                         0,
                                                         benchmark=None,
@@ -599,12 +589,12 @@ class PlotUtils():
         print("L2 = ",np.trapezoid(l2_errs,t_vec))
         save_fig_(fig,"drift_errors",loc=self.resultsdir)
 
-    def make_cumulant_plot(self,t_vec,cumulants_nn,cumulants_ref,
+    def make_cumulant_plot(self,t_vec1,t_vec2,cumulants_nn,cumulants_ref,
                             mcsamples,
                             add_free_diffusion=False):
 
         #cumulant figs and csv 
-        fig = plot_cumulants(t_vec,[cumulants_nn,cumulants_ref],
+        fig = plot_cumulants(t_vec1,t_vec2,[cumulants_nn,cumulants_ref],
                                                 ["NN estimated","Benchmark"],
                                                 mcsamples,
                                                 self.benchmark,

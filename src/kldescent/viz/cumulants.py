@@ -6,6 +6,20 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np 
 
+from kldescent.viz.plots import save_fig_ 
+
+def load_cumulant_csvs(folder):
+    """return tvec, nn cumulants and benchmark cumulants from csvs"""
+
+    cumulants_nn = np.loadtxt(open(folder+"/cumulants.csv"),
+                    delimiter=",",skiprows=1) 
+    cumulants_ref = np.loadtxt(open(folder+"/ref_cumulants.csv"),
+                    delimiter=",",skiprows=1)
+
+    return cumulants_nn[:,0],cumulants_ref[:,0],cumulants_nn[:,1:],cumulants_ref[:,1:]
+
+
+
 def make_fig_gridspec(nrows=2,ncols=6):
 
     #Plotting the cumulants
@@ -83,7 +97,7 @@ def make_cumulant_subplot(ax,#gs_location,
 
     try:
       ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr,alpha=0.8)
-    except UnboundLocalError: #if mcsamples set to 0, skip the error bars
+    except: #if mcsamples set to 0, skip the error bars
       pass
 
     color = ax.lines[-1].get_color()
@@ -124,7 +138,7 @@ def add_freediffusion_cumulants_subplot(ax,#gs_location,
         index = 4 
         plot_free_diffusion_sol(ax,t_vec,cross_correlation_free_diffusion(t_vec,cumulants_ref_plot[0,2],cumulants_ref_plot[0,3],epsilon))
        
-def plot_cumulants(t_vec,cumulants,labels,test_samples,
+def plot_cumulants(t_vec1,t_vec2,cumulants,labels,test_samples,
                       benchmark=None,
                       add_free_diffusion=False,
                       epsilon=None):
@@ -160,14 +174,14 @@ def plot_cumulants(t_vec,cumulants,labels,test_samples,
 
     for ax, cumulant in zip(axs,enumerate(cumulant_names)):
 
-        for cumulant_vec,legend_label in zip(cumulants,labels):
+        for t_vec,cumulant_vec,legend_label in zip([t_vec1,t_vec2],cumulants,labels):
 
             make_cumulant_subplot(ax,cumulant[1],
                                           t_vec,cumulant_vec,legend_label,
                                           test_samples)
       
         if add_free_diffusion:
-            assert epsilon is not None #check that epsilon is passed correctly
+            assert epsilon is not None, "No value of epsilon given. Plots interrupted." #check that epsilon is passed correctly
             add_freediffusion_cumulants_subplot(ax,cumulant[1],t_vec,cumulant_vec,epsilon) 
 
         if benchmark is not None:
@@ -193,3 +207,22 @@ def plot_cumulants(t_vec,cumulants,labels,test_samples,
     
     return fig1
 
+if __name__=="__main__":
+  from kldescent.utils.parser import fetch_results_folder_from_cmd
+
+  folder = fetch_results_folder_from_cmd()
+  
+  t_vec1,t_vec2,cumulants_nn,cumulants_ref = load_cumulant_csvs(folder)
+
+  #cumulant figs and csv 
+  fig = plot_cumulants(t_vec1,t_vec2,[cumulants_nn,cumulants_ref],
+                                        ["NN estimated","Benchmark"],
+                                        0,
+                                        benchmark=None,
+                                        add_free_diffusion=True,
+                                        epsilon=0.2)
+
+  save_fig_(fig,"cumulants1",loc=folder)
+  #save_cumulants_csv(t_vec,cumulants_nn,loc=self.resultsdir)
+  #save_cumulants_csv(t_vec,cumulants_ref,loc=self.resultsdir,cumulants_filename="ref_cumulants")
+  plt.close("all")

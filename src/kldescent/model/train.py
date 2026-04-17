@@ -30,38 +30,26 @@ class Train():
 
         self.clip = 0.5 #gradient clipping
 
-        self.optimiser_feedforward = torch.optim.AdamW(self.net.FeedForwardLayers.parameters(),
-                                                        lr=2.5e-4,
-                                                        betas=(0.9, 0.999),
-                                                        eps=1e-7,
-                                                        weight_decay=5e-4
-                                                    )
-        
-        #AdamW(self.net.parameters(), lr=self.lr, weight_decay=5e-4)
-        self.optimiser_fourier = AdamW(self.net.FourierFeatures.parameters(), lr=0.0001)
+        self.optimiser_feedforward = AdamW(self.net.parameters(), lr=self.lr, weight_decay=1e-3)
+        self.optimiser_fourier = AdamW(self.net.FourierFeatures.parameters(), lr=0.01)
 
         self.milestone = 200 #how often to decay learning rate
         self.start_decay = 20 #when to start decaying learning rate 
-
+        
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
-        self.scheduler1 = CosineAnnealingLR(self.optimiser_feedforward,
-                                                T_max=200,
-                                                eta_min=1e-5)             
-        #CosineAnnealingLR(self.optimiser_fourier, 
-        #                                    T_max=120, eta_min=1e-5)
+        self.scheduler1 = CosineAnnealingLR(self.optimiser_fourier, 
+                                        T_max=100, eta_min=1e-10)
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
-        self.scheduler2 = CosineAnnealingLR(self.optimiser_fourier, 
-                                        T_max=200, eta_min=1e-5) #ReduceLROnPlateau(self.optimiser_feedforward,
-                          #                  mode="min",
-                          #                  factor=0.9,
-                          #                  patience=1, #how many steps to wait before 
-                          #                  eps=1e-8,
-                          #                  cooldown=5) #Decays the learning rate based on a passed metric
+        self.scheduler2 = ReduceLROnPlateau(self.optimiser_feedforward,
+                                            mode="min",
+                                            factor=0.9,
+                                            patience=1, #how many steps to wait before 
+                                            eps=1e-8,
+                                            cooldown=3) #Decays the learning rate based on a passed metric
         
     def train_step(self):  
         
         self.net.train() #set neural net into train mode
-
         
         Lhat = self.integrator.loss_fn()
 

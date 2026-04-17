@@ -26,19 +26,19 @@ def train_loop_du(epoch,
         
         
         trainer.scheduler1.step()
-        trainer.scheduler2.step()
+        #trainer.scheduler2.step()
 
-        metric_.lr = trainer.scheduler1.get_last_lr()[0]
+        if epoch>trainer.start_decay:
+    
+            metric_.lr = trainer.scheduler1.get_last_lr()[0]
 
-        if epoch % logstep == 0:
-        
-            #if epoch<trainer.start_decay:
-        
-            #trainer.scheduler2.step(metric_.actioncost)
-            
             #update metrics 
             metric_.update_metrics(epoch, loss_out)
-           
+        
+            trainer.scheduler2.step(metric_.actioncost)
+        
+        if epoch % logstep == 0:
+        
             #else:
             #    pass
 
