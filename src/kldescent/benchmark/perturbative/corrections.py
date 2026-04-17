@@ -4,12 +4,12 @@ from kldescent.benchmark.utilfunctions import *
 
 class Perturbation():
 
-    def __init__(self,boundary,
+    def __init__(self,boundary_params,
                         overdamped_arr,
                         ref_path,
                         ):
         
-        self.boundary = boundary
+        #self.boundary_params = boundary_params
         
         self.ref_path = ref_path
 
@@ -18,9 +18,9 @@ class Perturbation():
 
         #define parameters
         self.t2vec = np.unique(self.overdamped_arr[:,0])
-        self.Tf = self.boundary.params["Tf"]
-        self.epsilon = self.boundary.params["epsilon"]
-        self.M = self.boundary.params["weight"] 
+        self.Tf = boundary_params.params["Tf"]
+        self.epsilon = boundary_params.params["epsilon"]
+        self.M = boundary_params.params["weight"] 
         self.Tf2 = self.Tf*(self.epsilon**2)
         
         self.qaxis = np.unique(overdamped_arr[:,1])
@@ -575,11 +575,12 @@ class HalfBridgePerturbation(Perturbation):
         np.savetxt(self.ref_path+"/perturbative_cumulants.csv",pertcumulants,fmt="%10.6f",header = "t0,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
 
 if __name__=="__main__":
-    from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution
-    from kldescent.sde.boundary import *
-    from kldescent.utils.parser import fetch_results_folder_from_cmd
+    #from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution
+    #from kldescent.sde.boundary import *
+    from kldescent.utils.parser import fetch_results_folder_from_cmd,boundary_params
 
-    boundary = UnderdampedLandauer()
+    boundary_params = boundary_params()
+    #UnderdampedLandauer()
 
     folder_name = fetch_results_folder_from_cmd()
 

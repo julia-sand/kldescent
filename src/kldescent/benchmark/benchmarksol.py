@@ -41,14 +41,14 @@ class BaseBenchmarkSolution():
         """
 
         if bridge_type == "marginal":
-            pertsol = MarginalHalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name)
+            pertsol = MarginalHalfBridgePerturbation(self.boundary.params,overdamped_arr,self.folder_name)
         
         elif bridge_type == "half":  #update this to compute the half bridge solution
-            pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name)
+            pertsol = HalfBridgePerturbation(self.boundary.params,overdamped_arr,self.folder_name)
             
         else: 
         
-            pertsol = HalfBridgePerturbation(self.boundary,overdamped_arr,self.folder_name)
+            pertsol = HalfBridgePerturbation(self.boundary.params,overdamped_arr,self.folder_name)
 
         return pertsol
 
