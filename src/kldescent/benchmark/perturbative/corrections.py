@@ -344,8 +344,10 @@ class HalfBridgePerturbation(Perturbation):
         args:
             boundary : class
                 determines boundary conditions and parameters
-            benchmark : class
-                sets the input and output locations
+            overdampedarr : ndarray
+                array with the results of the cell problem integration
+            refpath : str
+                path to access and save results
         """
 
         Perturbation.__init__(self,boundary,overdamped_arr,ref_path)
@@ -372,16 +374,23 @@ class HalfBridgePerturbation(Perturbation):
         return f00 + (self.epsilon**2)*self.f02(t0,f00,df00,dsigma,ddf00,ddsigma,kappa)
 
     def DU(self,t0,f00,df00,dsigma,kappa):
-        """
+        r"""
         Compute the perturbative drift for the half bridge
         args:
             t0 : float
                 fast time
-            t2 : float
-                slow time
+            f00 : ndarray
+                distribution from cell problem
+            df00 : ndarray
+                gradient of distribution from cell problem
+            dsigma : ndarray
+                gradient of sigma from cell problem
+            kappa : float
+                value of varkappa, given by 
+                \int_R f00 \partial \sigma 
         return:
             du : ndarray
-                analytic prediction of drift 
+                perturbative prediction of drift 
         """
 
         return -self.dU_tilde(t0,f00,df00,dsigma,kappa)- self.coeff_XM(t0)*self.XM(t0,f00,df00,dsigma,kappa)
@@ -478,9 +487,12 @@ class HalfBridgePerturbation(Perturbation):
         """Compute position variance
         
         args: 
-            t0 : fast time
-            t2 : slow time
-            t2_idx : index of t2
+            t0 : float
+                fast time
+            t2 : float
+                slow time
+            t2_idx : int 
+                index of t2
         """
 
         # First term: μ^{(2)}_{t_z} - (μ^{(2)}_{t_z})^2
@@ -498,13 +510,17 @@ class HalfBridgePerturbation(Perturbation):
 
 
     def mommean(self,t0,kappa):
+        """Compute momentum mean"""
+        
         return kappa*self.G11(t0)*self.epsilon**2
 
     def posmean(self,t0,t2,t2_idx,kappa):
+        """Compute position mean"""
         return self.mu_1_vec[t2_idx] - (self.G110(t0)-(t0/self.Tf)*self.G110(self.Tf))*kappa*self.epsilon**2
 
     def xcorr(self,t0,t2,t2_idx,kappa,f00,dsigma):
-            
+        """Compute cross correlation"""
+    
         # First term: (ε / A) * (self.G11(self.Tf) - (self.G12(self.Tf)^2 * self.G11(self.Tf)) / self.G12(self.Tf)) * (integral - sqrt(A) - (A - B) * self.mu_1_vec[t2_idx] * kappa)
         integral_1 = np.trapezoid(f00*self.qaxis*dsigma,self.qaxis)
         #quad(integrand_1, -np.inf, np.inf)
@@ -524,9 +540,7 @@ class HalfBridgePerturbation(Perturbation):
         return term1 + term2 + term3 
         
     def save_perturbative_cumulants(self,):
-        """
-        computes estiamtes of the perturbative cumulants and saves as a csv
-        """
+        """Compute estimates of the perturbative cumulants and save to csv"""
 
         #preallocate array
         pertcumulants = np.empty((len(self.t2vec),6))
