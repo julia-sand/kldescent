@@ -53,7 +53,7 @@ class Perturbation():
         return round(t2/(self.epsilon**2),6)
 
     def sigma(self,t2):
-        """fetch gradient of the value function at time t2"""
+        """fetch sigma at time t2"""
 
         return np.squeeze(self.overdamped_arr[np.where(self.overdamped_arr[:,0]==t2),-1]) #sigma 
 

@@ -465,9 +465,10 @@ def plot_benchmark_drift(benchmark_):
 
     fig.savefig(benchmark_.folder_name+f"/perturbative_drift_trained.png",bbox_inches="tight")        
 
-def plot_data(benchmark_,quantity,data):
+def plot_data(benchmark_,quantity,data,numplots=5):
     
-    times = benchmark_.get_timegrid()
+    t_vec = benchmark_.get_timegrid()
+    times = t_vec[np.random.randint(low=0,high=len(t_vec),size=5)]
     
     #[0,0.06,0.12,0.2]
 

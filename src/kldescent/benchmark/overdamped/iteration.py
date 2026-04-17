@@ -166,7 +166,7 @@ class CellProblem():
                 psi0 = self.compute_boundary_value(xhatphi,hatphiT,psi0,xpsi)**self.power
 
                 #normalise
-                psi0 = normalise(psi0,xpsi)
+                psi0 = normalise(psi0,xhatphi)
 
                 #integrate psi to Tf
                 xpsi,psiT = integrator(xhatphi,psi0,self.Tf2,self.beta)
