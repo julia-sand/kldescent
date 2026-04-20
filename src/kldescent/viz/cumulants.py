@@ -223,6 +223,7 @@ if __name__=="__main__":
                                         epsilon=0.2)
 
   save_fig_(fig,"cumulants1",loc=folder)
-  #save_cumulants_csv(t_vec,cumulants_nn,loc=self.resultsdir)
-  #save_cumulants_csv(t_vec,cumulants_ref,loc=self.resultsdir,cumulants_filename="ref_cumulants")
+  #save_cumulants_csv(t_vec1,cumulants_nn,loc=self.resultsdir)
+  #save_cumulants_csv(t_vec2,cumulants_ref,loc=self.resultsdir,cumulants_filename="ref_cumulants")
   plt.close("all")
+  

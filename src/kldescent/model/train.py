@@ -21,7 +21,7 @@ class Train():
     def __init__(self, net, integrator):
 
         #set defaults of training process
-        self.lr = 2.5e-4
+        self.lr = 0.0005 #2.5e-4
         #0.0005 #initial learning rate
         self.integrator = integrator
         self.net = net
@@ -106,8 +106,8 @@ class TrainRho():
                                 integrator.boundary.p_initial,
                                 integrator.boundary.params["Tf"],
                                 mc_samples=1)
-            print(yobs.max())
-            print(torch.isnan(yobs).any())                    
+            #print(yobs.max())
+            #print(torch.isnan(yobs).any())                    
             return yobs
 
     def train_step(self,optimiser,integrator):  

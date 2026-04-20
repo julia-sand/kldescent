@@ -166,14 +166,14 @@ class CellProblem():
                 psi0 = self.compute_boundary_value(xhatphi,hatphiT,psi0,xpsi)**self.power
 
                 #normalise
-                psi0 = normalise(psi0,xhatphi)
+                psi0 = normalise(xhatphi,psi0)
 
                 #integrate psi to Tf
                 xpsi,psiT = integrator(xhatphi,psi0,self.Tf2,self.beta)
 
                 #compute hatphi0 
                 hatphi0 = np.nan_to_num(zchop(self.boundary.q_marginal_initial_np(xpsi)/psiT),posinf=0,neginf=0,nan=0)
-                hatphi0 = normalise(hatphi0,xpsi)
+                hatphi0 = normalise(xpsi,hatphi0)
 
                 #integrate phihat to Tf
                 xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)

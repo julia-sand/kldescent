@@ -604,8 +604,8 @@ class PlotUtils():
             self.wandb_run.log({"cumulants":fig})
 
         save_fig_(fig,"cumulants",loc=self.resultsdir)
-        save_cumulants_csv(t_vec,cumulants_nn,loc=self.resultsdir)
-        save_cumulants_csv(t_vec,cumulants_ref,loc=self.resultsdir,cumulants_filename="ref_cumulants")
+        save_cumulants_csv(t_vec1,cumulants_nn,loc=self.resultsdir)
+        save_cumulants_csv(t_vec2,cumulants_ref,loc=self.resultsdir,cumulants_filename="ref_cumulants")
         plt.close("all")
 
 def compute_ref_dynamic_kl(benchmark):

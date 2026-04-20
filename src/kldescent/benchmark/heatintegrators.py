@@ -9,7 +9,7 @@ def mcintegrator(x0,y0,
                     num_steps = 30,
                     mc_samples = 2000):
     """
-    Integrates a heat equation by the monte carlo method
+    Integrate a heat equation by the monte carlo method
     yT = E(Phi(xT)|x0)
     where xT are final positions of trajectories of the auxiliary dynamics
     

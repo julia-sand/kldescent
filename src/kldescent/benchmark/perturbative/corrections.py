@@ -8,7 +8,8 @@ class Perturbation():
                         overdamped_arr,
                         ref_path,
                         ):
-        
+        """Initialise base perturbation class"""
+
         #self.boundary_params = boundary_params
         
         self.ref_path = ref_path
@@ -163,17 +164,15 @@ class MarginalHalfBridgePerturbation(Perturbation):
     for the position marginal distribution
     """
 
-    def __init__(self,boundary,overdamped_arr,ref_path):
+    def __init__(self,boundary_params,overdamped_arr,ref_path):
         """
         initialises the class         
         args:
-            boundary : class
+            boundary : dict
                 determines boundary conditions and parameters
-            benchmark : class
-                sets the input and output locations
         """
 
-        Perturbation.__init__(self,boundary,overdamped_arr,ref_path)
+        Perturbation.__init__(self,boundary_params,overdamped_arr,ref_path)
 
         self.B = bfun("marginal half",self.Tf)
         self.A = afun("marginal half",self.Tf)
@@ -338,11 +337,11 @@ class HalfBridgePerturbation(Perturbation):
     for the full phase space distribution
     """
 
-    def __init__(self,boundary,overdamped_arr,ref_path):
+    def __init__(self,boundary_params,overdamped_arr,ref_path):
         """
         initialises the class         
         args:
-            boundary : class
+            boundaryparams : dict
                 determines boundary conditions and parameters
             overdampedarr : ndarray
                 array with the results of the cell problem integration
@@ -350,7 +349,7 @@ class HalfBridgePerturbation(Perturbation):
                 path to access and save results
         """
 
-        Perturbation.__init__(self,boundary,overdamped_arr,ref_path)
+        Perturbation.__init__(self,boundary_params,overdamped_arr,ref_path)
 
         self.B = bfun("half",self.Tf)
         self.A = afun("half",self.Tf)
