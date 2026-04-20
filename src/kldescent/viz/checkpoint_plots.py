@@ -19,7 +19,7 @@ from kldescent.viz.drift import plot_drift
 from kldescent.viz.distribution_plots import marginal_distribution,make_marginal_distribution_fig
 
 
-def zchop(x,tol=1e-6):
+def zchop(x,tol=1e-8):
     return np.where(np.abs(x)<tol,0,x)
 
 @torch.no_grad
@@ -153,7 +153,7 @@ class PlotUtils():
             self.benchmark = PerturbativeBenchmarkSolution(boundary_cond,folder_name=self.folder)
             self.net = self.benchmark.du_net_benchmark 
 
-            self.integrator = langevin.VerletSDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
+            self.integrator = langevin.EulerMaruyamaSDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
 
     def load_du_checkpoint(self):
         """Load neural network and initialise integration method"""

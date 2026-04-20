@@ -19,9 +19,9 @@ class Perturbation():
 
         #define parameters
         self.t2vec = np.unique(self.overdamped_arr[:,0])
-        self.Tf = boundary_params.params["Tf"]
-        self.epsilon = boundary_params.params["epsilon"]
-        self.M = boundary_params.params["weight"] 
+        self.Tf = boundary_params["Tf"]
+        self.epsilon = boundary_params["epsilon"]
+        self.M = boundary_params["weight"] 
         self.Tf2 = self.Tf*(self.epsilon**2)
         
         self.qaxis = np.unique(overdamped_arr[:,1])

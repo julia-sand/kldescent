@@ -87,7 +87,7 @@ def save_solution_in_time(cell,filename_full,integrator):
                                         normalise(q,compute_rho(phi_t,hatphi_t)),
                                         compute_sigma(phi_t,cell.A,cell.bridge_type)))
         
-        arr_temp = zchop(arr_temp, tol=1e-6)
+        arr_temp = zchop(arr_temp, tol=1e-8)
 
         append_array_to_csv(filename_full,arr_temp)#[arr_temp[:,-1]!=0])
 
@@ -125,7 +125,7 @@ def compute_overdamped(boundary,save_location,bridge_type="half"):
                                 filename_full,
                                 integrator=mcintegrator)
 
-    #arr  = zchop(arr,tol=1e-6)
+    #arr = zchop(arr,tol=1e-6)
     
     #save_array(arr,save_location,filename="overdamped",header="t,q,rho,dV")
 

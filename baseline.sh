@@ -2,9 +2,9 @@
 #SBATCH --account=project_2011332
 #SBATCH --partition=test
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=32
-#SBATCH --mem=16G
-#SBATCH --time=00:15:00
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=8G
+#SBATCH --time=00:05:00
 
 module load pytorch
 cd src

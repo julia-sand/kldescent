@@ -468,7 +468,8 @@ def plot_benchmark_drift(benchmark_):
 def plot_data(benchmark_,quantity,data,numplots=5):
     
     t_vec = benchmark_.get_timegrid()
-    times = t_vec[np.random.randint(low=0,high=len(t_vec),size=5)]
+    idx = np.random.randint(low=0,high=len(t_vec),size=5)
+    times = t_vec[idx]
     
     #[0,0.06,0.12,0.2]
 
@@ -478,7 +479,7 @@ def plot_data(benchmark_,quantity,data,numplots=5):
 
     eps = benchmark_.boundary.params["epsilon"]
     for time in enumerate(times):
-        q, ptq = benchmark_.get_benchmark_quantity(time[1], quantity, data=data,time_type="t2")
+        q, ptq = benchmark_.get_benchmark_quantity(time[1], quantity, data=data,time_type="t0")
         axs[time[0]].plot(q,ptq,label="Benchmark data")
     
         axs[time[0]].set_title(f"t={time[1]}")

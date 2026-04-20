@@ -8,7 +8,7 @@ from kldescent.utils.parser import integrator_params
 
 class SDEBase():
     """
-    Class for integrating the sde forward and computing the loss function 
+    Base class for integrating the sde forward and computing the loss function 
     """
 
     def __init__(self,boundary_data,
@@ -201,8 +201,7 @@ class SDEBase():
         if mcsamples is None: #default to test samples
             mcsamples = self.sde_params["testsamples"]
 
-        t_vec = self.uniform_random_time_grid()
-        #self.generate_time_grid(benchmark)
+        t_vec = self.generate_time_grid(benchmark)
         
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = self.boundary.generate_samples(mcsamples,"initial").to(self.device)
@@ -307,6 +306,12 @@ class EulerMaruyamaSDE(SDEBase):
         self.net.train()
         
         t_vec = self.uniform_random_time_grid()
+        
+        if self.sde_params["tstepsgrad"] < self.sde_params["tsteps"]:
+            index = torch.randint(low=0,high=self.sde_params["tsteps"],size=(self.sde_params["tstepsgrad"],))
+            t_vec_grad = t_vec[index]
+        else: 
+            t_vec_grad = t_vec
 
         #initialise x values 
         xinit = self.boundary.generate_samples(self.sde_params["batchsamples"],"initial").to(self.device)
@@ -326,28 +331,29 @@ class EulerMaruyamaSDE(SDEBase):
             #get neural network drift
             du = self.net(torch.cat((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
                                                     ,xinit[...,[0]]),dim=-1))
-                    
-            a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True) ** 2) 
-            
-            c = c + (du*dw)
+
+            if t_vec[i] in t_vec_grad:
+
+                a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True) ** 2) 
+                
+                c = c + (du*dw)
 
             du_bar = du.detach() #copy without gradient 
 
             with torch.no_grad(): #no gradient 
 
-                abar = abar + dt*(torch.linalg.norm(du_bar, axis=1, keepdim=True) ** 2) 
                 #abar = abar + dt*(torch.linalg.norm(du_bar, axis=1, keepdim=True) ** 2) 
-                bbar = bbar #+ dt*(self.boundary.f(xinit,t_vec[i])) 
+                #abar = abar + dt*(torch.linalg.norm(du_bar, axis=1, keepdim=True) ** 2) 
+                #bbar = bbar #+ dt*(self.boundary.f(xinit,t_vec[i])) 
                 
                 xinit = self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
+
 
         with torch.no_grad():
             #compute terminal cost
             gvals = self.TerminalCost.gfun(xinit.detach().clone(),self.net,self.sde_params["testsamples"]).to(self.device)
 
-            #max_val = torch.max(xinit.detach().clone())
-
-            #print(max_val)
+            a_bar = a.detach().clone()
 
         #compute value of Lhat
         Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
