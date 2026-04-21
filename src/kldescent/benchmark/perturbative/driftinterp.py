@@ -43,6 +43,7 @@ def perturbative_du_interp(benchmark,mlp_net):
 
 def train_and_save_perturbative_du(benchmark,mlp_net):
     run_pretrain(mlp_net,
+                    folder_name = benchmark.folder_name,
                     path_to_pretrain = benchmark.perturb_underdamped_loc,
                     epsilon = benchmark.boundary.params["epsilon"])
     save_nn_checkpoint(mlp_net,loc=benchmark.get_benchmark_path()+f"/perturbative_underdamped_drift.pt")

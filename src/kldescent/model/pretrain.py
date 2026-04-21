@@ -17,22 +17,27 @@ class Pretrain():
     benchmark perturbative evolutions
     """
     
-    def __init__(self,epsilon,path_to_pretrain):
+    def __init__(self,epsilon,folder_name,path_to_pretrain=None):
         r"""
         Define the training parameters and loop for any pretraining. 
 
         args:
             epsilon : float
                 if None, no transformation is done
-            path_to_pretrain : str
+            folder_name : str
                 location of the CSV to train
+            path
         """
         
         self.epsilon = epsilon 
-        self.path = path_to_pretrain 
+        self.folder_name = folder_name
+	if path_to_pretrain is None:
+	    self.path = folder_name+"/perturbative_underdamped.csv"
+	else:
+	    self.path = path_to_pretrain
 
         #set defaults of training process
-        self.lr = 0.0001 #initial learning rate
+        self.lr = 0.001 #initial learning rate
         self.gamma = 0.9 #decay rate of learning rate
         self.milestone = 2000 #frequency of learning rate decay (in epochs)
         self.n_epochs = 10000 #total number of epochs
@@ -80,19 +85,20 @@ class Pretrain():
             X : ndarray
                 same as input
             y : ndarray
-                left hand side of (**) 
+                left hand side of (**)
         """
 
         #X[:,0] /= self.epsilon**2 #get t0 from t2
         y *= (-(self.epsilon/(2**0.5))) #transformation (**)
         
-        return X,y 
+        return X,y
 
-    def pretraining(self,net):   
+    def pretraining(self,net):
         
         #set up training parameters
-        loss_fn = torch.nn.MSELoss()  
-        optimiser = Adam(net.parameters(), lr=self.lr)
+        loss_fn = torch.nn.MSELoss()
+        optimiser = Adam(net.FeedForwardLayers.parameters(), lr=self.lr)
+	optimiser2 = Adam(net.
         scheduler = ExponentialLR(optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
 
         X,y = self.get_pretraining_data()
@@ -131,10 +137,11 @@ class Pretrain():
         plt.plot(X[X[:,0]==5,1].cpu().numpy().flatten(),y[X[:,0]==5].cpu().numpy().flatten())
         plt.plot(X[X[:,0]==5,1].cpu().numpy().flatten(),net(X[X[:,0]==5,:]).cpu().numpy().flatten())
         #plt.ylim((-5,5))
-        plt.savefig(f"training_{epoch}_.png")
+        plt.savefig(self.folder_name+f"training_{epoch}_.png")
         plt.close("all")
 
 def run_pretrain(net,
+                    folder_name,
                     path_to_pretrain,
                     epsilon=None):
     r"""
@@ -143,6 +150,8 @@ def run_pretrain(net,
     args:
         net :
             neural network to be trained
+        folder_name : str
+            folder location to save intermediate training plots
         path_to_pretrain : csv
             path from current working directory to a CSV containing data to be used in the pretraining. The data should have a csv format 
             where the first two entries are the input and the last column should contian the trained values. See PerturbativeBenchmarkSolution folder for some examples.  
@@ -155,7 +164,7 @@ def run_pretrain(net,
 
     print("Starting pre-training")
     
-    pretrainer = Pretrain(epsilon=epsilon,path_to_pretrain=path_to_pretrain)
+    pretrainer = Pretrain(epsilon=epsilon,folder_name=folder_name,path_to_pretrain=path_to_pretrain)
     pretrainer.pretraining(net)
     
     print("Pretraining completed successfully.")
