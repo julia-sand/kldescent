@@ -58,7 +58,7 @@ def compute_pdf(x0,
 
     #todo fix this
     args = integrator_params()
-    tsteps = 1024 #args["tsteps"]
+    tsteps = args["tsteps"]
     if mc_samples is None: #use default if none given
         mc_samples = args["testsamples"]
 

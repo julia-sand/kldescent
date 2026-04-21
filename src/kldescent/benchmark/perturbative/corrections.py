@@ -464,11 +464,11 @@ class HalfBridgePerturbation(Perturbation):
         # Second term: ε^2 * (self.G11(t0) - (self.G12(t0) * G_tf_111) / G_tf_112)^2 * ∫ dq f_tz_00 ( (1/√A) ∂_q ln f_tz_00 + (1/A) ∂_q σ_tz_00 )^2
         integrand_1 = ddf00**2/f00 + 2*df00*ddsigma/self.A + (ddsigma/self.A)**2
 
-        integral_1 = np.trapezoid(integrand_1,self.qaxis)
+        integral_1 = np.trapezoid(np.nan_to_num(integrand_1,nan=0,posinf=0,neginf=0),self.qaxis)
         term2 = self.epsilon**2 * (self.G11(t0) - self.coeff_G111_G112()*self.G12(t0))**2 * integral_1
 
         integrand_2 = ddf00/np.sqrt(self.A) - (df00**2)/f00 + ddsigma/self.A
-        integral_2 = np.trapezoid(integrand_2,self.qaxis)
+        integral_2 = np.trapezoid(np.nan_to_num(integrand_2,nan=0,posinf=0,neginf=0),self.qaxis)
 
         integral_3 = np.trapezoid(self.integrand_3(self.t2vec[:t2_idx+1]/self.epsilon**2,t0),self.t2vec[:t2_idx+1])
 
