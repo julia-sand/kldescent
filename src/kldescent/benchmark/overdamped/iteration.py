@@ -161,6 +161,7 @@ class CellProblem():
             warnings.simplefilter("ignore")
             
             while iters < max_iters:
+                
                 print("Iteration ",iters)
                 #compute psi0/phiT
                 psi0 = self.compute_boundary_value(xhatphi,hatphiT,psi0,xpsi)**self.power

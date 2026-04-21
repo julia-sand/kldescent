@@ -307,12 +307,6 @@ class EulerMaruyamaSDE(SDEBase):
         
         t_vec = self.uniform_random_time_grid()
         
-        if self.sde_params["tstepsgrad"] < self.sde_params["tsteps"]:
-            index = torch.randint(low=0,high=self.sde_params["tsteps"],size=(self.sde_params["tstepsgrad"],))
-            t_vec_grad = t_vec[index]
-        else: 
-            t_vec_grad = t_vec
-
         #initialise x values 
         xinit = self.boundary.generate_samples(self.sde_params["batchsamples"],"initial").to(self.device)
         
@@ -332,11 +326,9 @@ class EulerMaruyamaSDE(SDEBase):
             du = self.net(torch.cat((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
                                                     ,xinit[...,[0]]),dim=-1))
 
-            if t_vec[i] in t_vec_grad:
-
-                a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True) ** 2) 
-                
-                c = c + (du*dw)
+            a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True) ** 2) 
+            
+            c = c + (du*dw)
 
             du_bar = du.detach() #copy without gradient 
 

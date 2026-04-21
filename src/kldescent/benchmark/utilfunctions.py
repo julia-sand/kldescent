@@ -54,7 +54,7 @@ def normalise(x,y):
 
 def zchop(x,tol=1e-10):
    
-    return np.where(np.abs(x)<tol,0,x)
+    return x#np.where(np.abs(x)<tol,0,x)
 
 def make_csv_and_header(save_location,filename,header):
     #create the directory

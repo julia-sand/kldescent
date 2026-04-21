@@ -100,7 +100,7 @@ class OverdampedFullLandauer(Boundaries):
     def __init__(self,params=None,logfile=None):
         Boundaries.__init__(self,params,logfile)
         self.pf_norm = torch.trapz(self.qfinal(torch.linspace(-8,8,5000)),torch.linspace(-8,8,5000))
-        self.qmax = 6
+        self.qmax = 10
 
     def overwrite_ref_path(self,new_path):
         
@@ -178,7 +178,7 @@ class OverdampedLandauer(OverdampedFullLandauer):
     def __init__(self,params=None,logfile=None):
         OverdampedFullLandauer.__init__(self,params,logfile)
         self.pi_norm = torch.trapz(self.qinitial(torch.linspace(-8,8,1000)),torch.linspace(-8,8,1000))       
-        self.qmax = 6
+        self.qmax = 10
 
     def Uinitial(self,q):
         return ((q-1)**4)#*12
@@ -335,8 +335,8 @@ class UnderdampedLandauer(OverdampedLandauer):
     def __init__(self,params=None,gauss_params=None,logfile=None):
         OverdampedLandauer.__init__(self,params,logfile)
         self.sigma0 = torch.sqrt(torch.tensor(2.0))
-        self.qmax = 6
-        self.norm_qmax = 3
+        self.qmax = 10
+        self.norm_qmax = 3.5
 
     def p_initial(self,q,p):
 

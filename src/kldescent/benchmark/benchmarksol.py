@@ -469,10 +469,8 @@ def plot_data(benchmark_,quantity,data,numplots=5):
     
     t_vec = benchmark_.get_timegrid()
     idx = np.random.randint(low=0,high=len(t_vec),size=5)
-    times = t_vec[idx]
+    times = np.sort(t_vec[idx])
     
-    #[0,0.06,0.12,0.2]
-
     fig,axs = plt.subplots(ncols=len(times),nrows=1)
     fig.set_figheight(15)
     fig.set_figwidth(25)
@@ -489,8 +487,11 @@ def plot_data(benchmark_,quantity,data,numplots=5):
             du_net = -(2**0.5/eps)*benchmark_evaluate_net(benchmark_.du_net_benchmark,q,time[1])
             axs[time[0]].plot(q,du_net, label="NN interpolation")
 
-    fig.legend()
-    fig.tight_layout()
+    h,l = plt.gca().get_legend_handles_labels()
+    #fig.tight_layout()
+    plt.subplots_adjust(bottom=0.2)
+    
+    fig.legend(h,l)
 
     fig.savefig(benchmark_.folder_name+f"/{data}_{quantity}.png",bbox_inches="tight")        
 
