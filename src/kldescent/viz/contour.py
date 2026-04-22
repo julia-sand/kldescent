@@ -1,10 +1,100 @@
+"""Create the contour plots showing the full joint pdf, where the pdf is computed 
+either using a neural network interpolation, or using a Monte Carlo integration"""
+
+
 import numpy as np 
 import matplotlib.pyplot as plt 
 import torch
 
+from kldescent.sde.girsanovpdf import compute_pdf
 from kldescent.viz.plots import *
+ 
+@torch.no_grad
+def generate_mesh(x_samples,qmax=6):
+    """
+    generate a mesh in two dimensional phase space to evaluate and plot the joint distribution 
+    
+    args:
+        xsamples : int
+            number of samples in the space discretisation
+        qmax : float
+            maximum value of the xaxis, symmetric in positive and negative
+    """
 
-##creates the contour plot showing the full joint pdf
+    p_init = torch.linspace(-qmax,qmax,x_samples, requires_grad=False,dtype=torch.float32)
+    #q_init = torch.linspace(-qmax,qmax,x_samples, requires_grad=False,dtype=torch.float32)
+        
+    return torch.meshgrid(p_init,p_init,indexing='ij')
+
+
+@torch.no_grad
+def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=None):
+    """
+    Computes an estimate of the final joint distribution using girsanov theorem
+    under the input drift 
+    
+    args:
+        dunet : class 
+            neural network approximating the drift
+        x_samples : int 
+            number of space discretisation steps
+        mc_samples : int
+            number of MC samples. 
+        Tf : float
+            time for the plot
+    returns:
+        xout: 
+            2d mesh of points of the statespace
+        jointout:
+            estimated joint distribution using girsanov theorem
+    """
+    
+    #generate xmesh
+    Q,P = generate_mesh(x_samples,qmax=5)
+    xinit = torch.stack((Q,P), dim=-1).reshape(-1, 2)
+    #torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
+    
+    with torch.no_grad():
+        self.net.eval()
+
+        #intiialise pdf 
+        pdf_out = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
+
+        pdf_out = compute_pdf(xinit.clone(),net,
+                                    self.boundary.sigma0,
+                                    self.boundary.params["epsilon"],
+                                    self.boundary.p_initial,
+                                    Tf).cpu().numpy()
+    return xinit.cpu().numpy(),pdf_out.cpu().numpy()
+
+@torch.no_grad
+def distribution_plot(plot_loc,model,Tf,epoch=1,qmax=5):
+
+    #compute marginals 
+    xx, yy = torch.meshgrid(torch.linspace(-qmax,qmax, 100), torch.linspace(-qmax,qmax, 100), indexing="xy")
+    zz = torch.cat([xx.unsqueeze(2), yy.unsqueeze(2)], 2).view(-1, 2)
+    
+    #find probabilities 
+    pdf_temp = torch.exp(model.log_prob(zz))
+    pdf_temp[torch.isnan(pdf_temp)] = 0
+
+    fig = plt.figure()
+    fig.set_figheight(15)
+    fig.set_figwidth(25)
+
+    xout,jointout = zz,pdf_temp.detach().clone().numpy().flatten()
+
+    plot_joint_panel(plt.gca(),5,jointout,xout)
+
+    fig.tight_layout()
+    fig.savefig(plot_loc+f"/contour_distribution_{epoch}.png",bbox_inches="tight")        
+
+    plt.close()
+
+    fig1 = plt.figure(figsize=(15, 15))
+    plt.pcolormesh(xx, yy, pdf_temp.view(*xx.shape).detach().clone().numpy(), cmap='coolwarm')
+    fig1.savefig(plot_loc+"/pdf_distribution.png",bbox_inches="tight") 
+    plt.close()
 
 def get_norm(x,y):
     idx = np.argsort(x)
@@ -227,34 +317,3 @@ def make_contour_plot(plotutils):
     
     plt.close()
 
-def make_contour_plot2(plotutils,plottimes = [0,1,2,3,4,5]):
-    
-    ncols = int(np.ceil(len(plottimes)/2))
-    fig,axs = make_fig_subplots(ncols=ncols,nrows=2)
-    axs = axs.flatten()
-
-    for i in range(len(plottimes)):
-
-        xout,jointout = compute_rho_girsanov(integrator=plotutils.integrator,x_samples=10,mc_samples=plotutils.mc_samples,Tf=plottimes[i])
-
-        plot_joint_panel(axs[i],plottimes[i],jointout,xout,boundary= plotutils.boundary_cond,benchmark=plotutils.referencesol)
-    
-    fig.subplots_adjust(hspace=1.1,wspace=1,bottom=0.08)
-    
-    #add legend
-    h,l = get_all_subplot_handles_labels(fig)
-    make_legend(fig,h,l)
-    make_colourbar(fig,vmax=0.5)
-    
-    plt.tight_layout()
-
-    save_fig_(fig,"contour_distribution",loc=plotutils.resultsdir)
-    
-    plt.close()
-
-
-if __name__=="__main__":
-
-    plot_utils = PlotUtils()
-    plot_utils.load_du_checkpoint()
-    make_contour_plot2(plot_utils)

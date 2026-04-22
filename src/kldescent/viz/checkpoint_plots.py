@@ -12,6 +12,7 @@ from kldescent.sde.girsanovpdf import compute_pdf
 from kldescent.utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd,metric_params
 from kldescent.utils.getboundary import init_params_from_file
 from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmarkSolution
+from kldescent.viz.contour import *
 
 from kldescent.viz.plots import *
 from kldescent.viz.cumulants import plot_cumulants,load_cumulant_csvs
@@ -21,63 +22,6 @@ from kldescent.viz.distribution_plots import marginal_distribution,make_marginal
 
 def zchop(x,tol=1e-8):
     return np.where(np.abs(x)<tol,0,x)
-
-@torch.no_grad
-def generate_mesh(x_samples,qmax=6):
-    """
-    generate a mesh in two dimensional phase space to evaluate and plot the joint distribution 
-    
-    args:
-        xsamples : int
-            number of samples in the space discretisation
-        qmax : float
-            maximum value of the xaxis, symmetric in positive and negative
-    """
-
-    p_init = torch.linspace(-qmax,qmax,x_samples, requires_grad=False,dtype=torch.float32)
-    #q_init = torch.linspace(-qmax,qmax,x_samples, requires_grad=False,dtype=torch.float32)
-        
-    return torch.meshgrid(p_init,p_init,indexing='ij')
-
-@torch.no_grad
-def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=None):
-    """
-    Computes an estimate of the final joint distribution using girsanov theorem
-    under the input drift 
-    
-    args:
-        dunet : class 
-            neural network approximating the drift
-        x_samples : int 
-            number of space discretisation steps
-        mc_samples : int
-            number of MC samples. 
-        Tf : float
-            time for the plot
-    returns:
-        xout: 
-            2d mesh of points of the statespace
-        jointout:
-            estimated joint distribution using girsanov theorem
-    """
-    
-    #generate xmesh
-    Q,P = generate_mesh(x_samples,qmax=5)
-    xinit = torch.stack((X, Y), dim=-1).reshape(-1, 2)
-    #torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
-    
-    with torch.no_grad():
-        self.net.eval()
-
-        #intiialise pdf 
-        pdf_out = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
-
-        pdf_out = compute_pdf(xinit.clone(),net,
-                                    self.boundary.sigma0,
-                                    self.boundary.params["epsilon"],
-                                    self.boundary.p_initial,
-                                    self.boundary.params["Tf"]).cpu().numpy()
-    return xinit.cpu().numpy(),pdf_out.cpu().numpy()
 
 class PlotUtils():
     """
@@ -608,6 +552,40 @@ class PlotUtils():
         save_cumulants_csv(t_vec2,cumulants_ref,loc=self.resultsdir,cumulants_filename="ref_cumulants")
         plt.close("all")
 
+    def make_contour_plot2(self,plottimes = [0,1,2,3,4,5]):
+        
+        ncols = int(np.ceil(len(plottimes)/2))
+        fig,axs = make_fig_subplots(ncols=ncols,nrows=2)
+        axs = axs.flatten()
+        Q,P = generate_mesh(x_samples=10,qmax=5)
+        xinit = torch.stack((Q, P), dim=-1).reshape(-1, 2)
+        
+        for i in range(len(plottimes)):
+
+            jointout = compute_pdf(xinit.clone(),self.net,
+                                        self.boundary_cond.sigma0,
+                                        self.boundary_cond.params["epsilon"],
+                                        self.boundary_cond.p_initial,
+                                        plottimes[i],
+                                        mc_samples =2000,
+                                        tsteps=10)
+                
+            plot_joint_panel(axs[i],plottimes[i],jointout.cpu().numpy(),xinit.clone().cpu().numpy(),boundary= self.boundary_cond,benchmark=self.benchmark)
+        
+        fig.subplots_adjust(hspace=1.1,wspace=1,bottom=0.08)
+        
+        #add legend
+        h,l = get_all_subplot_handles_labels(fig)
+        make_legend(fig,h,l)
+        make_colourbar(fig,vmax=0.5)
+        
+        plt.tight_layout()
+
+        save_fig_(fig,"contour_distribution",loc=self.resultsdir)
+        
+        plt.close()
+
+
 def compute_ref_dynamic_kl(benchmark):
     """Estimate of the dynamic kl divergence for the Gaussian benchmark data.
     Uses the benchmark position and momentum variance and estimates the integral
@@ -645,9 +623,11 @@ if __name__=="__main__":
     if usebenchmark:
         plot_utils.load_benchmark_solution()
 
-    plot_utils.make_drift_plot(numplots=5)
+
+    plot_utils.make_contour_plot2(plottimes=[0,1,2,3,4,5])
+    #plot_utils.make_drift_plot(numplots=5)
     #plot_utils.make_inverted_drift_plot(numplots=5)
-    plot_utils.make_sde_plots(2048, usebenchmark)
+    #plot_utils.make_sde_plots(2048, usebenchmark)
     #plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark)
     #plot_utils.make_cumulant_error_plot_from_csv()
     #plot_utils.make_intermediate_histograms()
