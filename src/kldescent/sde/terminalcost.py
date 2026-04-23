@@ -264,7 +264,7 @@ class NormFlow(TerminalCost):
 
         plot_loc = self.loc 
         make_scatter_plot(plot_loc,x.cpu().numpy(),self.rho.model,epoch)#,self.boundary)
-        distribution_plot(plot_loc,self.rho.model,self.boundary.params["Tf"],epoch,self.boundary)
+        #distribution_plot(plot_loc,self.rho.model,self.boundary.params["Tf"],epoch,self.boundary)
 
     def get_logpdf(self,x,*_):
         pdf = self.rho.model.log_prob(x)

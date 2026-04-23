@@ -51,18 +51,29 @@ class Train():
         
         self.net.train() #set neural net into train mode
         
-        Lhat = self.integrator.loss_fn()
-
-        ##training##
-        Lhat.backward()
-        clip_grad_norm_(self.net.FeedForwardLayers.parameters(), 0.5)
-        self.optimiser_feedforward.step()
-        self.optimiser_fourier.step()
-
         #reset gradients 
         self.optimiser_feedforward.zero_grad()
         self.optimiser_fourier.zero_grad()
 
+        Lhat = self.integrator.loss_fn()
+
+        if torch.isfinite(Lhat):
+            Lhat.backward()
+            clip_grad_norm_(self.net.FeedForwardLayers.parameters(), 0.5)
+            clip_grad_norm_(self.net.FourierFeatures.parameters(), 0.5)
+
+            self.optimiser_feedforward.step()
+            self.optimiser_fourier.step()
+            
+        else: 
+            print("Skipping step due to NaN/Inf loss:", Lhat.item())
+
+            #reset gradients 
+            self.optimiser_feedforward.zero_grad()
+            self.optimiser_fourier.zero_grad()            
+            
+            continue 
+        
         return Lhat.detach().cpu().numpy()
 
 class TrainRho():
@@ -114,7 +125,7 @@ class TrainRho():
 
         #reset gradients 
         optimiser.zero_grad()
-        
+
         #initialise x values 
         x0 = integrator.boundary.generate_samples(self.rho_batch,mode="initial") 
 
@@ -124,14 +135,23 @@ class TrainRho():
 
         Lhat = self.loss(ypred,yobs)
 
-        clip_grad_norm_(self.rhonet.parameters(), self.clip)
-             
         # Do backprop and optimiser step
-        if ~(torch.isnan(Lhat) | torch.isinf(Lhat)):
+        if torch.isfinite(Lhat):
             ##training##
             Lhat.backward()
+
+            clip_grad_norm_(self.rhonet.parameters(), self.clip)
+             
             optimiser.step()
-            
+        else: 
+            print("Skipping training skep due to NaN loss.")
+            optimiser.zero_grad()
+
+            continue
+          
+        #reset gradients 
+        optimiser.zero_grad()
+          
         else:
             raise ValueError('Girsanov net: Loss function is NaN. Terminating training process')
             #TODO this error may be raised when the initialisation of the drift 

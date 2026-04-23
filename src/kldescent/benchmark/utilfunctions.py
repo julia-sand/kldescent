@@ -4,6 +4,7 @@ import os
 import csv
 
 import numpy as np
+from scipy.ndimage import generic_filter,median
 
 def bfun(bridge_type, Tf):
     
@@ -34,6 +35,8 @@ def apply_filter(y,filter_delta=None):
     out = np.convolve(y,(1/filter_delta)*np.ones(filter_delta),'same')
     
     return out
+    #generic_filter(y,median,filter_delta,mode="constant")
+    #out
 
 def append_array_to_csv(filename,data):
     """append numpy array to a csv"""

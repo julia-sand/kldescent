@@ -326,7 +326,7 @@ def make_contour_plot_(net,boundary,
     ncols = int(np.ceil(len(plottimes)/2))
     fig,axs = make_fig_subplots(ncols=ncols,nrows=2)
     axs = axs.flatten()
-    Q,P = generate_mesh(x_samples=10,qmax=5)
+    Q,P = generate_mesh(x_samples=20,qmax=5)
     xinit = torch.stack((Q, P), dim=-1).reshape(-1, 2)
     
     for i in range(len(plottimes)):
@@ -337,7 +337,7 @@ def make_contour_plot_(net,boundary,
                                     boundary.p_initial,
                                     plottimes[i],
                                     mc_samples =2000,
-                                    tsteps=10)
+                                    tsteps=1024)
             
         plot_joint_panel(axs[i],plottimes[i],jointout.cpu().numpy(),xinit.clone().cpu().numpy(),
                             boundary= boundary,

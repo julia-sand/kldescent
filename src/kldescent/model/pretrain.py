@@ -2,12 +2,17 @@ import os
 
 import numpy as np 
 import torch
+import matplotlib.pyplot as plt
+
 #from torch import nn as torchnn
 from torch.optim import Adam,SGD,AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR,ExponentialLR,ReduceLROnPlateau
 from torch.nn.utils import clip_grad_norm_
 
 from tqdm import tqdm
+
+from kldescent.viz.plots import update_mpl
+        
 
 class Pretrain():
     """
@@ -28,23 +33,21 @@ class Pretrain():
                 location of the CSV to train
             path
         """
-        
+
         self.epsilon = epsilon 
         self.folder_name = folder_name
-	if path_to_pretrain is None:
-	    self.path = folder_name+"/perturbative_underdamped.csv"
-	else:
-	    self.path = path_to_pretrain
-
-        #set defaults of training process
-        self.lr = 0.001 #initial learning rate
-        self.gamma = 0.9 #decay rate of learning rate
-        self.milestone = 2000 #frequency of learning rate decay (in epochs)
-        self.n_epochs = 10000 #total number of epochs
-
-        self.minibatch_samples = 128 #number of datarows to use per parameter update
-
-        self.clip = 0.1 #size of gradient clipping
+        
+        if path_to_pretrain is None:    
+            self.path = folder_name+"/perturbative_underdamped.csv"
+        else:
+            self.path = path_to_pretrain
+            #set defaults of training process
+            self.lr = 0.001 #initial learning rate
+            self.gamma = 0.9 #decay rate of learning rate
+            self.milestone = 2000 #frequency of learning rate decay (in epochs)
+            self.n_epochs = 10000 #total number of epochs
+            self.minibatch_samples = 128 #number of datarows to use per parameter update
+            self.clip = 0.5 #size of gradient clipping
 
     def get_pretraining_data(self):
         """Load data from csv to be used in training the network
@@ -61,7 +64,7 @@ class Pretrain():
 
         X = torch.tensor(arr[:,0:2], dtype=torch.float32)
         
-        y = torch.tensor(arr[:,-2], dtype=torch.float32).reshape(-1, 1)
+        y = torch.tensor(arr[:,-1], dtype=torch.float32).reshape(-1, 1)
         
         if self.epsilon is not None:
 
@@ -94,51 +97,71 @@ class Pretrain():
         return X,y
 
     def pretraining(self,net):
-        
+
         #set up training parameters
         loss_fn = torch.nn.MSELoss()
         optimiser = Adam(net.FeedForwardLayers.parameters(), lr=self.lr)
-	optimiser2 = Adam(net.
         scheduler = ExponentialLR(optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
 
         X,y = self.get_pretraining_data()
 
         net.train()
-
+        
+        loss_history = []
+        
         for epoch in tqdm(range(1,self.n_epochs+1)):
-                
+
             #generate random batch 
             idx = torch.randint(low=0,high=X.shape[0],size=(self.minibatch_samples,))
 
             y_pred = net(X[idx,:])
+
             loss = loss_fn(y_pred,y[idx])
-            clip_grad_norm_(net.parameters(), self.clip)
             
-            loss.backward()
-            optimiser.step()       
+            if torch.isfinite(loss):
+                optimiser.zero_grad()
+
+                loss.backward()
+                clip_grad_norm_(net.parameters(), self.clip)
+
+                optimiser.step()       
+            
             optimiser.zero_grad()
+            
             #print(y_pred.mean().item(), y_pred.std().item())
             #print(y[idx].mean().item(), y[idx].std().item())
             #print(f'Finished epoch {epoch}, loss {loss}')
+            
+            loss_history.append(loss.item())
             
             if epoch % self.milestone == 0:
                 scheduler.step()
                 with torch.no_grad():    
                     net.eval()
                     print(f'Finished epoch {epoch}, loss {loss}')
-                    self.plot_training_process_drift(X.clone(),y.clone(),net,epoch)
-                net.train()
+                    self.plot_training_process_drift(X.clone(),y.clone(),net,epoch,0)
+                    self.plot_training_process_drift(X.clone(),y.clone(),net,epoch,5)
+                    net.train()
 
     @torch.no_grad
-    def plot_training_process_drift(self,X,y,net,epoch):
-        import matplotlib.pyplot as plt
+    def plot_training_process_drift(self,X,y,net,epoch,timet0):
         net.eval()
-        #plt.scatter(net(X[X[:,0]==5,:]).cpu().numpy().flatten(),y[X[:,0]==5].cpu().numpy().flatten())
-        plt.plot(X[X[:,0]==5,1].cpu().numpy().flatten(),y[X[:,0]==5].cpu().numpy().flatten())
-        plt.plot(X[X[:,0]==5,1].cpu().numpy().flatten(),net(X[X[:,0]==5,:]).cpu().numpy().flatten())
-        #plt.ylim((-5,5))
-        plt.savefig(self.folder_name+f"training_{epoch}_.png")
+
+        plt.plot(X[X[:,0]==timet0,1].cpu().numpy().flatten(),y[X[:,0]==timet0].cpu().numpy().flatten())
+        plt.plot(X[X[:,0]==timet0,1].cpu().numpy().flatten(),net(X[X[:,0]==timet0,:]).cpu().numpy().flatten())
+
+        plt.savefig(self.folder_name+f"/training_{epoch}_.png")
         plt.close("all")
+
+    @torch.no_grad
+    def plot_pretrain_loss(self,loss_history):
+        plt.plot(loss_history)
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.title("Training Loss Over Time")
+        plt.grid(True)
+        plt.savefig(self.folder_name+f"/loss_pretrain.png")
+        plt.close()
 
 def run_pretrain(net,
                     folder_name,

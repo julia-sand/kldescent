@@ -597,8 +597,8 @@ if __name__=="__main__":
         plot_utils.load_benchmark_solution()
 
 
-    plot_utils.make_contour_plot2(plottimes=[0,1,2,3,4,5])
-    #plot_utils.make_drift_plot(numplots=5)
+    #plot_utils.make_contour_plot2(plottimes=[0,1,2,3,4,5])
+    plot_utils.make_drift_plot(numplots=5)
     #plot_utils.make_inverted_drift_plot(numplots=5)
     #plot_utils.make_sde_plots(2048, usebenchmark)
     #plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark)

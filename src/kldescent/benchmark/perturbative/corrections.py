@@ -28,7 +28,7 @@ class Perturbation():
         self.xnum = len(self.qaxis) #int(self.overdamped_arr.shape[0]/len(self.t2vec))
 
         #size of convolution filter is 0.5pc of the datavector. 
-        self.filter_delta = int(np.floor(self.xnum*0.05))
+        self.filter_delta = int(np.floor(self.xnum*0.005))
         
     def initialise_mu_vecs(self):
 
