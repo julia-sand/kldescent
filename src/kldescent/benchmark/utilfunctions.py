@@ -5,6 +5,7 @@ import csv
 
 import numpy as np
 from scipy.ndimage import generic_filter,median
+from scipy.signal import savgol_filter
 
 def bfun(bridge_type, Tf):
     
@@ -24,15 +25,39 @@ def afun(bridge_type,Tf):
     else:
         return 1 
 
+def compute_filter_delta(len_y,polyorder):
+    
+    if filter_delta is None:
+            # 0.5% of data
+            filter_delta = int(np.floor(len_y * 0.005))
+
+    # enforce minimum size (must be > polyorder)
+    filter_delta = max(filter_delta, polyorder)
+
+    # enforce odd
+    if filter_delta % 2 == 0:
+        filter_delta += 1
+
+    # enforce not larger than data
+    if filter_delta >= len_y:
+        filter_delta = len_y - 1
+        if filter_delta % 2 == 0:
+            filter_delta -= 1
+
+    return int(filter_delta)
+
 def apply_filter(y,filter_delta=None):
     """convolve array with box filter"""
     
+    polyorder = 3 
+
     if filter_delta is None:
-        #default to 5pc of the data vector
-        filter_delta = int(np.floor(len(y)*0.05))
+        #default to 1pc of the data vector
+        filter_delta = compute_filter_delta(len(y),polyorder)
 
     #apply convolution with moving averages
-    out = np.convolve(y,(1/filter_delta)*np.ones(filter_delta),'same')
+    out = savgol_filter(y, window_length=filter_delta, polyorder=3)
+    #np.convolve(y,(1/filter_delta)*np.ones(filter_delta),'same')
     
     return out
     #generic_filter(y,median,filter_delta,mode="constant")

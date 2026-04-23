@@ -94,8 +94,8 @@ def save_solution_in_time(cell,filename_full,integrator):
         del arr_temp 
 
         #compute next step of the hatphi and phi evolutions 
-        xhatphi_t,hatphi_t = integrator(xhatphi_t,hatphi_t,dt,cell.beta,num_steps=np.minimum(1,int(np.floor(1000/cell.num_tsteps))))
-        xphi_t,phi_t = integrator(cell.xpsi.copy(),cell.psi0.copy(),cell.Tf2-(t+1)*dt,cell.beta,num_steps=np.minimum(1,int(np.floor((cell.num_tsteps-t)*1000/cell.num_tsteps))))
+        xhatphi_t,hatphi_t = integrator(xhatphi_t,hatphi_t,dt,cell.beta)
+        xphi_t,phi_t = integrator(cell.xpsi.copy(),cell.psi0.copy(),cell.Tf2-(t+1)*dt,cell.beta)
 
     return 
 

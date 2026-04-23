@@ -44,8 +44,8 @@ class Pretrain():
             #set defaults of training process
             self.lr = 0.001 #initial learning rate
             self.gamma = 0.9 #decay rate of learning rate
-            self.milestone = 2000 #frequency of learning rate decay (in epochs)
-            self.n_epochs = 10000 #total number of epochs
+            self.milestone = 1000 #frequency of learning rate decay (in epochs)
+            self.n_epochs = 1 #total number of epochs
             self.minibatch_samples = 128 #number of datarows to use per parameter update
             self.clip = 0.5 #size of gradient clipping
 
@@ -140,7 +140,7 @@ class Pretrain():
                     net.eval()
                     print(f'Finished epoch {epoch}, loss {loss}')
                     self.plot_training_process_drift(X.clone(),y.clone(),net,epoch,0)
-                    self.plot_training_process_drift(X.clone(),y.clone(),net,epoch,5)
+                    #self.plot_training_process_drift(X.clone(),y.clone(),net,epoch,5)
                     net.train()
 
     @torch.no_grad
