@@ -1,8 +1,10 @@
 import torch
 
 import matplotlib.pyplot as plt
+import numpy as np 
+from sklearn.neighbors import KernelDensity
 
-from kldescent.viz.plots import get_all_subplot_handles_labels
+from kldescent.viz.plots import *
 
 def plot_histogram(plot_loc,hist,xloc,epoch=1):
     
