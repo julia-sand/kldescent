@@ -51,7 +51,7 @@ def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=No
     
     #generate xmesh
     Q,P = generate_mesh(x_samples,qmax=5)
-    xinit = torch.stack((Q,P), dim=-1).reshape(-1, 2)
+    xinit = torch.stack((P,Q), dim=-1).reshape(-1, 2)
     #torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
     
     with torch.no_grad():
@@ -223,8 +223,8 @@ def compute_marginals_from_joint(xs,joint_out):
     p_init = np.unique(xs) 
 
     #compute marginals
-    qmarg = np.trapezoid(joint_out_temp,x = p_init,axis=0)#np.sum(joint_out_temp,axis=0) #np.trapezoid(joint_out_temp,x = p_init,axis=0)
-    pmarg = np.trapezoid(joint_out_temp,x = p_init,axis=1)
+    qmarg = np.trapezoid(joint_out_temp,x = p_init,axis=1)#np.sum(joint_out_temp,axis=0) #np.trapezoid(joint_out_temp,x = p_init,axis=0)
+    pmarg = np.trapezoid(joint_out_temp,x = p_init,axis=0)
 
     #compute normalisation
     qnorm = get_norm(p_init, qmarg)
@@ -294,7 +294,7 @@ def plot_joint_panel(ax,time,jointout,xout,boundary,benchmark=None):
                                             xout,time,vmax=0.5,benchmark=benchmark)
 
 
-def make_contour_plot(plotutils):
+def make_contour_plot():
     """plot the learned distribution at final time"""
     
     xout,jointout = plotutils.compute_rho_nn(x_samples=20)
@@ -317,3 +317,39 @@ def make_contour_plot(plotutils):
     
     plt.close()
 
+
+def make_contour_plot_(net,boundary,
+                            resultsdir,
+                            plottimes = [0,1,2,3,4,5],
+                            benchmark=None):
+    
+    ncols = int(np.ceil(len(plottimes)/2))
+    fig,axs = make_fig_subplots(ncols=ncols,nrows=2)
+    axs = axs.flatten()
+    Q,P = generate_mesh(x_samples=10,qmax=5)
+    xinit = torch.stack((Q, P), dim=-1).reshape(-1, 2)
+    
+    for i in range(len(plottimes)):
+
+        jointout = compute_pdf(xinit.clone(),net,
+                                    boundary.sigma0,
+                                    boundary.params["epsilon"],
+                                    boundary.p_initial,
+                                    plottimes[i],
+                                    mc_samples =2000,
+                                    tsteps=10)
+            
+        plot_joint_panel(axs[i],plottimes[i],jointout.cpu().numpy(),xinit.clone().cpu().numpy(),
+                            boundary= boundary,
+                            benchmark=benchmark)
+    
+    fig.subplots_adjust(hspace=1.1,wspace=1,bottom=0.08)
+    
+    #add legend
+    h,l = get_all_subplot_handles_labels(fig)
+    make_legend(fig,h,l)
+    make_colourbar(fig,vmax=0.5)
+    
+    save_fig_(fig,"contour_distribution",loc=resultsdir)
+    
+    plt.close()

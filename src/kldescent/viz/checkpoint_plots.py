@@ -94,7 +94,7 @@ class PlotUtils():
 
         if self.benchmark is None:
             #initialise benchmarks
-            self.benchmark = PerturbativeBenchmarkSolution(boundary_cond,folder_name=self.folder)
+            self.benchmark = PerturbativeBenchmarkSolution( bridge_type="half", boundary=self.boundary_cond, folder_name=self.folder)
             self.net = self.benchmark.du_net_benchmark 
 
             self.integrator = langevin.EulerMaruyamaSDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
@@ -398,7 +398,7 @@ class PlotUtils():
             
             self.integrator.net = self.net
             x_du = self.integrator.update_ref_statistics(time=plottimes[i]).cpu().numpy()
-            print(x_du.shape)
+
             if self.benchmark is not None:
 
                 if self.benchmark.du_net_benchmark is not None:  
@@ -553,38 +553,11 @@ class PlotUtils():
         plt.close("all")
 
     def make_contour_plot2(self,plottimes = [0,1,2,3,4,5]):
-        
-        ncols = int(np.ceil(len(plottimes)/2))
-        fig,axs = make_fig_subplots(ncols=ncols,nrows=2)
-        axs = axs.flatten()
-        Q,P = generate_mesh(x_samples=10,qmax=5)
-        xinit = torch.stack((Q, P), dim=-1).reshape(-1, 2)
-        
-        for i in range(len(plottimes)):
-
-            jointout = compute_pdf(xinit.clone(),self.net,
-                                        self.boundary_cond.sigma0,
-                                        self.boundary_cond.params["epsilon"],
-                                        self.boundary_cond.p_initial,
-                                        plottimes[i],
-                                        mc_samples =2000,
-                                        tsteps=10)
-                
-            plot_joint_panel(axs[i],plottimes[i],jointout.cpu().numpy(),xinit.clone().cpu().numpy(),boundary= self.boundary_cond,benchmark=self.benchmark)
-        
-        fig.subplots_adjust(hspace=1.1,wspace=1,bottom=0.08)
-        
-        #add legend
-        h,l = get_all_subplot_handles_labels(fig)
-        make_legend(fig,h,l)
-        make_colourbar(fig,vmax=0.5)
-        
-        plt.tight_layout()
-
-        save_fig_(fig,"contour_distribution",loc=self.resultsdir)
-        
-        plt.close()
-
+        make_contour_plot_(net=self.net,
+                            boundary=self.boundary_cond,
+                            resultsdir=self.resultsdir,
+                            plottimes = plottimes,
+                            benchmark=self.benchmark)
 
 def compute_ref_dynamic_kl(benchmark):
     """Estimate of the dynamic kl divergence for the Gaussian benchmark data.
