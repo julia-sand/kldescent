@@ -335,7 +335,7 @@ class UnderdampedLandauer(OverdampedLandauer):
     def __init__(self,params=None,gauss_params=None,logfile=None):
         OverdampedLandauer.__init__(self,params,logfile)
         self.sigma0 = torch.sqrt(torch.tensor(2.0))
-        self.qmax = 10
+        self.qmax = 4
         self.norm_qmax = 3.5
 
     def p_initial(self,q,p):

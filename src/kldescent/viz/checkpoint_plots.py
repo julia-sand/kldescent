@@ -62,7 +62,6 @@ class PlotUtils():
         boundary_cond,data_loaded = init_params_from_file(self.folder)
 
         params = checkpoint_plot_params() #get checkpoint plot parameters from cmd line
-        
         self.boundary_cond = boundary_cond
         self.data_loaded = data_loaded
 
@@ -153,7 +152,7 @@ class PlotUtils():
         self.load_perturbative_du_checkpoint()
         
         #self.make_intermediate_histograms()
-        self.make_drift_plot(numplots=4)
+        #self.make_drift_plot(numplots=4)
 
     @torch.no_grad
     def make_sde_plots(self,mcsamples,usebenchmark):
@@ -591,10 +590,10 @@ if __name__=="__main__":
 
     plot_utils = PlotUtils()
     usebenchmark,_ = metric_params()
-
-    plot_utils.load_du_checkpoint()
-    if usebenchmark:
-        plot_utils.load_benchmark_solution()
+    print(plot_utils.folder)
+    #plot_utils.load_du_checkpoint()
+    #if usebenchmark:
+    #    plot_utils.load_benchmark_solution()
 
 
     #plot_utils.make_contour_plot2(plottimes=[0,1,2,3,4,5])

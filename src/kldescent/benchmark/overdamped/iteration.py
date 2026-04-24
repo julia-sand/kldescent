@@ -125,8 +125,8 @@ class CellProblem():
         self.psi0 = zchop(np.nan_to_num(psi0,posinf=0,neginf=0,nan=0))
     
     def iteration(self,integrator,
-                        tol=1e-8,
-                        max_iters=30):
+                        tol=1e-5,
+                        max_iters=10):
         """
         Implementation of Iteration in 1912.01244
         'Wasserstein Proximal Algorithms for the Schr¨odinger Bridge Problem:

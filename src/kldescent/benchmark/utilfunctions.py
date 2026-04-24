@@ -25,39 +25,18 @@ def afun(bridge_type,Tf):
     else:
         return 1 
 
-def compute_filter_delta(len_y,polyorder):
-    
-    if filter_delta is None:
-            # 0.5% of data
-            filter_delta = int(np.floor(len_y * 0.005))
-
-    # enforce minimum size (must be > polyorder)
-    filter_delta = max(filter_delta, polyorder)
-
-    # enforce odd
-    if filter_delta % 2 == 0:
-        filter_delta += 1
-
-    # enforce not larger than data
-    if filter_delta >= len_y:
-        filter_delta = len_y - 1
-        if filter_delta % 2 == 0:
-            filter_delta -= 1
-
-    return int(filter_delta)
+def savgol_filter_(y,dx,deriv=0):
+    return savgol_filter(y, window_length=71, polyorder=3, deriv=deriv, delta=dx)
 
 def apply_filter(y,filter_delta=None):
     """convolve array with box filter"""
     
-    polyorder = 3 
-
     if filter_delta is None:
         #default to 1pc of the data vector
-        filter_delta = compute_filter_delta(len(y),polyorder)
+        filter_delta = int(np.floor(len_y * 0.005))
 
     #apply convolution with moving averages
-    out = savgol_filter(y, window_length=filter_delta, polyorder=3)
-    #np.convolve(y,(1/filter_delta)*np.ones(filter_delta),'same')
+    out = np.convolve(y,(1/filter_delta)*np.ones(filter_delta),'same')
     
     return out
     #generic_filter(y,median,filter_delta,mode="constant")
@@ -67,7 +46,7 @@ def append_array_to_csv(filename,data):
     """append numpy array to a csv"""
     
     with open(filename,"a") as file:
-      np.savetxt(file,data,fmt="%10.6f",delimiter=',')
+        np.savetxt(file,data,fmt="%10.6f",delimiter=',')
   
 def interpolate_(q,xs,phis):
     """Interpolate function phi from data points xs to q"""
@@ -82,7 +61,7 @@ def normalise(x,y):
 
 def zchop(x,tol=1e-10):
    
-    return x#np.where(np.abs(x)<tol,0,x)
+    return np.where(np.abs(x)<tol,0,x)
 
 def make_csv_and_header(save_location,filename,header):
     #create the directory

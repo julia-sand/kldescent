@@ -11,7 +11,7 @@ def girsanov_scheme(xinit,du_bar,dt,dw,t,sigma0,epsilon):
     #takes one step forward in the euler maruyama discretisation
     #go forward one step 
     xinit[...,[0]] = xinit[...,[0]] + epsilon*xinit[...,[1]]*dt
-    xinit[...,[1]] = xinit[...,[1]] + sigma0*du_bar*dt + sigma0*dw
+    xinit[...,[1]] = xinit[...,[1]] - sigma0*du_bar*dt + sigma0*dw
 
     return xinit
 

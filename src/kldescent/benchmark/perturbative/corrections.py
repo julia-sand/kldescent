@@ -25,10 +25,11 @@ class Perturbation():
         self.Tf2 = self.Tf*(self.epsilon**2)
         
         self.qaxis = np.unique(overdamped_arr[:,1])
+        self.dx = np.abs(self.qaxis[1]-self.qaxis[0])
         self.xnum = len(self.qaxis) #int(self.overdamped_arr.shape[0]/len(self.t2vec))
 
         #size of convolution filter is 0.5pc of the datavector. 
-        self.filter_delta = int(np.floor(self.xnum*0.01))
+        self.filter_delta = int(np.floor(self.xnum*0.001))
         
     def initialise_mu_vecs(self):
 
@@ -96,15 +97,24 @@ class Perturbation():
         self.dmu_2_vec = np.gradient(self.mu_1_vec,self.t2vec)
 
     def get_sigma(self,t2,idx):
-        sigma = apply_filter(self.sigma(t2),filter_delta=self.filter_delta)[idx]
-        dsigma = self.d_(sigma,self.qaxis[idx])
-        ddsigma = self.d_(dsigma,self.qaxis[idx])
+        sigma_raw = self.sigma(t2)[idx]
+        sigma = savgol_filter_(sigma_raw,dx=self.dx,deriv=0)
+        dsigma = savgol_filter_(sigma_raw,dx=self.dx,deriv=1)
+        ddsigma = savgol_filter_(sigma_raw,dx=self.dx,deriv=2)
+        #sigma = apply_filter(self.sigma(t2),filter_delta=self.filter_delta)[idx]
+        #dsigma = self.d_(sigma,self.qaxis[idx])
+        #ddsigma = self.d_(dsigma,self.qaxis[idx])
         return sigma, dsigma, ddsigma
 
     def get_rho(self,t2,idx):
-        f00 = apply_filter(self.f00(t2),filter_delta=self.filter_delta)[idx]
-        df00 = self.d_(f00,self.qaxis[idx])
-        ddf00 = self.d_(df00,self.qaxis[idx])
+        sigma_raw = self.f00(t2)[idx]
+        f00 = savgol_filter_(sigma_raw,dx=self.dx,deriv=0)
+        df00 = savgol_filter_(sigma_raw,dx=self.dx,deriv=1)
+        ddf00 = savgol_filter_(sigma_raw,dx=self.dx,deriv=2)
+        
+        #f00 = apply_filter(self.f00(t2),filter_delta=self.filter_delta)[idx]
+        #df00 = self.d_(f00,self.qaxis[idx])
+        #ddf00 = self.d_(df00,self.qaxis[idx])
         return f00, df00, ddf00
 
     def save_perturbative(self,):
@@ -589,5 +599,5 @@ if __name__=="__main__":
         
     #compute perturbative
     pertsol = HalfBridgePerturbation(boundary,overdamped_arr,folder_name)
-    #pertsol.save_perturbative()
+    pertsol.save_perturbative()
     pertsol.save_perturbative_cumulants()

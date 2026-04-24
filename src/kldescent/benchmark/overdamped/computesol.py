@@ -118,7 +118,7 @@ def compute_overdamped(boundary,save_location,bridge_type="half"):
 
     cell = CellProblem(boundary,save_location,bridge_type=bridge_type)
     cell.iteration(integrator=mcintegrator,
-                    max_iters=20)
+                    max_iters=7)
 
     filename_full = make_csv_and_header(save_location,filename="overdamped",header="#t,q,rho,sigma")
     save_solution_in_time(cell,
