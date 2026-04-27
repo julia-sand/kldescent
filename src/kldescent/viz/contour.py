@@ -126,9 +126,7 @@ def plot_marginal_joint(ax,x0_marginal,x0_init):
 
 
 def scatter_panel_layout(ax,time,boundary=None):
-
-    #if time == None:
-    #    time = boundary.params["Tf"]
+    """format axes for the contour plot and add assigned boundary conditions"""
 
     #make inset axes to show marginal distributions
     ax_pmarginal = ax.inset_axes([0, 1.05, 1, 0.6])
@@ -202,21 +200,24 @@ def reshape_joint(joint_out):
 
 
 def compute_marginals_from_joint(xs,joint_out):
-    r"""Compute normalised q and p marginals from joint distribution data
-    args:
-        xs : ndarray
-        joint_out : ndarray
-        see joint_distributions_scatter_panel
-    returns: 
-        pinit : ndarray
-        set of q coordinates
-        qmargnorm : ndarray
-        normalised position marginal
-        pmargnorm : ndarray
-        normalised momentum marginal
+    r"""Compute normalized position (q) and momentum (p) marginals from a joint distribution.
 
+    Args:
+    xs (ndarray): 
+        Grid or coordinate values corresponding to the joint distribution.
+    joint_out (ndarray): 
+        Joint distribution data 
 
-        """
+    Returns:
+    pinit (ndarray): 
+        Initial momentum distribution.
+    q_coords (ndarray): 
+        Coordinate values for the position (q) marginal.
+    qmargnorm (ndarray): 
+        Normalized position marginal distribution.
+    pmargnorm (ndarray): 
+        Normalized momentum marginal distribution.
+    """
 
     joint_out_temp = reshape_joint(joint_out)
 
@@ -246,27 +247,33 @@ def joint_distributions_scatter_panel(
     distributions are estimated from the same data.
 
     Args:
-        ax (matplotlib.axes.Axes):
-            The axes on which to draw the plot. Can be a standard axes
-            or a subplot created from a GridSpec.
+    ax (matplotlib.axes.Axes):
+        The axes on which to draw the plot. Can be a standard axes
+        or a subplot created from a GridSpec.
 
-        ax_pmarginal (matplotlib.axes.Axes):
-            The axes for marginal distribution of p
+    ax_pmarginal (matplotlib.axes.Axes):
+        The axes for marginal distribution of p
 
-        ax_qmarginal (matplotlib.axes.Axes):
-            The axes for marginal distribution of q
+    ax_qmarginal (matplotlib.axes.Axes):
+        The axes for marginal distribution of q
 
-        joint_out (np.ndarray):
-            Flattened joint distribution of shape (n**2,).
-            Represents the values corresponding to each (q, p) pair.
+    joint_out (np.ndarray):
+        Flattened joint distribution of shape (n**2,).
+        Represents the values corresponding to each (q, p) pair.
 
-        xs (np.ndarray):
-            Input coordinates of shape (n**2, 2), where each row is a (q, p) pair.
-            Assumes the points are generated via `np.meshgrid`, so that q and p
-            values form a regular grid.
+    xs (np.ndarray):
+        Input coordinates of shape (n**2, 2), where each row is a (q, p) pair.
+        Assumes the points are generated via `np.meshgrid`, so that q and p
+        values form a regular grid.
 
-        vmax (float):
-            Upper limit for the color scale used in the joint distribution plot.Default 0.5
+    time (float):
+        Time of the evolution
+
+    vmax (float):
+        Upper limit for the color scale used in the joint distribution plot.Default 0.5
+    
+    benchmark (object):
+        Stores the data for the benchmark solution. Default None, in which case benchmark values are not plotted.
     """
 
     p_init_out,qmarg_norm,pmarg_norm,normall = compute_marginals_from_joint(xs,joint_out)
@@ -275,17 +282,17 @@ def joint_distributions_scatter_panel(
     plot_marginal_joint(ax_qmarginal,p_init_out,qmarg_norm)
     plot_marginal_joint(ax_pmarginal,pmarg_norm,p_init_out)
 
-    if benchmark is not None:
-        #plot marginals
-        x,ptx = benchmark.get_benchmark_quantity(np.round(time,6),quantity = "underdamped marginal",data="perturbative underdamped",time_type="t0")
-        ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Benchmark Evolved")
+    #if benchmark is not None:
+    #plot marginals
+    x,ptx = benchmark.get_benchmark_quantity(np.round(time,6),quantity = "underdamped marginal",data="perturbative underdamped",time_type="t0")
+    ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Benchmark Evolved")
 
     #plot joint distribution
     ax.scatter(xs[...,0]/normall,xs[...,1]/normall,c=reshape_joint(joint_out).T.flatten()
                 ,cmap="Blues",norm="log",vmin=0.0001,vmax=vmax)
 
 def make_colourbar(fig,vmax):
-    #adds a colour bar
+    """add color bar to fig"""
 
     sm =  ScalarMappable(norm="log",cmap=plt.get_cmap("Blues"))
     sm.set_array([])
@@ -341,7 +348,7 @@ def make_contour_plot_(net,boundary,
     ncols = int(np.ceil(len(plottimes)/2))
     fig,axs = make_fig_subplots(ncols=ncols,nrows=2)
     axs = axs.flatten()
-    Q,P = generate_mesh(x_samples=100,qmax=4)
+    Q,P = generate_mesh(x_samples=20,qmax=4)
     xinit = torch.stack((Q, P), dim=-1).reshape(-1, 2)
     
     for i in range(len(plottimes)):
@@ -350,13 +357,11 @@ def make_contour_plot_(net,boundary,
                                     boundary.sigma0,
                                     boundary.params["epsilon"],
                                     boundary.p_initial,
-                                    plottimes[i],
-                                    mc_samples=8192,
-                                    tsteps=8192)
+                                    plottimes[i])
             
         plot_joint_panel(axs[i],plottimes[i],jointout.cpu().numpy(),xinit.clone().cpu().numpy(),
-                            boundary= boundary,
-                            benchmark=benchmark)
+                            boundary = boundary,
+                            benchmark = benchmark)
     
     fig.subplots_adjust(hspace=1.1,wspace=1,bottom=0.08)
     

@@ -152,11 +152,9 @@ class TrainRho():
         #reset gradients 
         optimiser.zero_grad()
           
-        else:
-            raise ValueError('Girsanov net: Loss function is NaN. Terminating training process')
-            #TODO this error may be raised when the initialisation of the drift 
-            #network is too large. Fix this in future by adding a conditional warmstart
-            #to DUNET whenever terminal cost is GirsanovNet
+        #TODO loss function may be nan when the initialisation of the drift 
+        #network is too large. Fix this in future by adding a conditional warmstart
+        #to DUNET whenever terminal cost is GirsanovNet
 
         return 
 

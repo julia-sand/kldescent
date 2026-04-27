@@ -61,8 +61,10 @@ def run():
     #pretrain the network with data from csv if provided
     if args["pretrain"] is not None: #if a path is provided 
         run_pretrain(net,
-                        path_to_pretrain=args["pretrain"])                  
-    
+                    metrics_logger.newpath,
+                    path_to_pretrain=args["pretrain"],
+                    epsilon=None)
+                                          
     #training 
     for epoch in tqdm(range(args["epochs"])):#range(0,args["epochs"]):
         

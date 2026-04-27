@@ -1,4 +1,3 @@
-#TODO add all output files created here
 import csv
 import os
 import time

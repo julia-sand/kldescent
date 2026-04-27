@@ -233,7 +233,7 @@ class OverdampedLandauer(OverdampedFullLandauer):
 class LinearOU(Boundaries):
     def __init__(self,d=1):
         Boundaries.__init__(self)
-        self.d = d #dimension #TODO!!! this needs to be added 
+        self.d = d #dimension. only d=1 is supported.
         self.gamma = 1
         self.A = 0.2
         self.Lambda = 1

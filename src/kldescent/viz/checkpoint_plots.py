@@ -8,7 +8,6 @@ import numpy as np
 
 from kldescent.model.nn import RhoNeuralNetwork,NeuralNetwork,load_checkpoint
 from kldescent.sde import langevin
-from kldescent.sde.girsanovpdf import compute_pdf
 from kldescent.utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd,metric_params
 from kldescent.utils.getboundary import init_params_from_file
 from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmarkSolution
@@ -137,6 +136,7 @@ class PlotUtils():
         """initialise the reference solution and add to the class""" 
 
         if self.benchmark is None:
+
             if "Gauss" in f"{self.boundary_cond.__class__.__name__}":  
                 self.benchmark = GaussBenchmarkSolution(boundary=self.boundary_cond,
                                                             folder_name=self.folder)
@@ -551,21 +551,25 @@ class PlotUtils():
         plt.close("all")
 
     def make_contour_plot2(self,plottimes = [0,1,2,3,4,5]):
-        self.benchmark = self.load_benchmark_solution()
+        
+        tgrid =self.benchmark.get_timegrid() 
+        indices = np.linspace(0, len(tgrid) - 1, 6, dtype=int)
+        
+        plottimes = tgrid[indices]
+
+
         make_contour_plot_(net=self.net,
                             boundary=self.boundary_cond,
                             resultsdir=self.resultsdir,
                             plottimes = plottimes,
                             benchmark=self.benchmark)
 
-def compute_ref_dynamic_kl(benchmark):
+def compute_ref_dynamic_kl_gauss(benchmark):
     """Estimate of the dynamic kl divergence for the Gaussian benchmark data.
     Uses the benchmark position and momentum variance and estimates the integral
     E_(P) (du)**2 in the interval [0,T]
     where the (P) is the path measure estimated with a Gaussian at each step 
     
-    ##TODO: update this for non-gaussian
-
     args:
         benchmark : class
             specify the benchmark solution for comparison

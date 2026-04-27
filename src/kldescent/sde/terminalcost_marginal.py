@@ -181,8 +181,6 @@ class NormFlow(TerminalCost):
         #TODO fix this
         import matplotlib.pyplot as plt
 
-        #plot_loc = self.logger.newpath 
-        
         #make a plot of final points vs estimated distribution
         pdf_temp = torch.exp(self.get_half_logpdf(x))
         pdf_temp[torch.isnan(pdf_temp)] = 0

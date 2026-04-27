@@ -91,7 +91,6 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         get_perturbative_cumulant():
             Retrieve a single perturbative cumulant.
     """
-    #TODO update the perturbative solution to save in terms of t0!!!!
 
     def __init__(self, bridge_type="half", boundary=None, folder_name=None):
         r"""
@@ -253,6 +252,7 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
 
     def get_perturbative_cumulants_array(self,idx=None):
         """return the array for predicted cumulants using perturbation theory"""
+       
         arr = np.loadtxt(open(self.perturbative_cumulants_loc),
                         delimiter=",",skiprows=1,usecols=idx) 
         return arr 
@@ -294,10 +294,11 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         Warning: only use this function for plotting if there is no other option. 
         
         THIS WILL RUN ****VERY**** SLOWLY FOR INTEGRATION
-        TODO update with new t0 logic"""
+        time should be given as t0
+        """
         
         arr = self.get_benchmark_data(data="perturbative underdamped")
-        arrtemp = arr[np.where(arr[:,0]==np.round(time*(self.boundary.params["epsilon"]**2),6))] 
+        arrtemp = arr[np.where(arr[:,0]==np.round(time,6))] 
         arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
         x = arrtemp[:,1].flatten()
         y = arrtemp[:,-2].flatten()
@@ -429,12 +430,12 @@ class GaussBenchmarkSolution(BaseBenchmarkSolution):
         """Return drift for t,q coordinate"""
 
         v1 = self.get_drift_gaussian(t)
-        try:
-            return np.squeeze(q*v1) #+ v0
-        except: #return zeros
-            #TODO handle this error better or add msg
-            return np.zeros_like(q) 
- 
+                
+        if v1 is None: 
+            return np.zeros_like(q)
+
+        return np.squeeze(q*v1) 
+        
     def get_benchmark_quantity(self,time,quantity,data=None,arr=None,time_type="t0"):
         """
         Get quantities to plot for the benchmark solution 

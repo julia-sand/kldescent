@@ -65,14 +65,18 @@ def compute_pdf(x0,
     
     #pdb.set_trace()
     net.eval()
-
-    if tsteps is None:
-        #todo fix this
+    
+    #parse arguments if these not given
+    if tsteps is None or mc_samples is None:
         args = integrator_params()
-        tsteps = args["tsteps"]
 
-    if mc_samples is None: #use default if none given
-        mc_samples = args["testsamples"]
+    #choose truthy values
+    tsteps = tsteps or args.get("tsteps")
+    mc_samples = mc_samples or args.get("testsamples")
+    
+
+    print("tsteps",tsteps)
+    print("mc",mc_samples)
 
     with torch.no_grad():
         
@@ -135,13 +139,13 @@ if __name__=="__main__":
 
         pdf = torch.zeros_like(xf[...,[0]]).to(nn_temp.device)
         pdf = compute_pdf(xf,
-                                                nn_temp,
-                                                boundary.sigma0,
-                                                boundary.params["epsilon"],
-                                                boundary.p_initial,
-                                                boundary.params["Tf"],
-                                                mc_samples=2,
-                                                tsteps=21)#torch.vmap(lambda xi: torch.mean(), randomness='different')(xf) 
+                            nn_temp,
+                            boundary.sigma0,
+                            boundary.params["epsilon"],
+                            boundary.p_initial,
+                            boundary.params["Tf"],
+                            mc_samples=2,
+                            tsteps=21)#torch.vmap(lambda xi: torch.mean(), randomness='different')(xf) 
                 
     plot_scatter_(xf, pdf)
 

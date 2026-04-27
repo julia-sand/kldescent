@@ -37,8 +37,8 @@ class Pretrain():
             If None, no transformation is applied.
 
         path_to_pretrain : str, optional
-            Overwrite the default behaviour by providing a different name for the csv 
-            file to be used here.
+            Overwrite the default behaviour by providing a filepath for a csv 
+            to be used in training.
         """
 
         self.epsilon = epsilon 
@@ -47,7 +47,7 @@ class Pretrain():
         if path_to_pretrain is None:    
             self.path = folder_name+"/perturbative_underdamped.csv"
         else:
-            self.path = folder_name+"/"+path_to_pretrain
+            self.path = path_to_pretrain#folder_name+"/"+path_to_pretrain
         
         #set defaults of training process
         self.lr = 0.001 #initial learning rate

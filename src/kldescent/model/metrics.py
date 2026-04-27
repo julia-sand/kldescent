@@ -68,7 +68,6 @@ class Metrics():
         else: 
             self.wandb_run = None
 
-        #self.update_metrics(0, 0)
         self.kldyn = 0
         self.lr = 0 
 
@@ -84,31 +83,24 @@ class Metrics():
         """
         
         with torch.no_grad():
-            #print("CPU percent per core",psutil.cpu_percent(percpu=True))
-            if loss_out is not None:
-                loss_out = loss_out
-            else:
-                loss_out = 0 #TODO: compute the loss independently here
 
-            with torch.no_grad():
+            kl_dynamic,xinit,xref = self.integrator.compute_metrics(self.benchmark_)
 
-                kl_dynamic,xinit,xref = self.integrator.compute_metrics(self.benchmark_)
+            kl_static_from_ref,kl_static =0,0# static_kl_divergence(xinit,xref,self.integrator.boundary)
+            self.actioncost = kl_dynamic + self.integrator.boundary.params["weight"]*kl_static_from_ref
+            if self.wandb_run is not None:
+                self.wandb_run.log({"dynamickl": kl_dynamic, 
+                                    "statickl": kl_static, 
+                                    "action":self.actioncost,
+                                    "lr":self.lr})
+                log_cpu(self.wandb_run)
 
-                kl_static_from_ref,kl_static =0,0# static_kl_divergence(xinit,xref,self.integrator.boundary)
-                self.actioncost = kl_dynamic + self.integrator.boundary.params["weight"]*kl_static_from_ref
-                if self.wandb_run is not None:
-                    self.wandb_run.log({"dynamickl": kl_dynamic, 
-                                        "statickl": kl_static, 
-                                        "action":self.actioncost,
-                                        "lr":self.lr})
-                    log_cpu(self.wandb_run)
-
-                self.metrics_logger.write_data_row(epoch,
-                                            loss_out,
-                                            self.actioncost,
-                                            #kl_dynamic + self.integrator.boundary.params["weight"]*kl_static_from_ref,
-                                            kl_dynamic,
-                                            kl_static,
-                                            kl_static_from_ref,
-                                            self.lr)
-                                           # np.nanvar(xinit[...,0]))
+            self.metrics_logger.write_data_row(epoch,
+                                        loss_out,
+                                        self.actioncost,
+                                        #kl_dynamic + self.integrator.boundary.params["weight"]*kl_static_from_ref,
+                                        kl_dynamic,
+                                        kl_static,
+                                        kl_static_from_ref,
+                                        self.lr)
+                                        # np.nanvar(xinit[...,0]))
