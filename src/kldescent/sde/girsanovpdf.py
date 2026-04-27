@@ -11,7 +11,7 @@ def girsanov_scheme(xinit,du_bar,dt,dw,t,sigma0,epsilon):
     #takes one step forward in the euler maruyama discretisation
     #go forward one step 
     xinit[...,[0]] = xinit[...,[0]] + epsilon*xinit[...,[1]]*dt
-    xinit[...,[1]] = xinit[...,[1]] - sigma0*du_bar*dt + sigma0*dw
+    xinit[...,[1]] = xinit[...,[1]] + sigma0*du_bar*dt + sigma0*dw
 
     return xinit
 
@@ -25,40 +25,52 @@ def compute_pdf(x0,
                     mc_samples=None,
                     tsteps=None):
     """
-    Computes an estimate for the final joint distribution using Girsanov theorem 
-    Does not track gradients 
-    Following 2411.08518 (see Section 3 for example). 
+    Compute an estimate of the final joint distribution using Girsanov's theorem.
 
-    ====
+    Gradient tracking is disabled.
+
+    Based on: arXiv:2411.08518 (see Section 3 for an example application).
+
     Parameters
-        xinit : array
-            coordinate (q,p) of x0 on which to evaluate rho
-        net : class
-            neural net to use 
-        Tf : float 
-            time for the plot
-        sigma0 : float
-            parameter of the evolution
-        epsilon : float
-            parameter of the evolution 
-        pinitial : method
-            the initial condition of the boundary conditions
-        mcsamples : int
-            number of mc samples
-        tsteps : int
-            number of timesteps
-    Returns: 
-        pdfout : arr
-            estimate of the pdf at time Tf at location xinit
-    ====
+    ----------
+    xinit : np.ndarray
+        Coordinates (q, p) of x₀ at which to evaluate the density rho.
+
+    net : object
+        Neural network used for the computation.
+
+    Tf : float
+        Final time at which the distribution is evaluated.
+
+    sigma0 : float
+        Initial diffusion parameter of the dynamics.
+
+    epsilon : float
+        Small parameter governing the perturbative regime.
+
+    pinitial : callable
+        Function specifying the initial boundary condition.
+
+    mcsamples : int
+        Number of Monte Carlo samples used for the estimate.
+
+    tsteps : int
+        Number of time steps in the simulation.
+
+    Returns
+    -------
+    pdfout : np.ndarray
+        Estimated probability density function evaluated at time Tf and location xinit.
     """
     
     #pdb.set_trace()
     net.eval()
 
-    #todo fix this
-    args = integrator_params()
-    tsteps = args["tsteps"]
+    if tsteps is None:
+        #todo fix this
+        args = integrator_params()
+        tsteps = args["tsteps"]
+
     if mc_samples is None: #use default if none given
         mc_samples = args["testsamples"]
 

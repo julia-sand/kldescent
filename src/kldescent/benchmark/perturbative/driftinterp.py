@@ -15,15 +15,19 @@ from kldescent.model.pretrain import run_pretrain
 
 
 def perturbative_du_interp(benchmark,mlp_net):
-    """Trains a neural network to approximate the perturbatively 
-    estimated drift. If a checkpoint is alread in the benchmark solution
-    folder, this is loaded instead of training.
+    """
+    Train a neural network to approximate the perturbatively estimated drift.
 
-    args: 
-        benchmark : class
-            find the benchmark solution
-        mlpnet : class
-            neural network
+    If a checkpoint already exists in the benchmark solution folder, it is
+    loaded instead of retraining the model.
+
+    Parameters
+    ----------
+    benchmark : object
+        Benchmark solution handler used to access reference data and paths.
+
+    mlpnet : object
+        Neural network model to be trained.
     """
 
     try:

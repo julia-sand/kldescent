@@ -19,7 +19,6 @@ from kldescent.viz.cumulants import plot_cumulants,load_cumulant_csvs
 from kldescent.viz.drift import plot_drift
 from kldescent.viz.distribution_plots import marginal_distribution,make_marginal_distribution_fig
 
-
 def zchop(x,tol=1e-8):
     return np.where(np.abs(x)<tol,0,x)
 
@@ -93,7 +92,7 @@ class PlotUtils():
 
         if self.benchmark is None:
             #initialise benchmarks
-            self.benchmark = PerturbativeBenchmarkSolution( bridge_type="half", boundary=self.boundary_cond, folder_name=self.folder)
+            self.benchmark = PerturbativeBenchmarkSolution(bridge_type="half", boundary=self.boundary_cond, folder_name=self.folder)
             self.net = self.benchmark.du_net_benchmark 
 
             self.integrator = langevin.EulerMaruyamaSDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
@@ -552,6 +551,7 @@ class PlotUtils():
         plt.close("all")
 
     def make_contour_plot2(self,plottimes = [0,1,2,3,4,5]):
+        self.benchmark = self.load_benchmark_solution()
         make_contour_plot_(net=self.net,
                             boundary=self.boundary_cond,
                             resultsdir=self.resultsdir,

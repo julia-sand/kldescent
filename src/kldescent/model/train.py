@@ -194,4 +194,4 @@ class TrainRho():
         self.rhonet.eval() #return neural net into eval mode
 
 if __name__=="__main__":
-    Pretrain(path_to_pretrain="src/refsolution/UnderdampedHalfNet/benchmark.csv").get_pretraining_data()
+    Pretrain(folder="src/refsolution/UnderdampedHalfNet/", path_to_pretrain="benchmark.csv").get_pretraining_data()

@@ -45,17 +45,20 @@ def save_solution_in_time(cell,filename_full,integrator):
     Evaluate the schrödinger factors along the time horizon and use them to compute 
     the probability distribution and value function in the horizon [0,Tf2]
     
-    args: 
-        cell : class
-            class containing solution of the cell problem
-        filename : str
-            location of csv where results will be saved
-        integrator : function
-            method to use for integrating the heat equations
-        
-    returns:
-        arr_out : arr
-            array of shape (n,4) with columns containing [t,q,rho(t,q),V(t,q)]
+    Parameters
+    ----------    
+    cell : object
+        object containing the solution of the cell problem
+    filename : str
+        location of csv where results will be saved
+    integrator : callable
+        method to use for integrating the heat equations
+    
+    Returns
+    -------
+    arr_out : np.ndarray
+        Array of shape (n, 4) where each column corresponds to:
+        [t,q,rho(t,q),DU(t,q)]
     """
 
     #define a grid for q
@@ -100,17 +103,24 @@ def save_solution_in_time(cell,filename_full,integrator):
     return 
 
 def compute_overdamped(boundary,save_location,bridge_type="half"):
-    """Compute the overdamped cell problem
-    params:
-        boundary : class
-            defines the boundary conditions
-        savelocation : str
-            location where to save csv
-        bridgetype : str 
-            determines the type of the cell problem
-        
-    returns:
-        csv saved in savelocation
+    """
+    Compute the overdamped cell problem
+    
+    Parameters
+    ----------
+    boundary : object
+        Defines the boundary conditions of the problem.
+
+    save_location : str
+        Directory where the CSV file will be saved.
+
+    bridge_type : str
+        Determines the type of cell problem to solve. ("marginal","half", or "full")
+
+    Returns
+    -------
+    None
+        The function writes a CSV file to `save_location`.
     """
 
     #make folder for results if not exists
@@ -124,10 +134,6 @@ def compute_overdamped(boundary,save_location,bridge_type="half"):
     save_solution_in_time(cell,
                                 filename_full,
                                 integrator=mcintegrator)
-
-    #arr = zchop(arr,tol=1e-6)
-    
-    #save_array(arr,save_location,filename="overdamped",header="t,q,rho,dV")
 
     return 
 

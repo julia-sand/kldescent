@@ -74,16 +74,25 @@ def make_csv_and_header(save_location,filename,header):
     return filename_full
 
 def save_array(arr_out,save_location,filename,header):
-    """saves an array as a csv to the given location
-    args: 
-        arr : ndarray
-            array to save
-        save_location : str
-            filepath relative to where the code is run
-        filename : str
-            name of the file
-        header : str 
-            comment to add at the top of the csv
+    """
+    Save an array to a CSV file at the specified location.
+
+    The output directory is created automatically if it does not already exist.
+    If the file already exists, new values are appended to it.
+    
+    Args:
+        arr (np.ndarray):
+            Array to be saved.
+
+        save_location (str):
+            Directory path where the file will be written, relative to the
+            current working directory.
+
+        filename (str):
+            Name of the output file (should include the `.csv` extension if desired).
+
+        header (str, optional):
+            Text to include at the top of the CSV file as a comment.
     """
 
     #make dir if does not exist

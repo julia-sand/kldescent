@@ -14,16 +14,21 @@ class CellProblem():
                       save_location,
                       bridge_type):
         """
-        class for solving the cell problem using an iteration algorithm
+        Class for solving the cell problem using an iterative algorithm.
 
-        args: 
-            boundary : class
-                class storing the initial and final conditions of the problem
-            num_iters : int
-                how many iterations to perform
-            num_samples : int 
-                how many samples to use in each integration
-            bridge_type : str
+        Parameters
+        ----------
+        boundary : object
+            Object containing the boundary conditions of the problem.
+
+        num_iters : int
+            Number of iterations to perform in the solver.
+
+        num_samples : int
+            Number of samples used in each integration step.
+
+        bridge_type : str
+            Type of bridge formulation to use (e.g. "marginal", "half", "full").
         """
         
         self.bridge_type = bridge_type

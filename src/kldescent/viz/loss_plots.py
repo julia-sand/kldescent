@@ -9,17 +9,22 @@ import matplotlib.pyplot as plt
 from kldescent.viz.plots import update_mpl
 from kldescent.utils.parser import fetch_results_folder_from_cmd
 
-
 def movingaverage(data, window_size):
-  """compute moving average along array
-  args:
-    data : 1darray
-      one-dimensional array
-    window_size : int
-      size of filter for moving average
-  returns: 
-    data : 1darray
-      smoothed data same shape as input
+  """
+  Compute a moving average of a one-dimensional array.
+
+  Parameters
+  ----------
+  data : np.ndarray
+      One-dimensional input array.
+
+  window_size : int
+      Size of the moving average window.
+
+  Returns
+  -------
+  smoothed_data : np.ndarray
+      Smoothed array with the same shape as the input.
   """
 
   data_means = np.convolve(data, np.ones(int(window_size))/float(window_size), 'same')
@@ -33,19 +38,29 @@ def get_loss_output(folder,filename=None):
   return arr
 
 def plot_metric(ax,xdata,ydata,ylabel,window_size=5):
-  """Plot raw metric data and a smoothed moving average 
-  args:
-    axs : artist
-      axis to use for plt
-    arr : ndarray
-      array of loss data 
-    idx : int
-      which column to plot
-    ylabel : str
-    window_size : int 
-      size of smoothing to apply
-  returns
-    None
+  """
+  Plot raw metric data together and a smoothed moving average.
+
+  Parameters
+  ----------
+  ax : matplotlib.axes.Axes
+      Axis object on which to plot the data.
+
+  xdata : np.ndarray
+      One-dimensional array of x-values.
+
+  ydata : np.ndarray
+      Array of metric values to plot.
+
+  ylabel : str
+      Label for the y-axis.
+
+  window_size : int, optional
+      Size of the moving average window used for smoothing. Default is 5.
+
+  Returns
+  -------
+  None
   """
   
   ax.scatter(xdata,ydata,label="raw data")

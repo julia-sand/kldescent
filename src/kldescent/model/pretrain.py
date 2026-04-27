@@ -16,22 +16,29 @@ from kldescent.viz.plots import update_mpl
 
 class Pretrain():
     """
-    Class for training a neural network to learn CSV data
+    Class for training a neural network on data stored in CSV format.
         
     Used for eg. initialising a drift or training a secondary model to interpolate 
     benchmark perturbative evolutions
     """
     
-    def __init__(self,epsilon,folder_name,path_to_pretrain=None):
+    def __init__(self,folder_name,epsilon=None,path_to_pretrain=None):
         r"""
-        Define the training parameters and loop for any pretraining. 
+        Define the training parameters and loop for pretraining.
 
-        args:
-            epsilon : float
-                if None, no transformation is done
-            folder_name : str
-                location of the CSV to train
-            path
+        Parameters
+        ----------
+        folder_name : str
+            Path to the folder containing the CSV training data. 
+            By default, 'perturbative_underdamped.csv' is used  
+
+        epsilon : float, optional
+            Small parameter used for transformation.
+            If None, no transformation is applied.
+
+        path_to_pretrain : str, optional
+            Overwrite the default behaviour by providing a different name for the csv 
+            file to be used here.
         """
 
         self.epsilon = epsilon 
@@ -40,14 +47,15 @@ class Pretrain():
         if path_to_pretrain is None:    
             self.path = folder_name+"/perturbative_underdamped.csv"
         else:
-            self.path = path_to_pretrain
-            #set defaults of training process
-            self.lr = 0.001 #initial learning rate
-            self.gamma = 0.9 #decay rate of learning rate
-            self.milestone = 1000 #frequency of learning rate decay (in epochs)
-            self.n_epochs = 3000 #total number of epochs
-            self.minibatch_samples = 128 #number of datarows to use per parameter update
-            self.clip = 0.5 #size of gradient clipping
+            self.path = folder_name+"/"+path_to_pretrain
+        
+        #set defaults of training process
+        self.lr = 0.001 #initial learning rate
+        self.gamma = 0.9 #decay rate of learning rate
+        self.milestone = 1000 #frequency of learning rate decay (in epochs)
+        self.n_epochs = 3000 #total number of epochs
+        self.minibatch_samples = 128 #number of datarows to use per parameter update
+        self.clip = 0.5 #size of gradient clipping
 
     def get_pretraining_data(self):
         """Load data from csv to be used in training the network
@@ -187,7 +195,7 @@ def run_pretrain(net,
 
     print("Starting pre-training")
     
-    pretrainer = Pretrain(epsilon=epsilon,folder_name=folder_name,path_to_pretrain=path_to_pretrain)
+    pretrainer = Pretrain(folder_name=folder_name,epsilon=epsilon,path_to_pretrain=path_to_pretrain)
     pretrainer.pretraining(net)
     
     print("Pretraining completed successfully.")

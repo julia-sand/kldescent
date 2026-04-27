@@ -47,7 +47,7 @@ class Perturbation():
     def get_rhomask(self,t2):
         """return index where rho is non zero at time t2"""
         
-        return np.where(self.f00(t2)>0)
+        return np.where(zchop(self.f00(t2),tol=1e-5)>0)
 
     def get_t0(self,t2):
         """find t0 from t2"""
@@ -406,7 +406,7 @@ class HalfBridgePerturbation(Perturbation):
                 perturbative prediction of drift 
         """
 
-        return -self.dU_tilde(t0,f00,df00,dsigma,kappa)- self.coeff_XM(t0)*self.XM(t0,f00,df00,dsigma,kappa)
+        return self.dU_tilde(t0,f00,df00,dsigma,kappa) - self.coeff_XM(t0)*self.XM(t0,f00,df00,dsigma,kappa)
 
     def dU_tilde(self,t0,f00,df00,dsigma,kappa):
         
@@ -452,7 +452,7 @@ class HalfBridgePerturbation(Perturbation):
         return np.trapezoid(f00*dsigma,self.qaxis[idx])/(self.A-self.B)
         
     def coeff_XM(self,t0):
-        return (np.cos(t0)+np.sin(t0))/np.sin(self.Tf)
+        return (np.cosh(t0)+np.sinh(t0))/np.sinh(self.Tf)
 
     def XM(self,t0,f00,df00,dsigma,kappa):
         term1 = -df00/(2*self.M)
@@ -474,16 +474,16 @@ class HalfBridgePerturbation(Perturbation):
         term1 = 1
 
         # Second term: ε^2 * (self.G11(t0) - (self.G12(t0) * G_tf_111) / G_tf_112)^2 * ∫ dq f_tz_00 ( (1/√A) ∂_q ln f_tz_00 + (1/A) ∂_q σ_tz_00 )^2
-        integrand_1 = ddf00**2/f00 + 2*df00*ddsigma/self.A + (ddsigma/self.A)**2
+        integrand_1 = ddf00**2/(self.A*f00) + 2*df00*dsigma/(self.A**(3/2)) + f00*(dsigma/self.A)**2
 
         integral_1 = np.trapezoid(np.nan_to_num(integrand_1,nan=0,posinf=0,neginf=0),self.qaxis[idx])
         term2 = self.epsilon**2 * (self.G11(t0) - self.coeff_G111_G112()*self.G12(t0))**2 * integral_1
 
-        integrand_2 = ddf00/np.sqrt(self.A) - (df00**2)/f00 + ddsigma/self.A
+        integrand_2 = (ddf00 - (df00**2)/f00)/np.sqrt(self.A) + f00*ddsigma/self.A
         integral_2 = np.trapezoid(np.nan_to_num(integrand_2,nan=0,posinf=0,neginf=0),self.qaxis[idx])
 
         s = self.get_t0(self.t2vec[:t2_idx+1])
-        integral_3 = np.trapezoid(self.integrand_3(s,t0),self.t2vec[:t2_idx+1])
+        integral_3 = np.trapezoid(self.integrand_3(s,t0),s)
 
         term3 = -self.epsilon**2 * integral_2 * integral_3
 
@@ -491,8 +491,6 @@ class HalfBridgePerturbation(Perturbation):
         term4 = -(self.epsilon * (self.A - self.B) * kappa * (self.G11(t0) - self.G12(t0) *self.coeff_G111_G112())/self.A)**2
 
         return term1 + term2 + term3 + term4
-
-
 
     def integrand_3(self,s,t0):
         return np.exp(-2 * (t0 - s)) * (self.G11(s) - self.coeff_G111_G112()*self.G12(s))
@@ -526,7 +524,7 @@ class HalfBridgePerturbation(Perturbation):
     def mommean(self,t0,kappa):
         """Compute momentum mean"""
         
-        return kappa*self.G11(t0)*self.epsilon**2
+        return kappa*self.G11(t0)*self.epsilon
 
     def posmean(self,t0,t2,t2_idx,kappa):
         """Compute position mean"""

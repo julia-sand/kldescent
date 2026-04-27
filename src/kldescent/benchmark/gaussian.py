@@ -15,7 +15,26 @@ class GaussBVP():
                       epsilon,
                       Tf,
                       M):
-        """Set shared parameters"""
+        """
+        Initialize shared parameters for the model.
+
+        Args:
+            sigmainitial (float):
+                Initial variance of the distribution.
+
+            sigmafinal (float):
+                Final variance of the reference distribution.
+
+            epsilon (float):
+                Small parameter controlling the perturbation scale.
+
+            Tf (float):
+                Final time of the process.
+
+            M (float):
+                Weighting factor for enforcing boundary conditions.
+        """
+
         #self.muinitial = muinitial 
         #self.mufinal = mufinal
         
@@ -45,8 +64,7 @@ class GaussBVP():
         return 1 - (1/(PT*self.rho_denom(QT,CT,PT)))
 
     def evolution_jacobian(self,t,y):
-        """compute jacobian of the evolution equations
-        TODO: check these are correct, currently not used because they cause errors"""
+        """compute jacobian of the evolution equations"""
 
         f0_deriv = np.array([np.zeros_like(y[0]),
                             4*(y[1]),

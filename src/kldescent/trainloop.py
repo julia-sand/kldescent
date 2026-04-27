@@ -7,7 +7,34 @@ def train_loop_du(epoch,
                     integrator,
                     trainer,
                     logstep):
+    """
+    Run a single training epoch.
 
+    Parameters
+    ----------
+    epoch : int
+        Current training epoch index.
+
+    metric_ : object
+        Metric evaluator used to compute training diagnostics.
+
+    terminal_cost : object
+        Object defining the terminal cost evaluation method used in the optimisation objective.
+
+    integrator : object
+        Object defining the Langevin dynamics and integration method used to propagate dynamics.
+
+    trainer : object
+        Trainer object responsible for updating model parameters.
+
+    logstep : int
+        Frequency (in iterations or epochs) at which metrics are logged.
+
+    Returns
+    -------
+    None
+    """
+    
     #update the terminal cost with current final distribution
     terminal_cost.update_cost_params(integrator,epoch)
 

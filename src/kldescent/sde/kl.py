@@ -3,30 +3,38 @@ from scipy.spatial import KDTree
 
 def kl_div(d1,d2,k=1,tree1=None,return_tree=False):
     """
-    Computes the KL divergence between two sets of sampled points 
-    via the k-nearest-neighbours method of 
-    Wang, Qing and Kulkarni, Sanjeev R. and Verdu, Sergio. 
-    In: IEEE Transactions on Information Theory (2009)
+    Estimate the KL divergence between two empirical distributions using
+    the k-nearest neighbours method proposed by:
+
+    Wang, Q., Kulkarni, S. R., & Verdú, S. (2009),
+    IEEE Transactions on Information Theory.
 
     Parameters
     ----------
-    d1 : array
-        Samples from a distribution
-    d2 : array
-        Samples from a distribution
+    d1 : np.ndarray
+        Samples drawn from the first distribution.
+
+    d2 : np.ndarray
+        Samples drawn from the second distribution.
+
     k : int
-        number of nearest neighbours to consider. As a rule,larger k reduces variance, small k reduces bias
-    tree1 : KDTree
-        if available, can parse it into this function to save time
-    return_tree : Bool
-        if True, return also the d1 tree for reuse. Default False. 
+        Number of nearest neighbours to use. Larger values reduce variance,
+        while smaller values reduce bias.
+
+    tree1 : KDTree, optional
+        Precomputed KDTree for `d1`. If provided, it is reused to save computation.
+
+    return_tree : bool, optional
+        If True, also return the KDTree built from `d1` for reuse.
+        Default is False.
 
     Returns
-    ------
+    -------
     klout : float
-        estimate of the KL divergence between the two empirical distributions d1,d2
-    tree1 : KDTree 
-        If return_tree is true, return the index for the d1 distribution.
+        Estimated KL divergence between the empirical distributions of `d1` and `d2`.
+
+    tree1 : KDTree, optional
+        Returned only if `return_tree` is True. KDTree constructed from `d1`.
     """
         
     #check d1, d2 in the right shape

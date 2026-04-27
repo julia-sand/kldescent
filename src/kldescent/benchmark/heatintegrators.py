@@ -9,26 +9,37 @@ def mcintegrator(x0,y0,
                     num_steps = 1,
                     mc_samples = 32768):
     """
-    Integrate a heat equation by the monte carlo method
-    yT = E(Phi(xT)|x0)
-    where xT are final positions of trajectories of the auxiliary dynamics
-    
-    Parameters:
-        x0 : 
-            initial positions, where the pde will be evaluated 
-        y0 : arr
-            initial values at x0, used to interpolate the intial function
-        Tf : float
-            final time t
-        num_steps : float
-            number of timesteps
-        mcsamples : int
-            number of MonteCarlo trajectories
-        seed : int 
-            seed for rng
-    Returns
-        yT : array
-            values at final time evaluated with feynman-kac
+    Approximate the solution of a heat equation using a Monte Carlo method.
+
+    The solution at final time is computed via the Feynman-Kac formula:
+        y(T, x0) = E[Φ(x_T) | x(0) = x0],
+    where x_T are samples from the associated stochastic dynamics.
+
+    Args:
+        x0 (np.ndarray):
+            Initial positions where the solution is evaluated.
+
+        y0 (np.ndarray):
+            Function values at `x0`, used to interpolate the initial condition Φ.
+
+        Tf (float):
+            Final time T.
+
+        beta (float):
+            Diffusion coefficient (inverse temperature) controlling the noise level
+            in the stochastic dynamics.
+
+        num_steps (int, optional):
+            Number of time steps used to simulate each trajectory. Default is 1.
+
+        mc_samples (int, optional):
+            Number of Monte Carlo trajectories to sample. Default is 32768.
+
+    Returns:
+        x0 (np.ndarray):
+            coordinates `x0`.
+        yT (np.ndarray):
+            Estimated solution at time T evaluated at `x0`.
     """
 
     Generator = np.random.default_rng(seed=seed())
@@ -61,36 +72,44 @@ def proximal_fpk(x0,y0,
                     num_steps=200, 
                     max_iters=1000, 
                     eps=0.05, 
-                    tol=1e-12): 
+                    tol=1e-5): 
     """Implementation of algorithm described in 
     1908.00533 "Gradient Flow Algorithms for Density Propagation in Stochastic Systems"; Caluya&Halder,2019.
     
     Integrates a simple heat equation model 
     
     !!Important. Check scipy compatability before using this function. 
-    args:
-        x0 : arr
-            array size (n,) of samples from starting distribution
-        y0 : arr
-            array size (n,) of probabilities of each sample x0
-        Tf : float
-            time up to which to integrate
-        beta : float
-            coefficient of laplacian in heat equation
-        num_steps : int
-            number of timesteps
-        max_iters : int
-            maximum number of sinkhorn iterations per timestep
-        eps : float
-            sinkhorn regularisation constant
-        tol : float
-            tolerance at which to stop iteration at each timestep
-    
-    returns: 
-        x_end : arr
-            array of shape (n,) of final positions (unordered)
-        y_end : arr
-            evaluated solution (unnormalised) at each point in x_end
+    Args:
+        x0 (np.ndarray):
+            Initial positions where the solution is evaluated.
+
+        y0 (np.ndarray):
+            Initial function values at `x0`.
+
+        Tf (float):
+            Final time of the simulation.
+
+        beta (float):
+            Diffusion coefficient (inverse temperature) controlling the noise level.
+
+        num_steps (int, optional):
+            Number of time steps per trajectory. Default is 200.
+
+        max_iters (int, optional):
+            Maximum number of iterations for the solver. Default is 1000.
+
+        eps (float, optional):
+            Regularization parameter used in the iteration. Default is 0.05.
+
+        tol (float, optional):
+            Convergence tolerance. Iteration stops when the error falls below this value.
+            Default is 1e-5.
+
+    Returns:
+        xT (np.ndarray):
+            Coordinates at time `Tf` 
+        yT (np.ndarray):
+            Estimated solution at time `Tf` evaluated at `xT`.
     """
     
     import scipy.spatial.distance as sci

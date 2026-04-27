@@ -50,7 +50,7 @@ def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=No
     """
     
     #generate xmesh
-    Q,P = generate_mesh(x_samples,qmax=5)
+    Q,P = generate_mesh(x_samples,qmax=4)
     xinit = torch.stack((P,Q), dim=-1).reshape(-1, 2)
     #torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
     
@@ -240,19 +240,33 @@ def joint_distributions_scatter_panel(
                                     xs,time,vmax=0.5,
                                     benchmark=None):
     """
-    Plots one panel of the joint distribution, where the 
-    center shows the joint and marginals are estimated
+    Plot a single panel of a joint distribution.
 
-    args:
-        ax: artist
-        axes where to plot. can be a gridspec subplot
-        joint_out: arr
-        joint distribution (n**2,1) as a numpy array
-        xs: arr
-        2d input data shaped (n**2,2) as numpy arr (q,p). Assume that the input values of x are generated
-        using meshgrid, and so have the same values of q and p
-        vmax: float
-        maximum value for the scatter plots color scale
+    The central plot visualizes the joint distribution, while the marginal
+    distributions are estimated from the same data.
+
+    Args:
+        ax (matplotlib.axes.Axes):
+            The axes on which to draw the plot. Can be a standard axes
+            or a subplot created from a GridSpec.
+
+        ax_pmarginal (matplotlib.axes.Axes):
+            The axes for marginal distribution of p
+
+        ax_qmarginal (matplotlib.axes.Axes):
+            The axes for marginal distribution of q
+
+        joint_out (np.ndarray):
+            Flattened joint distribution of shape (n**2,).
+            Represents the values corresponding to each (q, p) pair.
+
+        xs (np.ndarray):
+            Input coordinates of shape (n**2, 2), where each row is a (q, p) pair.
+            Assumes the points are generated via `np.meshgrid`, so that q and p
+            values form a regular grid.
+
+        vmax (float):
+            Upper limit for the color scale used in the joint distribution plot.Default 0.5
     """
 
     p_init_out,qmarg_norm,pmarg_norm,normall = compute_marginals_from_joint(xs,joint_out)
@@ -285,6 +299,7 @@ def make_colourbar(fig,vmax):
     cb.ax.set_xlabel("Joint Distribution")
 
 def plot_joint_panel(ax,time,jointout,xout,boundary,benchmark=None):
+    
     ax, ax_pmarginal,ax_qmarginal = scatter_panel_layout(ax,time,boundary)
 
     joint_distributions_scatter_panel(ax,
@@ -336,8 +351,8 @@ def make_contour_plot_(net,boundary,
                                     boundary.params["epsilon"],
                                     boundary.p_initial,
                                     plottimes[i],
-                                    mc_samples=2000,
-                                    tsteps=65536)
+                                    mc_samples=8192,
+                                    tsteps=8192)
             
         plot_joint_panel(axs[i],plottimes[i],jointout.cpu().numpy(),xinit.clone().cpu().numpy(),
                             boundary= boundary,

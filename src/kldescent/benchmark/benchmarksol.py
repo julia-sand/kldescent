@@ -10,8 +10,7 @@ from kldescent.benchmark.perturbative.driftinterp import *
 from kldescent.benchmark.perturbative.corrections import MarginalHalfBridgePerturbation,HalfBridgePerturbation
 from kldescent.benchmark.overdamped.computesol import compute_overdamped
 from kldescent.benchmark.gaussian import GaussBVP
-from kldescent.viz.drift import plot_drift
-from kldescent.viz.plots import update_mpl
+
 
 class BaseBenchmarkSolution():
 
@@ -33,11 +32,21 @@ class BaseBenchmarkSolution():
         self.perturbative_cumulants_loc = self.folder_name+"/perturbative_cumulants.csv"
 
     def get_perturbative_calculations(self,bridge_type,overdamped_arr):
-        """initialise the class to compute the perturbative solution 
-        depending on the bridge type
-        args: 
-            bridge_type : str
-                "marginal", "half" 
+        """
+        Initialise and return objects required for perturbative calculations
+        based on the selected bridge type.
+
+        Args:
+            bridge_type (str):
+                Type of bridge to use. Must be "marginal", "half" or "full".
+
+            overdamped_arr (np.ndarray):
+                Precomputed overdamped solution data used as input for the
+                perturbative calculations.
+
+        Returns:
+            object:
+                Instance configured to compute the perturbative solution for the specified bridge type.
         """
 
         if bridge_type == "marginal":
@@ -54,33 +63,52 @@ class BaseBenchmarkSolution():
 
 class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
     r"""
-    Class used for organising the location
-    for the benchmark solutions computed using perturbation theory
-    
+    Utility class for managing paths and data access for benchmark solutions
+    computed using perturbation theory.
+
+    This class centralizes file handling and provides convenient access to
+    time grids, benchmark datasets, and perturbative quantities.
+
     Methods:
-        initialise_net()
-        get_benchmark_path()
-        get_timegrid()
-            Fetches time discretisation from benchmark solution
-        get_benchmark_data()
-            fetches benchmark data found in benchmark sol path
-        get_benchmark_quantity()
-        get_perturbative_cumulants_array()
-        get_perturbative_cumulant()
+        initialise_net():
+            Initialize the underlying network or model used for computations.
+
+        get_benchmark_path():
+            Return the filesystem path where benchmark solutions are stored.
+
+        get_timegrid():
+            Retrieve the time discretization associated with the benchmark data.
+
+        get_benchmark_data():
+            Load and return the benchmark dataset from the configured path.
+
+        get_benchmark_quantity():
+            Extract a specific quantity from the benchmark dataset.
+
+        get_perturbative_cumulants_array():
+            Return all perturbative cumulants as an array.
+
+        get_perturbative_cumulant():
+            Retrieve a single perturbative cumulant.
     """
     #TODO update the perturbative solution to save in terms of t0!!!!
 
     def __init__(self, bridge_type="half", boundary=None, folder_name=None):
         r"""
-        Initialises parameters and directs to the benchmark solutions. 
-        If no benchmark solution is available in the folder, then computes the benchmark solution
-        args:
-            bridge_type : str
-                type of bridge. Choose from "marginal" or "half". 
-            boundary : class
-                specifies the boundary conditions
-            folder_name : str
-                if no boundary condition specified, the folder can be set manually using this parameter. 
+        Initialise parameters and configure access to benchmark solutions.
+
+        If a benchmark solution is not found in the specified location, it will
+        be computed and stored automatically.
+
+        Args:
+            bridge_type (str):
+                Type of bridge to use. Must be either "marginal" or "half".
+
+            boundary (object, optional):
+                Object specifying the boundary conditions.
+
+            folder_name (str, optional):
+                Manually specify the folder containing benchmark solutions.
         """
         
         BaseBenchmarkSolution.__init__(self,bridge_type,boundary,folder_name)
@@ -158,25 +186,37 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         
     def get_benchmark_quantity(self,time,quantity,data,arr=None,time_type="t0"):
         """
-        Get quantities to plot for the benchmark solution 
-        args:
-            time : float
-                the time to lookup the data
-            quantity : str
-                what quantity to return from the data table. Choices are: value (overdamped value function); 
-                marginal (overdamped distribution); underdamped drift (perturbative estimate of underdamped DU);
-                and underdamped marginal (perturbative underdamped marginal of the position)
-            data : str 
-                which dataset to use. Choose from overdamped (cell problem solution) or underdamped (saved perturbative solution)        
-            arr : array
-                if the dataset is already loaded in runtime, this can be passed directly
-            time_type : str
-                if "t0", change it first to t2 by dividing by epsilon squared. 
-        returns:
-            x : arr 
-                array of shape (n,) of positions
-            y : arr
-                specified quantity evaluated at points x, with shape (n,)
+        Retrieve a quantity from the benchmark solution for plotting.
+
+        Args:
+            time (float):
+                Time at which to evaluate the data.
+
+            quantity (str):
+                Quantity to extract from the dataset. Options are:
+                    - "value": overdamped value function
+                    - "marginal": overdamped probability distribution
+                    - "underdamped drift": perturbative estimate of the underdamped drift
+                    - "underdamped marginal": perturbative marginal distribution of position
+
+            data (str):
+                Dataset to use. Must be one of:
+                    - "overdamped": cell problem solution
+                    - "underdamped": saved perturbative solution
+
+            arr (np.ndarray, optional):
+                Preloaded dataset. If provided, this is used instead of loading
+                data from disk.
+
+            time_type (str, optional):
+                If set to "t0", the time is rescaled to t2 by dividing by epsilon squared.
+
+        Returns:
+            x (np.ndarray):
+                One-dimensional array of positions with shape (n,).
+
+            y (np.ndarray):
+                Array of the selected quantity evaluated at `x`, shape (n,).
         """
 
         #ensure correct time scale
@@ -440,69 +480,10 @@ class GaussBenchmarkSolution(BaseBenchmarkSolution):
         
         #return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx]) #((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
 
-def plot_benchmark_drift(benchmark_):
-    
-    update_mpl()
-
-    times = [0,1.5,3,5]
-    x = np.unique(benchmark_.get_benchmark_quantity(times[0], "underdamped drift", data="perturbative underdamped",time_type="t2")[0])
-
-    net_vals = []
-    benchmark_vals = []
-    
-    for time in times:
-        
-        net_vals.append(benchmark_evaluate_net(benchmark_.du_net_benchmark,x,time))
-        #benchmark_vals.append((-benchmark_.boundary.params["epsilon"]/2**0.5)*benchmark_.get_benchmark_quantity(time, "underdamped drift", data="perturbative underdamped")[1])
-        
-    fig = plot_drift(times,net_vals,
-                        benchmark_vals=None,
-                        xaxis = x)
-    
-    for ax in fig.get_axes():
-        ax.set_xlim((-5,5))
-        ax.set_ylim((-20,20))   
-
-    fig.savefig(benchmark_.folder_name+f"/perturbative_drift_trained.png",bbox_inches="tight")        
-
-def plot_data(benchmark_,quantity,data,numplots=5):
-    
-    t_vec = benchmark_.get_timegrid()
-    idx = np.random.randint(low=0,high=len(t_vec),size=5)
-    times = np.sort(t_vec[idx])
-    
-    fig,axs = plt.subplots(ncols=len(times),nrows=1)
-    fig.set_figheight(15)
-    fig.set_figwidth(25)
-
-    eps = benchmark_.boundary.params["epsilon"]
-    for time in enumerate(times):
-        q, ptq = benchmark_.get_benchmark_quantity(time[1], quantity, data=data,time_type="t0")
-        axs[time[0]].plot(q,ptq,label="Benchmark data")
-    
-        axs[time[0]].set_title(f"t={time[1]}")
-
-        axs[time[0]].set_xlim((-5,5))
-        if quantity == "underdamped drift":
-            du_net = -(2**0.5/eps)*benchmark_evaluate_net(benchmark_.du_net_benchmark,q,time[1])
-            axs[time[0]].plot(q,du_net, label="NN interpolation")
-
-    h,l = plt.gca().get_legend_handles_labels()
-    #fig.tight_layout()
-    plt.subplots_adjust(bottom=0.2)
-    
-    fig.legend(h,l)
-
-    fig.savefig(benchmark_.folder_name+f"/{data}_{quantity}.png",bbox_inches="tight")        
-
 if __name__=="__main__":
     from kldescent.sde.boundary import *
     from kldescent.utils.parser import fetch_results_folder_from_cmd
     from kldescent.utils.parser import overdamped_argparser
-
-    import matplotlib.pyplot as plt
-    
-    update_mpl()
 
     bridgetype = overdamped_argparser()["bridgetype"]
 
@@ -510,8 +491,8 @@ if __name__=="__main__":
     benchmark_ = PerturbativeBenchmarkSolution(bridge_type=bridgetype,boundary=boundary,
                         folder_name=fetch_results_folder_from_cmd())
     
-    plot_data(benchmark_,quantity="value",data="overdamped")
-    plot_data(benchmark_,quantity="marginal",data="overdamped")
-    plot_data(benchmark_,quantity="marginal",data="perturbative underdamped")
-    plot_data(benchmark_,quantity="underdamped drift",data="perturbative underdamped")
-    plot_benchmark_drift(benchmark_)
+    #plot_data(benchmark_,quantity="value",data="overdamped")
+    #plot_data(benchmark_,quantity="marginal",data="overdamped")
+    #plot_data(benchmark_,quantity="marginal",data="perturbative underdamped")
+    #plot_data(benchmark_,quantity="underdamped drift",data="perturbative underdamped")
+    #plot_benchmark_drift(benchmark_)

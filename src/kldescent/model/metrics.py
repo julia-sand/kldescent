@@ -26,16 +26,20 @@ class Metrics():
 
     def __init__(self, net, integrator, metrics_logger, bridge_type):
         """
-        Initialises class parameters
-        args:
-            net : class
+        Initialize the solver with its core components.
 
-            integrator : 
+        Args:
+            net (object):
+                Model or neural network used in the computation.
 
-            metricslogger : 
-            use_perturbative_metrics : Bool. 
-                Default False. 
-                Set to true to use the perturbative solution as the 
+            integrator (object):
+                Object responsible for performing time integration
+
+            metrics_logger (object):
+                Utility class for saving the recorded metrics during execution
+
+            bridge_type (str):
+                Type of bridge formulation to use (e.g., "marginal", "half").
         """
         self.integrator = integrator
         self.net = net
