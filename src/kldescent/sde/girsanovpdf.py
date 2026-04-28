@@ -74,10 +74,6 @@ def compute_pdf(x0,
     tsteps = tsteps or args.get("tsteps")
     mc_samples = mc_samples or args.get("testsamples")
     
-
-    print("tsteps",tsteps)
-    print("mc",mc_samples)
-
     with torch.no_grad():
         
         if mc_samples == 1:

@@ -25,6 +25,50 @@ def save_cumulants_csv(t_vec,cumulants_nn,loc,cumulants_filename="cumulants"):
 def get_inset_axes(ax):
   return [c for c in ax.get_children() if isinstance(c, Axes)]
     
+def make_gridspec_subplots(fig, gs, ncols, nrows,squeeze=True):
+  """
+  Create a Matplotlib figure with a GridSpec-based subplot layout.
+
+  This function mimics `plt.subplots()` but uses GridSpec internally
+
+  Parameters
+  ----------
+  nrows : int
+      Number of subplot rows.
+  ncols : int
+      Number of subplot columns.
+  squeeze : bool, default=True
+      If True, the returned axes are squeezed to match `plt.subplots()` behavior:
+      - (1, 1) -> single Axes object
+      - (1, N) -> 1D list of Axes
+      - (N, 1) -> 1D list of Axes
+      - (N, N) -> 2D list of Axes
+      If False, always returns a 2D list of Axes.
+
+  Returns
+  -------
+  axs : Axes or list of Axes
+      Subplot axes arranged according to `squeeze` behavior.
+  """
+  
+  axs = [fig.add_subplot(gs[i, j])
+        for i in range(nrows)
+        for j in range(ncols)]
+
+  axs = axs[:ncols*nrows]
+
+  if squeeze:
+      # mimic plt.subplots squeeze behavior
+      if nrows == 1 and ncols == 1:
+          return axs[0][0]
+      elif nrows == 1:
+          return axs[0]
+      elif ncols == 1:
+          return [axs[i][0] for i in range(nrows)]
+      else:
+          return axs
+
+  return axs
 
 def make_fig_subplots(nrows,ncols,squeeze=True):
 
@@ -35,13 +79,12 @@ def make_fig_subplots(nrows,ncols,squeeze=True):
   return fig,axs
 
 def make_legend(fig,handles,labels): 
-  
+
   fig.legend(handles,labels,
                       frameon = False,
                       handlelength = 1,
-                      ncols = len(labels),
-                      bbox_to_anchor=(1,0),
-                      bbox_transform=fig.transFigure)
+                      ncols = min(4,len(labels)),
+                      loc="lower center")
 
 def save_fig_(fig,filename,loc):
   fig.savefig(loc+"/"+filename+".png", bbox_inches='tight')

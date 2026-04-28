@@ -285,25 +285,27 @@ def joint_distributions_scatter_panel(
     #if benchmark is not None:
     #plot marginals
     x,ptx = benchmark.get_benchmark_quantity(np.round(time,6),quantity = "underdamped marginal",data="perturbative underdamped",time_type="t0")
-    ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Benchmark Evolved")
+    ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Benchmark Predicted")
 
     #plot joint distribution
     ax.scatter(xs[...,0]/normall,xs[...,1]/normall,c=reshape_joint(joint_out).T.flatten()
                 ,cmap="Blues",norm="log",vmin=0.0001,vmax=vmax)
 
-def make_colourbar(fig,vmax):
+def make_colourbar(fig,cbar_ax,vmax):
     """add color bar to fig"""
+
+    pos = cbar_ax.get_position()
 
     sm =  ScalarMappable(norm="log",cmap=plt.get_cmap("Blues"))
     sm.set_array([])
     sm.set_clim(vmin=0.001, vmax=vmax)
 
-    cbar_ax = fig.add_axes([0.2, -0.15, 0.55, 0.05])
     cb = fig.colorbar(sm,
                         cax=cbar_ax,
                         orientation="horizontal")
 
-    cb.ax.set_xlabel("Joint Distribution")
+    cbar_ax.set_xlabel("Joint Distribution")
+    cbar_ax.set_position([0.25, 0.1, 0.5, 0.02])
 
 def plot_joint_panel(ax,time,jointout,xout,boundary,benchmark=None):
     
@@ -315,39 +317,14 @@ def plot_joint_panel(ax,time,jointout,xout,boundary,benchmark=None):
                                             jointout,
                                             xout,time,vmax=0.5,benchmark=benchmark)
 
-
-def make_contour_plot():
-    """plot the learned distribution at final time"""
-    
-    xout,jointout = plotutils.compute_rho_nn(x_samples=20)
-    
-    fig,ax = plt.subplots()
-    ax, ax_pmarginal,ax_qmarginal = scatter_panel_layout(ax)
-
-    joint_distributions_scatter_panel(ax,
-                                                ax_pmarginal,
-                                                ax_qmarginal,
-                                                jointout,
-                                                xout,
-                                                time=plotutils.params["Tf"],vmax=0.5,benchmark=plotutils.benchmark)
-    
-    h,l = get_all_subplot_handles_labels(fig)
-    make_legend(fig,h,l)
-    make_colourbar(fig,vmax=0.5)
-    
-    save_fig_(fig,"contour_distribution",loc=plotutils.resultsdir)
-    
-    plt.close()
-
-
-def make_contour_plot_(net,boundary,
+def contour_plot_(axs,net,boundary,
                             resultsdir,
                             plottimes = [0,1,2,3,4,5],
                             benchmark=None):
     
-    ncols = int(np.ceil(len(plottimes)/2))
-    fig,axs = make_fig_subplots(ncols=ncols,nrows=2)
-    axs = axs.flatten()
+    
+    #axs = make_gridspec_subplots(fig,gs_top)
+   
     Q,P = generate_mesh(x_samples=20,qmax=4)
     xinit = torch.stack((Q, P), dim=-1).reshape(-1, 2)
     
@@ -363,13 +340,49 @@ def make_contour_plot_(net,boundary,
                             boundary = boundary,
                             benchmark = benchmark)
     
-    fig.subplots_adjust(hspace=1.1,wspace=1,bottom=0.08)
+    #
     
+
+def make_contour_plot_(net,boundary,
+                            resultsdir,
+                            plottimes = [0,1,2,3,4,5],
+                            benchmark=None):
+
+    fig = plt.figure(figsize=(20, 12), constrained_layout=False)
+
+    # Outer grid: 2 rows (plots + colorbar + legend)
+    gs = fig.add_gridspec(nrows=3,
+                          ncols=1,
+                            left=0, right=1,
+                            bottom=0, top=1,
+                            wspace=0.3,
+                            hspace=0.3,
+                          height_ratios=[10, 0.5, 1])                                    
+
+    ncols_top=len(plottimes)//2
+    nrows_top=2
+
+    # ---- TOP: nested subplots grid ----
+    gs_top = gs[0].subgridspec(nrows_top, ncols_top, wspace=0.05)
+    
+    axs = make_gridspec_subplots(fig, gs_top, ncols_top,nrows_top)
+    contour_plot_(axs,net,boundary,
+                            resultsdir,
+                            plottimes,
+                            benchmark)
+
+    # ---- BOTTOM: colorbar axis ----
+    cax = fig.add_subplot(gs[1])
+    make_colourbar(fig,cax,vmax=0.5)
+
+
+
     #add legend
+    lax = fig.add_subplot(gs[2])
+    lax.axis("off")  # hide legend axis box
     h,l = get_all_subplot_handles_labels(fig)
-    make_legend(fig,h,l)
-    make_colourbar(fig,vmax=0.5)
-    
+    make_legend(lax,h,l)
+    fig.subplots_adjust(hspace=1.1,wspace=1,bottom=0.38)
     save_fig_(fig,"contour_distribution",loc=resultsdir)
     
     plt.close()

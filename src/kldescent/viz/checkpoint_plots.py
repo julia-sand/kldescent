@@ -557,7 +557,6 @@ class PlotUtils():
         
         plottimes = tgrid[indices]
 
-
         make_contour_plot_(net=self.net,
                             boundary=self.boundary_cond,
                             resultsdir=self.resultsdir,
