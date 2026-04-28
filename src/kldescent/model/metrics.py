@@ -73,15 +73,15 @@ class Metrics():
 
     def update_metrics(self, epoch, loss_out):
         """
-        Function for computing metrics
-            - checks for nan loss
-        args:
-            epoch:
-                pass current epoch to use in logging loss
-            loss_out:
-                value of the loss from the metrics function
+        Computes training metrics and checks for NaN loss values.
+
+        Args:
+            epoch (int): The current epoch number, used for logging.
+            loss_out (float): The loss value returned by the metrics function.
+
+        Returns:
+            None
         """
-        
         with torch.no_grad():
 
             kl_dynamic,xinit,xref = self.integrator.compute_metrics(self.benchmark_)

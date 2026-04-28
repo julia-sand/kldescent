@@ -25,6 +25,7 @@ def load_checkpoint(net,checkpointpath):
         print("Continuing with default initialisation")
     
         raise BaseException
+        
     except AttributeError:
         print("Checkpoint could not be loaded. Checkpoint format not compatible with initialised network. Continuing with default initialisation-")
         raise BaseException
@@ -173,9 +174,9 @@ class NeuralNetwork(nn.Module):
             try: 
                 load_checkpoint(self,self.checkpoint_path)
                 print(f"Checkpoint at {self.checkpoint_path} loaded successfully.")
-            except BaseException:
-                #print(f"Checkpoint at {self.checkpoint_path} loaded successfully.")
-                pass
+            except BaseException as e:
+                print(f"Checkpoint at {self.checkpoint_path} could not be loaded: {e}")
+                raise
 
     def forward(self, input_vec):   #how the model should evaluate
         

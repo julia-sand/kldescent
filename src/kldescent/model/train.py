@@ -72,7 +72,6 @@ class Train():
             self.optimiser_feedforward.zero_grad()
             self.optimiser_fourier.zero_grad()            
             
-            continue 
         
         return Lhat.detach().cpu().numpy()
 
@@ -147,8 +146,6 @@ class TrainRho():
             print("Skipping training skep due to NaN loss.")
             optimiser.zero_grad()
 
-            continue
-          
         #reset gradients 
         optimiser.zero_grad()
           
