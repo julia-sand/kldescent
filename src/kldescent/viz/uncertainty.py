@@ -7,7 +7,6 @@ from kldescent.utils.parser import checkpoint_plot_params
 
 from kldescent.viz.drift import plot_drift 
 
-import pdb
 
 @torch.no_grad
 def plot_drift_uncertainty_errors(folders,epoch,numplots=5,invert=False,use_benchmark=True):

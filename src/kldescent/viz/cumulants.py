@@ -9,7 +9,19 @@ import numpy as np
 from kldescent.viz.plots import save_fig_ 
 
 def load_cumulant_csvs(folder):
-    """return tvec, nn cumulants and benchmark cumulants from csvs"""
+    """
+    Loads time vector, neural network cumulants, and benchmark cumulants from CSV files.
+
+    Args:
+        folder (str): Path to the folder containing the CSV files.
+
+    Returns:
+        tuple: A tuple containing:
+            - tvec1 (array-like): Time vector for cumulants computed by NN.
+            - tvec2 (array-like): Time vector for cumulants computed by benchmark.
+            - nn_cumulants (array-like): Cumulants from the neural network.
+            - benchmark_cumulants (array-like): Benchmark cumulants.
+    """
 
     cumulants_nn = np.loadtxt(open(folder+"/cumulants.csv"),
                     delimiter=",",skiprows=1) 
@@ -60,7 +72,20 @@ def make_cumulant_plot_axes(gs):
     return axs 
 
 def format_cumulant_subplot(ax,index,ylabel_text,t_vec):
+    """
+    Formats a subplot for cumulant visualization.
 
+    Sets the title, y-axis label, and x-axis limits for a given subplot.
+
+    Args:
+        ax (matplotlib.axes.Axes): The subplot axes to format.
+        index (int): Index of the cumulant, used to generate the subplot title.
+        ylabel_text (str): Label for the y-axis.
+        t_vec (array-like): Time vector used to define the x-axis range.
+
+    Returns:
+        None
+    """
     ax.set_title(make_cumulant_plot_label(index),pad = 5,x = 0.07, y = 0.88, zorder = 1000000)
     ax.set_ylabel(ylabel_text)
     ax.set_xlim((-0.1,t_vec[-1]+0.1))
@@ -143,23 +168,28 @@ def plot_cumulants(t_vec1,t_vec2,cumulants,labels,test_samples,
                       add_free_diffusion=False,
                       epsilon=None):
     """
-    Plots the cumulants which are computed by the evolutions
-    
-    args: 
-      t_vec : ndarray
-        array of times at which cumulants are evaluated
-      cumulants : list
-        list of arrays which are plotted iteratively
-      labels : list
-        list of labels to show in the legend for each of the cumulants plotted
-      test_samples : int
-        number of samples used for computing estimates of the cumulants. Computes error bar estimates 
-      benchmark : class
-        include preturbative predictions for cumulants
+    Plots cumulants computed from dynamical evolutions.
 
-    returns:
-      fig : figure
-        matplotlib figure with cumulants plotted and legend 
+    The function generates a multi-panel figure comparing cumulants computed
+    from two time vectors and multiple datasets. It optionally overlays
+    benchmark (perturbative) predictions and free diffusion curves.
+
+    Args:
+        t_vec1 (array-like): First time vector for cumulant evaluation.
+        t_vec2 (array-like): Second time vector for cumulants evaluation by the benchmark.
+        cumulants (list): List of cumulant arrays to plot. Each entry should
+            correspond to a dataset matching the provided time vectors.
+        labels (list of str): Legend labels corresponding to each cumulant dataset.
+        test_samples (int): Number of samples used to estimate cumulants and
+            compute error bars.
+        benchmark (optional): Object providing perturbative predictions via
+            `get_perturbative_cumulant(index)`. If None, no benchmark is plotted.
+        add_free_diffusion (bool,optional): If True, overlays free diffusion prediction curves.
+        epsilon (float, optional): Parameter required for free diffusion curves.
+            Must be provided if `add_free_diffusion=True`.
+
+    Returns:
+        matplotlib.figure.Figure: Figure containing all cumulant subplots and legend.
     """
 
     fig1,gs_cumulants = make_fig_gridspec()
@@ -182,7 +212,7 @@ def plot_cumulants(t_vec1,t_vec2,cumulants,labels,test_samples,
       
         if add_free_diffusion:
             assert epsilon is not None, "No value of epsilon given. Plots interrupted." #check that epsilon is passed correctly
-            add_freediffusion_cumulants_subplot(ax,cumulant[1],t_vec,cumulant_vec,epsilon) 
+            add_freediffusion_cumulants_subplot(ax,cumulant[1],t_vec1,cumulant_vec,epsilon) 
 
         if benchmark is not None:
             try: 

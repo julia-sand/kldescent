@@ -93,8 +93,6 @@ class OverdampedFullLandauer(Boundaries):
         Returns the normalised assigned final distribution
     generate_samples()
         Generates samples from the boundary distributions
-    euler_maruyama_step()
-        returns one step of the overdamped sde wrt problem description
     """
     
     def __init__(self,params=None,logfile=None):

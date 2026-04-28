@@ -10,41 +10,47 @@ from kldescent.utils.parser import fetch_results_folder_from_cmd
 
 def save_params(params,logfile):
     """
-    args:
-        params : dict
-            params to output
-        logfile : str
-            where to save them
+    Saves parameters to a log file.
+
+    Args:
+        params (dict): Parameters to output.
+        logfile (str): Path to the file where parameters will be saved.
+
+    Returns:
+        None
     """
 
     with open(logfile, 'a+') as outfile:
         yaml.dump(params, outfile)
 
 class LossLogger():
-    '''
-    This class deals with making results folder and recording losses and plots. also saving checkpoints
-
-    Attributes
-    ----------
-
-    Methods
-    -------
-    __init__()
-       
-    write_data_row()
-        #writes a row of data to the csv
+    """
+    Handles creation of result folders, logging of losses, plotting, and saving checkpoints.
     
-    get_epoch_folder()
-        #makes a folder for the epoch if it doesn't exist and returns the filepath
-    
-    make_epoch_plots()
-        #calls plotter to make correct plots at the epoch
-    '''
+    Attributes:
+        newpath (str): Path to the results directory. Either fetched from command-line
+            arguments or created in the current working directory with a timestamp.
+        datayaml (str): Path to the YAML file used to store training parameters.
+        datafile (str): Path to a .txt file used to log loss data.
+        filename (str): Path to the CSV file used to record loss values.
+
+    Methods:
+        __init__():
+            Initializes the results directory structure, including creating subfolders and log files.
+        write_data_row():
+            Writes a row of data to the CSV file.
+
+        get_epoch_folder():
+            Creates (if necessary) and returns the file path for a given epoch folder.
+    """
     
     def __init__(self):
-        """Create a timestamped results folder  
-        Add a subfolder for checkpoints
-        Initialise a csv to record loss values
+        """
+        Creates a timestamped results folder, adds a subfolder for checkpoints,
+        and initializes a CSV file to record loss values.
+
+        Returns:
+            None
         """
 
         #check if there is a results folder to use 
