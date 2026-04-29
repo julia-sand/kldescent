@@ -10,6 +10,7 @@ from kldescent.utils.parser import metric_params
 from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmarkSolution
 
 def log_cpu(wandb_run):
+    #log cpu usage statistics
     wandb_run.log({
         "cpu_percent": psutil.cpu_percent(),
         "num_threads": psutil.Process().num_threads(),
@@ -20,7 +21,7 @@ class Metrics():
     """
     Class for finding metrics during the training process 
 
-    Method: 
+    Method:
         update_metrics
     """
 
@@ -86,7 +87,7 @@ class Metrics():
 
             kl_dynamic,xinit,xref = self.integrator.compute_metrics(self.benchmark_)
 
-            kl_static_from_ref,kl_static =0,0# static_kl_divergence(xinit,xref,self.integrator.boundary)
+            kl_static_from_ref,kl_static = static_kl_divergence(xinit,xref,self.integrator.boundary)
             self.actioncost = kl_dynamic + self.integrator.boundary.params["weight"]*kl_static_from_ref
             if self.wandb_run is not None:
                 self.wandb_run.log({"dynamickl": kl_dynamic, 

@@ -89,12 +89,6 @@ class SDEBase():
         Returns:
             kldyn : float
                 Dynamic KL divergence computed along trajectories. 
-            kl_static : float
-                Estimate of KL divergence between target final and reached final distribution
-            mean0 : float
-                Estimated sample mean of the final achieved distribution
-            var0 : float 
-                Estimated sample variance of the final achieved distribution
         ====
         """
 
@@ -103,13 +97,13 @@ class SDEBase():
             self.net.eval()
 
             t_vec = self.generate_time_grid(benchmark)
-            
+            test_samples_temp = 2048 #self.testing_samples
             #initialise x values as samples from assigned initial distribution
-            xinit = self.boundary.generate_samples(self.testing_samples,"initial").to(self.device)
+            xinit = self.boundary.generate_samples(test_samples_temp,"initial").to(self.device)
             xinit_ref = torch.clone(xinit).to(self.device)
 
             #preallocate storing kl divergence 
-            kldyn = torch.zeros((self.testing_samples,1),requires_grad=False,dtype=torch.float32).to(self.device)
+            kldyn = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
             
             for i in range(0,len(t_vec)-1):
                 #get time interval
