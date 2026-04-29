@@ -169,7 +169,6 @@ class PlotUtils():
         final_plot_time = self.boundary_cond.params["Tf"]
 
         #try:
-        #    t_vec,cumulants_nn,cumulants_ref = self.load_cumulant_csvs()
         #except FileNotFoundError:
         t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde_cumulants(benchmark=self.benchmark,mcsamples=mcsamples)
             
@@ -184,6 +183,14 @@ class PlotUtils():
         
         plt.close("all")
     
+    @torch.no_grad
+    def make_cumulant_plot_from_csv(self):
+        t_vec1,t_vec2,cumulants_nn,cumulants_ref = load_cumulant_csvs(self.folder)
+
+        self.make_cumulant_plot(t_vec1,t_vec2,cumulants_nn,cumulants_ref,mcsamples,
+                                        add_free_diffusion=True,epsilon=self.boundary_cond.params["epsilon"])
+        
+        
     @torch.no_grad
     def evaluate_net_output(self,net,time):
         """Evaluate neural network at time on 100 space coordinates 
@@ -242,7 +249,6 @@ class PlotUtils():
         return net(torch.cat((torch.linspace(0,self.boundary_cond.params["Tf"],1000,requires_grad=False).unsqueeze(1).to(net.device),
                         xcoord*torch.ones((1000,1),requires_grad=False,dtype=torch.float32).to(net.device)),dim=-1)).cpu().numpy()
        
-
 
     def get_benchmark_drift_data_inverted(self,xcoords):
         if self.benchmark is None:
@@ -597,11 +603,10 @@ if __name__=="__main__":
     #if usebenchmark:
     #    plot_utils.load_benchmark_solution()
 
-
     #plot_utils.make_contour_plot2(plottimes=[0,1,2,3,4,5])
     plot_utils.make_drift_plot(numplots=5)
     #plot_utils.make_inverted_drift_plot(numplots=5)
-    plot_utils.make_sde_plots(2048, usebenchmark)
+    #plot_utils.make_sde_plots(2048, usebenchmark)
     #plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark)
     #plot_utils.make_cumulant_error_plot_from_csv()
     #plot_utils.make_intermediate_histograms()

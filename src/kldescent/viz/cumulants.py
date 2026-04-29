@@ -6,7 +6,7 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np 
 
-from kldescent.viz.plots import save_fig_ 
+from kldescent.viz.plots import save_fig_, update_mpl
 
 def load_cumulant_csvs(folder):
     """
@@ -239,6 +239,8 @@ def plot_cumulants(t_vec1,t_vec2,cumulants,labels,test_samples,
 
 if __name__=="__main__":
   from kldescent.utils.parser import fetch_results_folder_from_cmd
+
+  update_mpl()
 
   folder = fetch_results_folder_from_cmd()
   
