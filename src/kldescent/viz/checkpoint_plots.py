@@ -606,7 +606,7 @@ if __name__=="__main__":
     #plot_utils.make_contour_plot2(plottimes=[0,1,2,3,4,5])
     plot_utils.make_drift_plot(numplots=5)
     #plot_utils.make_inverted_drift_plot(numplots=5)
-    #plot_utils.make_sde_plots(2048, usebenchmark)
+    plot_utils.make_sde_plots(2048, usebenchmark)
     #plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark)
     #plot_utils.make_cumulant_error_plot_from_csv()
     #plot_utils.make_intermediate_histograms()
