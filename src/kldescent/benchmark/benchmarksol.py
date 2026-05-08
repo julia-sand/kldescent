@@ -11,7 +11,6 @@ from kldescent.benchmark.perturbative.corrections import MarginalHalfBridgePertu
 from kldescent.benchmark.overdamped.computesol import compute_overdamped
 from kldescent.benchmark.gaussian import GaussBVP
 
-
 class BaseBenchmarkSolution():
 
     def __init__(self, bridge_type="half", boundary=None, folder_name=None):
@@ -110,9 +109,10 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
                 Manually specify the folder containing benchmark solutions.
         """
         
-        BaseBenchmarkSolution.__init__(self,bridge_type,boundary,folder_name)
-        self.initialise_net(bridge_type)
-        #self.du_net_benchmark = None
+        self.bridge_type = bridge_type
+        BaseBenchmarkSolution.__init__(self,self.bridge_type,boundary,folder_name)
+        #self.initialise_net()
+        self.du_net_benchmark = None
 
     def initialise_net(self,bridge_type):
 
@@ -301,7 +301,7 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         arrtemp = arr[np.where(arr[:,0]==np.round(time,6))] 
         arrtemp = arrtemp[arrtemp[:,1].argsort()]  #sort by x
         x = arrtemp[:,1].flatten()
-        y = arrtemp[:,-2].flatten()
+        y = arrtemp[:,-1].flatten()
         du_out = np.interp(q,x,y)
         return -(self.boundary.params["epsilon"])*du_out.flatten()/(2**0.5)
  
@@ -491,7 +491,7 @@ if __name__=="__main__":
     boundary = UnderdampedLandauer()
     benchmark_ = PerturbativeBenchmarkSolution(bridge_type=bridgetype,boundary=boundary,
                         folder_name=fetch_results_folder_from_cmd())
-    
+    benchmark_.initialise_net(benchmark_.bridge_type)
     #plot_data(benchmark_,quantity="value",data="overdamped")
     #plot_data(benchmark_,quantity="marginal",data="overdamped")
     #plot_data(benchmark_,quantity="marginal",data="perturbative underdamped")

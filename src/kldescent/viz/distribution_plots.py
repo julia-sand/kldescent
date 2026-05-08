@@ -113,26 +113,40 @@ def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
         except ValueError: 
             print(f"Benchmark data not available for t = {plottime}")
             pass
+
+        if plottime==benchmark.boundary.params["Tf"]:    
+            #add target boundary distributions to plots
+            ax_pos.fill_between(np.linspace(-6,6,num=5000),
+                    benchmark.boundary.q_marginal_final_np(np.linspace(-10,10,num=5000)),
+                    color="gray",alpha=0.1,label="target")
+                
+            ax_mom.fill_between(np.linspace(-6,6,num=5000),
+                normal_distribution(np.linspace(-6,6,num=5000),mu=0,sigmasq=1),
+                            color="gray",alpha=0.1,label="target")
+            
+        if plottime==0:
         
-        #add target boundary distributions to plots
-        ax_pos.fill_between(np.linspace(-10,10,num=5000),
-                benchmark.boundary.q_marginal_final_np(np.linspace(-10,10,num=5000)),
-                color="gray",alpha=0.1,label="target")
-    
+            ax_mom.fill_between(np.linspace(-6,6,num=5000),
+                normal_distribution(np.linspace(-6,6,num=5000),mu=0,sigmasq=1),
+                            color="gray",alpha=0.1,label="target")
+            ax_pos.fill_between(np.linspace(-6,6,num=5000),
+                        benchmark.boundary.q_marginal_initial_np(np.linspace(-10,10,num=5000)),
+                        color="gray",alpha=0.1,label="target")
+
+
     #set iteration properties
     colors = ["midnightblue","orange"]
-    labels = ["Controlled by NN.","Benchmark Evolution Prediction"]
+    labels = ["Controlled by NN.","Free Diffusion"]
 
+    zord=100
     for x in enumerate(xs):
 
         #plot kde fitted distributions
-        ax_mom.plot(np.linspace(-10,10,num=1000), np.exp(fit_kde(x[1][:,1],10)), color=colors[x[0]],label=labels[x[0]])
-        ax_pos.plot(np.linspace(-10,10,num=1000), np.exp(fit_kde(x[1][:,0],10)), color=colors[x[0]],label=labels[x[0]]) 
-        
-    ax_mom.fill_between(np.linspace(-10,10,num=5000),
-        normal_distribution(np.linspace(-10,10,num=5000),mu=0,sigmasq=1),
-                    color="gray",alpha=0.1,label="target")
-    
+        ax_mom.plot(np.linspace(-6,6,num=1000), np.exp(fit_kde(x[1][:,1],10)), color=colors[x[0]],label=labels[x[0]],zorder=zord)
+        ax_pos.plot(np.linspace(-6,6,num=1000), np.exp(fit_kde(x[1][:,0],10)), color=colors[x[0]],label=labels[x[0]],zorder=zord) 
+
+        zord -= 10 #set the second plots furhter back
+
     #add formatting
     format_distribution_ax(ax_mom)
     format_distribution_ax(ax_pos)

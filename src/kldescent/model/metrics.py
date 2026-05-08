@@ -55,6 +55,7 @@ class Metrics():
                 self.benchmarknet = None
             else:
                 self.benchmark_ = PerturbativeBenchmarkSolution(bridge_type=bridge_type,boundary=integrator.boundary,folder_name = metrics_logger.get_results_path())
+                self.benchmark_.initialise_net(self.benchmark_.bridge_type)
                 self.benchmarknet = self.benchmark_.du_net_benchmark 
         else: 
             self.benchmark_ = None

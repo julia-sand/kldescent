@@ -25,7 +25,7 @@ def load_cumulant_csvs(folder):
 
     cumulants_nn = np.loadtxt(open(folder+"/cumulants.csv"),
                     delimiter=",",skiprows=1) 
-    cumulants_ref = np.loadtxt(open(folder+"/ref_cumulants.csv"),
+    cumulants_ref = np.loadtxt(open(folder+"/../ref_cumulants.csv"),
                     delimiter=",",skiprows=1)
 
     return cumulants_nn[:,0],cumulants_ref[:,0],cumulants_nn[:,1:],cumulants_ref[:,1:]
@@ -238,12 +238,16 @@ def plot_cumulants(t_vec1,t_vec2,cumulants,labels,test_samples,
     return fig1
 
 if __name__=="__main__":
-  from kldescent.utils.parser import fetch_results_folder_from_cmd
+  from kldescent.utils.parser import fetch_results_folder_from_cmd,checkpoint_plot_params
 
   update_mpl()
 
-  folder = fetch_results_folder_from_cmd()
+  folder_base = fetch_results_folder_from_cmd()
   
+  params = checkpoint_plot_params()
+  epoch = params["epoch"]
+  folder = folder_base+f"/plots_{epoch}"
+
   t_vec1,t_vec2,cumulants_nn,cumulants_ref = load_cumulant_csvs(folder)
 
   #cumulant figs and csv 

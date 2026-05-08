@@ -92,6 +92,7 @@ class PlotUtils():
         if self.benchmark is None:
             #initialise benchmarks
             self.benchmark = PerturbativeBenchmarkSolution(bridge_type="half", boundary=self.boundary_cond, folder_name=self.folder)
+            self.benchmark.initialise_net()
             self.net = self.benchmark.du_net_benchmark 
 
             self.integrator = langevin.EulerMaruyamaSDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
@@ -142,8 +143,8 @@ class PlotUtils():
                                                             folder_name=self.folder)
             
             else:
-                self.benchmark = PerturbativeBenchmarkSolution(boundary=self.boundary_cond,
-                                                                folder_name=self.folder)
+                self.benchmark = PerturbativeBenchmarkSolution(bridge_type="half",boundary=self.boundary_cond,
+                                              folder_name=self.folder)
             
     def perturbative_plots_du(self,plottimes):
         """make plots to show the results of the evolution under perturbative drift"""
@@ -211,16 +212,13 @@ class PlotUtils():
         
         if self.benchmark is not None:
 
-            if self.benchmark.du_net_benchmark is None:
-                #get the timegrid where data is available
-                t_vec = self.benchmark.get_timegrid()
-                #choose numplot random times to show
-                times = t_vec[np.random.randint(low=0,high=len(t_vec),size=numplots)]
-                return np.sort(times)
+            #if self.benchmark.du_net_benchmark is None:
+            #get the timegrid where data is available
+            t_vec = self.benchmark.get_timegrid()
+            #choose numplot random times to show
+            times = t_vec[np.random.randint(low=0,high=len(t_vec),size=numplots)]
+            return np.sort(times)
             
-            else:
-                times = np.sort(np.random.uniform(0, self.boundary_cond.params["Tf"],numplots))
-                return times
         else:
             times = np.sort(np.random.uniform(0, self.boundary_cond.params["Tf"],numplots))
             return times
@@ -307,12 +305,8 @@ class PlotUtils():
 
             for t in range(len(times)):
             
-                if self.benchmark.du_net_benchmark is not None:
-                    ref_vals.append(self.evaluate_net_output(self.benchmark.du_net_benchmark,times[t]).flatten())
-                else: 
-                    temp = self.benchmark.du_benchmark(times[t],np.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000))
-                    ref_vals.append(temp)
-                    #ref_vals.append(self.benchmark.get_drift_gaussian(times[t])*np.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000))
+                temp = self.benchmark.du_benchmark(times[t],np.linspace(-self.boundary_cond.qmax,self.boundary_cond.qmax,1000))
+                ref_vals.append(temp)
 
         return ref_vals
 
@@ -600,8 +594,8 @@ if __name__=="__main__":
     plot_utils = PlotUtils()
     usebenchmark,_ = metric_params()
     plot_utils.load_du_checkpoint()
-    #if usebenchmark:
-    #    plot_utils.load_benchmark_solution()
+    if usebenchmark:
+        plot_utils.load_benchmark_solution()
 
     #plot_utils.make_contour_plot2(plottimes=[0,1,2,3,4,5])
     plot_utils.make_drift_plot(numplots=5)

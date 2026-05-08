@@ -14,7 +14,7 @@ def format_drift_plot(axs,fig,invert_labels):
 
         ax.set_ylabel(r"$\mathbb{U}$")
         ax.set_ylim((-10,10))
-        ax.set_xlim((-1.5,1.5))
+        ax.set_xlim((-3,3))
 
     h,l = axs[0].get_legend_handles_labels()
 

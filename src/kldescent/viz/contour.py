@@ -339,9 +339,7 @@ def contour_plot_(axs,net,boundary,
         plot_joint_panel(axs[i],plottimes[i],jointout.cpu().numpy(),xinit.clone().cpu().numpy(),
                             boundary = boundary,
                             benchmark = benchmark)
-    
-    #
-    
+        
 
 def make_contour_plot_(net,boundary,
                             resultsdir,

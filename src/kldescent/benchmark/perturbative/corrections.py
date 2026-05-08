@@ -94,7 +94,7 @@ class Perturbation():
             self.mu_2_vec[t2[0]] = self.mu_2_t2(t2[1])
 
         self.dmu_1_vec = np.gradient(self.mu_1_vec,self.t2vec)
-        self.dmu_2_vec = np.gradient(self.mu_1_vec,self.t2vec)
+        self.dmu_2_vec = np.gradient(self.mu_2_vec,self.t2vec)
 
     def get_sigma(self,t2,idx):
         sigma_raw = self.sigma(t2)[idx]
@@ -582,12 +582,11 @@ class HalfBridgePerturbation(Perturbation):
         np.savetxt(self.ref_path+"/perturbative_cumulants.csv",pertcumulants,fmt="%10.6f",header = "t0,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
 
 if __name__=="__main__":
-    #from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution
     #from kldescent.sde.boundary import *
     from kldescent.utils.parser import fetch_results_folder_from_cmd,boundary_params
 
     boundary_params = boundary_params()
-    #UnderdampedLandauer()
+    #boundary = UnderdampedLandauer()
 
     folder_name = fetch_results_folder_from_cmd()
 
@@ -596,6 +595,6 @@ if __name__=="__main__":
                         delimiter=",",skiprows=1) 
         
     #compute perturbative
-    pertsol = HalfBridgePerturbation(boundary,overdamped_arr,folder_name)
-    pertsol.save_perturbative()
+    pertsol = HalfBridgePerturbation(boundary_params,overdamped_arr,folder_name)
+    #pertsol.save_perturbative()
     pertsol.save_perturbative_cumulants()
