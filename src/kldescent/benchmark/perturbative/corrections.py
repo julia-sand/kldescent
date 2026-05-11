@@ -1,6 +1,7 @@
 import numpy as np
 
 from kldescent.benchmark.utilfunctions import *
+from kldescent.utils.misc import append_array_to_csv
 
 class Perturbation():
 
@@ -586,7 +587,6 @@ if __name__=="__main__":
     from kldescent.utils.parser import fetch_results_folder_from_cmd,boundary_params
 
     boundary_params = boundary_params()
-    #boundary = UnderdampedLandauer()
 
     folder_name = fetch_results_folder_from_cmd()
 

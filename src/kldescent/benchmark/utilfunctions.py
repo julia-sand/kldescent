@@ -42,12 +42,6 @@ def apply_filter(y,filter_delta=None):
     #generic_filter(y,median,filter_delta,mode="constant")
     #out
 
-def append_array_to_csv(filename,data):
-    """append numpy array to a csv"""
-    
-    with open(filename,"a") as file:
-        np.savetxt(file,data,fmt="%10.6f",delimiter=',')
-  
 def interpolate_(q,xs,phis):
     """Interpolate function phi from data points xs to q"""
 

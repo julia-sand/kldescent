@@ -8,7 +8,8 @@ import torch
 
 from kldescent.sde.girsanovpdf import compute_pdf
 from kldescent.viz.plots import *
- 
+from kldescent.utils.misc import append_array_to_csv
+
 @torch.no_grad
 def generate_mesh(x_samples,qmax=6):
     """
@@ -25,7 +26,6 @@ def generate_mesh(x_samples,qmax=6):
     #q_init = torch.linspace(-qmax,qmax,x_samples, requires_grad=False,dtype=torch.float32)
         
     return torch.meshgrid(p_init,p_init,indexing='ij')
-
 
 @torch.no_grad
 def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=None):
@@ -317,17 +317,40 @@ def plot_joint_panel(ax,time,jointout,xout,boundary,benchmark=None):
                                             jointout,
                                             xout,time,vmax=0.5,benchmark=benchmark)
 
+def write_csv_header_joint(csv_path):
+
+    # write header once
+    with open(csv_path, "w") as f:
+        f.write("t,q,p,joint_out\n")
+
+def save_joint_to_csv(t,xinit,jointout,filename):
+
+    # vectorized assembly
+    t_col = np.full((xinit.shape[0], 1), t)
+    append_array_to_csv(filename,np.hstack([
+                                            t_col,
+                                            xinit,
+                                            jointout[:, None].reshape(-1),
+                                        ]))
+    
+    return data
+
 def contour_plot_(axs,net,boundary,
                             resultsdir,
                             plottimes = [0,1,2,3,4,5],
                             benchmark=None):
     
     
+    #initialise the csv
+    filename = resultsdir+"/joint_distribution.csv"
+    write_csv_header_joint(filename)
+
     #axs = make_gridspec_subplots(fig,gs_top)
    
     Q,P = generate_mesh(x_samples=20,qmax=4)
     xinit = torch.stack((Q, P), dim=-1).reshape(-1, 2)
     
+
     for i in range(len(plottimes)):
 
         jointout = compute_pdf(xinit.clone(),net,
@@ -336,11 +359,12 @@ def contour_plot_(axs,net,boundary,
                                     boundary.p_initial,
                                     plottimes[i])
             
-        plot_joint_panel(axs[i],plottimes[i],jointout.cpu().numpy(),xinit.clone().cpu().numpy(),
+        plot_joint_panel(axs[i],plottimes[i],jointout.cpu().numpy(),xinit.cpu().numpy(),
                             boundary = boundary,
                             benchmark = benchmark)
         
-
+        save_joint_to_csv(plottimes[i],xinit.cpu().numpy(),jointout.cpu().numpy(),filename)
+        
 def make_contour_plot_(net,boundary,
                             resultsdir,
                             plottimes = [0,1,2,3,4,5],
@@ -372,8 +396,6 @@ def make_contour_plot_(net,boundary,
     # ---- BOTTOM: colorbar axis ----
     cax = fig.add_subplot(gs[1])
     make_colourbar(fig,cax,vmax=0.5)
-
-
 
     #add legend
     lax = fig.add_subplot(gs[2])

@@ -6,6 +6,7 @@ import numpy as np
 from kldescent.benchmark.heatintegrators import *
 from kldescent.benchmark.overdamped.iteration import CellProblem
 from kldescent.benchmark.utilfunctions import * 
+from kldescent.utils.misc import append_array_to_csv
 
 def compute_rho(phi_t,hatphi_t):
     

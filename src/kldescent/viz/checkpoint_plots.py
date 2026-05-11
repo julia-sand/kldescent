@@ -63,12 +63,17 @@ class PlotUtils():
         self.boundary_cond = boundary_cond
         self.data_loaded = data_loaded
 
+        #set useful parameters and defaults if they are not in param file
         try:
+            #set bridge type 
+            self.bridge_type = data_loaded["bridgetype"]
+            
             if params["mcsamples"]>0:
                 self.mc_samples = params["mcsamples"]
             else: #use test samples if no value is specified
                 self.mc_samples = self.data_loaded["testsamples"]
         except TypeError:
+            self.bridge_type = "half"
             self.mc_samples = 20 #overwrite if not passed or no loaded data   
 
         if epoch is None:
@@ -79,6 +84,7 @@ class PlotUtils():
         self.boundary_cond.overwrite_ref_path(self.folder)
             
         self.benchmark = benchmark
+                
                 
         #make new folder for the results labelled with epoch
         os.makedirs(self.folder+f"/plots_{self.epoch}", exist_ok = True) 
@@ -92,7 +98,7 @@ class PlotUtils():
         if self.benchmark is None:
             #initialise benchmarks
             self.benchmark = PerturbativeBenchmarkSolution(bridge_type="half", boundary=self.boundary_cond, folder_name=self.folder)
-            self.benchmark.initialise_net()
+            self.benchmark.initialise_net(self.benchmark.bridge_type)
             self.net = self.benchmark.du_net_benchmark 
 
             self.integrator = langevin.EulerMaruyamaSDE(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
