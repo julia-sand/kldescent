@@ -474,7 +474,7 @@ class HalfBridgePerturbation(Perturbation):
         term1 = 1
 
         # Second term: ε^2 * (self.G11(t0) - (self.G12(t0) * G_tf_111) / G_tf_112)^2 * ∫ dq f_tz_00 ( (1/√A) ∂_q ln f_tz_00 + (1/A) ∂_q σ_tz_00 )^2
-        integrand_1 = ddf00**2/(self.A*f00) + 2*df00*dsigma/(self.A**(3/2)) + f00*(dsigma/self.A)**2
+        integrand_1 = df00**2/(self.A*f00) + 2*df00*dsigma/(self.A**(3/2)) + f00*(dsigma/self.A)**2
 
         integral_1 = np.trapezoid(np.nan_to_num(integrand_1,nan=0,posinf=0,neginf=0),self.qaxis[idx])
         term2 = self.epsilon**2 * (self.G11(t0) - self.coeff_G111_G112()*self.G12(t0))**2 * integral_1
@@ -511,7 +511,7 @@ class HalfBridgePerturbation(Perturbation):
         term1 = self.mu_2_vec[t2_idx] - self.mu_1_vec[t2_idx]**2
 
         # Second term: ε^2 * ∂_{t_z} [(μ^{(2)}_{t_z} - (μ^{(1)}_{t_z})^2) / A] * (G_to_10 - (t0 / self.Tf) * G_tf_10 - (G_tf_114 / G_tf_112) * (G_to_14 - (t0 / self.Tf) * G_tf_14 + (G_tf_dot_12 * (np.cosh(t0) - 1)) / (2 * M * np.sinh(self.Tf))))
-        term2 = (self.epsilon**2 / self.A) * (self.dmu_2_vec[t2_idx] - self.dmu_1_vec[t2_idx]**2) * (
+        term2 = (self.epsilon**2 / self.A) * (self.dmu_2_vec[t2_idx] - 2*self.dmu_1_vec[t2_idx]*self.mu_2_vec[t2_idx]) * (
             self.G110(t0) - (t0 / self.Tf) * self.G110(self.Tf) - self.coeff_G111_G112() * (
                 self.G114(t0) - (t0 / self.Tf) * self.G114(self.Tf) + (self.dt_G12(self.Tf) * (np.cosh(t0) - 1)) / (2 * self.M * np.sinh(self.Tf))))
 
@@ -542,7 +542,7 @@ class HalfBridgePerturbation(Perturbation):
         term2 = (self.epsilon * np.sinh(t0)) / (2 * self.M * np.sinh(self.Tf))
 
         # Third term: - (ε * self.G11(self.Tf)2 * self.G12(self.Tf)_dot / (2 * M * self.G12(self.Tf) * A)) * (kappa * (A - B) * self.mu_1_vec[t2_idx] - integral_1 + sqrt(A))
-        term3 = - (self.epsilon * self.dt_G12(self.Tf) * self.coeff_G111_G112()) / (2 * self.M * self.A) * (kappa * (self.A - self.B) * self.mu_1_vec[t2_idx] - integral_1 + np.sqrt(self.A)) * (np.sinh(t0) / np.sinh(self.Tf))
+        term3 = - ((self.epsilon * self.dt_G12(self.Tf) * self.coeff_G111_G112()) / (2 * self.M * self.A)) * (kappa * (self.A - self.B) * self.mu_1_vec[t2_idx] - integral_1 + np.sqrt(self.A)) * (np.sinh(t0) / np.sinh(self.Tf))
 
         # Fourth term: -ε * (integral_3 - self.mu_1_vec[t2_idx] * integral_4) * (sinh(self.Tf) / sinh(self.Tf)) / (2 * M)
         integral_3 = 0#quad(integrand_3, -np.inf, np.inf)

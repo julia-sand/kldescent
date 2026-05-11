@@ -87,6 +87,7 @@ def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
       benchmark : class
         fetch benchmark analytic results, if available. Default None 
     """
+    qax = np.linspace(-10,10,num=5000)
 
     ax_pos = ax.inset_axes([0,0,0.48,1],sharey=ax)
     ax_mom = ax.inset_axes([0.52,0,0.48,1],sharey=ax)#divider.append_axes("left", size="50%", pad=0.1, sharey=ax)
@@ -116,21 +117,21 @@ def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
 
         if plottime==benchmark.boundary.params["Tf"]:    
             #add target boundary distributions to plots
-            ax_pos.fill_between(np.linspace(-6,6,num=5000),
-                    benchmark.boundary.q_marginal_final_np(np.linspace(-10,10,num=5000)),
+            ax_pos.fill_between(qax,
+                    benchmark.boundary.q_marginal_final_np(qax),
                     color="gray",alpha=0.1,label="target")
                 
-            ax_mom.fill_between(np.linspace(-6,6,num=5000),
-                normal_distribution(np.linspace(-6,6,num=5000),mu=0,sigmasq=1),
+            ax_mom.fill_between(qax,
+                normal_distribution(qax,mu=0,sigmasq=1),
                             color="gray",alpha=0.1,label="target")
             
         if plottime==0:
         
-            ax_mom.fill_between(np.linspace(-6,6,num=5000),
-                normal_distribution(np.linspace(-6,6,num=5000),mu=0,sigmasq=1),
+            ax_mom.fill_between(qax,
+                normal_distribution(qax,mu=0,sigmasq=1),
                             color="gray",alpha=0.1,label="target")
-            ax_pos.fill_between(np.linspace(-6,6,num=5000),
-                        benchmark.boundary.q_marginal_initial_np(np.linspace(-10,10,num=5000)),
+            ax_pos.fill_between(qax,
+                        benchmark.boundary.q_marginal_initial_np(qax),
                         color="gray",alpha=0.1,label="target")
 
 
@@ -142,8 +143,8 @@ def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
     for x in enumerate(xs):
 
         #plot kde fitted distributions
-        ax_mom.plot(np.linspace(-6,6,num=1000), np.exp(fit_kde(x[1][:,1],10)), color=colors[x[0]],label=labels[x[0]],zorder=zord)
-        ax_pos.plot(np.linspace(-6,6,num=1000), np.exp(fit_kde(x[1][:,0],10)), color=colors[x[0]],label=labels[x[0]],zorder=zord) 
+        ax_mom.plot(np.linspace(-10,10,num=1000), np.exp(fit_kde(x[1][:,1],10)), color=colors[x[0]],label=labels[x[0]],zorder=zord)
+        ax_pos.plot(np.linspace(-10,10,num=1000), np.exp(fit_kde(x[1][:,0],10)), color=colors[x[0]],label=labels[x[0]],zorder=zord) 
 
         zord -= 10 #set the second plots furhter back
 
