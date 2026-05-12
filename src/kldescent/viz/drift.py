@@ -4,17 +4,18 @@ import matplotlib.pyplot as plt
 from kldescent.viz.plots import make_fig_subplots
 
 
-def format_drift_plot(axs,fig,invert_labels):
+def format_drift_plot(axs,xaxis,fig,invert_labels):
 
     for ax in axs:
         if invert_labels:
-            ax.set_xlabel("t")           
+            ax.set_xlabel("t")    
+            ax.set_xticks([0,1,2,3,4,5])       
         else:
             ax.set_xlabel("q")
 
         ax.set_ylabel(r"$\mathbb{U}$")
-        ax.set_ylim((-10,10))
-        ax.set_xlim((-3,3))
+        ax.set_ylim((-3,3))
+        ax.set_xlim((np.min(xaxis),np.max(xaxis)))
 
     h,l = axs[0].get_legend_handles_labels()
 
@@ -65,18 +66,18 @@ def plot_drift(times,net_vals,benchmark_vals=None,err_vals = None,
             
             ax[t].plot(xaxis,
                         benchmark_vals[t],
-                        label="Benchmark N.N.")
+                        label="Benchmark")
         
         #else:
         #    pass
 
         if err_vals is not None: 
             ax[t].fill_between(xaxis,
-                            net_vals[t] - 3*err_vals[t],
-                            net_vals[t] + 3*err_vals[t],
-                            label=r"90% confidence interval",
+                            net_vals[t] - err_vals[t],
+                            net_vals[t] + err_vals[t],
+                            label=r"$\pm 1$ standard deviation",
                             alpha=0.2)
     
-    format_drift_plot(ax,fig,invert_labels)
+    format_drift_plot(ax,xaxis,fig,invert_labels)
     return fig
 

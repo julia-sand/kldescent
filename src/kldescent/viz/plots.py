@@ -73,7 +73,7 @@ def make_gridspec_subplots(fig, gs, ncols, nrows,squeeze=True):
 def make_fig_subplots(nrows,ncols,squeeze=True):
 
   fig,axs = plt.subplots(ncols=ncols,nrows=nrows,squeeze=squeeze)
-  fig.set_figheight(15)
+  fig.set_figheight(12)
   fig.set_figwidth(25)
 
   return fig,axs
@@ -88,8 +88,8 @@ def make_legend(fig,handles,labels):
 
 def save_fig_(fig,filename,loc):
   fig.savefig(loc+"/"+filename+".png", bbox_inches='tight')
-  #fig.savefig(self.subdir+"/"+filename+".pdf",format="eps", bbox_inches='tight')
-  #fig.savefig(self.subdir+"/"+filename+".eps",format="pdf", bbox_inches='tight')
+  fig.savefig(loc+"/"+filename+".eps",format="eps", bbox_inches='tight')
+  fig.savefig(loc+"/"+filename+".pdf",format="pdf", bbox_inches='tight')
   plt.close()
 
 def normal_distribution(x,mu=0,sigmasq=1):
@@ -131,10 +131,10 @@ def update_mpl():
 
   #update matplotlib config
   mpl.rcParams['lines.linewidth'] = 3
-  mpl.rcParams['xtick.labelsize'] = 20
-  mpl.rcParams['ytick.labelsize'] = 20
-  mpl.rcParams['font.size'] = 22
-  mpl.rcParams['axes.labelsize'] = 22
+  mpl.rcParams['xtick.labelsize'] = 22
+  mpl.rcParams['ytick.labelsize'] = 22
+  mpl.rcParams['font.size'] = 24
+  mpl.rcParams['axes.labelsize'] = 24
 
 if __name__=="__main__":
   

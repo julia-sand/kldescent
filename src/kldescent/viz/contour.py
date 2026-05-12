@@ -1,7 +1,6 @@
 """Create the contour plots showing the full joint pdf, where the pdf is computed 
 either using a neural network interpolation, or using a Monte Carlo integration"""
 
-
 import numpy as np 
 import matplotlib.pyplot as plt 
 import torch
@@ -282,10 +281,10 @@ def joint_distributions_scatter_panel(
     plot_marginal_joint(ax_qmarginal,p_init_out,qmarg_norm)
     plot_marginal_joint(ax_pmarginal,pmarg_norm,p_init_out)
 
-    #if benchmark is not None:
-    #plot marginals
-    x,ptx = benchmark.get_benchmark_quantity(np.round(time,6),quantity = "underdamped marginal",data="perturbative underdamped",time_type="t0")
-    ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Benchmark Predicted")
+    if benchmark is not None:
+        #plot marginals
+        x,ptx = benchmark.get_benchmark_quantity(np.round(time,6),quantity = "underdamped marginal",data="perturbative underdamped",time_type="t0")
+        ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Benchmark Predicted")
 
     #plot joint distribution
     ax.scatter(xs[...,0]/normall,xs[...,1]/normall,c=reshape_joint(joint_out).T.flatten()
@@ -330,10 +329,10 @@ def save_joint_to_csv(t,xinit,jointout,filename):
     append_array_to_csv(filename,np.hstack([
                                             t_col,
                                             xinit,
-                                            jointout[:, None].reshape(-1),
+                                            jointout[:, None].reshape(-1,1),
                                         ]))
     
-    return data
+    return 
 
 def contour_plot_(axs,net,boundary,
                             resultsdir,
@@ -343,6 +342,31 @@ def contour_plot_(axs,net,boundary,
     
     #initialise the csv
     filename = resultsdir+"/joint_distribution.csv"
+        
+    # ==========================================================
+    # USE EXISTING CSV
+    # ==========================================================
+    if os.path.exists(filename):
+
+        loaded = load_contour_csv(filename)
+
+        for i, t in enumerate(plottimes):
+
+            if t not in loaded:
+                continue
+
+            plot_joint_panel(
+                axs[i],
+                t,
+                loaded[t]["jointout"],
+                loaded[t]["xinit"],
+                boundary=boundary,
+                benchmark=benchmark,
+            )
+
+        print(f"Loaded contour data from: {filename}")
+        return
+
     write_csv_header_joint(filename)
 
     #axs = make_gridspec_subplots(fig,gs_top)
@@ -364,35 +388,28 @@ def contour_plot_(axs,net,boundary,
                             benchmark = benchmark)
         
         save_joint_to_csv(plottimes[i],xinit.cpu().numpy(),jointout.cpu().numpy(),filename)
-        
-def make_contour_plot_(net,boundary,
-                            resultsdir,
-                            plottimes = [0,1,2,3,4,5],
-                            benchmark=None):
 
-    fig = plt.figure(figsize=(20, 12), constrained_layout=False)
+def make_axes_contour_plot(len_plottimes):
+
+    fig = plt.figure(figsize=(20, 15), constrained_layout=False)
 
     # Outer grid: 2 rows (plots + colorbar + legend)
     gs = fig.add_gridspec(nrows=3,
                           ncols=1,
-                            left=0, right=1,
-                            bottom=0, top=1,
-                            wspace=0.3,
+                            left=0.1, right=1,
+                            bottom=0, top=0.95,
                             hspace=0.3,
                           height_ratios=[10, 0.5, 1])                                    
 
-    ncols_top=len(plottimes)//2
+    ncols_top=len_plottimes//2
     nrows_top=2
 
     # ---- TOP: nested subplots grid ----
-    gs_top = gs[0].subgridspec(nrows_top, ncols_top, wspace=0.05)
+    gs_top = gs[0].subgridspec(nrows_top, ncols_top,
+                                wspace=0.5)
     
     axs = make_gridspec_subplots(fig, gs_top, ncols_top,nrows_top)
-    contour_plot_(axs,net,boundary,
-                            resultsdir,
-                            plottimes,
-                            benchmark)
-
+    
     # ---- BOTTOM: colorbar axis ----
     cax = fig.add_subplot(gs[1])
     make_colourbar(fig,cax,vmax=0.5)
@@ -400,9 +417,114 @@ def make_contour_plot_(net,boundary,
     #add legend
     lax = fig.add_subplot(gs[2])
     lax.axis("off")  # hide legend axis box
+
+    return fig,axs,lax 
+
+def add_legend_contour_plot(fig,lax):
+
     h,l = get_all_subplot_handles_labels(fig)
     make_legend(lax,h,l)
-    fig.subplots_adjust(hspace=1.1,wspace=1,bottom=0.38)
+
+    fig.subplots_adjust(hspace=1.1,wspace=1,bottom=0.18)
+    
+
+def make_contour_plot_(net,boundary,
+                            resultsdir,
+                            plottimes = [0,1,2,3,4,5],
+                            benchmark=None):
+
+    axs,lax = make_axes_contour_plot(len(plottimes))
+    
+    contour_plot_(axs,net,boundary,
+                            resultsdir,
+                            plottimes,
+                            benchmark)
+    
+    add_legend_contour_plot(fig,lax)
+    
     save_fig_(fig,"contour_distribution",loc=resultsdir)
     
     plt.close()
+
+def load_contour_csv(filename):
+    """
+    Load CSV produced by contour_plot_ and group by time.
+
+    Returns
+    -------
+    data_dict : dict
+
+        {
+            t0: {
+                "xinit": ndarray shape (N,2),
+                "jointout": ndarray shape (N,)
+            },
+            t1: ...
+        }
+    """
+
+    # columns: t,q,p,joint_out
+    data = np.loadtxt(filename, delimiter=",", skiprows=1)
+
+    t_vals = data[:, 0]
+    q_vals = data[:, 1]
+    p_vals = data[:, 2]
+    joint_vals = data[:, 3]
+
+    unique_times = np.unique(t_vals)
+
+    data_dict = {}
+
+    for t in unique_times:
+
+        mask = t_vals == t
+
+        xinit = np.column_stack([
+            q_vals[mask],
+            p_vals[mask],
+        ])
+
+        jointout = joint_vals[mask]
+
+        data_dict[t] = {
+            "xinit": xinit,
+            "jointout": jointout,
+        }
+
+    return data_dict
+
+def make_contour_plot_from_csv(folder,boundary=None,benchmark=None):
+
+    loaded = load_contour_csv(folder+"/joint_distribution.csv")
+
+    fig,axs,lax = make_axes_contour_plot(len(loaded))
+    
+    for i, t in enumerate(sorted(loaded.keys())):
+
+        plot_joint_panel(
+            axs[i],
+            t,
+            loaded[t]["jointout"],
+            loaded[t]["xinit"],
+            boundary=boundary,
+            benchmark=benchmark,
+        )
+
+    add_legend_contour_plot(fig,lax)
+    
+    save_fig_(fig,"contour_distribution",loc=folder)
+    
+    plt.close()
+
+
+    print(f"Loaded contour data from: {folder}")
+    return
+
+if __name__=="__main__":
+    from kldescent.utils.parser import fetch_results_folder_from_cmd
+    from kldescent.viz.plots import update_mpl
+
+    update_mpl()
+    folder=fetch_results_folder_from_cmd()
+    
+    make_contour_plot_from_csv(folder,)

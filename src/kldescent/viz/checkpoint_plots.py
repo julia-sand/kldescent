@@ -609,7 +609,7 @@ if __name__=="__main__":
     plot_utils.make_sde_plots(2048, usebenchmark)
     #plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark)
     #plot_utils.make_cumulant_error_plot_from_csv()
-    #plot_utils.make_intermediate_histograms()
+    plot_utils.make_intermediate_histograms()
     #plot_utils.make_cumulant_error_plot_from_csv()
 
     if plot_utils.data_loaded["terminalcost"]=="GirsanovNet":

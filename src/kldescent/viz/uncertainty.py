@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 
 from kldescent.viz.checkpoint_plots import PlotUtils
 from kldescent.utils.parser import checkpoint_plot_params
-
 from kldescent.viz.drift import plot_drift 
 
 
@@ -33,7 +32,9 @@ def plot_drift_uncertainty_errors(folders,epoch,numplots=5,invert=False,use_benc
     fig = plot_drift(times,net_vals,benchmark_vals=benchmark_vals,err_vals = err_vals,
                         xaxis=xaxis,
                         invert_labels=invert)
-    fig.savefig("test_gauss_invert_1.png")
+    fig.savefig("gauss_drift_coeff.png")
+    fig.savefig("gauss_drift_coeff.pdf",format="pdf")
+    fig.savefig("gauss_drift_coeff.eps",format="eps")
     plt.close("all")
 
 @torch.no_grad
@@ -62,9 +63,10 @@ def compute_uncertainty_estimate(time,folders,epoch,invert=False):
         else: 
             net_output.append(plot_utils.evaluate_net_output(plot_utils.net,time))  
 
+    mean_output = np.mean(net_output,axis=0)
     std = np.std(net_output, axis=0)
 
-    return std.flatten(),net_output[-3].flatten()
+    return std.flatten(),mean_output.flatten()
 
 if __name__=="__main__":
     params = checkpoint_plot_params()

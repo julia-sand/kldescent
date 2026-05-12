@@ -35,7 +35,7 @@ def load_cumulant_csvs(folder):
 def make_fig_gridspec(nrows=2,ncols=6):
 
     #Plotting the cumulants
-    fig1 = plt.figure(figsize=(15, 8))#, constrained_layout=True)
+    fig1 = plt.figure(figsize=(18, 12))#, constrained_layout=True)
 
     # Create a grid 
     gs = fig1.add_gridspec(2, 6, width_ratios=[1, 1, 1, 1,1,1], height_ratios=[1, 1])
@@ -89,6 +89,8 @@ def format_cumulant_subplot(ax,index,ylabel_text,t_vec):
     ax.set_title(make_cumulant_plot_label(index),pad = 5,x = 0.07, y = 0.88, zorder = 1000000)
     ax.set_ylabel(ylabel_text)
     ax.set_xlim((-0.1,t_vec[-1]+0.1))
+    ax.set_xlabel(r"$t$")
+    ax.set_xticks([0,1,2,3,4,5])
 
 def make_cumulant_subplot(ax,#gs_location,
                             ylabel_text,
@@ -147,10 +149,12 @@ def add_freediffusion_cumulants_subplot(ax,#gs_location,
     if ylabel_text=="Position Mean":
         index = 0 
         plot_free_diffusion_sol(ax,t_vec,position_mean_free_diffusion(t_vec,cumulants_ref_plot[0,index],cumulants_ref_plot[0,1],epsilon))
+        ax.set_ylim((-0.2,0.2))
 
     elif ylabel_text=="Momentum Mean":
         index = 1
         plot_free_diffusion_sol(ax,t_vec,momentum_mean_free_diffusion(t_vec,cumulants_ref_plot[0,index]))
+        ax.set_ylim((-0.2,0.2))
 
     elif ylabel_text=="Position Variance":
         index = 2 
@@ -225,6 +229,7 @@ def plot_cumulants(t_vec1,t_vec2,cumulants,labels,test_samples,
     
     plt.tight_layout()
 
+    fig1.subplots_adjust(bottom=0.15)
     h,l = axs[0].get_legend_handles_labels()
     legend = fig1.legend(h,l, 
                             frameon = False,
@@ -235,6 +240,7 @@ def plot_cumulants(t_vec1,t_vec2,cumulants,labels,test_samples,
     #move the legend
     legend.set_bbox_to_anchor(bbox=(0.95,0.07))
     
+
     return fig1
 
 if __name__=="__main__":

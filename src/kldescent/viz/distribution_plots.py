@@ -67,10 +67,10 @@ def format_distribution_ax(ax1):
     ax1.set_xlabel("q")
     ax1.set_ylim(bottom=-0.01)
 
-def fit_kde(xs,qmax=5):
+def fit_kde(xs,qax):
 
     kde = KernelDensity(kernel = "epanechnikov",bandwidth=0.1).fit(xs[np.isfinite(xs)].reshape(-1,1))
-    return kde.score_samples(np.linspace(-qmax,qmax,num =1000).reshape(-1,1))
+    return kde.score_samples(qax.reshape(-1,1))
 
 def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
     """
@@ -87,7 +87,7 @@ def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
       benchmark : class
         fetch benchmark analytic results, if available. Default None 
     """
-    qax = np.linspace(-10,10,num=5000)
+    qax = np.linspace(-qmax,qmax,num=5000)
 
     ax_pos = ax.inset_axes([0,0,0.48,1],sharey=ax)
     ax_mom = ax.inset_axes([0.52,0,0.48,1],sharey=ax)#divider.append_axes("left", size="50%", pad=0.1, sharey=ax)
@@ -143,8 +143,8 @@ def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
     for x in enumerate(xs):
 
         #plot kde fitted distributions
-        ax_mom.plot(np.linspace(-10,10,num=1000), np.exp(fit_kde(x[1][:,1],10)), color=colors[x[0]],label=labels[x[0]],zorder=zord)
-        ax_pos.plot(np.linspace(-10,10,num=1000), np.exp(fit_kde(x[1][:,0],10)), color=colors[x[0]],label=labels[x[0]],zorder=zord) 
+        ax_mom.plot(qax, np.exp(fit_kde(x[1][:,1],qax)), color=colors[x[0]],label=labels[x[0]],zorder=zord)
+        ax_pos.plot(qax, np.exp(fit_kde(x[1][:,0],qax)), color=colors[x[0]],label=labels[x[0]],zorder=zord) 
 
         zord -= 10 #set the second plots furhter back
 
