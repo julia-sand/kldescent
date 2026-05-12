@@ -60,7 +60,7 @@ def train_loop_du(epoch,
         metric_.update_metrics(epoch, loss_out)
         
         trainer.scheduler2.step(metric_.actioncost)
-        trainer.scheduler1.step()
+        #trainer.scheduler1.step()
 
     if epoch % logstep == 0:
         
