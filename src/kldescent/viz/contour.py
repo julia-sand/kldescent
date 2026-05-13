@@ -461,6 +461,7 @@ def load_contour_csv(filename):
             },
             t1: ...
         }
+        dictionary of values xinit and probability distribution, with t as the key
     """
 
     # columns: t,q,p,joint_out

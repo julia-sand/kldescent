@@ -31,11 +31,10 @@ def load_cumulant_csvs(folder):
     return cumulants_nn[:,0],cumulants_ref[:,0],cumulants_nn[:,1:],cumulants_ref[:,1:]
 
 
-
 def make_fig_gridspec(nrows=2,ncols=6):
 
     #Plotting the cumulants
-    fig1 = plt.figure(figsize=(18, 12))#, constrained_layout=True)
+    fig1 = plt.figure(figsize=(18, 15))#, constrained_layout=True)
 
     # Create a grid 
     gs = fig1.add_gridspec(2, 6, width_ratios=[1, 1, 1, 1,1,1], height_ratios=[1, 1])

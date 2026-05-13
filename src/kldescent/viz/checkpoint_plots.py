@@ -219,12 +219,19 @@ class PlotUtils():
         if self.benchmark is not None:
 
             #if self.benchmark.du_net_benchmark is None:
+            
             #get the timegrid where data is available
             t_vec = self.benchmark.get_timegrid()
-            #choose numplot random times to show
-            times = t_vec[np.random.randint(low=0,high=len(t_vec),size=numplots)]
-            return np.sort(times)
             
+            #choose numplot random times to show
+            #times = t_vec[np.random.randint(low=0,high=len(t_vec),size=numplots)]
+            #return np.sort(times)
+            
+            tgrid =self.benchmark.get_timegrid() 
+            indices = np.linspace(0, len(tgrid) - 1, numplots, dtype=int)
+            
+            return tgrid[indices]
+
         else:
             times = np.sort(np.random.uniform(0, self.boundary_cond.params["Tf"],numplots))
             return times
@@ -389,32 +396,25 @@ class PlotUtils():
         self.make_rhonet_marginals_plot()
         plt.close("all")
 
-    def make_intermediate_histograms(self):#,plottimes):
+    def make_intermediate_histograms(self,testing_samples=None):#,plottimes):
         
         plottimes = self.generate_times(6)
 
         #make figure object
         fig,axs = make_fig_subplots(ncols=int(np.ceil(len(plottimes)/2)),nrows=2)
         
+        #adjust figsize
+        fig.set_figheight(15)
+        fig.set_figwidth(25)
+        
         axs = axs.flatten()
 
         for i in range(len(plottimes)):
             
             self.integrator.net = self.net
-            x_du = self.integrator.update_ref_statistics(time=plottimes[i]).cpu().numpy()
-
-            if self.benchmark is not None:
-
-                if self.benchmark.du_net_benchmark is not None:  
-                    #UPDATE NET FOR INTEGRATOR
-                    self.integrator.net = self.benchmark.du_net_benchmark
-                    x_ref = x_du#self.integrator.update_ref_statistics(time=plottimes[i]).cpu().numpy()
-                else:
-                    x_ref = np.zeros_like(x_du)
-                    #x_ref[:,[0]] = self.benchmark.get_benchmark_quantity(plottimes[i],"underdamped marginal", data="perturbative underdamped")[1,np.newaxis]
-                    #print(x_ref.shape)
+            x_du = self.integrator.update_ref_statistics(time=plottimes[i],testing_samples=testing_samples).cpu().numpy()
             
-            marginal_distribution(axs[i],[x_du,x_ref],plottimes[i],benchmark=self.benchmark)
+            marginal_distribution(axs[i],[x_du],plottimes[i],benchmark=self.benchmark)
             
         h,l = get_all_subplot_handles_labels(fig)
         
@@ -426,6 +426,7 @@ class PlotUtils():
         legend.set_bbox_to_anchor(bbox=(0.95,0.07))
         
         fig.tight_layout()
+        fig.subplots_adjust(bottom=0.15)
         
         #if self.wandb_run is not None:
         #    self.wandb_run.log({"inthists":fig})
@@ -556,12 +557,9 @@ class PlotUtils():
         save_cumulants_csv(t_vec2,cumulants_ref,loc=self.resultsdir,cumulants_filename="ref_cumulants")
         plt.close("all")
 
-    def make_contour_plot2(self,plottimes = [0,1,2,3,4,5]):
+    def make_contour_plot2(self,numplots = 6):
         
-        tgrid =self.benchmark.get_timegrid() 
-        indices = np.linspace(0, len(tgrid) - 1, 6, dtype=int)
-        
-        plottimes = tgrid[indices]
+        plottimes = generate_times(numplots)
 
         make_contour_plot_(net=self.net,
                             boundary=self.boundary_cond,
@@ -606,7 +604,7 @@ if __name__=="__main__":
     #plot_utils.make_contour_plot2(plottimes=[0,1,2,3,4,5])
     plot_utils.make_drift_plot(numplots=5)
     #plot_utils.make_inverted_drift_plot(numplots=5)
-    plot_utils.make_sde_plots(2048, usebenchmark)
+    #plot_utils.make_sde_plots(2048, usebenchmark)
     #plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark)
     #plot_utils.make_cumulant_error_plot_from_csv()
     plot_utils.make_intermediate_histograms()
