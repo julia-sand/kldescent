@@ -62,9 +62,9 @@ def make_scatter_plot(plot_loc,x,model,epoch=1,boundary=None):
     #print("KL divergence between the samples",kl_div(x.detach().numpy(),x_samples.detach().numpy()))
    
 
-def format_distribution_ax(ax1):
+def format_distribution_ax(ax1,xlabel):
     ax1.set_xlim((-5,5))
-    ax1.set_xlabel("q")
+    ax1.set_xlabel(xlabel)
     ax1.set_ylim(bottom=-0.01)
 
 def fit_kde(xs,qax):
@@ -149,8 +149,8 @@ def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
         zord -= 10 #set the second plots furhter back
 
     #add formatting
-    format_distribution_ax(ax_mom)
-    format_distribution_ax(ax_pos)
+    format_distribution_ax(ax_mom,xlabel="p")
+    format_distribution_ax(ax_pos,xlabel="q")
 
     #move the yaxis labels to opposite side for mom plot
     ax_mom.yaxis.tick_right()

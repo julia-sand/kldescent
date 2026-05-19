@@ -40,7 +40,7 @@ class GaussBVP():
         
         self.sigmainitial = sigmainitial 
         self.sigmafinal = sigmafinal
-        self.epsilon = epsilon
+        self.epsilon = 0.2#epsilon#TESTING ONLY
         self.Tf = Tf 
         self.M = M #weighting of boundary conditions
       

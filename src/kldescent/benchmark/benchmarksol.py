@@ -434,7 +434,7 @@ class GaussBenchmarkSolution(BaseBenchmarkSolution):
         if v1 is None: 
             return np.zeros_like(q)
 
-        return np.squeeze(q*v1) 
+        return v1*q#np.squeeze(q*v1) 
         
     def get_benchmark_quantity(self,time,quantity,data=None,arr=None,time_type="t0"):
         """

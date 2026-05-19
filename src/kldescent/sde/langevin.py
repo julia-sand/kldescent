@@ -236,7 +236,7 @@ class SDEBase():
                                                             ,xinit[...,[0]]),dim=-1))
             else:
                 try:
-                    du = torch.as_tensor(benchmark.get_drift_gaussian(t),dtype=torch.float32)*xinit[...,[0]]
+                    du = torch.as_tensor(benchmark.du_benchmark(t,xinit[...,[0]]),dtype=torch.float32)
                 except: 
                     du = torch.zeros_like(xinit[...,[0]],dtype=torch.float32,requires_grad=False)
           
