@@ -14,7 +14,6 @@ Includes classes defining the initial and reference distributions
     LinearOU: Linear Ornstein Uhlenbeck process in the overdamped dynamics with inital condition a delta peak that gives a full bridge
 """
 
-import os
 import torch
 
 import numpy as np 

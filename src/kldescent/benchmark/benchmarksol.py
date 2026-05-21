@@ -4,7 +4,7 @@ import numpy as np
 
 #from kldescent.sde.boundary import *
 from kldescent.utils.parser import fetch_results_folder_from_cmd
-from kldescent.model.nn import MLP,NeuralNetwork
+from kldescent.model.nn import NeuralNetwork
 from kldescent.benchmark.utilfunctions import *
 from kldescent.benchmark.perturbative.driftinterp import *
 from kldescent.benchmark.perturbative.corrections import MarginalHalfBridgePerturbation,HalfBridgePerturbation

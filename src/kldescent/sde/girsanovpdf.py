@@ -1,9 +1,6 @@
 import torch
 
 from kldescent.utils.parser import integrator_params
-from functorch import vmap
-
-import pdb
 
 @torch.no_grad
 def girsanov_scheme(xinit,du_bar,dt,dw,t,sigma0,epsilon):

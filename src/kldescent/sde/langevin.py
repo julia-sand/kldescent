@@ -1,9 +1,8 @@
 """Implement the integration of SDE processes"""
 
-import numpy as np 
+import numpy as np
 import torch
 
-import kldescent.sde.kl as kl
 from kldescent.utils.parser import integrator_params
 
 class SDEBase():

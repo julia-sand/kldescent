@@ -9,11 +9,9 @@ Classes
     histogram: Use a histogram to estimate the final value function
 """
 
-import numpy as np 
+import numpy as np
 import torch
-from functorch import vmap
 
-from kldescent.sde.kl import kl_div
 from kldescent.viz.distribution_plots import *
 from kldescent.model.nn import save_nn_checkpoint
 from kldescent.utils.logger import save_params

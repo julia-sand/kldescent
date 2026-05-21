@@ -1,9 +1,5 @@
-import os
+import numpy as np
 
-
-import numpy as np 
-
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from kldescent.viz.plots import update_mpl

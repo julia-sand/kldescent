@@ -4,7 +4,6 @@ import os
 import csv
 
 import numpy as np
-from scipy.ndimage import generic_filter,median
 from scipy.signal import savgol_filter
 
 def bfun(bridge_type, Tf):

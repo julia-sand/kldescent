@@ -11,7 +11,6 @@ import numpy as np
 import torch
 
 from kldescent.viz.distribution_plots import *
-from kldescent.utils.logger import save_params
 
 class TerminalCost():
     """

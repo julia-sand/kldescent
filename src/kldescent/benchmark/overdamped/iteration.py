@@ -3,7 +3,7 @@ import warnings #ignore divide by zeros for the boundaries
 import numpy as np
 import matplotlib.pyplot as plt 
 
-from kldescent.benchmark.heatintegrators import proximal_fpk,mcintegrator
+from kldescent.benchmark.heatintegrators import mcintegrator
 from kldescent.benchmark.overdamped.gauss import *
 from kldescent.benchmark.utilfunctions import *
 from kldescent.utils.parser import cell_argparser

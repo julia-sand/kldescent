@@ -1,17 +1,13 @@
-import os
-
-import numpy as np 
+import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
 #from torch import nn as torchnn
-from torch.optim import Adam,SGD,AdamW
-from torch.optim.lr_scheduler import CosineAnnealingLR,ExponentialLR,ReduceLROnPlateau
+from torch.optim import Adam
+from torch.optim.lr_scheduler import ExponentialLR
 from torch.nn.utils import clip_grad_norm_
 
 from tqdm import tqdm
-
-from kldescent.viz.plots import update_mpl
         
 
 class Pretrain():

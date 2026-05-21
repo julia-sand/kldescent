@@ -1,10 +1,8 @@
 import torch
-import numpy as np 
 
 import wandb
 import psutil
 
-from kldescent.model.nn import save_nn_checkpoint
 from kldescent.sde.kl import static_kl_divergence
 from kldescent.utils.parser import metric_params
 from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmarkSolution
