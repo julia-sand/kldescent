@@ -125,9 +125,12 @@ class GaussBVP():
 
         self.epsilon = eps_seq[0]
         y0 = self._free_dynamics_guess(t_vec)
-        init_kwargs = {**final_kwargs,
-                       "tol": max(tol * 1e2, 1e-4),
-                       "bc_tol": max(bc_tol * 1e2, 1e-4)}
+        # omit fun_jac for the first solve: the free-dynamics guess has v12=v22=0
+        # everywhere, making the f[0] Jacobian row identically zero and causing
+        # a singular collocation Jacobian; finite differences are safe here
+        init_kwargs = {k: v for k, v in final_kwargs.items() if k != "fun_jac"}
+        init_kwargs.update({"tol": max(tol * 1e2, 1e-4),
+                            "bc_tol": max(bc_tol * 1e2, 1e-4)})
         sol = solve_bvp(self.evolution, bc_fn, t_vec, y0, **init_kwargs)
         if not sol.success:
             raise RuntimeError(
