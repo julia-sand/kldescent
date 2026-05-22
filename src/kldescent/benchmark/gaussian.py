@@ -54,10 +54,10 @@ class GaussBVP():
             Q, C, P
         ])
 
-    def _step(self, sol_prev, bc_fn, eps_from, eps_to, t_vec,
+    def _step(self, sol_prev, bc_fn, eps_from, eps_to, eps_target, t_vec,
               final_kwargs, max_bisections, depth):
         """Take one continuation step from eps_from to eps_to with bisection fallback."""
-        is_final = (eps_to == self.epsilon)
+        is_final = (eps_to == eps_target)
         kwargs = final_kwargs if is_final else {
             **final_kwargs,
             "tol": max(final_kwargs["tol"] * 1e2, 1e-4),
@@ -73,9 +73,9 @@ class GaussBVP():
                     f"after {max_bisections} bisections: {sol.message}"
                 )
             eps_mid = (eps_from + eps_to) / 2
-            sol_mid = self._step(sol_prev, bc_fn, eps_from, eps_mid, t_vec,
+            sol_mid = self._step(sol_prev, bc_fn, eps_from, eps_mid, eps_target, t_vec,
                                  final_kwargs, max_bisections, depth + 1)
-            sol = self._step(sol_mid, bc_fn, eps_mid, eps_to, t_vec,
+            sol = self._step(sol_mid, bc_fn, eps_mid, eps_to, eps_target, t_vec,
                              final_kwargs, max_bisections, depth + 1)
         return sol
 
@@ -118,17 +118,10 @@ class GaussBVP():
                             tol=tol, bc_tol=bc_tol, max_nodes=max_nodes,
                             **bvp_kwargs)
 
-        if eps_target <= eps_start:
-            self.epsilon = eps_target
-            y0 = self._free_dynamics_guess(t_vec)
-            sol = solve_bvp(self.evolution, bc_fn, t_vec, y0, **final_kwargs)
-            if not sol.success:
-                raise RuntimeError(
-                    f"solve_bvp did not converge at epsilon={eps_target:.4f}: {sol.message}"
-                )
-            return sol
-
-        eps_seq = np.linspace(eps_start, eps_target, n_steps + 1)
+        # build epsilon sequence: always start from a small value so there
+        # is at least one warm-up step, even when eps_target <= eps_start
+        eps_0 = min(eps_start, eps_target / 2) if eps_target <= eps_start else eps_start
+        eps_seq = np.linspace(eps_0, eps_target, n_steps + 1)
 
         self.epsilon = eps_seq[0]
         y0 = self._free_dynamics_guess(t_vec)
@@ -142,7 +135,7 @@ class GaussBVP():
             )
 
         for eps_from, eps_to in zip(eps_seq[:-1], eps_seq[1:]):
-            sol = self._step(sol, bc_fn, eps_from, eps_to, t_vec,
+            sol = self._step(sol, bc_fn, eps_from, eps_to, eps_target, t_vec,
                              final_kwargs, max_bisections, depth=0)
 
         self.epsilon = eps_target
@@ -247,9 +240,6 @@ class GaussBVP():
                             yb[3] - self.sigmafinal**2, #final value funs
                             yb[4] ,
                             yb[5] - 1])
-
-    def bc_jacobian(self,):
-        pass 
 
     def get_marginal_half_sol(self,):
 
