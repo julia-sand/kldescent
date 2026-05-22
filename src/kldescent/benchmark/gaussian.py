@@ -37,10 +37,66 @@ class GaussBVP():
         
         self.sigmainitial = sigmainitial 
         self.sigmafinal = sigmafinal
-        self.epsilon = 0.2#epsilon#TESTING ONLY
+        self.epsilon = epsilon
         self.Tf = Tf 
         self.M = M #weighting of boundary conditions
       
+    def _free_dynamics_guess(self, t_vec):
+        """Initial guess from free (u=0) dynamics at the current self.epsilon."""
+        P = np.ones_like(t_vec)
+        C = self.epsilon * (1 - np.exp(-t_vec))
+        Q = self.sigmainitial**2 + 2*(self.epsilon**2)*(t_vec + np.exp(-t_vec) - 1)
+        return np.vstack([
+            -np.ones_like(t_vec),   # v11
+            np.zeros_like(t_vec),   # v12
+            np.zeros_like(t_vec),   # v22
+            Q, C, P
+        ])
+
+    def _continuation_solve(self, bc_fn, eps_start=0.2, n_steps=5, **bvp_kwargs):
+        """
+        Solve BVP by stepping epsilon from eps_start up to self.epsilon.
+
+        Parameters
+        ----------
+        bc_fn : callable
+            Boundary condition function to pass to solve_bvp.
+        eps_start : float, optional
+            Starting epsilon for continuation. Default is 0.2.
+        n_steps : int, optional
+            Number of intermediate epsilon values. Default is 5.
+        **bvp_kwargs
+            Additional keyword arguments forwarded to solve_bvp.
+
+        Returns
+        -------
+        sol : OdeSolution
+            Solution object from solve_bvp at self.epsilon.
+        """
+        eps_target = self.epsilon
+        t_vec = np.linspace(0, self.Tf, num=10000)
+
+        if eps_target <= eps_start:
+            y0 = self._free_dynamics_guess(t_vec)
+            return solve_bvp(self.evolution, bc_fn, t_vec, y0,
+                             fun_jac=self.evolution_jacobian, **bvp_kwargs)
+
+        eps_seq = np.linspace(eps_start, eps_target, n_steps + 1)
+
+        self.epsilon = eps_seq[0]
+        y0 = self._free_dynamics_guess(t_vec)
+        sol = solve_bvp(self.evolution, bc_fn, t_vec, y0,
+                        fun_jac=self.evolution_jacobian, **bvp_kwargs)
+
+        for eps in eps_seq[1:]:
+            self.epsilon = eps
+            y0 = sol.sol(t_vec)
+            sol = solve_bvp(self.evolution, bc_fn, t_vec, y0,
+                            fun_jac=self.evolution_jacobian, **bvp_kwargs)
+
+        self.epsilon = eps_target
+        return sol
+
     def rho_final(self,QT,CT,PT):
         return CT/np.sqrt(QT*PT)
 
@@ -145,46 +201,22 @@ class GaussBVP():
         pass 
 
     def get_marginal_half_sol(self,):
-        
-        t_vec = np.linspace(0,self.Tf,num=10000)
 
-        #initial guess
-        y0 = np.tile(np.array([-1,1,1,1,0,1]),(len(t_vec),1)).T
-        
-        sol1 = solve_bvp(self.evolution, self.bc_marginal_half, t_vec, y0,
-                        fun_jac=self.evolution_jacobian,
-                        verbose=2)
-
-        return sol1 
+        return self._continuation_solve(self.bc_marginal_half,
+                                        verbose=2)
 
     def get_half_sol(self,):
-        
-        t_vec = np.linspace(0,self.Tf,num=10000)
 
-        #initial guess
-        y0 = np.tile(np.array([-1,0,0,1,0,1]),(len(t_vec),1)).T
-        
-        sol1 = solve_bvp(self.evolution, self.bc_half, t_vec, y0,
-                        fun_jac=self.evolution_jacobian,
-                        max_nodes=100000,
-                        tol=1e-8,
-                        bc_tol=1e-8,
-                        verbose=2)
-
-        return sol1 
+        return self._continuation_solve(self.bc_half,
+                                        max_nodes=100000,
+                                        tol=1e-8,
+                                        bc_tol=1e-8,
+                                        verbose=2)
 
     def get_full_sol(self,):
-        
-        t_vec = np.linspace(0,self.Tf,num=50000)
 
-        #initial guess
-        y0 = np.tile(np.array([1,1,1,1,0,1]),(len(t_vec),1)).T
-        
-        sol1 = solve_bvp(self.evolution, self.bc_full, t_vec, y0,
-                        #fun_jac=self.evolution_jacobian,
-                        verbose=2)
-
-        return sol1 
+        return self._continuation_solve(self.bc_full,
+                                        verbose=2)
 
     def get_u2(self,sol1,t_vec):
 
