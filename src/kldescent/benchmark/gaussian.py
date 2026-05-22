@@ -46,18 +46,45 @@ class GaussBVP():
         P = np.ones_like(t_vec)
         C = self.epsilon * (1 - np.exp(-t_vec))
         Q = self.sigmainitial**2 + 2*(self.epsilon**2)*(t_vec + np.exp(-t_vec) - 1)
+        v11_0 = 1/self.sigmafinal**2 - 1/self.sigmainitial**2  # exact eps=0 value
         return np.vstack([
-            -np.ones_like(t_vec),   # v11
-            np.zeros_like(t_vec),   # v12
-            np.zeros_like(t_vec),   # v22
+            v11_0 * np.ones_like(t_vec),  # v11
+            np.zeros_like(t_vec),          # v12
+            np.zeros_like(t_vec),          # v22
             Q, C, P
         ])
 
+    def _step(self, sol_prev, bc_fn, eps_from, eps_to, t_vec,
+              final_kwargs, max_bisections, depth):
+        """Take one continuation step from eps_from to eps_to with bisection fallback."""
+        is_final = (eps_to == self.epsilon)
+        kwargs = final_kwargs if is_final else {
+            **final_kwargs,
+            "tol": max(final_kwargs["tol"] * 1e2, 1e-4),
+            "bc_tol": max(final_kwargs["bc_tol"] * 1e2, 1e-4),
+        }
+        self.epsilon = eps_to
+        y0 = sol_prev.sol(t_vec)
+        sol = solve_bvp(self.evolution, bc_fn, t_vec, y0, **kwargs)
+        if not sol.success:
+            if depth >= max_bisections:
+                raise RuntimeError(
+                    f"solve_bvp did not converge at epsilon={eps_to:.4f} "
+                    f"after {max_bisections} bisections: {sol.message}"
+                )
+            eps_mid = (eps_from + eps_to) / 2
+            sol_mid = self._step(sol_prev, bc_fn, eps_from, eps_mid, t_vec,
+                                 final_kwargs, max_bisections, depth + 1)
+            sol = self._step(sol_mid, bc_fn, eps_mid, eps_to, t_vec,
+                             final_kwargs, max_bisections, depth + 1)
+        return sol
+
     def _continuation_solve(self, bc_fn, eps_start=0.2, n_steps=5,
                             tol=1e-6, bc_tol=1e-6, max_nodes=100000,
-                            **bvp_kwargs):
+                            max_bisections=4, **bvp_kwargs):
         """
-        Solve BVP by stepping epsilon from eps_start up to self.epsilon.
+        Solve BVP by stepping epsilon from eps_start up to self.epsilon,
+        with adaptive bisection if any step fails to converge.
 
         Parameters
         ----------
@@ -66,14 +93,16 @@ class GaussBVP():
         eps_start : float, optional
             Starting epsilon for continuation. Default is 0.2.
         n_steps : int, optional
-            Number of intermediate epsilon values. Default is 5.
+            Number of evenly-spaced epsilon steps. Default is 5.
         tol : float, optional
-            Residual tolerance passed to solve_bvp at every continuation step.
-            Default is 1e-6.
+            Residual tolerance for the final solve. Intermediate steps use
+            a looser tolerance (100x) to reduce failures. Default is 1e-6.
         bc_tol : float, optional
-            Boundary condition tolerance passed to solve_bvp. Default is 1e-6.
+            Boundary condition tolerance for the final solve. Default is 1e-6.
         max_nodes : int, optional
             Maximum mesh nodes passed to solve_bvp. Default is 100000.
+        max_bisections : int, optional
+            Maximum bisection depth when a step fails. Default is 4.
         **bvp_kwargs
             Additional keyword arguments forwarded to solve_bvp.
 
@@ -85,27 +114,36 @@ class GaussBVP():
         eps_target = self.epsilon
         t_vec = np.linspace(0, self.Tf, num=10000)
 
-        solve_kwargs = dict(fun_jac=self.evolution_jacobian,
+        final_kwargs = dict(fun_jac=self.evolution_jacobian,
                             tol=tol, bc_tol=bc_tol, max_nodes=max_nodes,
                             **bvp_kwargs)
 
         if eps_target <= eps_start:
+            self.epsilon = eps_target
             y0 = self._free_dynamics_guess(t_vec)
-            return solve_bvp(self.evolution, bc_fn, t_vec, y0, **solve_kwargs)
+            sol = solve_bvp(self.evolution, bc_fn, t_vec, y0, **final_kwargs)
+            if not sol.success:
+                raise RuntimeError(
+                    f"solve_bvp did not converge at epsilon={eps_target:.4f}: {sol.message}"
+                )
+            return sol
 
         eps_seq = np.linspace(eps_start, eps_target, n_steps + 1)
 
         self.epsilon = eps_seq[0]
         y0 = self._free_dynamics_guess(t_vec)
-        sol = solve_bvp(self.evolution, bc_fn, t_vec, y0, **solve_kwargs)
+        init_kwargs = {**final_kwargs,
+                       "tol": max(tol * 1e2, 1e-4),
+                       "bc_tol": max(bc_tol * 1e2, 1e-4)}
+        sol = solve_bvp(self.evolution, bc_fn, t_vec, y0, **init_kwargs)
+        if not sol.success:
+            raise RuntimeError(
+                f"solve_bvp did not converge at initial epsilon={eps_seq[0]:.4f}: {sol.message}"
+            )
 
-        for eps in eps_seq[1:]:
-            if not sol.success:
-                self.epsilon = eps_target
-                raise RuntimeError(f"solve_bvp did not converge at epsilon={self.epsilon:.4f}: {sol.message}")
-            self.epsilon = eps
-            y0 = sol.sol(t_vec)
-            sol = solve_bvp(self.evolution, bc_fn, t_vec, y0, **solve_kwargs)
+        for eps_from, eps_to in zip(eps_seq[:-1], eps_seq[1:]):
+            sol = self._step(sol, bc_fn, eps_from, eps_to, t_vec,
+                             final_kwargs, max_bisections, depth=0)
 
         self.epsilon = eps_target
         return sol
