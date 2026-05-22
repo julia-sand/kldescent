@@ -93,6 +93,9 @@ def overdamped_argparser():
     
     parser.add_argument('-terminalcost','--terminalcost', type=str, default="GirsanovMC",
                         help='How the terminal cost should be evaluated. See Sde.terminalcost for options')
+
+    parser.add_argument('-integrator','--integrator', type=str, default="BAOAB",
+                        help='SDE integrator class to use. Options: BAOAB, EulerMaruyamaSDE, VerletSDE')
     
     parser.add_argument('-pretrain','--pretrain', type=str, default=None,
                         help='Path to CSV containing a set of values to fit to the neural network before training. See model/train for parameters of the training process.')
