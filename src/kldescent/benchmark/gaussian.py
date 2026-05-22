@@ -47,9 +47,15 @@ class GaussBVP():
         C = self.epsilon * (1 - np.exp(-t_vec))
         Q = self.sigmainitial**2 + 2*(self.epsilon**2)*(t_vec + np.exp(-t_vec) - 1)
         v11_0 = 1/self.sigmafinal**2 - 1/self.sigmainitial**2  # exact eps=0 value
+        # Leading-order perturbative v12: satisfies dv12/dt = v12 - eps*v11_0
+        # with terminal condition v12(Tf)=0.  Falls back to small constant when
+        # v11_0=0 (equal variances) to avoid the degenerate Jacobian row for f[0].
+        v12_0 = self.epsilon * v11_0 * (1 - np.exp(t_vec - self.Tf))
+        if np.max(np.abs(v12_0)) < 1e-10:
+            v12_0 = self.epsilon * 1e-3 * np.ones_like(t_vec)
         return np.vstack([
-            v11_0 * np.ones_like(t_vec),  # v11
-            np.zeros_like(t_vec),          # v12
+            v11_0 * np.ones_like(t_vec),
+            v12_0,
             np.zeros_like(t_vec),          # v22
             Q, C, P
         ])
