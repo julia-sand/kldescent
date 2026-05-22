@@ -115,37 +115,37 @@ def make_cumulant_subplot(ax,#gs_location,
     conf_level = 2.58 # corresponds to 99% conf. interval
     if ylabel_text=="Position Mean":
       index = 0
-      ax.plot(t_vec,cumulants_nn_plot[:,0], label=label, zorder=1000)
+      (line,) = ax.plot(t_vec,cumulants_nn_plot[:,0], label=label, zorder=1000)
       try:
         yerr=np.sqrt(cumulants_nn_plot[:,2]/test_samples)
-        ax.errorbar(t_vec, cumulants_nn_plot[:,index], conf_level*yerr,alpha=0.8)
+        ax.errorbar(t_vec, cumulants_nn_plot[:,index], conf_level*yerr, alpha=0.8, color=line.get_color())
       except:
         pass
 
     elif ylabel_text=="Momentum Mean":
       index = 1
-      ax.plot(t_vec,cumulants_nn_plot[:,1], label=label, zorder=1000)
+      (line,) = ax.plot(t_vec,cumulants_nn_plot[:,1], label=label, zorder=1000)
       try:
         yerr=np.sqrt(cumulants_nn_plot[:,3]/test_samples)
-        ax.errorbar(t_vec, cumulants_nn_plot[:,index], conf_level*yerr,alpha=0.8)
+        ax.errorbar(t_vec, cumulants_nn_plot[:,index], conf_level*yerr, alpha=0.8, color=line.get_color())
       except:
         pass
 
     elif ylabel_text=="Position Variance":
       index = 2
-      ax.plot(t_vec,cumulants_nn_plot[:,2], label=label, zorder=1000)
+      (line,) = ax.plot(t_vec,cumulants_nn_plot[:,2], label=label, zorder=1000)
       try:
         yerr=compute_variance_error_bar(cumulants_nn_plot[:,2],test_samples)
-        ax.errorbar(t_vec, cumulants_nn_plot[:,2], conf_level*yerr,alpha=0.8)
+        ax.errorbar(t_vec, cumulants_nn_plot[:,2], conf_level*yerr, alpha=0.8, color=line.get_color())
       except:
         pass
 
     elif ylabel_text=="Momentum Variance":
       index = 3
-      ax.plot(t_vec,cumulants_nn_plot[:,3], label=label, zorder=1000)
+      (line,) = ax.plot(t_vec,cumulants_nn_plot[:,3], label=label, zorder=1000)
       try:
         yerr=compute_variance_error_bar(cumulants_nn_plot[:,3],test_samples)
-        ax.errorbar(t_vec, cumulants_nn_plot[:,3], conf_level*yerr,alpha=0.8)
+        ax.errorbar(t_vec, cumulants_nn_plot[:,3], conf_level*yerr, alpha=0.8, color=line.get_color())
       except:
         pass
 
