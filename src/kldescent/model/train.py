@@ -37,12 +37,14 @@ class Train():
         self.scheduler1 = CosineAnnealingLR(self.optimiser_fourier, 
                                         T_max=100, eta_min=1e-10)
         #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
-        self.scheduler2 = ReduceLROnPlateau(self.optimiser_feedforward,
-                                            mode="min",
-                                            factor=0.9,
-                                            patience=1, #how many steps to wait before 
-                                            eps=1e-8,
-                                            cooldown=3) #Decays the learning rate based on a passed metric
+        self.scheduler2 = CosineAnnealingLR(self.optimiser_feedforward, 
+                                        T_max=100, eta_min=1e-10)
+        #ReduceLROnPlateau(self.optimiser_feedforward,
+        #                                    mode="min",
+        #                                    factor=0.9,
+        #                                    patience=1, #how many steps to wait before 
+        #                                    eps=1e-8,
+        #                                    cooldown=3) #Decays the learning rate based on a passed metric
         
     def train_step(self):  
         

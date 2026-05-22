@@ -56,15 +56,16 @@ def train_loop_du(epoch,
 
     if epoch>trainer.start_decay:
     
-        metric_.update_metrics(epoch, loss_out)
-        
-        trainer.scheduler2.step(metric_.actioncost)
+        #metric_.update_metrics(epoch, loss_out)
+        trainer.scheduler2.step()
+
+        #trainer.scheduler2.step(metric_.actioncost)
         #trainer.scheduler1.step()
 
     if epoch % logstep == 0:
         
-        if epoch<trainer.start_decay:
-            metric_.update_metrics(epoch, loss_out)
+        #if epoch<trainer.start_decay:
+        metric_.update_metrics(epoch, loss_out)
 
         #save checkpoint 
         save_nn_checkpoint(metric_.net,loc=metric_.metrics_logger.newpath+f"/checkpoints/{metric_.net.net_name}_checkpoint_{epoch}.pt")
