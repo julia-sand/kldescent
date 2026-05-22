@@ -250,7 +250,7 @@ def plot_cumulants(t_vec1,t_vec2,cumulants,labels,test_samples,
       
         if add_free_diffusion:
             assert epsilon is not None, "No value of epsilon given. Plots interrupted." #check that epsilon is passed correctly
-            add_freediffusion_cumulants_subplot(ax,cumulant[1],t_vec1,cumulant_vec,epsilon) 
+            add_freediffusion_cumulants_subplot(ax,cumulant[1],t_vec1,cumulants[0],epsilon)
 
         if benchmark is not None:
             try: 
@@ -259,7 +259,7 @@ def plot_cumulants(t_vec1,t_vec2,cumulants,labels,test_samples,
             except FileNotFoundError:
                 pass 
 
-        format_cumulant_subplot(ax,cumulant[0],cumulant[1],t_vec)
+        format_cumulant_subplot(ax,cumulant[0],cumulant[1],t_vec1)
     
     plt.tight_layout()
 
