@@ -1,7 +1,7 @@
 """Solve the gaussian case non-perturbatively"""
 
-import numpy as np 
-from scipy.integrate import solve_bvp 
+import numpy as np
+from scipy.integrate import solve_bvp
 
 from .utilfunctions import save_array
 
@@ -53,7 +53,9 @@ class GaussBVP():
             Q, C, P
         ])
 
-    def _continuation_solve(self, bc_fn, eps_start=0.2, n_steps=5, **bvp_kwargs):
+    def _continuation_solve(self, bc_fn, eps_start=0.2, n_steps=5,
+                            tol=1e-6, bc_tol=1e-6, max_nodes=100000,
+                            **bvp_kwargs):
         """
         Solve BVP by stepping epsilon from eps_start up to self.epsilon.
 
@@ -65,6 +67,13 @@ class GaussBVP():
             Starting epsilon for continuation. Default is 0.2.
         n_steps : int, optional
             Number of intermediate epsilon values. Default is 5.
+        tol : float, optional
+            Residual tolerance passed to solve_bvp at every continuation step.
+            Default is 1e-6.
+        bc_tol : float, optional
+            Boundary condition tolerance passed to solve_bvp. Default is 1e-6.
+        max_nodes : int, optional
+            Maximum mesh nodes passed to solve_bvp. Default is 100000.
         **bvp_kwargs
             Additional keyword arguments forwarded to solve_bvp.
 
@@ -76,23 +85,27 @@ class GaussBVP():
         eps_target = self.epsilon
         t_vec = np.linspace(0, self.Tf, num=10000)
 
+        solve_kwargs = dict(fun_jac=self.evolution_jacobian,
+                            tol=tol, bc_tol=bc_tol, max_nodes=max_nodes,
+                            **bvp_kwargs)
+
         if eps_target <= eps_start:
             y0 = self._free_dynamics_guess(t_vec)
-            return solve_bvp(self.evolution, bc_fn, t_vec, y0,
-                             fun_jac=self.evolution_jacobian, **bvp_kwargs)
+            return solve_bvp(self.evolution, bc_fn, t_vec, y0, **solve_kwargs)
 
         eps_seq = np.linspace(eps_start, eps_target, n_steps + 1)
 
         self.epsilon = eps_seq[0]
         y0 = self._free_dynamics_guess(t_vec)
-        sol = solve_bvp(self.evolution, bc_fn, t_vec, y0,
-                        fun_jac=self.evolution_jacobian, **bvp_kwargs)
+        sol = solve_bvp(self.evolution, bc_fn, t_vec, y0, **solve_kwargs)
 
         for eps in eps_seq[1:]:
+            if not sol.success:
+                self.epsilon = eps_target
+                raise RuntimeError(f"solve_bvp did not converge at epsilon={self.epsilon:.4f}: {sol.message}")
             self.epsilon = eps
             y0 = sol.sol(t_vec)
-            sol = solve_bvp(self.evolution, bc_fn, t_vec, y0,
-                            fun_jac=self.evolution_jacobian, **bvp_kwargs)
+            sol = solve_bvp(self.evolution, bc_fn, t_vec, y0, **solve_kwargs)
 
         self.epsilon = eps_target
         return sol
@@ -208,7 +221,6 @@ class GaussBVP():
     def get_half_sol(self,):
 
         return self._continuation_solve(self.bc_half,
-                                        max_nodes=100000,
                                         tol=1e-8,
                                         bc_tol=1e-8,
                                         verbose=2)
