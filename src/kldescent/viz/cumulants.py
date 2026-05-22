@@ -111,48 +111,50 @@ def make_cumulant_subplot(ax,#gs_location,
                             cumulants_nn_plot,label,test_samples):
   with warnings.catch_warnings(): #dont print divide by zero warnings (these are handled in the script)
     warnings.simplefilter("ignore")
-    
-    color = ax.lines[-1].get_color()
+
     conf_level = 2.58 # corresponds to 99% conf. interval
     if ylabel_text=="Position Mean":
-      index = 0 
-      ax.plot(t_vec,cumulants_nn_plot[:,0], label=label, zorder=1000,color=color)
-      yerr=np.sqrt(cumulants_nn_plot[:,2]/test_samples)
-      ax.errorbar(t_vec, cumulants_nn_plot[:,index], conf_level*yerr,alpha=0.8)
+      index = 0
+      ax.plot(t_vec,cumulants_nn_plot[:,0], label=label, zorder=1000)
+      try:
+        yerr=np.sqrt(cumulants_nn_plot[:,2]/test_samples)
+        ax.errorbar(t_vec, cumulants_nn_plot[:,index], conf_level*yerr,alpha=0.8)
+      except:
+        pass
 
     elif ylabel_text=="Momentum Mean":
       index = 1
-      ax.plot(t_vec,cumulants_nn_plot[:,1], label=label, zorder=1000,color=color)
-      yerr=np.sqrt(cumulants_nn_plot[:,3]/test_samples)
-      ax.errorbar(t_vec, cumulants_nn_plot[:,index], conf_level*yerr,alpha=0.8)
+      ax.plot(t_vec,cumulants_nn_plot[:,1], label=label, zorder=1000)
+      try:
+        yerr=np.sqrt(cumulants_nn_plot[:,3]/test_samples)
+        ax.errorbar(t_vec, cumulants_nn_plot[:,index], conf_level*yerr,alpha=0.8)
+      except:
+        pass
 
     elif ylabel_text=="Position Variance":
-      index = 2 
-      ax.plot(t_vec,cumulants_nn_plot[:,2], label=label, zorder=1000,color=color)
-      yerr=compute_variance_error_bar(cumulants_nn_plot[:,2],test_samples)
-      ax.errorbar(t_vec, cumulants_nn_plot[:,2], conf_level*yerr,alpha=0.8)
+      index = 2
+      ax.plot(t_vec,cumulants_nn_plot[:,2], label=label, zorder=1000)
+      try:
+        yerr=compute_variance_error_bar(cumulants_nn_plot[:,2],test_samples)
+        ax.errorbar(t_vec, cumulants_nn_plot[:,2], conf_level*yerr,alpha=0.8)
+      except:
+        pass
 
     elif ylabel_text=="Momentum Variance":
-      index = 3 
-      ax.plot(t_vec,cumulants_nn_plot[:,3], label=label, zorder=1000,color=color)
-      yerr=compute_variance_error_bar(cumulants_nn_plot[:,3],test_samples)
-      ax.errorbar(t_vec, cumulants_nn_plot[:,3], conf_level*yerr,alpha=0.8)
+      index = 3
+      ax.plot(t_vec,cumulants_nn_plot[:,3], label=label, zorder=1000)
+      try:
+        yerr=compute_variance_error_bar(cumulants_nn_plot[:,3],test_samples)
+        ax.errorbar(t_vec, cumulants_nn_plot[:,3], conf_level*yerr,alpha=0.8)
+      except:
+        pass
 
     elif ylabel_text=="Cross Correlation":
-      index = 4 
-      ax.plot(t_vec,cumulants_nn_plot[:,4], label=label, zorder=1000,color=color)
-      yerr = compute_covariance_error_bar(cumulants_nn_plot[:,3], cumulants_nn_plot[:,2], cumulants_nn_plot[:,3], test_samples)
-      ax.errorbar(t_vec, cumulants_nn_plot[:,4], conf_level*yerr,alpha=0.8)
-      
-    
+      index = 4
+      ax.plot(t_vec,cumulants_nn_plot[:,4], label=label, zorder=1000)
+
     else:
       print(ylabel_text+" not found")
-
-    try:
-      #ax.plot(t_vec,cumulants_nn_plot[:,index], label=label, zorder=1000,color=color)
-      ax.errorbar(t_vec, cumulants_nn_plot[:,index], yerr,alpha=0.8)
-    except: #if mcsamples set to 0, skip the error bars
-      pass
 
     return ax
 
