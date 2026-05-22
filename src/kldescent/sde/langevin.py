@@ -376,7 +376,7 @@ class BAOAB(SDEBase):
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
 
         #O : solve OU step
-        xinit[...,[1]] = torch.exp(-dt)*xinit[...,[1]] + self.boundary.sigma0*torch.sqrt(1-torch.exp(-2*dt))*dw
+        xinit[...,[1]] = torch.exp(-dt)*xinit[...,[1]] + self.boundary.sigma0*torch.sqrt((1-torch.exp(-2*dt))/2)*dw
         
         #A: position half-step
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
@@ -456,7 +456,7 @@ class BAOAB(SDEBase):
                            
             a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True)**2) 
             
-            c = c + torch.sqrt(dt)*(du*dw)
+            c = c + torch.sqrt((1 - torch.exp(-2*dt))/2)*(du*dw)
             du_bar = du.detach() #copy without gradient 
 
             with torch.no_grad(): #no gradient 
