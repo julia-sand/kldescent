@@ -4,7 +4,6 @@ import os
 import csv
 
 import numpy as np
-from scipy.ndimage import generic_filter,median
 from scipy.signal import savgol_filter
 
 def bfun(bridge_type, Tf):
@@ -74,19 +73,17 @@ def save_array(arr_out,save_location,filename,header):
     The output directory is created automatically if it does not already exist.
     If the file already exists, new values are appended to it.
     
-    Args:
-        arr (np.ndarray):
-            Array to be saved.
-
-        save_location (str):
-            Directory path where the file will be written, relative to the
-            current working directory.
-
-        filename (str):
-            Name of the output file (should include the `.csv` extension if desired).
-
-        header (str, optional):
-            Text to include at the top of the CSV file as a comment.
+    Parameters
+    ----------
+    arr_out : np.ndarray
+        Array to be saved.
+    save_location : str
+        Directory path where the file will be written, relative to the
+        current working directory.
+    filename : str
+        Name of the output file (should include the `.csv` extension if desired).
+    header : str
+        Text to include at the top of the CSV file as a comment.
     """
 
     #make dir if does not exist

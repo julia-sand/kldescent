@@ -1,4 +1,3 @@
-import os
 import math
 
 import torch
@@ -288,7 +287,6 @@ class MLP(nn.Module):
 if __name__ == "__main__":
     from torchinfo import summary
 
-    import pdb
     from kldescent.sde.boundary import UnderdampedGaussian
     boundary_cond = UnderdampedGaussian() #getattr(boundaries,run_params["boundary"])()
     

@@ -1,17 +1,13 @@
-import os
-
-import numpy as np 
+import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
 #from torch import nn as torchnn
-from torch.optim import Adam,SGD,AdamW
-from torch.optim.lr_scheduler import CosineAnnealingLR,ExponentialLR,ReduceLROnPlateau
+from torch.optim import Adam
+from torch.optim.lr_scheduler import ExponentialLR
 from torch.nn.utils import clip_grad_norm_
 
 from tqdm import tqdm
-
-from kldescent.viz.plots import update_mpl
         
 
 class Pretrain():
@@ -87,16 +83,19 @@ class Pretrain():
         
         See the paper for more details. 
 
-        args:
-            X : ndarray
-                (t,q) coordinates 
-            y : ndarray
-                du(t,q)
-        returns:
-            X : ndarray
-                same as input
-            y : ndarray
-                left hand side of (**)
+        Parameters
+        ----------
+        X : np.ndarray
+            (t,q) coordinates.
+        y : np.ndarray
+            du(t,q).
+
+        Returns
+        -------
+        X : np.ndarray
+            Same as input.
+        y : np.ndarray
+            Left hand side of (**).
         """
 
         #X[:,0] /= self.epsilon**2 #get t0 from t2
@@ -178,19 +177,24 @@ def run_pretrain(net,
     r"""
     Trains a neural network to approximate a numerical function given by values in a csv
 
-    args:
-        net :
-            neural network to be trained
-        folder_name : str
-            folder location to save intermediate training plots
-        path_to_pretrain : csv
-            path from current working directory to a CSV containing data to be used in the pretraining. The data should have a csv format 
-            where the first two entries are the input and the last column should contian the trained values. See PerturbativeBenchmarkSolution folder for some examples.  
-        epsilon : float
-            If passed, the training data is scaled, see data_transform function in the training class for method.
-            Default None (no data transformation). 
-    returns:
-        none
+    Parameters
+    ----------
+    net : object
+        Neural network to be trained.
+    folder_name : str
+        Folder location to save intermediate training plots.
+    path_to_pretrain : str
+        Path from current working directory to a CSV containing data to be used
+        in the pretraining. The data should have a CSV format where the first
+        two entries are the input and the last column should contain the trained
+        values.
+    epsilon : float, optional
+        If passed, the training data is scaled. See ``transform_data`` for details.
+        Default None (no data transformation).
+
+    Returns
+    -------
+    None
     """
 
     print("Starting pre-training")

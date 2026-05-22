@@ -3,7 +3,6 @@
 
 # Import required packages
 import torch
-from torch import nn
 import numpy as np
 
 try:
@@ -15,7 +14,7 @@ except ImportError:
 
 from tqdm import tqdm
 
-from kldescent.utils.parser import rho_network_params,fetch_checkpoint_path
+from kldescent.utils.parser import rho_network_params
 
 class CustomBase(nf.distributions.BaseDistribution):
 

@@ -15,31 +15,28 @@ def mcintegrator(x0,y0,
         y(T, x0) = E[Φ(x_T) | x(0) = x0],
     where x_T are samples from the associated stochastic dynamics.
 
-    Args:
-        x0 (np.ndarray):
-            Initial positions where the solution is evaluated.
+    Parameters
+    ----------
+    x0 : np.ndarray
+        Initial positions where the solution is evaluated.
+    y0 : np.ndarray
+        Function values at `x0`, used to interpolate the initial condition Φ.
+    Tf : float
+        Final time T.
+    beta : float
+        Diffusion coefficient (inverse temperature) controlling the noise level
+        in the stochastic dynamics.
+    num_steps : int, optional
+        Number of time steps used to simulate each trajectory. Default is 1.
+    mc_samples : int, optional
+        Number of Monte Carlo trajectories to sample. Default is 32768.
 
-        y0 (np.ndarray):
-            Function values at `x0`, used to interpolate the initial condition Φ.
-
-        Tf (float):
-            Final time T.
-
-        beta (float):
-            Diffusion coefficient (inverse temperature) controlling the noise level
-            in the stochastic dynamics.
-
-        num_steps (int, optional):
-            Number of time steps used to simulate each trajectory. Default is 1.
-
-        mc_samples (int, optional):
-            Number of Monte Carlo trajectories to sample. Default is 32768.
-
-    Returns:
-        x0 (np.ndarray):
-            coordinates `x0`.
-        yT (np.ndarray):
-            Estimated solution at time T evaluated at `x0`.
+    Returns
+    -------
+    x0 : np.ndarray
+        Coordinates `x0`.
+    yT : np.ndarray
+        Estimated solution at time T evaluated at `x0`.
     """
 
     Generator = np.random.default_rng(seed=seed())
@@ -78,38 +75,34 @@ def proximal_fpk(x0,y0,
     
     Integrates a simple heat equation model 
     
-    !!Important. Check scipy compatability before using this function. 
-    Args:
-        x0 (np.ndarray):
-            Initial positions where the solution is evaluated.
+    !!Important. Check scipy compatability before using this function.
 
-        y0 (np.ndarray):
-            Initial function values at `x0`.
+    Parameters
+    ----------
+    x0 : np.ndarray
+        Initial positions where the solution is evaluated.
+    y0 : np.ndarray
+        Initial function values at `x0`.
+    Tf : float
+        Final time of the simulation.
+    beta : float
+        Diffusion coefficient (inverse temperature) controlling the noise level.
+    num_steps : int, optional
+        Number of time steps per trajectory. Default is 200.
+    max_iters : int, optional
+        Maximum number of iterations for the solver. Default is 1000.
+    eps : float, optional
+        Regularization parameter used in the iteration. Default is 0.05.
+    tol : float, optional
+        Convergence tolerance. Iteration stops when the error falls below this value.
+        Default is 1e-5.
 
-        Tf (float):
-            Final time of the simulation.
-
-        beta (float):
-            Diffusion coefficient (inverse temperature) controlling the noise level.
-
-        num_steps (int, optional):
-            Number of time steps per trajectory. Default is 200.
-
-        max_iters (int, optional):
-            Maximum number of iterations for the solver. Default is 1000.
-
-        eps (float, optional):
-            Regularization parameter used in the iteration. Default is 0.05.
-
-        tol (float, optional):
-            Convergence tolerance. Iteration stops when the error falls below this value.
-            Default is 1e-5.
-
-    Returns:
-        xT (np.ndarray):
-            Coordinates at time `Tf` 
-        yT (np.ndarray):
-            Estimated solution at time `Tf` evaluated at `xT`.
+    Returns
+    -------
+    xT : np.ndarray
+        Coordinates at time `Tf`.
+    yT : np.ndarray
+        Estimated solution at time `Tf` evaluated at `xT`.
     """
     
     import scipy.spatial.distance as sci

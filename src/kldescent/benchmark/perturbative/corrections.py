@@ -181,10 +181,12 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
     def __init__(self,boundary_params,overdamped_arr,ref_path):
         """
-        initialises the class         
-        args:
-            boundary : dict
-                determines boundary conditions and parameters
+        Initialise the class.
+
+        Parameters
+        ----------
+        boundary_params : dict
+            Determines boundary conditions and parameters.
         """
 
         Perturbation.__init__(self,boundary_params,overdamped_arr,ref_path)
@@ -196,15 +198,19 @@ class MarginalHalfBridgePerturbation(Perturbation):
 
     def DU(self,t0,f00,df00,dsigma,kappa):
         """
-        Compute the perturbative drift for the marginal half bridge
-        args:
-            t0 : float
-                fast time
-            t2 : float
-                slow time
-        return:
-            du : ndarray
-                analytic prediction of drift 
+        Compute the perturbative drift for the marginal half bridge.
+
+        Parameters
+        ----------
+        t0 : float
+            Fast time.
+        t2 : float
+            Slow time.
+
+        Returns
+        -------
+        du : np.ndarray
+            Analytic prediction of drift.
         """
         
         #get idx 
@@ -326,11 +332,17 @@ class FullBridgePerturbation(MarginalHalfBridgePerturbation):
         return 0
 
     def posvar(self,t0,t2,t2_idx):
-        """Compute position variance
-        args: 
-        t0 : fast time
-        t2 : slow time
-        t2_idx : index of t2
+        """
+        Compute position variance.
+
+        Parameters
+        ----------
+        t0 : float
+            Fast time.
+        t2 : float
+            Slow time.
+        t2_idx : int
+            Index of t2.
         """
 
         return 0
@@ -354,14 +366,16 @@ class HalfBridgePerturbation(Perturbation):
 
     def __init__(self,boundary_params,overdamped_arr,ref_path):
         """
-        initialises the class         
-        args:
-            boundaryparams : dict
-                determines boundary conditions and parameters
-            overdampedarr : ndarray
-                array with the results of the cell problem integration
-            refpath : str
-                path to access and save results
+        Initialise the class.
+
+        Parameters
+        ----------
+        boundary_params : dict
+            Determines boundary conditions and parameters.
+        overdamped_arr : np.ndarray
+            Array with the results of the cell problem integration.
+        ref_path : str
+            Path to access and save results.
         """
 
         Perturbation.__init__(self,boundary_params,overdamped_arr,ref_path)
@@ -497,15 +511,15 @@ class HalfBridgePerturbation(Perturbation):
         return np.exp(-2 * (t0 - s)) * (self.G11(s) - self.coeff_G111_G112()*self.G12(s))
 
     def posvar(self,t0,t2_idx):
-        """Compute position variance
-        
-        args: 
-            t0 : float
-                fast time
-            t2 : float
-                slow time
-            t2_idx : int 
-                index of t2
+        """
+        Compute position variance.
+
+        Parameters
+        ----------
+        t0 : float
+            Fast time.
+        t2_idx : int
+            Index of t2.
         """
 
         # First term: μ^{(2)}_{t_z} - (μ^{(2)}_{t_z})^2

@@ -9,11 +9,9 @@ Classes
     histogram: Use a histogram to estimate the final value function
 """
 
-import numpy as np 
+import numpy as np
 import torch
-from functorch import vmap
 
-from kldescent.sde.kl import kl_div
 from kldescent.viz.distribution_plots import *
 from kldescent.model.nn import save_nn_checkpoint
 from kldescent.utils.logger import save_params
@@ -30,14 +28,14 @@ class TerminalCost():
 
     def __init__(self,boundaryconditions,fileloc,*_):
         """
-        Initialise how the terminal cost should be evaluated.    
-        args:
-            boundaryconditions: 
-                associated boundary conditions
-            filelocation: str
-                filepath to results folder, for saved checkpoints
-            filename    :   str
-                file name for saving params  
+        Initialise how the terminal cost should be evaluated.
+
+        Parameters
+        ----------
+        boundaryconditions : object
+            Associated boundary conditions.
+        fileloc : str
+            Filepath to results folder, for saved checkpoints.
         """
 
         self.boundary = boundaryconditions
@@ -56,13 +54,16 @@ class GirsanovMC(TerminalCost):
     """
     def __init__(self,boundaryconditions,fileloc,filename=None,*_):
         """
-        args:
-            boundaryconditions: class
-            filelocation : str
+        Parameters
+        ----------
+        boundaryconditions : object
+            Associated boundary conditions.
+        fileloc : str
+            Filepath to results folder.
         """
-        
+
         TerminalCost.__init__(self,boundaryconditions,fileloc,*_)
-        
+
     def update_cost_params(self,integrator,epoch):
         """compute the loss first for this method"""
         pass
@@ -92,11 +93,14 @@ class GirsanovNet(TerminalCost):
 
     def __init__(self,boundaryconditions,fileloc,filename):
         """
-        Initialise a neural network for learning the final distribution via Girsanov theorem 
-        
-        args:
-            boundaryconditions: class
-            filelocation : str
+        Initialise a neural network for learning the final distribution via Girsanov theorem.
+
+        Parameters
+        ----------
+        boundaryconditions : object
+            Associated boundary conditions.
+        fileloc : str
+            Filepath to results folder.
         """
         
         from ..model.nn import RhoNeuralNetwork
@@ -136,10 +140,13 @@ class MLE(TerminalCost):
 
     def __init__(self,boundaryconditions,fileloc,filename=None,*_):
         """
-        Initialise placeholder parameters for estimating the final distirbution using a parametric method
+        Initialise placeholder parameters for estimating the final distribution
+        using a parametric method.
 
-        args:
-            boundaryconditions: class
+        Parameters
+        ----------
+        boundaryconditions : object
+            Associated boundary conditions.
         """
 
         TerminalCost.__init__(self,boundaryconditions,fileloc,*_)
@@ -207,10 +214,17 @@ class Histogram(TerminalCost):
 
     def evaluate_density(self, datapoint):
         """
-        args:
-            datapoint: data point or array of points in the shape (2,)
-        returns: 
-            p1: estimate of probability density from histogram
+        Estimate probability density at a point from the histogram.
+
+        Parameters
+        ----------
+        datapoint : array-like, shape (2,)
+            Data point or array of points.
+
+        Returns
+        -------
+        p1 : float
+            Estimate of probability density from histogram.
         """
 
         #step 1: check which bin for x and y the point is in

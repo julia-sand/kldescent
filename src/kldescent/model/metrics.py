@@ -1,10 +1,8 @@
 import torch
-import numpy as np 
 
 import wandb
 import psutil
 
-from kldescent.model.nn import save_nn_checkpoint
 from kldescent.sde.kl import static_kl_divergence
 from kldescent.utils.parser import metric_params
 from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmarkSolution
@@ -29,18 +27,16 @@ class Metrics():
         """
         Initialize the solver with its core components.
 
-        Args:
-            net (object):
-                Model or neural network used in the computation.
-
-            integrator (object):
-                Object responsible for performing time integration
-
-            metrics_logger (object):
-                Utility class for saving the recorded metrics during execution
-
-            bridge_type (str):
-                Type of bridge formulation to use (e.g., "marginal", "half").
+        Parameters
+        ----------
+        net : object
+            Model or neural network used in the computation.
+        integrator : object
+            Object responsible for performing time integration.
+        metrics_logger : object
+            Utility class for saving the recorded metrics during execution.
+        bridge_type : str
+            Type of bridge formulation to use (e.g., "marginal", "half").
         """
         self.integrator = integrator
         self.net = net
@@ -77,12 +73,16 @@ class Metrics():
         """
         Computes training metrics and checks for NaN loss values.
 
-        Args:
-            epoch (int): The current epoch number, used for logging.
-            loss_out (float): The loss value returned by the metrics function.
+        Parameters
+        ----------
+        epoch : int
+            The current epoch number, used for logging.
+        loss_out : float
+            The loss value returned by the metrics function.
 
-        Returns:
-            None
+        Returns
+        -------
+        None
         """
         with torch.no_grad():
 

@@ -3,7 +3,7 @@ import warnings #ignore divide by zeros for the boundaries
 import numpy as np
 import matplotlib.pyplot as plt 
 
-from kldescent.benchmark.heatintegrators import proximal_fpk,mcintegrator
+from kldescent.benchmark.heatintegrators import mcintegrator
 from kldescent.benchmark.overdamped.gauss import *
 from kldescent.benchmark.utilfunctions import *
 from kldescent.utils.parser import cell_argparser
@@ -137,18 +137,21 @@ class CellProblem():
         'Wasserstein Proximal Algorithms for the Schr¨odinger Bridge Problem:
         Density Control with Nonlinear Drift', Caluya&Halder,2021.
         
-        args:
-            integrator : method
-                method to use for integrating the heat equations
-            max_iters : int
-                maximum number of iterations to perform
-            tol : float
-                tolerance for difference between the iterations. If below tol, stop the iteration. 
+        Parameters
+        ----------
+        integrator : callable
+            Method to use for integrating the heat equations.
+        tol : float, optional
+            Tolerance for difference between the iterations. If below tol,
+            stop the iteration.
+        max_iters : int, optional
+            Maximum number of iterations to perform.
 
-        returns
-            hatphiT : arr
-            psiT : arr
-                equal to phi0
+        Returns
+        -------
+        hatphiT : np.ndarray
+        psiT : np.ndarray
+            Equal to phi0.
         """
 
         #initialise iterates

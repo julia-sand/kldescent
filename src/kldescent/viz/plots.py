@@ -1,14 +1,7 @@
-import os
-
-import numpy as np 
+import numpy as np
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.cm import ScalarMappable
-import matplotlib.patches as mpatches
-import matplotlib.lines as mlines
-import matplotlib.gridspec as gridspec
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.axes import Axes
 
 '''

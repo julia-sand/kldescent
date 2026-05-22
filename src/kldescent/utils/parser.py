@@ -1,7 +1,5 @@
 """handles parameter loading from command line"""
 
-import yaml 
-
 import argparse
 
 class CustomArgParse(argparse.ArgumentParser):

@@ -1,9 +1,8 @@
 """Implement the integration of SDE processes"""
 
-import numpy as np 
+import numpy as np
 import torch
 
-import kldescent.sde.kl as kl
 from kldescent.utils.parser import integrator_params
 
 class SDEBase():
@@ -79,17 +78,18 @@ class SDEBase():
     @torch.no_grad
     def compute_metrics(self,benchmark=None):
         """
-        Computes sample evolutions of the dynamics and saves the metrics for 
-        recording the training process
+        Compute sample evolutions of the dynamics and save the metrics for
+        recording the training process.
 
-        ====
-        Parameters:
-            benchmark : class
-                benchmark 
-        Returns:
-            kldyn : float
-                Dynamic KL divergence computed along trajectories. 
-        ====
+        Parameters
+        ----------
+        benchmark : object, optional
+            Benchmark solution handler.
+
+        Returns
+        -------
+        kldyn : float
+            Dynamic KL divergence computed along trajectories.
         """
 
         with torch.no_grad():
@@ -123,19 +123,19 @@ class SDEBase():
     @torch.no_grad
     def update_ref_statistics(self,time=None,testing_samples=None,x0_samples=None):
         """
-        Generate samples from the intermediate distribution by evolving the SDE
-        
-        ====
+        Generate samples from the intermediate distribution by evolving the SDE.
+
         Parameters
-            time : float
-                upper limit for integration
-            
-            testing_samples : int
-                number of samples. Default to value in data.yaml
+        ----------
+        time : float, optional
+            Upper limit for integration.
+        testing_samples : int, optional
+            Number of samples. Default to value in data.yaml.
+
         Returns
-            xinit : arr
-                samples from the final distribution under the current drift
-        ====
+        -------
+        xinit : np.ndarray
+            Samples from the final distribution under the current drift.
         """
 
         self.net.eval()
@@ -173,25 +173,27 @@ class SDEBase():
     @torch.no_grad
     def compute_sde_cumulants(self,benchmark=None,mcsamples=None):
         """
-        Compute the evolution of the SDE while saving cumulants 
+        Compute the evolution of the SDE while saving cumulants.
 
-        ====
-        args:
-            referencesol: class
-                compute reference samples
-            mcsamples : int
-        ====
-        returns:
-          t_vec : ndarray
-            times of evolution
-          xinit.numpy() : ndarray
-            point cloud of final positions under nn evolution
-          xref.numpy() : ndarray
-            point cloud of final positions under ref evolution
-          cumulants_nn : ndarray
-            cumulants computed during nn evolution
-          cumulants_ref : ndarray
-            cumulants computed during ref evolution
+        Parameters
+        ----------
+        benchmark : object, optional
+            Benchmark solution handler; used to compute reference samples.
+        mcsamples : int, optional
+            Number of Monte Carlo samples.
+
+        Returns
+        -------
+        t_vec : np.ndarray
+            Times of evolution.
+        xinit : np.ndarray
+            Point cloud of final positions under NN evolution.
+        xref : np.ndarray
+            Point cloud of final positions under reference evolution.
+        cumulants_nn : np.ndarray
+            Cumulants computed during NN evolution.
+        cumulants_ref : np.ndarray
+            Cumulants computed during reference evolution.
         """
             
         self.net.eval()
@@ -293,14 +295,7 @@ class EulerMaruyamaSDE(SDEBase):
         return xinit
 
     def loss_fn(self):
-        """
-        Following 2410.05163 (see proposition 3). 
-
-        ====
-        Parameters
-
-        ====
-        """
+        """Following 2410.05163 (see proposition 3)."""
         
         self.net.train()
         
@@ -433,14 +428,7 @@ class BAOAB(SDEBase):
         return xinit
 
     def loss_fn(self):
-        """
-        Following 2410.05163 (see proposition 3). 
-
-        ====
-        Parameters
-
-        ====
-        """
+        """Following 2410.05163 (see proposition 3)."""
         
         self.net.train()
         t_vec = self.uniform_random_time_grid()
@@ -557,14 +545,7 @@ class VerletSDE(SDEBase):
         
 
     def loss_fn(self):
-        """
-        Following 2410.05163 (see proposition 3). 
-
-        ====
-        Parameters
-
-        ====
-        """
+        """Following 2410.05163 (see proposition 3)."""
         
         self.net.train()
         t_vec = self.uniform_random_time_grid()

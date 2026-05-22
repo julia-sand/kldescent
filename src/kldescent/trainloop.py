@@ -1,4 +1,3 @@
-from kldescent.viz.checkpoint_plots import PlotUtils
 from kldescent.model.nn import save_nn_checkpoint
 
 def train_loop_du(epoch,

@@ -64,13 +64,16 @@ def benchmark_evaluate_net(mlp_net,x,time):
     
 
 def contour(plotter,net):
-    """Plots a contour plot of the solution to the Fokker-Planck 
-    driven by the perturbatively estimated potential. 
-    args: 
-        boundary : class
-            used for parsing into the plotting and integrator classes
-        net : class
-            trained neural net estimating a drift. 
+    """
+    Plot a contour plot of the solution to the Fokker-Planck
+    driven by the perturbatively estimated potential.
+
+    Parameters
+    ----------
+    plotter : object
+        Used for calling plot methods on panels.
+    net : object
+        Trained neural network estimating a drift.
     """
     
     integrator1 = EulerMaruyamaSDE(boundary,net=net)

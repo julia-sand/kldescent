@@ -2,8 +2,6 @@ import csv
 import os
 import time
 
-import numpy as np 
-import torch
 import yaml
 
 from kldescent.utils.parser import fetch_results_folder_from_cmd
