@@ -12,13 +12,14 @@ from kldescent.utils.misc import append_array_to_csv
 @torch.no_grad
 def generate_mesh(x_samples,qmax=6):
     """
-    generate a mesh in two dimensional phase space to evaluate and plot the joint distribution 
-    
-    args:
-        xsamples : int
-            number of samples in the space discretisation
-        qmax : float
-            maximum value of the xaxis, symmetric in positive and negative
+    Generate a mesh in two-dimensional phase space.
+
+    Parameters
+    ----------
+    x_samples : int
+        Number of samples in the space discretisation.
+    qmax : float, optional
+        Maximum value of the axis, symmetric in positive and negative. Default is 6.
     """
 
     p_init = torch.linspace(-qmax,qmax,x_samples, requires_grad=False,dtype=torch.float32)
@@ -29,23 +30,27 @@ def generate_mesh(x_samples,qmax=6):
 @torch.no_grad
 def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=None):
     """
-    Computes an estimate of the final joint distribution using girsanov theorem
-    under the input drift 
-    
-    args:
-        dunet : class 
-            neural network approximating the drift
-        x_samples : int 
-            number of space discretisation steps
-        mc_samples : int
-            number of MC samples. 
-        Tf : float
-            time for the plot
-    returns:
-        xout: 
-            2d mesh of points of the statespace
-        jointout:
-            estimated joint distribution using girsanov theorem
+    Compute an estimate of the final joint distribution using Girsanov's theorem.
+
+    Parameters
+    ----------
+    x_samples : int, optional
+        Number of space discretisation steps. Default is 40.
+    boundary : object, optional
+        Boundary conditions object.
+    net : object, optional
+        Neural network approximating the drift.
+    mc_samples : int, optional
+        Number of Monte Carlo samples. Default is 64.
+    Tf : float, optional
+        Final time for the plot.
+
+    Returns
+    -------
+    xout : ndarray
+        2D mesh of points of the state space.
+    jointout : ndarray
+        Estimated joint distribution using Girsanov's theorem.
     """
     
     #generate xmesh
@@ -199,23 +204,26 @@ def reshape_joint(joint_out):
 
 
 def compute_marginals_from_joint(xs,joint_out):
-    r"""Compute normalized position (q) and momentum (p) marginals from a joint distribution.
+    """
+    Compute normalized position (q) and momentum (p) marginals from a joint distribution.
 
-    Args:
-    xs (ndarray): 
+    Parameters
+    ----------
+    xs : ndarray
         Grid or coordinate values corresponding to the joint distribution.
-    joint_out (ndarray): 
-        Joint distribution data 
+    joint_out : ndarray
+        Joint distribution data.
 
-    Returns:
-    pinit (ndarray): 
-        Initial momentum distribution.
-    q_coords (ndarray): 
-        Coordinate values for the position (q) marginal.
-    qmargnorm (ndarray): 
+    Returns
+    -------
+    pinit : ndarray
+        Coordinate values along each axis.
+    qmargnorm : ndarray
         Normalized position marginal distribution.
-    pmargnorm (ndarray): 
+    pmargnorm : ndarray
         Normalized momentum marginal distribution.
+    normall : float
+        Total normalisation constant.
     """
 
     joint_out_temp = reshape_joint(joint_out)
@@ -245,34 +253,24 @@ def joint_distributions_scatter_panel(
     The central plot visualizes the joint distribution, while the marginal
     distributions are estimated from the same data.
 
-    Args:
-    ax (matplotlib.axes.Axes):
-        The axes on which to draw the plot. Can be a standard axes
-        or a subplot created from a GridSpec.
-
-    ax_pmarginal (matplotlib.axes.Axes):
-        The axes for marginal distribution of p
-
-    ax_qmarginal (matplotlib.axes.Axes):
-        The axes for marginal distribution of q
-
-    joint_out (np.ndarray):
-        Flattened joint distribution of shape (n**2,).
-        Represents the values corresponding to each (q, p) pair.
-
-    xs (np.ndarray):
-        Input coordinates of shape (n**2, 2), where each row is a (q, p) pair.
-        Assumes the points are generated via `np.meshgrid`, so that q and p
-        values form a regular grid.
-
-    time (float):
-        Time of the evolution
-
-    vmax (float):
-        Upper limit for the color scale used in the joint distribution plot.Default 0.5
-    
-    benchmark (object):
-        Stores the data for the benchmark solution. Default None, in which case benchmark values are not plotted.
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The axes on which to draw the joint distribution.
+    ax_pmarginal : matplotlib.axes.Axes
+        The axes for the marginal distribution of p.
+    ax_qmarginal : matplotlib.axes.Axes
+        The axes for the marginal distribution of q.
+    joint_out : np.ndarray
+        Flattened joint distribution of shape ``(n**2,)``.
+    xs : np.ndarray
+        Input coordinates of shape ``(n**2, 2)``, where each row is a (q, p) pair.
+    time : float
+        Time of the evolution.
+    vmax : float, optional
+        Upper limit for the color scale. Default is 0.5.
+    benchmark : object, optional
+        Benchmark solution handler. If None, benchmark values are not plotted.
     """
 
     p_init_out,qmarg_norm,pmarg_norm,normall = compute_marginals_from_joint(xs,joint_out)

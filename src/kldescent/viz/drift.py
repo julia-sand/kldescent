@@ -36,17 +36,25 @@ def plot_drift(times,net_vals,benchmark_vals=None,err_vals = None,
     """
     Plot drift at different times.
 
-    Args:
-        times (array-like): Array of time points.
-        netvals (array-like): Values computed from the neural network.
-        benchmarkvals (array-like, optional): Benchmark values to plot. If None,
-            no benchmark curve is shown. Default is None.
-        errbars (array-like, optional): Error bars for `netvals`. If None,
-            no error bars are shown. Default is None.
-        qmax (float, optional): Maximum value to plot on the q-axis. Default is 5.
+    Parameters
+    ----------
+    times : array-like
+        Array of time points.
+    net_vals : array-like
+        Values computed from the neural network.
+    benchmark_vals : array-like, optional
+        Benchmark values to plot. If None, no benchmark curve is shown.
+    err_vals : array-like, optional
+        Error bars for ``net_vals``. If None, no error bars are shown.
+    xaxis : array-like, optional
+        Coordinates for the x-axis. Default is ``np.linspace(-5, 5, 1000)``.
+    invert_labels : bool, optional
+        If True, label axes as a function of time rather than position.
 
-    Returns:
-        matplotlib.figure.Figure: The resulting figure.
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The resulting figure.
     """
     
     fig,ax = make_fig_subplots(nrows=1,ncols=len(times),squeeze=True)

@@ -70,7 +70,7 @@ def static_kl_divergence(xinit,xref,boundary):
     boundary : class
         contains the reference distribution 
     Returns
-    ------
+    -------
     kl_static_from_ref : float
         estimate of the KL divergence between the achieved final distibution and the reference final distribution
     kl_static : float

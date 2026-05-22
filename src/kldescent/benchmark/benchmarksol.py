@@ -35,17 +35,18 @@ class BaseBenchmarkSolution():
         Initialise and return objects required for perturbative calculations
         based on the selected bridge type.
 
-        Args:
-            bridge_type (str):
-                Type of bridge to use. Must be "marginal", "half" or "full".
+        Parameters
+        ----------
+        bridge_type : str
+            Type of bridge to use. Must be "marginal", "half" or "full".
+        overdamped_arr : np.ndarray
+            Precomputed overdamped solution data used as input for the
+            perturbative calculations.
 
-            overdamped_arr (np.ndarray):
-                Precomputed overdamped solution data used as input for the
-                perturbative calculations.
-
-        Returns:
-            object:
-                Instance configured to compute the perturbative solution for the specified bridge type.
+        Returns
+        -------
+        object
+            Instance configured to compute the perturbative solution for the specified bridge type.
         """
 
         if bridge_type == "marginal":
@@ -98,15 +99,14 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         If a benchmark solution is not found in the specified location, it will
         be computed and stored automatically.
 
-        Args:
-            bridge_type (str):
-                Type of bridge to use. Must be either "marginal" or "half".
-
-            boundary (object, optional):
-                Object specifying the boundary conditions.
-
-            folder_name (str, optional):
-                Manually specify the folder containing benchmark solutions.
+        Parameters
+        ----------
+        bridge_type : str
+            Type of bridge to use. Must be either "marginal" or "half".
+        boundary : object, optional
+            Object specifying the boundary conditions.
+        folder_name : str, optional
+            Manually specify the folder containing benchmark solutions.
         """
         
         self.bridge_type = bridge_type
@@ -187,35 +187,32 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         """
         Retrieve a quantity from the benchmark solution for plotting.
 
-        Args:
-            time (float):
-                Time at which to evaluate the data.
+        Parameters
+        ----------
+        time : float
+            Time at which to evaluate the data.
+        quantity : str
+            Quantity to extract from the dataset. Options are:
+                - "value": overdamped value function
+                - "marginal": overdamped probability distribution
+                - "underdamped drift": perturbative estimate of the underdamped drift
+                - "underdamped marginal": perturbative marginal distribution of position
+        data : str
+            Dataset to use. Must be one of:
+                - "overdamped": cell problem solution
+                - "underdamped": saved perturbative solution
+        arr : np.ndarray, optional
+            Preloaded dataset. If provided, this is used instead of loading
+            data from disk.
+        time_type : str, optional
+            If set to "t0", the time is rescaled to t2 by dividing by epsilon squared.
 
-            quantity (str):
-                Quantity to extract from the dataset. Options are:
-                    - "value": overdamped value function
-                    - "marginal": overdamped probability distribution
-                    - "underdamped drift": perturbative estimate of the underdamped drift
-                    - "underdamped marginal": perturbative marginal distribution of position
-
-            data (str):
-                Dataset to use. Must be one of:
-                    - "overdamped": cell problem solution
-                    - "underdamped": saved perturbative solution
-
-            arr (np.ndarray, optional):
-                Preloaded dataset. If provided, this is used instead of loading
-                data from disk.
-
-            time_type (str, optional):
-                If set to "t0", the time is rescaled to t2 by dividing by epsilon squared.
-
-        Returns:
-            x (np.ndarray):
-                One-dimensional array of positions with shape (n,).
-
-            y (np.ndarray):
-                Array of the selected quantity evaluated at `x`, shape (n,).
+        Returns
+        -------
+        x : np.ndarray
+            One-dimensional array of positions with shape (n,).
+        y : np.ndarray
+            Array of the selected quantity evaluated at `x`, shape (n,).
         """
 
         #ensure correct time scale
@@ -375,10 +372,13 @@ class GaussBenchmarkSolution(BaseBenchmarkSolution):
 
 
     def get_underdamped_cumulants_array(self,idx=None):
-        """load csv of gaussian underdamped cumulants
-        args: 
-            idx : tuple
-                indices of the columns to load. 
+        """
+        Load CSV of Gaussian underdamped cumulants.
+
+        Parameters
+        ----------
+        idx : tuple, optional
+            Indices of the columns to load.
         """
         try:   
             arr = np.loadtxt(open(self.underdamped_cumulants_loc),
@@ -397,15 +397,20 @@ class GaussBenchmarkSolution(BaseBenchmarkSolution):
         return np.squeeze(arr)
 
     def get_perturbative_cumulant(self,cumulant_type):
-        """Fetch saved cumulants for plotting
-        args 
-            cumulant_type : str
-                Name of the cumulant 
-        returns 
-            tvec : (n,) array
-                vector of times
-            cumulantvec : (n,) array
-                vector of cumulant values
+        """
+        Fetch saved cumulants for plotting.
+
+        Parameters
+        ----------
+        cumulant_type : str
+            Name of the cumulant.
+
+        Returns
+        -------
+        tvec : np.ndarray, shape (n,)
+            Vector of times.
+        cumulantvec : np.ndarray, shape (n,)
+            Vector of cumulant values.
         """
 
         if cumulant_type == "Position Variance": 
@@ -438,25 +443,33 @@ class GaussBenchmarkSolution(BaseBenchmarkSolution):
         
     def get_benchmark_quantity(self,time,quantity,data=None,arr=None,time_type="t0"):
         """
-        Get quantities to plot for the benchmark solution 
-        args:
-            time : float
-                the time to lookup the data
-            quantity : str
-                what quantity to return from the data table. Choices are: value (overdamped value function); 
-                marginal (overdamped distribution); underdamped drift (perturbative estimate of underdamped DU);
-                and underdamped marginal (perturbative underdamped marginal of the position)
-            data : str 
-                which dataset to use. Choose from overdamped (cell problem solution) or underdamped (saved perturbative solution)        
-            arr : array
-                if the dataset is already loaded in the script, this can be used passed to the function 
-            time_type : str
-                if "t0", rescale the time to t2. 
-        returns:
-            x : arr 
-                array of shape (n,) of positions
-            y : arr
-                specified quantity evaluated at points x, with shape (n,)
+        Get quantities to plot for the benchmark solution.
+
+        Parameters
+        ----------
+        time : float
+            The time at which to look up the data.
+        quantity : str
+            Quantity to return from the data table. Choices are: "value"
+            (overdamped value function), "marginal" (overdamped distribution),
+            "underdamped drift" (perturbative estimate of underdamped DU),
+            and "underdamped marginal" (perturbative underdamped marginal of
+            the position).
+        data : str, optional
+            Dataset to use. Choose from "overdamped" (cell problem solution)
+            or "underdamped" (saved perturbative solution).
+        arr : np.ndarray, optional
+            If the dataset is already loaded in the script, it can be passed
+            to the function.
+        time_type : str, optional
+            If "t0", rescale the time to t2.
+
+        Returns
+        -------
+        x : np.ndarray, shape (n,)
+            Array of positions.
+        y : np.ndarray, shape (n,)
+            Specified quantity evaluated at points x.
         """
 
         qtemp = np.linspace(-6,6,1000)

@@ -18,21 +18,18 @@ class GaussBVP():
         """
         Initialize shared parameters for the model.
 
-        Args:
-            sigmainitial (float):
-                Initial variance of the distribution.
-
-            sigmafinal (float):
-                Final variance of the reference distribution.
-
-            epsilon (float):
-                Small parameter controlling the perturbation scale.
-
-            Tf (float):
-                Final time of the process.
-
-            M (float):
-                Weighting factor for enforcing boundary conditions.
+        Parameters
+        ----------
+        sigmainitial : float
+            Initial variance of the distribution.
+        sigmafinal : float
+            Final variance of the reference distribution.
+        epsilon : float
+            Small parameter controlling the perturbation scale.
+        Tf : float
+            Final time of the process.
+        M : float
+            Weighting factor for enforcing boundary conditions.
         """
 
         #self.muinitial = muinitial 

@@ -12,15 +12,21 @@ def load_cumulant_csvs(folder):
     """
     Loads time vector, neural network cumulants, and benchmark cumulants from CSV files.
 
-    Args:
-        folder (str): Path to the folder containing the CSV files.
+    Parameters
+    ----------
+    folder : str
+        Path to the folder containing the CSV files.
 
-    Returns:
-        tuple: A tuple containing:
-            - tvec1 (array-like): Time vector for cumulants computed by NN.
-            - tvec2 (array-like): Time vector for cumulants computed by benchmark.
-            - nn_cumulants (array-like): Cumulants from the neural network.
-            - benchmark_cumulants (array-like): Benchmark cumulants.
+    Returns
+    -------
+    tvec1 : array-like
+        Time vector for cumulants computed by NN.
+    tvec2 : array-like
+        Time vector for cumulants computed by benchmark.
+    nn_cumulants : array-like
+        Cumulants from the neural network.
+    benchmark_cumulants : array-like
+        Benchmark cumulants.
     """
 
     cumulants_nn = np.loadtxt(open(folder+"/cumulants.csv"),
@@ -76,14 +82,16 @@ def format_cumulant_subplot(ax,index,ylabel_text,t_vec):
 
     Sets the title, y-axis label, and x-axis limits for a given subplot.
 
-    Args:
-        ax (matplotlib.axes.Axes): The subplot axes to format.
-        index (int): Index of the cumulant, used to generate the subplot title.
-        ylabel_text (str): Label for the y-axis.
-        t_vec (array-like): Time vector used to define the x-axis range.
-
-    Returns:
-        None
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The subplot axes to format.
+    index : int
+        Index of the cumulant, used to generate the subplot title.
+    ylabel_text : str
+        Label for the y-axis.
+    t_vec : array-like
+        Time vector used to define the x-axis range.
     """
     ax.set_title(make_cumulant_plot_label(index),pad = 5,x = 0.07, y = 0.88, zorder = 1000000)
     ax.set_ylabel(ylabel_text)
@@ -194,22 +202,32 @@ def plot_cumulants(t_vec1,t_vec2,cumulants,labels,test_samples,
     from two time vectors and multiple datasets. It optionally overlays
     benchmark (perturbative) predictions and free diffusion curves.
 
-    Args:
-        t_vec1 (array-like): First time vector for cumulant evaluation.
-        t_vec2 (array-like): Second time vector for cumulants evaluation by the benchmark.
-        cumulants (list): List of cumulant arrays to plot. Each entry should
-            correspond to a dataset matching the provided time vectors.
-        labels (list of str): Legend labels corresponding to each cumulant dataset.
-        test_samples (int): Number of samples used to estimate cumulants and
-            compute error bars.
-        benchmark (optional): Object providing perturbative predictions via
-            `get_perturbative_cumulant(index)`. If None, no benchmark is plotted.
-        add_free_diffusion (bool,optional): If True, overlays free diffusion prediction curves.
-        epsilon (float, optional): Parameter required for free diffusion curves.
-            Must be provided if `add_free_diffusion=True`.
+    Parameters
+    ----------
+    t_vec1 : array-like
+        First time vector for cumulant evaluation.
+    t_vec2 : array-like
+        Second time vector for cumulants evaluation by the benchmark.
+    cumulants : list
+        List of cumulant arrays to plot. Each entry should correspond to a
+        dataset matching the provided time vectors.
+    labels : list of str
+        Legend labels corresponding to each cumulant dataset.
+    test_samples : int
+        Number of samples used to estimate cumulants and compute error bars.
+    benchmark : object, optional
+        Object providing perturbative predictions via
+        ``get_perturbative_cumulant(index)``. If None, no benchmark is plotted.
+    add_free_diffusion : bool, optional
+        If True, overlays free diffusion prediction curves.
+    epsilon : float, optional
+        Parameter required for free diffusion curves.
+        Must be provided if ``add_free_diffusion=True``.
 
-    Returns:
-        matplotlib.figure.Figure: Figure containing all cumulant subplots and legend.
+    Returns
+    -------
+    matplotlib.figure.Figure
+        Figure containing all cumulant subplots and legend.
     """
 
     fig1,gs_cumulants = make_fig_gridspec()

@@ -130,22 +130,26 @@ class OverdampedFullLandauer(Boundaries):
 
     #generate the initial data
     def generate_samples(self,batch_samples,mode):
-        r"""sample points from the intial distribution for q 
-        
-        args:
-            batch_samples : int
-                number of samples to take
-            mode : str
-                initial or final. Return
+        r"""
+        Sample points from the initial distribution for q.
 
-        return 
-            out : ndarray
-                samples in the shape (batch_samples,1) from the final distribution if mode=="final", else zeros in shape(batch_samples,)
+        Parameters
+        ----------
+        batch_samples : int
+            Number of samples to take.
+        mode : str
+            "initial" or "final". Return from initial distribution (zeros)
+            or from the final distribution.
+
+        Returns
+        -------
+        out : torch.Tensor, shape (batch_samples, 1)
+            Samples from the final distribution if mode=="final", else zeros.
         """
 
         #from where to sample the q marginals
         if mode=="initial":
-            
+
             return torch.zeros((batch_samples,1),requires_grad=False,dtype=torch.float32)
 
         elif mode=="final": 
@@ -197,17 +201,20 @@ class OverdampedLandauer(OverdampedFullLandauer):
         return self.qinitial_np(q)/self.pi_norm.numpy()
 
     def generate_samples(self,batch_samples,mode):
-        r"""sample points from the intial distribution for q 
-        
-        args:
-            batch_samples : int
-                number of samples to take
-            mode : str
-                initial or final
+        r"""
+        Sample points from the initial distribution for q.
 
-        return 
-            out : ndarray
-                samples in the shape (batch_samples,) from the initial or final distribution 
+        Parameters
+        ----------
+        batch_samples : int
+            Number of samples to take.
+        mode : str
+            "initial" or "final".
+
+        Returns
+        -------
+        out : torch.Tensor, shape (batch_samples,)
+            Samples from the initial or final distribution.
         """
 
         x = torch.linspace(-8,8,10000,requires_grad=False,dtype=torch.float32)
@@ -253,17 +260,20 @@ class LinearOU(Boundaries):
         return np.exp(-(q**2)/2)/np.sqrt(2*np.pi)
 
     def generate_samples(self,batch_samples,mode):
-        r"""sample points from the intial distribution for q 
-        
-        args:
-            batch_samples : int
-                number of samples to take
-            mode : str
-                initial or final
+        r"""
+        Sample points from the initial distribution for q.
 
-        return 
-            out : ndarray
-                samples in the shape (batch_samples,1) from the initial or final distribution 
+        Parameters
+        ----------
+        batch_samples : int
+            Number of samples to take.
+        mode : str
+            "initial" or "final".
+
+        Returns
+        -------
+        out : torch.Tensor, shape (batch_samples, 1)
+            Samples from the initial or final distribution.
         """
 
         #from where to sample the q marginals
@@ -307,22 +317,25 @@ class LinearOU(Boundaries):
 
     def euler_maruyama_step(self,xn,du_bar,dt,dw,t):
         """
-        One step forward in the euler maruyama discretisation of the overdamped dynamics
+        One step forward in the Euler-Maruyama discretisation of the overdamped dynamics.
 
-        args:
-            xn : (n,2) arr
-                current positions
-            du_bar : (n,1) arr
-                drift
-            dt : float
-                size of timestep
-            dw : float
-                innovation
-            t : float
-                current time
-        returns
-            x(n+1) : (n,2) arr
-                positions after one timestep of the evolution
+        Parameters
+        ----------
+        xn : np.ndarray, shape (n, 2)
+            Current positions.
+        du_bar : np.ndarray, shape (n, 1)
+            Drift.
+        dt : float
+            Size of timestep.
+        dw : float
+            Innovation.
+        t : float
+            Current time.
+
+        Returns
+        -------
+        x_next : np.ndarray, shape (n, 2)
+            Positions after one timestep of the evolution.
         """
         
         return xn + (self.b(xn,t) \
@@ -349,16 +362,20 @@ class UnderdampedLandauer(OverdampedLandauer):
 
     #generate the initial data
     def generate_samples_q(self,batch_samples,mode):
-        r"""Sample points from the assigned configuration (position) distributions
-        
-        args:
-            batch_samples : int
-                number of samples to take of position 
-            mode : str
-                either "initial" or "final" whether to take from the initial or final distributions
-        returns:
-            xout : ndarray 
-                samples from "mode" distribution with shape (batch_samples,)    
+        r"""
+        Sample points from the assigned configuration (position) distributions.
+
+        Parameters
+        ----------
+        batch_samples : int
+            Number of position samples to take.
+        mode : str
+            Either "initial" or "final", specifying which distribution to sample from.
+
+        Returns
+        -------
+        xout : torch.Tensor, shape (batch_samples,)
+            Samples from the specified distribution.
         """
 
         #from where to sample the q marginals
@@ -377,16 +394,20 @@ class UnderdampedLandauer(OverdampedLandauer):
        
     #generate the initial data
     def generate_samples(self,batch_samples,mode):
-        r"""Sample points from the assigned state distirbutions
+        r"""
+        Sample points from the assigned state distributions.
 
-        args:
-            batch_samples : int
-                number of samples to take of pairs (position,momentum) 
-            mode : str
-                either "initial" or "final" whether to take from the initial or final distributions
-        returns:
-            xout : ndarray 
-                samples from "mode" distribution with shape(batch_samples,2)    
+        Parameters
+        ----------
+        batch_samples : int
+            Number of samples to take of pairs (position, momentum).
+        mode : str
+            Either "initial" or "final", specifying which distribution to sample from.
+
+        Returns
+        -------
+        xout : torch.Tensor, shape (batch_samples, 2)
+            Samples from the specified distribution.
         """
 
         return torch.cat((self.generate_samples_q(batch_samples, mode), torch.randn((batch_samples, 1),requires_grad=False,dtype=torch.float32)), dim=1)
@@ -468,10 +489,17 @@ class UnderdampedGaussian(UnderdampedLandauer):
 
     def q_marginal_initial(self,q):
         """
-        args:
-            q: position coordinate
-        returns:
-            pdf: normalised initial position marginal evaluated at q
+        Compute the normalised initial position marginal evaluated at q.
+
+        Parameters
+        ----------
+        q : torch.Tensor
+            Position coordinate.
+
+        Returns
+        -------
+        pdf : torch.Tensor
+            Normalised initial position marginal evaluated at q.
         """
 
         return self.qinitial(q)/self.pi_norm
@@ -490,17 +518,20 @@ class UnderdampedGaussian(UnderdampedLandauer):
         return self.qfinal(q)/self.pf_norm
 
     def generate_samples_q(self,batch_samples,mode):
-        r"""Sample points from the intial or final distributions for q (position)
-        
-        args:
-            batch_samples : int
-                number of samples to take
-            mode : str
-                initial or final
+        r"""
+        Sample points from the initial or final distributions for q (position).
 
-        return 
-            out : ndarray
-                samples in the shape (batch_samples,) from the initial or final distribution 
+        Parameters
+        ----------
+        batch_samples : int
+            Number of samples to take.
+        mode : str
+            "initial" or "final".
+
+        Returns
+        -------
+        out : torch.Tensor, shape (batch_samples,)
+            Samples from the initial or final distribution.
         """
 
         #from where to sample the q marginals

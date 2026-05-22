@@ -24,12 +24,14 @@ class TerminalCost():
     def __init__(self,boundaryconditions,
                         fileloc):
         """
-        Initialise how the terminal cost should be evaluated.    
-        args:
-            boundaryconditions: 
-                associated boundary conditions
-            fileloc: str
-                save parameters
+        Initialise how the terminal cost should be evaluated.
+
+        Parameters
+        ----------
+        boundaryconditions : object
+            Associated boundary conditions.
+        fileloc : str
+            Filepath to save parameters.
         """
 
         self.boundary = boundaryconditions
@@ -60,11 +62,15 @@ class MLE(TerminalCost):
 
     def __init__(self,boundaryconditions,fileloc,*_):
         """
-        Initialise placeholder parameters for estimating the final distirbution using a parametric method
+        Initialise placeholder parameters for estimating the final distribution
+        using a parametric method.
 
-        args:
-            boundaryconditions : class
-            fileloc : folder
+        Parameters
+        ----------
+        boundaryconditions : object
+            Associated boundary conditions.
+        fileloc : str
+            Filepath to results folder.
         """
 
         TerminalCost.__init__(self,boundaryconditions,fileloc)
@@ -120,10 +126,17 @@ class Histogram(TerminalCost):
 
     def evaluate_density(self, x):
         """
-        args:
-            x: position sample point or array of points in the shape (1,)
-        returns: 
-            p1: estimate of probability density from histogram
+        Estimate probability density at a point from the histogram.
+
+        Parameters
+        ----------
+        x : float or array-like, shape (1,)
+            Position sample point or array of points.
+
+        Returns
+        -------
+        p1 : float
+            Estimate of probability density from histogram.
         """
 
         #step 1: check which bin for x and y the point is in

@@ -74,18 +74,20 @@ def fit_kde(xs,qax):
 
 def marginal_distribution(ax,xs,plottime,qmax=5,benchmark=None):
     """
-    Function that plots the an estimate of the marginal densities
-    computed by sampled points
+    Plot an estimate of the marginal densities computed from sampled points.
 
-    args:
-      xs : ndarray
-        sampled positions for the position and momentum
-      plottime : float
-        time at which the samples were taken. Defaults to final time from boundary
-      qmax : float
-        x axis limits
-      benchmark : class
-        fetch benchmark analytic results, if available. Default None 
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axes on which to draw the plot.
+    xs : list of ndarray
+        Sampled positions for the position and momentum.
+    plottime : float
+        Time at which the samples were taken.
+    qmax : float, optional
+        X-axis limits. Default is 5.
+    benchmark : object, optional
+        Benchmark solution handler used to fetch analytic results. Default None.
     """
     qax = np.linspace(-qmax,qmax,num=5000)
 
