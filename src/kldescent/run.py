@@ -45,7 +45,7 @@ def run():
     #net = torch.compile(net, backend="eager")
 
     #intialise sde integration method
-    integrator = langevin.EulerMaruyamaSDE(boundaryconditions, net=net, terminal_cost=terminal_cost)
+    integrator = langevin.BAOAB(boundaryconditions, net=net, terminal_cost=terminal_cost)
     #langevin.EulerMaruyamaSDE(boundaryconditions, net=net, terminal_cost=terminal_cost)
     
     #initialise trainer

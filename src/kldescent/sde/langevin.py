@@ -101,7 +101,7 @@ class SDEBase():
             #initialise x values as samples from assigned initial distribution
             xinit = self.boundary.generate_samples(test_samples_temp,"initial").to(self.device)
             xinit_ref = torch.clone(xinit).to(self.device)
-            du_bar = self.net(torch.cat((torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
+            du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,[0]],dtype=torch.float32).to(self.device)
                                                                         ,xinit[...,[0]]),dim=-1)).detach()
             #preallocate storing kl divergence 
             kldyn = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
@@ -150,8 +150,7 @@ class SDEBase():
         if testing_samples == None: #default to the integrator 
             testing_samples = self.testing_samples
             
-        du_bar = self.net(torch.cat((torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
-                                                                        ,xinit[...,[0]]),dim=-1)).detach()
+        
         with torch.no_grad():
 
             t_vec = self.uniform_random_time_grid(time,t_steps)#torch.linspace(0,time,t_steps)
@@ -161,6 +160,8 @@ class SDEBase():
                 xinit = self.boundary.generate_samples(testing_samples,"initial").to(self.device)
             else:
                 xinit = x0_samples.clone().to(self.device)
+            du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,[0]],dtype=torch.float32).to(self.device)
+                                                   ,xinit[...,[0]]),dim=-1)).detach()
 
             for i in range(0,len(t_vec)-1):
                 dt = (t_vec[i+1]-t_vec[i])
@@ -203,7 +204,7 @@ class SDEBase():
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = self.boundary.generate_samples(mcsamples,"initial").to(self.device)
         xref = torch.clone(xinit).to(self.device)
-        du_bar = self.net(torch.cat((torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
+        du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,[0]],dtype=torch.float32).to(self.device)
                                                                 ,xinit[...,[0]]),dim=-1)).detach()
                                    
         
@@ -370,7 +371,7 @@ class BAOAB(SDEBase):
     def integration_step(self,xinit,dt,t,du_prev):
 
         #sample dw
-        dw = self.generate_innovation(1,size_like=xinit[...,[0]])
+        dw = self.generate_innovation(torch.tensor(1.0, device=xinit.device, dtype=xinit.dtype),size_like=xinit[...,[0]])
 
         #Update the velocity
         #B: deterministic kick
@@ -459,7 +460,7 @@ class BAOAB(SDEBase):
         for i in range(0,self.sde_params["tsteps"]-1):
             dt = (t_vec[i+1]-t_vec[i])
              
-            dw = self.generate_innovation(1,size_like=xinit[...,[0]])
+            dw = self.generate_innovation( torch.tensor(1.0, device=xinit.device, dtype=xinit.dtype),size_like=xinit[...,[0]])
             
             #get neural network drift
             du = self.net(torch.cat((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
