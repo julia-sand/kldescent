@@ -275,6 +275,25 @@ class EulerMaruyamaSDE(SDEBase):
         xinit[...,[1]] = xinit[...,[1]] - self.boundary.sigma0 * du_bar * dt - self.boundary.sigma0 * dw
         return xinit
 
+    @torch.no_grad()
+    def loss_intermediate_step(self,xinit,dt,t,du_prev):
+
+        return xinit
+
+    @torch.no_grad()
+    def loss_final_step(self,xinit):
+
+        return xinit
+
+    def loss_integration_step(self,xinit,dt,t,du_prev,dw):
+
+        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt)
+
+        xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du_prev)*dt \
+                                                + torch.sqrt(dt)*self.boundary.sigma0*dw
+
+        return xinit
+
     def integration_step(self,xinit,dt,t,du_prev,dw):
 
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt)
@@ -313,6 +332,60 @@ class BAOAB(SDEBase):
         self.testing_samples =self.sde_params["testsamples"]
         self.device = self.net.device
 
+
+    @torch.no_grad()
+    def loss_integration_step(self,xinit,dt,t,du_prev,dw):
+
+        #Update the velocity
+        #B: deterministic kick
+        xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du_prev)*(dt/2)
+        
+        #A: update positions by half step
+        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+
+        #O : solve OU step
+        xinit[...,[1]] = torch.exp(-dt)*xinit[...,[1]] + self.boundary.sigma0*torch.sqrt((1-torch.exp(-2*dt))/2)*dw
+        
+        #A: position half-step
+        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+
+        #compute du 
+        #du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
+        #                                                    ,xinit[...,[0]]),dim=-1)).detach()
+        
+        #B: deterministic kick
+        #xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du)*(dt/2)
+        
+        return xinit
+
+    @torch.no_grad()
+    def loss_intermediate_step(self,xinit,dt,t,du_prev):
+
+        #compute du 
+        #du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
+        #                                                    ,xinit[...,[0]]),dim=-1)).detach()
+        
+        if t>0:
+            #B: final deterministic kick
+            xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du_prev)*(dt/2)
+            
+        return xinit
+   
+
+    @torch.no_grad()
+    def loss_final_step(self,xinit,dt):
+
+        #compute du 
+        du = self.net(torch.cat((self.boundary.params["Tf"]*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
+                                                            ,xinit[...,[0]]),dim=-1)).detach()
+        
+        if t>0:
+            #B: final deterministic kick
+            xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du)*(dt/2)
+            
+        return xinit
+   
+
     @torch.no_grad()
     def integration_step(self,xinit,dt,t,du_prev,dw):
 
@@ -338,6 +411,8 @@ class BAOAB(SDEBase):
         
         return xinit, du 
     
+
+
     @torch.no_grad()
     def benchmark_integration_step(self,xinit,dt,t,benchmark=None):
         
@@ -403,6 +478,31 @@ class VerletSDE(SDEBase):
         self.testing_samples =self.sde_params["testsamples"]
         self.device = self.net.device
 
+
+    @torch.no_grad()
+    def loss_intermediate_step(self,xinit,dt,t,du_prev):
+
+        return xinit
+
+    @torch.no_grad()
+    def loss_final_step(self,xinit):
+
+        return xinit
+
+    @torch.no_grad()
+    def loss_integration_step(self,xinit,dt,t,du_prev,dw):
+
+        #update positions by half step
+        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+
+        #Update the velocity
+        xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du_prev)*dt \
+                                                + self.boundary.sigma0*dw
+        #position half-step
+        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+
+        return xinit
+    
     @torch.no_grad()
     def integration_step(self,xinit,dt,t,du_prev,dw):
 

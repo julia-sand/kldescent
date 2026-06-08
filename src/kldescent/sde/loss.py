@@ -57,13 +57,6 @@ class KL:
                            requires_grad=False)
         c    = torch.zeros((n, 1), dtype=torch.float32, device=self.device)
 
-        du_bar = self.net(
-            torch.cat((
-                torch.zeros_like(xinit[..., [0]], dtype=torch.float32),
-                xinit[..., [0]]
-            ), dim=-1)
-        ).detach()
-
         for i in range(len(t_vec) - 1):
             dt = t_vec[i + 1] - t_vec[i]
 
@@ -83,19 +76,27 @@ class KL:
             du_bar = du.detach()
 
             with torch.no_grad():
+
+                #make final half-step for BAOAB integrators
+                #skip for other methods and when t=0
+                xinit = self.integrator.loss_intermediate_step(xinit,dt, t_vec[i], du_bar)
+
                 abar = abar + dt * (
                     torch.linalg.norm(du_bar, dim=1, keepdim=True) ** 2
                 )
-                xinit, _ = self.integrator.integration_step(
+                xinit = self.integrator.loss_integration_step(
                     xinit, dt, t_vec[i], du_bar, dw
                 )
 
         with torch.no_grad():
+
             gvals = self.TerminalCost.gfun(
                 xinit.detach().clone(),
                 self.integrator,
                 self.sde_params["testsamples"],
             ).to(self.device)
+
+            
 
         Lhat = torch.mean(0.5 * a + (0.5 * abar + bbar + gvals) * c)
         return Lhat
@@ -114,10 +115,10 @@ class KL:
         """
         from kldescent.sde.langevin import BAOAB
         if isinstance(self.integrator, BAOAB):
-            weight = torch.sqrt((1 - torch.exp(-2 * dt)) / 2)
+            weight = torch.sqrt((1 - torch.exp(-2 * dt)) / 2)  
             return weight * (du * dw)
-        return du * dw
-
+        else:
+            return du*dw
 
 class ep:
     """
