@@ -86,7 +86,7 @@ class KL:
                 abar = abar + dt * (
                     torch.linalg.norm(du_bar, dim=1, keepdim=True) ** 2
                 )
-                xinit, du_bar = self.integrator.integration_step(
+                xinit, _ = self.integrator.integration_step(
                     xinit, dt, t_vec[i], du_bar, dw
                 )
 

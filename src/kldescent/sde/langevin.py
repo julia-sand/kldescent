@@ -58,12 +58,6 @@ class SDEBase():
         """generate a step of brownian motion"""
         return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32).to(self.device)
 
-    @torch.no_grad()
-    def girsanov_step(self, xinit, du_bar, dt, dw):
-        """Euler-Maruyama step under the reference measure (no damping), used in backward Girsanov integration."""
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"] * xinit[...,[1]] * dt
-        xinit[...,[1]] = xinit[...,[1]] + self.boundary.sigma0 * du_bar * dt + self.boundary.sigma0 * dw
-        return xinit
 
     @torch.no_grad 
     def cross_corr(self,temp):
@@ -274,6 +268,12 @@ class EulerMaruyamaSDE(SDEBase):
         self.testing_samples =self.sde_params["testsamples"]
         self.device = self.net.device
 
+    @torch.no_grad()
+    def girsanov_step(self, xinit, du_bar, dt, dw):
+        """Euler-Maruyama step under the reference measure (no damping), used in backward Girsanov integration."""
+        xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"] * xinit[...,[1]] * dt
+        xinit[...,[1]] = xinit[...,[1]] - self.boundary.sigma0 * du_bar * dt - self.boundary.sigma0 * dw
+        return xinit
 
     def integration_step(self,xinit,dt,t,du_prev,dw):
 
@@ -360,15 +360,15 @@ class BAOAB(SDEBase):
     def girsanov_step(self, xinit, du_bar, dt, dw):
         """BAOAB Girsanov step: B-A-O-A-B splitting under the reference measure."""
         #B: drift kick
-        xinit[...,[1]] = xinit[...,[1]] + self.boundary.sigma0 * du_bar * (dt/2)
+        xinit[...,[1]] = xinit[...,[1]] - self.boundary.sigma0 * du_bar * (dt/2)
         #A: position half-step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
+        xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
         #O: OU noise step
-        xinit[...,[1]] = torch.exp(-dt)*xinit[...,[1]] + self.boundary.sigma0*torch.sqrt((1 - torch.exp(-2*dt))/2)*dw
+        xinit[...,[1]] = -torch.exp(-dt)*xinit[...,[1]] - self.boundary.sigma0*torch.sqrt((1 - torch.exp(-2*dt))/2)*dw
         #A: position half-step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
+        xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
         #B: drift kick
-        xinit[...,[1]] = xinit[...,[1]] + self.boundary.sigma0 * du_bar * (dt/2)
+        xinit[...,[1]] = xinit[...,[1]] - self.boundary.sigma0 * du_bar * (dt/2)
         return xinit
 
     def verlet_half_step(self,xinit,du_bar,dt,dw,t=0):
@@ -443,11 +443,11 @@ class VerletSDE(SDEBase):
     def girsanov_step(self, xinit, du_bar, dt, dw):
         """Verlet Girsanov step: position half-steps around a friction-free momentum update."""
         #A: position half-step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
+        xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
         #momentum update (no friction)
-        xinit[...,[1]] = xinit[...,[1]] + self.boundary.sigma0 * du_bar * dt + self.boundary.sigma0 * dw
+        xinit[...,[1]] = xinit[...,[1]] - self.boundary.sigma0 * du_bar * dt - self.boundary.sigma0 * dw
         #A: position half-step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
+        xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
         return xinit
 
     def verlet_half_step(self,xinit,du_bar, dt,dw,t=0):

@@ -61,7 +61,7 @@ def compute_pdf(x0, integrator, mc_samples=None, tsteps=None):
             du_bar = net(torch.cat((t_vec[-i]*torch.ones_like(xinit[...,[0]], dtype=torch.float32).to(net.device),
                                     xinit[...,[0]]), dim=-1))
 
-            xinit = integrator.girsanov_step(xinit, du_bar, -dt, -dw)
+            xinit = integrator.girsanov_step(xinit, du_bar, dt, dw)
 
             girs = girs + (dw*xinit[...,[1]])/(2**0.5) + (dt * (xinit[...,[1]])**2)/4
 
@@ -75,7 +75,7 @@ def compute_pdf(x0, integrator, mc_samples=None, tsteps=None):
 def plot_scatter_(x,pdf):
     plt.scatter(x[...,0].cpu().numpy(), x[...,1].cpu().numpy(), c=pdf.cpu().numpy(),cmap='RdYlGn_r')
     plt.title(f"{pdf.cpu().numpy().max()}")
-    randint= random.randint(1, 100000) 
+    randint = random.randint(1, 100000) 
     plt.savefig(f"test_tests1.png")
     plt.close()
 
