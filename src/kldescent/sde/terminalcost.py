@@ -68,21 +68,14 @@ class GirsanovMC(TerminalCost):
         """compute the loss first for this method"""
         pass
 
-    def gfun(self,x,net,mc_samples,*_):
-        
-        pdf = torch.nan_to_num(self.get_logpdf(x,net,mc_samples),posinf=0,neginf=0,nan=0)
-        return self.M*(pdf + self.boundary.log_pfinal(x[...,[0]],x[...,[1]]))
+    def gfun(self, x, integrator, mc_samples, *_):
 
-    def get_logpdf(self,x,net,mc_samples):
-        
-        pdf = torch.zeros_like(x[...,[0]]).to(net.device)
-        pdf = compute_pdf(x,net,
-                            self.boundary.sigma0,
-                            self.boundary.params["epsilon"],
-                            self.boundary.p_initial,
-                            self.boundary.params["Tf"],
-                            mc_samples)
-        
+        pdf = torch.nan_to_num(self.get_logpdf(x, integrator, mc_samples), posinf=0, neginf=0, nan=0)
+        return self.M*(pdf + self.boundary.log_pfinal(x[...,[0]], x[...,[1]]))
+
+    def get_logpdf(self, x, integrator, mc_samples):
+
+        pdf = compute_pdf(x, integrator, mc_samples=mc_samples)
         return torch.log(pdf)
 
 class GirsanovNet(TerminalCost):

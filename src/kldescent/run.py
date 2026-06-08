@@ -6,6 +6,7 @@ import random
 from kldescent.model import *
 from kldescent.sde import *
 import kldescent.sde.boundary as boundaries
+import kldescent.sde.loss as loss_fns
 from kldescent.utils import *
 from kldescent.viz.loss_plots import plot_loss_metrics
 from kldescent.model.pretrain import run_pretrain
@@ -43,10 +44,14 @@ def run():
     #net = torch.compile(net, backend="eager")
 
     #intialise sde integration method
-    integrator = getattr(langevin, args["integrator"])(boundaryconditions, net=net, terminal_cost=terminal_cost)
-    
+    integrator = getattr(langevin, args["integrator"])(boundaryconditions, net=net)
+
+    #initialise loss function
+    _loss_cls = {"kl": loss_fns.KL, "ep": loss_fns.ep}[args["loss"]]
+    loss = _loss_cls(integrator, terminal_cost)
+
     #initialise trainer
-    trainer = train.Train(net,integrator) 
+    trainer = train.Train(net, loss)
 
     #initialise metrics and action cost computations
     metric_ = metrics.Metrics(net,integrator, metrics_logger,args["bridgetype"])    

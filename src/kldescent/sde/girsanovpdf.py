@@ -1,26 +1,7 @@
 import torch
 
-from kldescent.utils.parser import integrator_params
-
 @torch.no_grad
-def girsanov_scheme(xinit,du_bar,dt,dw,t,sigma0,epsilon):
-
-    #takes one step forward in the euler maruyama discretisation
-    #go forward one step 
-    xinit[...,[0]] = xinit[...,[0]] + epsilon*xinit[...,[1]]*dt
-    xinit[...,[1]] = xinit[...,[1]] + sigma0*du_bar*dt + sigma0*dw
-
-    return xinit
-
-@torch.no_grad
-def compute_pdf(x0,
-                    net,
-                    sigma0,
-                    epsilon,
-                    p_initial,
-                    Tf,
-                    mc_samples=None,
-                    tsteps=None):
+def compute_pdf(x0, integrator, mc_samples=None, tsteps=None):
     """
     Compute an estimate of the final joint distribution using Girsanov's theorem.
 
@@ -30,81 +11,61 @@ def compute_pdf(x0,
 
     Parameters
     ----------
-    xinit : np.ndarray
+    x0 : torch.Tensor
         Coordinates (q, p) of x₀ at which to evaluate the density rho.
 
-    net : object
-        Neural network used for the computation.
+    integrator : SDEBase subclass instance
+        Initialised integrator; provides net, boundary, sde_params, device,
+        and generate_innovation().
 
-    Tf : float
-        Final time at which the distribution is evaluated.
+    mc_samples : int, optional
+        Number of Monte Carlo samples. Defaults to integrator.sde_params["testsamples"].
 
-    sigma0 : float
-        Initial diffusion parameter of the dynamics.
-
-    epsilon : float
-        Small parameter governing the perturbative regime.
-
-    pinitial : callable
-        Function specifying the initial boundary condition.
-
-    mcsamples : int
-        Number of Monte Carlo samples used for the estimate.
-
-    tsteps : int
-        Number of time steps in the simulation.
+    tsteps : int, optional
+        Number of time steps. Defaults to integrator.sde_params["tsteps"].
 
     Returns
     -------
-    pdfout : np.ndarray
-        Estimated probability density function evaluated at time Tf and location xinit.
+    pdfout : torch.Tensor
+        Estimated probability density function evaluated at time Tf and location x0.
     """
-    
-    #pdb.set_trace()
-    net.eval()
-    
-    #parse arguments if these not given
-    if tsteps is None or mc_samples is None:
-        args = integrator_params()
 
-    #choose truthy values
-    tsteps = tsteps or args.get("tsteps")
-    mc_samples = mc_samples or args.get("testsamples")
-    
+    net       = integrator.net
+    sigma0    = integrator.boundary.sigma0
+    epsilon   = integrator.boundary.params["epsilon"]
+    p_initial = integrator.boundary.p_initial
+    Tf        = integrator.boundary.params["Tf"]
+    tsteps    = tsteps     or integrator.sde_params["tsteps"]
+    mc_samples = mc_samples or integrator.sde_params["testsamples"]
+
+    net.eval()
+
     with torch.no_grad():
-        
+
         if mc_samples == 1:
             xinit = x0.clone().to(net.device)
         else:
-            xinit =  x0.unsqueeze(0).expand(mc_samples, -1, -1).clone().to(net.device)
-            #torch.broadcast_to(x0,(mc_samples,2)).clone().to(net.device)
+            xinit = x0.unsqueeze(0).expand(mc_samples, -1, -1).clone().to(net.device)
 
-        t_vec = torch.linspace(0,Tf,tsteps,requires_grad=False,dtype=torch.float32).to(net.device)
+        t_vec = torch.linspace(0, Tf, tsteps, requires_grad=False, dtype=torch.float32).to(net.device)
 
-        #preallocate girsanov integrals and results
-        girs = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(net.device)
-        pdfout = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(net.device)
+        girs   = torch.zeros_like(xinit[...,[0]], requires_grad=False, dtype=torch.float32).to(net.device)
+        pdfout = torch.zeros_like(xinit[...,[0]], requires_grad=False, dtype=torch.float32).to(net.device)
 
-        for i in range(1,len(t_vec)):#self.sde_params["tsteps"]+1):
-                            
-            #get timestep
-            dt = torch.abs(t_vec[-i-1]-t_vec[-i])
-            
-            dw = (dt**0.5)*torch.randn_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(net.device)
+        for i in range(1, len(t_vec)):
 
-            #evaluate neural network approximated drift 
-            du_bar = net(torch.cat((t_vec[-i]*torch.ones_like(xinit[...,[0]],dtype=torch.float32).to(net.device)
-                                                        ,xinit[...,[0]]),dim=-1))
-            
-            #one backward step of euler maruyama scheme of stochastic evolution
-            xinit = girsanov_scheme(xinit,du_bar,-dt,-dw,t_vec[-i],
-                                                                sigma0,
-                                                                epsilon,)
-            
-            #add step to stochastic integral
+            dt = torch.abs(t_vec[-i-1] - t_vec[-i])
+
+            dw = integrator.generate_innovation(dt, xinit[...,[0]])
+
+            du_bar = net(torch.cat((t_vec[-i]*torch.ones_like(xinit[...,[0]], dtype=torch.float32).to(net.device),
+                                    xinit[...,[0]]), dim=-1))
+
+            xinit = integrator.girsanov_step(xinit, du_bar, -dt, -dw)
+
             girs = girs + (dw*xinit[...,[1]])/(2**0.5) + (dt * (xinit[...,[1]])**2)/4
-                        
-        pdfout = p_initial(xinit[...,[0]],xinit[...,[1]])*torch.exp(-girs)
+
+        pdfout = p_initial(xinit[...,[0]], xinit[...,[1]]) * torch.exp(-girs)
 
     if pdfout.dim() > 2:
         return torch.mean(pdfout, dim=0)

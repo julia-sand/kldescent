@@ -58,6 +58,13 @@ class SDEBase():
         """generate a step of brownian motion"""
         return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32).to(self.device)
 
+    @torch.no_grad()
+    def girsanov_step(self, xinit, du_bar, dt, dw):
+        """Euler-Maruyama step under the reference measure (no damping), used in backward Girsanov integration."""
+        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"] * xinit[...,[1]] * dt
+        xinit[...,[1]] = xinit[...,[1]] + self.boundary.sigma0 * du_bar * dt + self.boundary.sigma0 * dw
+        return xinit
+
     @torch.no_grad 
     def cross_corr(self,temp):
         return torch.sum((temp[...,0]-torch.nanmean(temp[...,0]))*(temp[...,1]-torch.nanmean(temp[...,1])))/len(temp[...,0])
@@ -109,9 +116,10 @@ class SDEBase():
             for i in range(0,len(t_vec)-1):
                 #get time interval
                 dt = (t_vec[i+1]-t_vec[i])
-            
-                xinit,du_bar = self.integration_step(xinit,dt,t_vec[i],du_bar)
-        
+                dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+
+                xinit,du_bar = self.integration_step(xinit,dt,t_vec[i],du_bar,dw)
+
                 xinit_ref = self.benchmark_integration_step(xinit_ref,dt,t_vec[i],benchmark)
                 
                 #add to integral
@@ -165,9 +173,10 @@ class SDEBase():
 
             for i in range(0,len(t_vec)-1):
                 dt = (t_vec[i+1]-t_vec[i])
-                
-                xinit,du_bar = self.integration_step(xinit,dt,t_vec[i],du_bar)
-         
+                dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+
+                xinit,du_bar = self.integration_step(xinit,dt,t_vec[i],du_bar,dw)
+
         return xinit
 
     @torch.no_grad
@@ -220,9 +229,10 @@ class SDEBase():
 
             for i in range(0,len(t_vec)-1):
                 dt = (t_vec[i+1]-t_vec[i])
-               
-                xinit,du_bar = self.integration_step(xinit,dt,t_vec[i],du_bar)
-        
+                dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+
+                xinit,du_bar = self.integration_step(xinit,dt,t_vec[i],du_bar,dw)
+
                 xref = self.benchmark_integration_step(xref,dt,t_vec[i],benchmark)
                 
                 cumulants_nn.append(self.compute_cumulant_row(xinit))
@@ -244,10 +254,10 @@ class SDEBase():
                 du = benchmark.du_net_benchmark(torch.cat((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
                                                             ,xinit[...,[0]]),dim=-1))
             else:
-                try:
-                    du = torch.as_tensor(benchmark.du_benchmark(t,xinit[...,[0]]),dtype=torch.float32)
-                except: 
-                    du = torch.zeros_like(xinit[...,[0]],dtype=torch.float32,requires_grad=False)
+                #try:
+                #    du = torch.as_tensor(benchmark.du_benchmark(t,xinit[...,[0]]),dtype=torch.float32)
+                #except: 
+                du = torch.zeros_like(xinit[...,[0]],dtype=torch.float32,requires_grad=False)
           
         return du
         
@@ -255,31 +265,27 @@ class EulerMaruyamaSDE(SDEBase):
 
     def __init__(self,
                     boundary_data,
-                    terminal_cost=None, 
                     net=None,
                     sde_params=None):
-        
+
         SDEBase.__init__(self,boundary_data=boundary_data,sde_params=sde_params)
 
-        self.TerminalCost = terminal_cost
-        self.net = net 
+        self.net = net
         self.testing_samples =self.sde_params["testsamples"]
         self.device = self.net.device
 
 
-    def integration_step(self,xinit,dt,t,du_prev):
-
-        dw = self.generate_innovation(dt,size_like=xinit[...,[0]])#self.testing_samples)
+    def integration_step(self,xinit,dt,t,du_prev,dw):
 
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt)
 
         xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du_prev)*dt \
                                                 + self.boundary.sigma0*dw
-              
-        #compute next du 
+
+        #compute next du
         du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
                                                             ,xinit[...,[0]]),dim=-1)).detach()
-        return xinit, du 
+        return xinit, du
 
     @torch.no_grad()
     def benchmark_integration_step(self,xinit,dt,t,benchmark):
@@ -294,79 +300,21 @@ class EulerMaruyamaSDE(SDEBase):
             
         return xinit
 
-    def loss_fn(self):
-        """Following 2410.05163 (see proposition 3)."""
-        
-        self.net.train()
-        
-        t_vec = self.uniform_random_time_grid()
-        
-        #initialise x values 
-        xinit = self.boundary.generate_samples(self.sde_params["batchsamples"],"initial").to(self.device)
-
-        #set up a,abar,c,cbar
-        a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
-        abar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32).to(self.device)
-        bbar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32).to(self.device)
-        c = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
-        dw = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32).to(self.device)
-
-        for i in range(0,self.sde_params["tsteps"]-1):
-            dt = (t_vec[i+1]-t_vec[i])
-            
-            dw = self.generate_innovation(dt,xinit[...,[0]])
-
-            #get neural network drift
-            du = self.net(torch.cat((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
-                                                    ,xinit[...,[0]]),dim=-1))
-
-            a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True) ** 2) 
-            
-            c = c + (du*dw)
-
-            du_bar = du.detach() #copy without gradient 
-
-            with torch.no_grad(): #no gradient 
-
-                #abar = abar + dt*(torch.linalg.norm(du_bar, axis=1, keepdim=True) ** 2) 
-                #abar = abar + dt*(torch.linalg.norm(du_bar, axis=1, keepdim=True) ** 2) 
-                #bbar = bbar #+ dt*(self.boundary.f(xinit,t_vec[i])) 
-                
-                xinit,_ = self.integration_step(xinit,dt,t,du_bar)
-                #self.boundary.euler_maruyama_step(xinit,du_bar,dt,dw,t_vec[i])
-
-
-        with torch.no_grad():
-            #compute terminal cost
-            gvals = self.TerminalCost.gfun(xinit.detach().clone(),self.net,self.sde_params["testsamples"]).to(self.device)
-
-            a_bar = a.detach().clone()
-
-        #compute value of Lhat
-        Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
-        
-        return Lhat
-    
 class BAOAB(SDEBase):
 
     def __init__(self,
                     boundary_data,
-                    terminal_cost=None, 
                     net=None,
                     sde_params=None):
-        
+
         SDEBase.__init__(self,boundary_data)
 
-        self.TerminalCost = terminal_cost
-        self.net = net 
+        self.net = net
         self.testing_samples =self.sde_params["testsamples"]
         self.device = self.net.device
 
     @torch.no_grad()
-    def integration_step(self,xinit,dt,t,du_prev):
-
-        #sample dw
-        dw = self.generate_innovation(torch.tensor(1.0, device=xinit.device, dtype=xinit.dtype),size_like=xinit[...,[0]])
+    def integration_step(self,xinit,dt,t,du_prev,dw):
 
         #Update the velocity
         #B: deterministic kick
@@ -408,97 +356,55 @@ class BAOAB(SDEBase):
             
         return xinit 
 
+    @torch.no_grad()
+    def girsanov_step(self, xinit, du_bar, dt, dw):
+        """BAOAB Girsanov step: B-A-O-A-B splitting under the reference measure."""
+        #B: drift kick
+        xinit[...,[1]] = xinit[...,[1]] + self.boundary.sigma0 * du_bar * (dt/2)
+        #A: position half-step
+        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
+        #O: OU noise step
+        xinit[...,[1]] = torch.exp(-dt)*xinit[...,[1]] + self.boundary.sigma0*torch.sqrt((1 - torch.exp(-2*dt))/2)*dw
+        #A: position half-step
+        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
+        #B: drift kick
+        xinit[...,[1]] = xinit[...,[1]] + self.boundary.sigma0 * du_bar * (dt/2)
+        return xinit
+
     def verlet_half_step(self,xinit,du_bar,dt,dw,t=0):
-              
+
         #Update the velocity
         #B: deterministic kick
         xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du_bar)*(dt/2)
-        
+
         #A: update positions by half step
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
 
         #O : solve OU step
         xinit[...,[1]] = torch.exp(-dt)*xinit[...,[1]] + self.boundary.sigma0*torch.sqrt((1-torch.exp(-2*dt))/2)*dw
-        
+
         #A: position half-step
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
 
         #final B step is part of main loop
-        
+
         return xinit
 
-    def loss_fn(self):
-        """Following 2410.05163 (see proposition 3)."""
-        
-        self.net.train()
-        t_vec = self.uniform_random_time_grid()
-
-        #initialise x values 
-        xinit = self.boundary.generate_samples(self.sde_params["batchsamples"],"initial").to(self.device)
-        
-        #set up a,abar,c,cbar
-        a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
-        abar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32).to(self.device)
-        bbar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32).to(self.device)
-        c = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
-        dw = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32).to(self.device)
-
-        dt_old = t_vec[0]
-        
-        for i in range(0,self.sde_params["tsteps"]-1):
-            dt = (t_vec[i+1]-t_vec[i])
-             
-            dw = self.generate_innovation( torch.tensor(1.0, device=xinit.device, dtype=xinit.dtype),size_like=xinit[...,[0]])
-            
-            #get neural network drift
-            du = self.net(torch.cat((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
-                                                        ,xinit[...,[0]]),dim=-1))
-                           
-            a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True)**2) 
-            
-            c = c + torch.sqrt((1 - torch.exp(-2*dt))/2)*(du*dw)
-            du_bar = du.detach() #copy without gradient 
-
-            with torch.no_grad(): #no gradient 
-                #B: deterministic kick
-                #finish previous integration step with new drift 
-                xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du_bar)*(dt_old/2)
-                
-                abar = abar + dt*(torch.linalg.norm(du_bar, axis=1, keepdim=True) ** 2) 
-                #bbar = bbar + dt*(self.boundary.f(xinit,t_vec[i])) 
-                    
-                #integrate next step 
-                xinit = self.verlet_half_step(xinit, du_bar, dt, dw, t_vec[i])
-                dt_old = dt
-            
-        with torch.no_grad():
-            #compute terminal cost
-            gvals = self.TerminalCost.gfun(xinit.detach().clone(),self.net,self.sde_params["testsamples"]).to(self.device)
-                
-        #compute value of Lhat
-        Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
-        
-        return Lhat
-            
 class VerletSDE(SDEBase):
 
     def __init__(self,
                     boundary_data,
-                    terminal_cost=None, 
                     net=None,
                     sde_params=None):
-        
+
         SDEBase.__init__(self,boundary_data)
 
-        self.TerminalCost = terminal_cost
-        self.net = net 
+        self.net = net
         self.testing_samples =self.sde_params["testsamples"]
         self.device = self.net.device
 
     @torch.no_grad()
-    def integration_step(self,xinit,dt,t,du_prev):
-
-        dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+    def integration_step(self,xinit,dt,t,du_prev,dw):
 
         #update positions by half step
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
@@ -508,12 +414,12 @@ class VerletSDE(SDEBase):
                                                 + self.boundary.sigma0*dw
         #position half-step
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
-            
-        #compute next du 
+
+        #compute next du
         du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
                                                             ,xinit[...,[0]]),dim=-1)).detach()
-                    
-        return xinit, du 
+
+        return xinit, du
     
     @torch.no_grad()
     def benchmark_integration_step(self,xinit,dt,t,benchmark=None):
@@ -533,8 +439,19 @@ class VerletSDE(SDEBase):
             
         return xinit 
 
+    @torch.no_grad()
+    def girsanov_step(self, xinit, du_bar, dt, dw):
+        """Verlet Girsanov step: position half-steps around a friction-free momentum update."""
+        #A: position half-step
+        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
+        #momentum update (no friction)
+        xinit[...,[1]] = xinit[...,[1]] + self.boundary.sigma0 * du_bar * dt + self.boundary.sigma0 * dw
+        #A: position half-step
+        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
+        return xinit
+
     def verlet_half_step(self,xinit,du_bar, dt,dw,t=0):
-              
+
         #Update the velocity
         xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du_bar)*dt \
                                 + self.boundary.sigma0*dw
@@ -544,56 +461,6 @@ class VerletSDE(SDEBase):
         return xinit
         
 
-    def loss_fn(self):
-        """Following 2410.05163 (see proposition 3)."""
-        
-        self.net.train()
-        t_vec = self.uniform_random_time_grid()
-
-        #initialise x values 
-        xinit = self.boundary.generate_samples(self.sde_params["batchsamples"],"initial").to(self.device)
-        
-        #set up a,abar,c,cbar
-        a = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
-        abar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32).to(self.device)
-        bbar = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32).to(self.device)
-        c = torch.zeros((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
-        dw = torch.zeros((self.sde_params["batchsamples"],1),requires_grad=False,dtype=torch.float32).to(self.device)
-
-        for i in range(0,self.sde_params["tsteps"]-1):
-            dt = (t_vec[i+1]-t_vec[i])
-                
-            dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
-            
-            #position half step 
-            xinit[...,[0]] += self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)      
-            
-            #get neural network drift
-            du = self.net(torch.cat((t_vec[i]*torch.ones((self.sde_params["batchsamples"],1),dtype=torch.float32).to(self.device)
-                                                        ,xinit[...,[0]]),dim=-1))
-                           
-            a = a + dt*(torch.linalg.norm(du, axis=1, keepdim=True)**2) 
-            
-            c = c + (du*dw)
-            du_bar = du.detach() #copy without gradient 
-
-            with torch.no_grad(): #no gradient 
-
-                abar = abar + dt*(torch.linalg.norm(du_bar, axis=1, keepdim=True) ** 2) 
-                #bbar = bbar + dt*(self.boundary.f(xinit,t_vec[i])) 
-                    
-                #integrate one step 
-                xinit = self.integration_step(xinit, du_bar, dt, dw, t_vec[i])
-
-        with torch.no_grad():
-            #compute terminal cost
-            gvals = self.TerminalCost.gfun(xinit.detach().clone(),self.net,self.sde_params["testsamples"]).to(self.device)
-                
-        #compute value of Lhat
-        Lhat = torch.mean(0.5 * a + ((0.5 * abar + bbar + gvals) * c))
-        
-        return Lhat
-            
 if __name__=="__main__":
     from kldescent.model import nn
     from kldescent.sde.boundary import UnderdampedHalfGaussian

@@ -15,20 +15,21 @@ class Train():
     for the neural network learning the non-perturbative drift.
     """
 
-    def __init__(self, net, integrator):
+    def __init__(self, net, lossfn):
 
         #set defaults of training process
         self.lr = 0.0005 #2.5e-4
         #0.0005 #initial learning rate
-        self.integrator = integrator
+        self.lossfn = lossfn
         self.net = net
 
         self.gamma = 0.1 #rate of learning rate decrease.
 
         self.clip = 0.5 #gradient clipping
+        self.lr_fourier = 0.01
 
-        self.optimiser_feedforward = AdamW(self.net.parameters(), lr=self.lr, weight_decay=1e-3)
-        self.optimiser_fourier = AdamW(self.net.FourierFeatures.parameters(), lr=0.01)
+        self.optimiser_feedforward = AdamW(self.net.FeedForwardLayers.parameters(), lr=self.lr, weight_decay=1e-3)
+        self.optimiser_fourier = AdamW(self.net.FourierFeatures.parameters(), lr=self.lr_fourier)
 
         self.milestone = 200 #how often to decay learning rate
         self.start_decay = 20 #when to start decaying learning rate 
@@ -54,12 +55,12 @@ class Train():
         self.optimiser_feedforward.zero_grad()
         self.optimiser_fourier.zero_grad()
 
-        Lhat = self.integrator.loss_fn()
+        Lhat = self.lossfn()
 
         if torch.isfinite(Lhat):
             Lhat.backward()
-            clip_grad_norm_(self.net.FeedForwardLayers.parameters(), 0.5)
-            clip_grad_norm_(self.net.FourierFeatures.parameters(), 0.5)
+            clip_grad_norm_(self.net.FeedForwardLayers.parameters(), self.clip)
+            clip_grad_norm_(self.net.FourierFeatures.parameters(), self.clip)
 
             self.optimiser_feedforward.step()
             self.optimiser_fourier.step()
@@ -109,12 +110,7 @@ class TrainRho():
         with torch.no_grad():
             yobs = torch.zeros_like(x0[...,[0]])
 
-            yobs = compute_pdf(x0,integrator.net,
-                                integrator.boundary.sigma0,
-                                integrator.boundary.params["epsilon"],
-                                integrator.boundary.p_initial,
-                                integrator.boundary.params["Tf"],
-                                mc_samples=1)
+            yobs = compute_pdf(x0, integrator, mc_samples=1)
             #print(yobs.max())
             #print(torch.isnan(yobs).any())                    
             return yobs
