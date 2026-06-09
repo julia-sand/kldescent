@@ -53,8 +53,8 @@ class KL:
         a    = torch.zeros((n, 1), dtype=torch.float32, device=self.device)
         abar = torch.zeros((n, 1), dtype=torch.float32, device=self.device,
                            requires_grad=False)
-        bbar = torch.zeros((n, 1), dtype=torch.float32, device=self.device,
-                           requires_grad=False)
+        #bbar = torch.zeros((n, 1), dtype=torch.float32, device=self.device,
+        #                   requires_grad=False)
         c    = torch.zeros((n, 1), dtype=torch.float32, device=self.device)
 
         for i in range(len(t_vec) - 1):
@@ -99,7 +99,7 @@ class KL:
 
             
 
-        Lhat = torch.mean(0.5 * a + (0.5 * abar + bbar + gvals) * c)
+        Lhat = torch.mean(0.5 * a + (0.5 * abar + gvals) * c)
         return Lhat
 
     # ------------------------------------------------------------------

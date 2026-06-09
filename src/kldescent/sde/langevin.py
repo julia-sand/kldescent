@@ -286,7 +286,7 @@ class EulerMaruyamaSDE(SDEBase):
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt)
 
         xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du_prev)*dt \
-                                                + torch.sqrt(dt)*self.boundary.sigma0*dw
+                                                + self.boundary.sigma0*dw
 
         return xinit
 
@@ -323,7 +323,7 @@ class BAOAB(SDEBase):
                     net=None,
                     sde_params=None):
 
-        SDEBase.__init__(self,boundary_data)
+        SDEBase.__init__(self,boundary_data=boundary_data,sde_params=sde_params)
 
         self.net = net
         self.testing_samples =self.sde_params["testsamples"]
@@ -341,7 +341,7 @@ class BAOAB(SDEBase):
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
 
         #O : solve OU step
-        xinit[...,[1]] = torch.exp(-dt)*xinit[...,[1]] + self.boundary.sigma0*torch.sqrt((1-torch.exp(-2*dt))/2)*dw
+        xinit[...,[1]] = torch.exp(-dt)*xinit[...,[1]] + self.boundary.sigma0*dw
         
         #A: position half-step
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
@@ -457,7 +457,7 @@ class BAOAB(SDEBase):
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
 
         #O : solve OU step
-        xinit[...,[1]] = torch.exp(-dt)*xinit[...,[1]] + self.boundary.sigma0*torch.sqrt((1-torch.exp(-2*dt))/2)*dw
+        xinit[...,[1]] = torch.exp(-dt)*xinit[...,[1]] + self.boundary.sigma0*dw
 
         #A: position half-step
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
@@ -481,12 +481,12 @@ class VerletSDE(SDEBase):
 
 
     @torch.no_grad()
-    def loss_intermediate_step(self,xinit,dt,t,du_prev):
+    def loss_intermediate_step(self,xinit,*_):
 
         return xinit
 
     @torch.no_grad()
-    def loss_final_step(self,xinit,dt):
+    def loss_final_step(self,xinit,_):
 
         return xinit
 
@@ -498,7 +498,7 @@ class VerletSDE(SDEBase):
 
         #Update the velocity
         xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du_prev)*dt \
-                                                + torch.sqrt(dt)*self.boundary.sigma0*dw
+                                                + self.boundary.sigma0*dw
         #position half-step
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
 
@@ -507,7 +507,7 @@ class VerletSDE(SDEBase):
     @torch.no_grad()
     def generate_innovation(self,dt,size_like):
         """generate a step of brownian motion"""
-        return torch.sqrt((1-torch.exp(-2*dt))/2)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32).to(self.device)
+        return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32).to(self.device)
 
     
     @torch.no_grad()

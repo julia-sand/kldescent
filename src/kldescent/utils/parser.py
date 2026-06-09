@@ -26,9 +26,6 @@ class CustomArgParse(argparse.ArgumentParser):
         #disallow abbreviations    
         self.allow_abbrev = False
 
-    #TODO update to handle the data.txt format 
-    #def convert_arg_line_to_args(self,arg_line):
-    #    return arg_line.split
 
 
 def fetch_results_folder_from_cmd():
@@ -167,7 +164,7 @@ def gaussian_params():
     params1.add_argument('-sigmainitial','--sigmainitial', type=float, default=1,
                         help='Initial value of the standard deviation when using Gaussian boundary conditions')
 
-    params1.add_argument('-sigmafinal','--sigmafinal', type=float, default=0.25,
+    params1.add_argument('-sigmafinal','--sigmafinal', type=float, default=0.5,
                         help='Final value of the scale in the assigned final value function')
 
     args5 = params1.parse_known_args(params1.argfile)
@@ -262,7 +259,6 @@ def seed():
     seed.add_argument('-seed','--seed', type=int, default=1,
                         help='random seed')
 
-    
 
     return seed.parse_known_args()[0].seed
 
