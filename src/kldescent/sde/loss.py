@@ -96,10 +96,9 @@ class KL:
                 self.integrator,
                 self.sde_params["testsamples"],
             ).to(self.device)
-
             
 
-        Lhat = torch.mean(0.5 * a + (0.5 * abar + bbar + gvals) * c)
+        Lhat = torch.mean(0.5 *(self.boundary.params["epsilon"] **2)* a + (0.5 *(self.boundary.params["epsilon"] **2)* abar + gvals) * c)
         return Lhat
 
     # ------------------------------------------------------------------
