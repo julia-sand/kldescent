@@ -53,12 +53,6 @@ class SDEBase():
                                 Tf*torch.sort(torch.rand(tsteps,dtype=torch.float32,requires_grad=False))[0],
                                 Tf*torch.ones(1)]).to(self.device)   
     
-    @torch.no_grad()
-    def generate_innovation(self,dt,size_like):
-        """generate a step of brownian motion"""
-        return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32).to(self.device)
-
-
     @torch.no_grad 
     def cross_corr(self,temp):
         return torch.sum((temp[...,0]-torch.nanmean(temp[...,0]))*(temp[...,1]-torch.nanmean(temp[...,1])))/len(temp[...,0])
@@ -110,9 +104,8 @@ class SDEBase():
             for i in range(0,len(t_vec)-1):
                 #get time interval
                 dt = (t_vec[i+1]-t_vec[i])
-                dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
 
-                xinit,du_bar = self.integration_step(xinit,dt,t_vec[i],du_bar,dw)
+                xinit,du_bar = self.integration_step(xinit,dt,t_vec[i],du_bar)
 
                 xinit_ref = self.benchmark_integration_step(xinit_ref,dt,t_vec[i],benchmark)
                 
@@ -167,9 +160,8 @@ class SDEBase():
 
             for i in range(0,len(t_vec)-1):
                 dt = (t_vec[i+1]-t_vec[i])
-                dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
 
-                xinit,du_bar = self.integration_step(xinit,dt,t_vec[i],du_bar,dw)
+                xinit,du_bar = self.integration_step(xinit,dt,t_vec[i],du_bar)
 
         return xinit
 
@@ -223,9 +215,8 @@ class SDEBase():
 
             for i in range(0,len(t_vec)-1):
                 dt = (t_vec[i+1]-t_vec[i])
-                dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
 
-                xinit,du_bar = self.integration_step(xinit,dt,t_vec[i],du_bar,dw)
+                xinit,du_bar = self.integration_step(xinit,dt,t_vec[i],du_bar)
 
                 xref = self.benchmark_integration_step(xref,dt,t_vec[i],benchmark)
                 
@@ -281,7 +272,12 @@ class EulerMaruyamaSDE(SDEBase):
         return xinit
 
     @torch.no_grad()
-    def loss_final_step(self,xinit):
+    def generate_innovation(self,dt,size_like):
+        """generate a step of brownian motion"""
+        return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32).to(self.device)
+
+    @torch.no_grad()
+    def loss_final_step(self,xinit,dt):
 
         return xinit
 
@@ -294,7 +290,8 @@ class EulerMaruyamaSDE(SDEBase):
 
         return xinit
 
-    def integration_step(self,xinit,dt,t,du_prev,dw):
+    def integration_step(self,xinit,dt,t,du_prev):
+        dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
 
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt)
 
@@ -359,6 +356,12 @@ class BAOAB(SDEBase):
         return xinit
 
     @torch.no_grad()
+    def generate_innovation(self,dt,size_like):
+        """generate a step of brownian motion"""
+        return torch.sqrt((1-torch.exp(-2*dt))/2)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32).to(self.device)
+
+    
+    @torch.no_grad()
     def loss_intermediate_step(self,xinit,dt,t,du_prev):
 
         #compute du 
@@ -378,16 +381,14 @@ class BAOAB(SDEBase):
         #compute du 
         du = self.net(torch.cat((self.boundary.params["Tf"]*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
                                                             ,xinit[...,[0]]),dim=-1)).detach()
+        xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du)*(dt/2)
         
-        if t>0:
-            #B: final deterministic kick
-            xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du)*(dt/2)
-            
         return xinit
    
 
     @torch.no_grad()
-    def integration_step(self,xinit,dt,t,du_prev,dw):
+    def integration_step(self,xinit,dt,t,du_prev):
+        dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
 
         #Update the velocity
         #B: deterministic kick
@@ -397,7 +398,7 @@ class BAOAB(SDEBase):
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
 
         #O : solve OU step
-        xinit[...,[1]] = torch.exp(-dt)*xinit[...,[1]] + self.boundary.sigma0*torch.sqrt((1-torch.exp(-2*dt))/2)*dw
+        xinit[...,[1]] = torch.exp(-dt)*xinit[...,[1]] + self.boundary.sigma0*dw
         
         #A: position half-step
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
@@ -439,7 +440,7 @@ class BAOAB(SDEBase):
         #A: position half-step
         xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
         #O: OU noise step
-        xinit[...,[1]] = -torch.exp(-dt)*xinit[...,[1]] - self.boundary.sigma0*torch.sqrt((1 - torch.exp(-2*dt))/2)*dw
+        xinit[...,[1]] = -torch.exp(-dt)*xinit[...,[1]] - self.boundary.sigma0*dw
         #A: position half-step
         xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
         #B: drift kick
@@ -485,7 +486,7 @@ class VerletSDE(SDEBase):
         return xinit
 
     @torch.no_grad()
-    def loss_final_step(self,xinit):
+    def loss_final_step(self,xinit,dt):
 
         return xinit
 
@@ -497,14 +498,21 @@ class VerletSDE(SDEBase):
 
         #Update the velocity
         xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du_prev)*dt \
-                                                + self.boundary.sigma0*dw
+                                                + torch.sqrt(dt)*self.boundary.sigma0*dw
         #position half-step
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
 
         return xinit
+
+    @torch.no_grad()
+    def generate_innovation(self,dt,size_like):
+        """generate a step of brownian motion"""
+        return torch.sqrt((1-torch.exp(-2*dt))/2)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32).to(self.device)
+
     
     @torch.no_grad()
-    def integration_step(self,xinit,dt,t,du_prev,dw):
+    def integration_step(self,xinit,dt,t,du_prev):
+        dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
 
         #update positions by half step
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)

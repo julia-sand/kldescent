@@ -101,7 +101,7 @@ class PlotUtils():
             self.net = self.benchmark.du_net_benchmark 
 
             integrator_cls = getattr(langevin, self.data_loaded.get("integrator", "BAOAB"))
-            self.integrator = integrator_cls(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
+            self.integrator = integrator_cls(self.boundary_cond, net=self.net, sde_params=self.data_loaded)
 
     def load_du_checkpoint(self):
         """Load neural network and initialise integration method"""
@@ -110,7 +110,7 @@ class PlotUtils():
         load_checkpoint(self.net,self.folder+f"/checkpoints/{self.net.net_name}_checkpoint_{self.epoch}.pt")
 
         integrator_cls = getattr(langevin, self.data_loaded.get("integrator", "BAOAB"))
-        self.integrator = integrator_cls(self.boundary_cond,terminal_cost=None,net=self.net,sde_params=self.data_loaded)
+        self.integrator = integrator_cls(self.boundary_cond, net=self.net, sde_params=self.data_loaded)
 
     def load_rho_checkpoint(self):
         

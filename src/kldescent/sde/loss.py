@@ -71,7 +71,7 @@ class KL:
             )
 
             a = a + dt * (torch.linalg.norm(du, dim=1, keepdim=True) ** 2)
-            c = c + self._noise_weighted(du, dw, dt)
+            c = c + du*dw
 
             du_bar = du.detach()
 
@@ -90,6 +90,7 @@ class KL:
 
         with torch.no_grad():
 
+            xinit = self.integrator.loss_final_step(xinit,dt)
             gvals = self.TerminalCost.gfun(
                 xinit.detach().clone(),
                 self.integrator,
@@ -104,21 +105,6 @@ class KL:
     # ------------------------------------------------------------------
     # helpers
     # ------------------------------------------------------------------
-
-    def _noise_weighted(self, du, dw, dt):
-        """
-        Martingale integrand  du · dW, with integrator-specific noise scaling.
-
-        BAOAB samples the O-step noise as unit Gaussian and multiplies by
-        sqrt((1-exp(-2*dt))/2) inside the step, so we match that convention
-        here.  All other integrators use plain dW = sqrt(dt) * N(0,1).
-        """
-        from kldescent.sde.langevin import BAOAB
-        if isinstance(self.integrator, BAOAB):
-            weight = torch.sqrt((1 - torch.exp(-2 * dt)) / 2)  
-            return weight * (du * dw)
-        else:
-            return du*dw
 
 class ep:
     """
