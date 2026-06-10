@@ -46,8 +46,7 @@ class TerminalCost():
     def gfun(self,x,*_):
         
         pdf = torch.nan_to_num(self.get_logpdf(x),posinf=0,neginf=0,nan=0)
-        return self.M*torch.abs(pdf - self.boundary.p_final(x[...,[0]],x[...,[1]]))/self.boundary.p_final(x[...,[0]],x[...,[1]])
-    #self.M*(pdf + self.boundary.log_pfinal(x[...,[0]],x[...,[1]]))
+        return self.M*(pdf + self.boundary.log_pfinal(x[...,[0]],x[...,[1]]))
 
 class GirsanovMC(TerminalCost):
     """
@@ -72,14 +71,12 @@ class GirsanovMC(TerminalCost):
     def gfun(self, x, integrator, mc_samples, *_):
 
         pdf = torch.nan_to_num(self.get_logpdf(x, integrator, mc_samples), posinf=0, neginf=0, nan=0)
-        return self.M*torch.abs(pdf - self.boundary.p_final(x[...,[0]],x[...,[1]]))/self.boundary.p_final(x[...,[0]],x[...,[1]])
-        # 
-        #self.M*(pdf + self.boundary.log_pfinal(x[...,[0]], x[...,[1]]))
+        return self.M*(pdf + self.boundary.log_pfinal(x[...,[0]], x[...,[1]]))
 
     def get_logpdf(self, x, integrator, mc_samples):
 
         pdf = compute_pdf(x, integrator, mc_samples=mc_samples)
-        return pdf#torch.log(pdf)
+        return torch.log(pdf)
 
 class GirsanovNet(TerminalCost):
     """
