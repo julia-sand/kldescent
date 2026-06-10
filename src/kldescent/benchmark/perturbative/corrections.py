@@ -118,6 +118,9 @@ class Perturbation():
         #ddf00 = self.d_(df00,self.qaxis[idx])
         return f00, df00, ddf00
 
+    def kappa(self,f00,dsigma,idx):
+        return np.trapezoid(f00*dsigma,self.qaxis[idx])/(self.A-self.B)
+        
     def save_perturbative(self,):
         """Compute perturbative drift and marginal distribution of the 
         position using analytic expressions.
@@ -147,11 +150,9 @@ class Perturbation():
                                 self.DU(t0,f00,df00,dsigma,kappa)]
 
             append_array_to_csv(filename=filename_full,data=arr_temp[arr_temp[:,2] != 0])
-        
+     
     def save_perturbative_cumulants(self,):
-        """
-        computes estiamtes of the perturbative cumulants and saves as a csv
-        """
+        """Compute estimates of the perturbative cumulants and save to csv"""
 
         #preallocate array
         pertcumulants = np.empty((len(self.t2vec),6))
@@ -159,18 +160,27 @@ class Perturbation():
         #compute mu vectors in time. 
         self.compute_mu_vecs()
 
-        for t in range(len(self.t2vec)):
+        for t2_idx in range(len(self.t2vec)):
+                  
+            t0 = self.get_t0(self.t2vec[t2_idx])
+            t2 = self.t2vec[t2_idx]
+            idx = self.get_rhomask(t2)
             
-            pertcumulants[t,0] = self.get_t0(self.t2vec[t])
-            pertcumulants[t,1] = self.posmean(self.get_t0(self.t2vec[t]),self.t2vec[t],t)
-            pertcumulants[t,2] = self.mommean(self.get_t0(self.t2vec[t]),self.t2vec[t])
-            pertcumulants[t,3] = self.posvar(self.get_t0(self.t2vec[t]),self.t2vec[t],t)
-            pertcumulants[t,4] = self.momvar(self.get_t0(self.t2vec[t]),self.t2vec[t])
-            pertcumulants[t,5] = self.xcorr(self.get_t0(self.t2vec[t]),self.t2vec[t],pertcumulants[t,1],pertcumulants[t,2])
+            f00, df00, ddf00 = self.get_rho(t2,idx)
+            sigma,dsigma,ddsigma = self.get_sigma(t2,idx)
+
+            kappa = self.kappa(f00,dsigma,idx)
+
+            pertcumulants[t2_idx,0] = self.get_t0(t2)
+            pertcumulants[t2_idx,1] = self.posmean(t0,t2,t2_idx,kappa)
+            pertcumulants[t2_idx,2] = self.mommean(t0,kappa)
+            pertcumulants[t2_idx,3] = self.posvar(t0,t2_idx)
+            pertcumulants[t2_idx,4] = self.momvar(t0,t2,t2_idx,f00,df00,ddf00,dsigma,ddsigma,kappa,idx)
+            pertcumulants[t2_idx,5] = self.xcorr(t0,t2,t2_idx,kappa,f00,dsigma,idx)#,self.t2vec[t],pertcumulants[t,1],pertcumulants[t,2])
 
         #save pertsol 
         np.savetxt(self.ref_path+"/perturbative_cumulants.csv",pertcumulants,fmt="%10.6f",header = "t0,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
-    
+   
 class MarginalHalfBridgePerturbation(Perturbation):
     """Class to contain the functions for computing perturbative 
     corrections from overdamped data for the Marginal Half Bridge:
@@ -313,48 +323,6 @@ class MarginalHalfBridgePerturbation(Perturbation):
         """compute cross correllation"""
         return -self.epsilon*(self.little_bdot(t0)*self.little_a(self.Tf)/self.little_b(self.Tf)- self.little_adot(t0)) - (posmean*mommean)
 
-class FullBridgePerturbation(MarginalHalfBridgePerturbation):
-    """Functions for computing corrections from the cell problem for 
-    a full bridge transition between fixed endpoint data. 
-    Part of the corrections in the half bridge perturbation theory  
-
-    """
-
-    def __init__(self,):
-        super().__init__()
-
-        self.alpha = 1
-
-        self.B = bfun("full",self.Tf)
-        self.A = afun("full",self.Tf)
-    
-    def momvar(self,t0,t2):
-        return 0
-
-    def posvar(self,t0,t2,t2_idx):
-        """
-        Compute position variance.
-
-        Parameters
-        ----------
-        t0 : float
-            Fast time.
-        t2 : float
-            Slow time.
-        t2_idx : int
-            Index of t2.
-        """
-
-        return 0
-
-    def mommean(self,t0,t2):
-        return 0
-
-    def posmean(self,t0,t2,t2_idx):
-        return 0
-
-    def xcorr(self,t0):
-        return 0
 
 class HalfBridgePerturbation(Perturbation):
     """Class to contain the functions for computing perturbative 
@@ -463,9 +431,6 @@ class HalfBridgePerturbation(Perturbation):
     def dt_G12(self,t0):
         return ((2*np.exp(t0)-1)*(np.exp(t0-2*self.Tf))-(2*np.cosh(t0))/(1+np.exp(self.Tf)))/3
 
-    def kappa(self,f00,dsigma,idx):
-        return np.trapezoid(f00*dsigma,self.qaxis[idx])/(self.A-self.B)
-        
     def coeff_XM(self,t0):
         return (np.cosh(t0)+np.sinh(t0))/np.sinh(self.Tf)
 
@@ -560,41 +525,187 @@ class HalfBridgePerturbation(Perturbation):
         term3 = - ((self.epsilon * self.dt_G12(self.Tf) * self.coeff_G111_G112()) / (2 * self.M * self.A)) * (kappa * (self.A - self.B) * self.mu_1_vec[t2_idx] - integral_1 + np.sqrt(self.A)) * (np.sinh(t0) / np.sinh(self.Tf))
 
         # Fourth term: -ε * (integral_3 - self.mu_1_vec[t2_idx] * integral_4) * (sinh(self.Tf) / sinh(self.Tf)) / (2 * M)
-        integral_3 = 0#quad(integrand_3, -np.inf, np.inf)
-        integral_4 = 0#quad(integrand_4, -np.inf, np.inf)
+        integral_3 = 0 #quad(integrand_3, -np.inf, np.inf)
+        integral_4 = 0 #quad(integrand_4, -np.inf, np.inf)
         term4 = 0 #-self.epsilon * (integral_3 - self.mu_1_vec[t2_idx] * integral_4) * (np.sinh(self.Tf) / np.sinh(self.Tf)) / (2 * self.M)
 
         return term1 + term2 + term3 
         
-    def save_perturbative_cumulants(self,):
-        """Compute estimates of the perturbative cumulants and save to csv"""
+class FullBridgePerturbation(MarginalHalfBridgePerturbation):
+    """Functions for computing corrections from the cell problem for
+    a full bridge transition between fixed endpoint data.
+    Part of the corrections in the half bridge perturbation theory
 
-        #preallocate array
-        pertcumulants = np.empty((len(self.t2vec),6))
-        
-        #compute mu vectors in time. 
+    """
+
+    def __init__(self, boundary_params, overdamped_arr, ref_path):
+        super().__init__(boundary_params, overdamped_arr, ref_path)
+
+        self.B = bfun("full", self.Tf)
+        self.A = afun("full", self.Tf)
+        self.A_minus_B = self.A - self.B
+        self.alpha = np.sqrt(self.A)
+
+    # --- basis functions 
+
+    def a_minus_b2(self, t0):
+        return 1 - (np.cosh(t0) + np.cosh(t0 - self.Tf)) / (1 + np.cosh(self.Tf))
+
+    def b_fn(self, t0):
+        denom = np.cosh(self.Tf)*np.sinh(self.Tf) - (2*np.sinh(self.Tf)*np.cosh(self.Tf) + 2*np.sinh(self.Tf))
+        num = np.sinh(self.Tf - t0)*np.exp(-self.Tf) + np.sinh(t0)*np.exp(self.Tf) - np.sinh(self.Tf)*np.exp(2*t0 - self.Tf)
+        return num / denom
+
+    def a_fn(self, t0):
+        return self.a_minus_b2(t0) + self.b_fn(t0)
+
+    def b_dot(self, t0):
+        denom = np.cosh(self.Tf)*np.sinh(self.Tf) - (2*np.sinh(self.Tf)*np.cosh(self.Tf) + 2*np.sinh(self.Tf))
+        num = (-np.cosh(self.Tf - t0)*np.exp(-self.Tf)
+               + np.cosh(t0)*np.exp(self.Tf)
+               - 2*np.sinh(self.Tf)*np.exp(2*t0 - self.Tf))
+        return num / denom
+
+    def a_dot(self, t0):
+        term1 = -(np.sinh(t0) + np.sinh(t0 - self.Tf)) / (1 + np.cosh(self.Tf))
+        return self.b_dot(t0) + term1
+
+    # --- helper integrals ---
+
+    def dsigma_alpha_rho(self, f00, df00, dsigma):
+        return dsigma + self.alpha * np.nan_to_num(df00 / f00, nan=0, posinf=0, neginf=0)
+
+    def rho_ddsigma_alpha_rho_fn(self, f00, df00, ddsigma, idx):
+        dlogrho = np.nan_to_num(df00 / f00, nan=0, posinf=0, neginf=0)
+        ddlogrho = np.gradient(dlogrho, self.qaxis[idx])
+        return f00 * (self.alpha * ddlogrho + ddsigma)
+
+    def script_k_full(self, f00, df00, dsigma, idx, t2_idx, kappa):
+        rho_dsig_alpha = f00 * dsigma + self.alpha * df00
+        return -np.trapezoid(self.qaxis[idx] * rho_dsig_alpha, self.qaxis[idx]) + self.A_minus_B * kappa * self.mu_1_vec[t2_idx]
+
+    # --- perturbative distribution and drift ---
+
+    def f02(self, t0, t2_idx, f00, df00, ddf00, dsigma, ddsigma, idx, kappa, a_arr=None, b_arr=None):
+        t0vec = self.t2vec / self.epsilon**2
+        if a_arr is None:
+            a_arr = np.array([self.a_fn(t) for t in t0vec])
+        if b_arr is None:
+            b_arr = np.array([self.b_fn(t) for t in t0vec])
+
+        dsig_a = self.dsigma_alpha_rho(f00, df00, dsigma)
+        rho_ddsig = self.rho_ddsigma_alpha_rho_fn(f00, df00, ddsigma, idx)
+
+        t2_term1 = df00 * dsig_a + rho_ddsig
+        t2_termrho = -self.A_minus_B * kappa * df00
+
+        coeff1_arr = -a_arr / self.A
+        coeff2_arr = (self.B * a_arr - self.A * b_arr) / (self.A * self.A_minus_B)
+
+        coeff1_int1 = (t0 / self.Tf) * np.trapezoid(coeff1_arr, t0vec)
+        coeff2_int1 = (t0 / self.Tf) * np.trapezoid(coeff2_arr, t0vec)
+        coeff1_int2 = np.trapezoid(coeff1_arr[:t2_idx+1], t0vec[:t2_idx+1])
+        coeff2_int2 = np.trapezoid(coeff2_arr[:t2_idx+1], t0vec[:t2_idx+1])
+
+        return (coeff1_int1 - coeff1_int2) * t2_term1 + (coeff2_int1 - coeff2_int2) * t2_termrho
+
+    def marginal_perturbative(self, t0, t2_idx, f00, df00, dsigma, ddf00, ddsigma, idx, kappa, a_arr=None, b_arr=None):
+        rvals = f00 + self.epsilon**2 * self.f02(t0, t2_idx, f00, df00, ddf00, dsigma, ddsigma, idx, kappa, a_arr, b_arr)
+        return rvals / np.trapezoid(rvals, self.qaxis[idx])
+
+    def DU(self, t0, f00, df00, dsigma, kappa):
+        coeff1 = (self.a_dot(t0) + self.a_fn(t0)) / self.A
+        dlogrho = np.nan_to_num(df00 / f00, nan=0, posinf=0, neginf=0)
+        term1 = (self.alpha * coeff1 - 1) * dlogrho
+        term2 = coeff1 * dsigma
+        coeff3 = -kappa / self.A
+        term3 = ((self.B * self.a_dot(t0) - self.A * self.b_dot(t0))
+                 + (self.B * self.a_fn(t0) - self.A * self.b_fn(t0)))
+        return -np.nan_to_num(term1 + term2 - coeff3 * term3, nan=0, posinf=0, neginf=0)
+
+    def save_perturbative(self):
+        filename_full = make_csv_and_header(save_location=self.ref_path,
+                                filename="perturbative_underdamped",
+                                header="#t,q,f,DU")
+        t0vec = self.t2vec / self.epsilon**2
+        a_arr = np.array([self.a_fn(t) for t in t0vec])
+        b_arr = np.array([self.b_fn(t) for t in t0vec])
+        for t2_idx, t2 in enumerate(self.t2vec):
+            t0 = self.get_t0(t2)
+            idx = self.get_rhomask(t2)
+            f00, df00, ddf00 = self.get_rho(t2, idx)
+            sigma, dsigma, ddsigma = self.get_sigma(t2, idx)
+            kappa = self.kappa(f00, dsigma, idx)
+            arr_temp = np.c_[t0*np.ones_like(self.qaxis[idx]),
+                                self.qaxis[idx],
+                                self.marginal_perturbative(t0, t2_idx, f00, df00, dsigma, ddf00, ddsigma, idx, kappa, a_arr, b_arr),
+                                self.DU(t0, f00, df00, dsigma, kappa)]
+            append_array_to_csv(filename=filename_full, data=arr_temp[arr_temp[:,2] != 0])
+
+    # --- cumulants ---
+
+    def mommean(self, t0, t2,kappa):
+        return -self.epsilon*kappa*(self.a_fn(t0)-self.b_fn(t0))
+
+    def posmean(self, t0, t2, t2_idx, f00, dsigma, idx, kappa, a_arr=None, b_arr=None):
+        t0vec = self.t2vec / self.epsilon**2
+        if a_arr is None:
+            a_arr = np.array([self.a_fn(t) for t in t0vec])
+        if b_arr is None:
+            b_arr = np.array([self.b_fn(t) for t in t0vec])
+        ab_arr = a_arr - b_arr
+        coeff2 = (self.epsilon**2) * kappa 
+        int1 = (t0 / self.Tf) * np.trapezoid(ab_arr, t0vec)
+        int2 = np.trapezoid(ab_arr[:t2_idx+1], t0vec[:t2_idx+1])
+        return self.mu_1_vec[t2_idx] + coeff2 * (int1 - int2)
+
+    def posvar(self, t0, t2, t2_idx, f00, df00, dsigma, idx, kappa, a_arr=None):
+        t0vec = self.t2vec / self.epsilon**2
+        if a_arr is None:
+            a_arr = np.array([self.a_fn(t) for t in t0vec])
+        sk = self.script_k_full(f00, df00, dsigma, idx, t2_idx, kappa)
+        coeff3 = -2 * sk * (self.epsilon**2) / self.A
+        int1 = (t0 / self.Tf) * np.trapezoid(a_arr, t0vec)
+        int2 = np.trapezoid(a_arr[:t2_idx+1], t0vec[:t2_idx+1])
+        return self.mu_2_vec[t2_idx] - self.mu_1_vec[t2_idx]**2 + coeff3 * (int1 - int2)
+
+    def momvar(self, t0, t2, t2_idx, f00, df00, ddf00, dsigma, ddsigma, kappa, idx):
+        t0vec = self.t2vec / self.epsilon**2
+        term1 = 1 - (self.A_minus_B*kappa * self.epsilon * self.a_fn(t0) / self.A)**2
+        rho_ddsig = self.rho_ddsigma_alpha_rho_fn(f00, df00, ddsigma, idx)
+        int1 = np.trapezoid(rho_ddsig, self.qaxis[idx]) / self.A
+        aexp_arr = np.array([self.a_fn(t0vec[i]) * np.exp(-2*(t0 - t0vec[i])) for i in range(t2_idx+1)])
+        int2 = int1 * np.trapezoid(aexp_arr, t0vec[:t2_idx+1])
+        term2 = 2 * (self.epsilon**2) * int2
+        dsig_a = self.dsigma_alpha_rho(f00, df00, dsigma)
+        term3 = (self.epsilon * self.a_fn(t0) / self.A)**2 * np.trapezoid((dsig_a**2) * f00, self.qaxis[idx])
+        return term1 + term2 + term3
+
+    def xcorr(self, t0, t2, t2_idx, f00, df00, dsigma, idx, kappa):
+        sk = self.script_k_full(f00, df00, dsigma, idx, t2_idx, kappa)
+        return self.epsilon * self.a_fn(t0) * sk / self.A
+
+    def save_perturbative_cumulants(self):
+        pertcumulants = np.empty((len(self.t2vec), 6))
         self.compute_mu_vecs()
-
+        t0vec = self.t2vec / self.epsilon**2
+        a_arr = np.array([self.a_fn(t) for t in t0vec])
+        b_arr = np.array([self.b_fn(t) for t in t0vec])
         for t2_idx in range(len(self.t2vec)):
-                  
             t0 = self.get_t0(self.t2vec[t2_idx])
             t2 = self.t2vec[t2_idx]
             idx = self.get_rhomask(t2)
-            
-            f00, df00, ddf00 = self.get_rho(t2,idx)
-            sigma,dsigma,ddsigma = self.get_sigma(t2,idx)
-
-            kappa = self.kappa(f00,dsigma,idx)
-
-            pertcumulants[t2_idx,0] = self.get_t0(t2)
-            pertcumulants[t2_idx,1] = self.posmean(t0,t2,t2_idx,kappa)
-            pertcumulants[t2_idx,2] = self.mommean(t0,kappa)
-            pertcumulants[t2_idx,3] = self.posvar(t0,t2_idx)
-            pertcumulants[t2_idx,4] = self.momvar(t0,t2,t2_idx,f00,df00,ddf00,dsigma,ddsigma,kappa,idx)
-            pertcumulants[t2_idx,5] = self.xcorr(t0,t2,t2_idx,kappa,f00,dsigma,idx)#,self.t2vec[t],pertcumulants[t,1],pertcumulants[t,2])
-
-        #save pertsol 
-        np.savetxt(self.ref_path+"/perturbative_cumulants.csv",pertcumulants,fmt="%10.6f",header = "t0,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
+            f00, df00, ddf00 = self.get_rho(t2, idx)
+            sigma, dsigma, ddsigma = self.get_sigma(t2, idx)
+            kappa = self.kappa(f00, dsigma, idx)
+            pertcumulants[t2_idx, 0] = t0
+            pertcumulants[t2_idx, 1] = self.posmean(t0, t2, t2_idx, f00, dsigma, idx, kappa, a_arr, b_arr)
+            pertcumulants[t2_idx, 2] = self.mommean(t0, t2, kappa)
+            pertcumulants[t2_idx, 3] = self.posvar(t0, t2, t2_idx, f00, df00, dsigma, idx, kappa, a_arr)
+            pertcumulants[t2_idx, 4] = self.momvar(t0, t2, t2_idx, f00, df00, ddf00, dsigma, ddsigma, kappa, idx)
+            pertcumulants[t2_idx, 5] = self.xcorr(t0, t2, t2_idx, f00, df00, dsigma, idx, kappa)
+        np.savetxt(self.ref_path+"/perturbative_cumulants.csv", pertcumulants, fmt="%10.6f",
+                   header="t0,posmean,mommean,posvar,momvar,xcorr", delimiter=',')
 
 if __name__=="__main__":
     #from kldescent.sde.boundary import *
