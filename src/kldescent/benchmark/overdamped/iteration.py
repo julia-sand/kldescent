@@ -187,7 +187,7 @@ class CellProblem():
                 #integrate phihat to Tf
                 xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
                 #print("Error:",self.l2err(psiT,self.psiT))
-                if self.l2err(psi0,self.psi0)<tol:# and self.l2err(hatphiT,self.hatphiT)<tol):
+                if self.l2err(psi0,self.psi0)<tol and self.l2err(hatphiT,self.hatphiT)<tol):
                     self.set_new_iterates(xhatphi,xpsi,hatphiT,psiT,hatphi0,psi0)
                     break
                 else: 
@@ -195,15 +195,15 @@ class CellProblem():
                     iters += 1
 
                 #plot the final output
-                self.plot_boundary(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+                self.plot_boundary(iters)
                 
-                self.plot_factors_PHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
-                self.plot_factors_HATPHI(xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters)
+                self.plot_factors_PHI(iters)
+                self.plot_factors_HATPHI(iters)
 
         print("Iteration complete.")
         return 
 
-    def plot_factors_HATPHI(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
+    def plot_factors_HATPHI(self,iters):
 
         plt.scatter(self.xpsi,self.hatphiT, label="t=T")
 
@@ -211,8 +211,7 @@ class CellProblem():
         plt.savefig(self.save_location+f"/factors0_hatphi_{iters}.png")
         plt.close()
 
-    def plot_factors_PHI(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
-        
+    def plot_factors_PHI(self,iters):
         
         plt.scatter(self.xhatphi,self.psi0, label="t=0",zorder=100)
         plt.scatter(self.xpsi,self.psiT, label="t=T",zorder=100)
@@ -221,7 +220,7 @@ class CellProblem():
         plt.savefig(self.save_location+f"/factors_phi_{iters}.png")
         plt.close()
 
-    def plot_boundary(self,xpsi,xhatphi,psi0,psiT,hatphi0,hatphiT,iters):
+    def plot_boundary(self,iters):
         
         rhoT = interpolate_(self.q,self.xpsi,self.hatphiT)*interpolate_(self.q,self.xhatphi,self.psi0)
         rho0 = interpolate_(self.q,self.xpsi,self.hatphi0)*interpolate_(self.q,self.xhatphi,self.psiT) #interpolate_(self.q,xhatphi,hatphi0)*interpolate_(self.q,xpsi,psiT)
