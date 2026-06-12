@@ -187,7 +187,7 @@ class CellProblem():
                 #integrate phihat to Tf
                 xhatphi,hatphiT = integrator(xhatphi,hatphi0,self.Tf2,self.beta)
                 #print("Error:",self.l2err(psiT,self.psiT))
-                if self.l2err(psi0,self.psi0)<tol and self.l2err(hatphiT,self.hatphiT)<tol):
+                if (self.l2err(psi0,self.psi0)<tol and self.l2err(hatphiT,self.hatphiT)<tol):
                     self.set_new_iterates(xhatphi,xpsi,hatphiT,psiT,hatphi0,psi0)
                     break
                 else: 
@@ -242,6 +242,6 @@ if __name__=="__main__":
     boundary = boundaries.UnderdampedLandauer()
     Tf = boundary.params["Tf"]
 
-    cell = CellProblem(boundary,"results_M20_v2","half")
+    cell = CellProblem(boundary,"test1","full")
     
     cell.iteration(mcintegrator)

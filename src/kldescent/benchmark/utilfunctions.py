@@ -52,7 +52,7 @@ def normalise(x,y):
     idx = np.argsort(x)
     return y.copy()/np.trapezoid(y[idx],x[idx])
 
-def zchop(x,tol=1e-10):
+def zchop(x,tol=1e-100):
    
     return np.where(np.abs(x)<tol,0,x)
 

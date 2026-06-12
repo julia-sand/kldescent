@@ -16,12 +16,13 @@ def compute_sigma(phi_t,A,bridge_type):
     
     with warnings.catch_warnings(): #ignore log(0) error as this is handled later
         warnings.simplefilter("ignore") 
-        if bridge_type=="half":
+        if bridge_type=="marginal":
             
-            return -2*np.sqrt(A)*np.nan_to_num(np.log(phi_t),posinf=0,neginf=0,nan=0)
-        else:
+            raise NotImplementedError #-2*np.sqrt(A)*np.nan_to_num(np.log(phi_t),posinf=0,neginf=0,nan=0)
+        
+        elif bridge_type in ("half","full"):
 
-            return 0#-(A/B)*np.gradient(phi_t,q)/phi_t
+            return -2*np.sqrt(A)*np.nan_to_num(np.log(phi_t),posinf=0,neginf=0,nan=0) #-(A/B)*np.gradient(phi_t,q)/phi_t
 
 def compute_dV(q,hatphi_t,phi_t,A,B,bridge_type):
     
@@ -103,7 +104,7 @@ def save_solution_in_time(cell,filename_full,integrator):
 
     return 
 
-def compute_overdamped(boundary,save_location,bridge_type="half"):
+def compute_overdamped(boundary,save_location,bridge_type):
     """
     Compute the overdamped cell problem
     
@@ -128,8 +129,7 @@ def compute_overdamped(boundary,save_location,bridge_type="half"):
     os.makedirs(save_location,exist_ok=True)
 
     cell = CellProblem(boundary,save_location,bridge_type=bridge_type)
-    cell.iteration(integrator=mcintegrator,
-                    max_iters=7)
+    cell.iteration(integrator=mcintegrator)
 
     filename_full = make_csv_and_header(save_location,filename="overdamped",header="#t,q,rho,sigma")
     save_solution_in_time(cell,
