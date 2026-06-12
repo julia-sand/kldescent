@@ -91,9 +91,13 @@ class CellProblem():
             return np.nan_to_num(zchop(self.boundary.q_marginal_final_np(xhatphi)/hatphiT),posinf=0,neginf=0,nan=0)
         elif self.bridge_type == "half":
             varkappa = self.compute_varkappa(hatphiT,psi0,xpsi)
-            C = np.exp(self.constant_hboundary_exponent(xhatphi,varkappa))
-            out = (hatphiT**self.alpha)*C*(self.boundary.q_marginal_final_np(xhatphi)**self.M)
-            return np.nan_to_num(out,posinf=0,neginf=0,nan=0)**self.power
+            log_C = self.constant_hboundary_exponent(xhatphi,varkappa)
+            with np.errstate(divide='ignore', invalid='ignore'):
+                log_out = (self.alpha*np.log(hatphiT)
+                           + log_C
+                           + self.M*np.log(self.boundary.q_marginal_final_np(xhatphi)))
+            log_out = np.nan_to_num(log_out,posinf=0,neginf=-np.inf,nan=-np.inf)
+            return np.exp(self.power*log_out)
     
     def constant_hboundary_exponent(self,q,varkappa):
         """Compute the constant for the value function boundary condition
