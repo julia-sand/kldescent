@@ -86,14 +86,14 @@ class CellProblem():
 
     def compute_boundary_value(self,xhatphi,hatphiT,psi0,xpsi):
         if self.bridge_type == "marginal":
-            return np.nan_to_num(zchop(self.boundary.q_marginal_final_np(xhatphi)/hatphiT),posinf=0,neginf=0,nan=0)
+            return np.nan_to_num(zchop(self.boundary.q_marginal_final_np(xhatphi)/hatphiT),posinf=0,neginf=0,nan=0)**self.power
         elif self.bridge_type == "full":
             return np.nan_to_num(zchop(self.boundary.q_marginal_final_np(xhatphi)/hatphiT),posinf=0,neginf=0,nan=0)
         elif self.bridge_type == "half":
             varkappa = self.compute_varkappa(hatphiT,psi0,xpsi)
             C = np.exp(self.constant_hboundary_exponent(xhatphi,varkappa))
             out = (hatphiT**self.alpha)*C*(self.boundary.q_marginal_final_np(xhatphi)**self.M)
-            return np.nan_to_num(out,posinf=0,neginf=0,nan=0)
+            return np.nan_to_num(out,posinf=0,neginf=0,nan=0)**self.power
     
     def constant_hboundary_exponent(self,q,varkappa):
         """Compute the constant for the value function boundary condition
@@ -130,8 +130,8 @@ class CellProblem():
         self.psi0 = zchop(np.nan_to_num(psi0,posinf=0,neginf=0,nan=0))
     
     def iteration(self,integrator,
-                        tol=1e-5,
-                        max_iters=10):
+                        tol=1e-8,
+                        max_iters=20):
         """
         Implementation of Iteration in 1912.01244
         'Wasserstein Proximal Algorithms for the Schr¨odinger Bridge Problem:
@@ -172,7 +172,7 @@ class CellProblem():
                 
                 print("Iteration ",iters)
                 #compute psi0/phiT
-                psi0 = self.compute_boundary_value(xhatphi,hatphiT,psi0,xpsi)**self.power
+                psi0 = self.compute_boundary_value(xhatphi,hatphiT,psi0,xpsi)
 
                 #normalise
                 psi0 = normalise(xhatphi,psi0)

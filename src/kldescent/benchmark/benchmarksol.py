@@ -7,13 +7,13 @@ from kldescent.utils.parser import fetch_results_folder_from_cmd
 from kldescent.model.nn import NeuralNetwork
 from kldescent.benchmark.utilfunctions import *
 from kldescent.benchmark.perturbative.driftinterp import *
-from kldescent.benchmark.perturbative.corrections import MarginalHalfBridgePerturbation,HalfBridgePerturbation
+from kldescent.benchmark.perturbative.corrections import MarginalHalfBridgePerturbation,HalfBridgePerturbation, FullBridgePerturbation
 from kldescent.benchmark.overdamped.computesol import compute_overdamped
 from kldescent.benchmark.gaussian import GaussBVP
 
 class BaseBenchmarkSolution():
 
-    def __init__(self, bridge_type="half", boundary=None, folder_name=None):
+    def __init__(self, bridge_type, boundary=None, folder_name=None):
         
         self.boundary = boundary
 
@@ -51,13 +51,15 @@ class BaseBenchmarkSolution():
 
         if bridge_type == "marginal":
             pertsol = MarginalHalfBridgePerturbation(self.boundary.params,overdamped_arr,self.folder_name)
-        
-        elif bridge_type == "half":  #update this to compute the half bridge solution
+
+        elif bridge_type == "half":
             pertsol = HalfBridgePerturbation(self.boundary.params,overdamped_arr,self.folder_name)
-            
-        else: 
-        
-            pertsol = HalfBridgePerturbation(self.boundary.params,overdamped_arr,self.folder_name)
+
+        elif bridge_type == "full":
+            pertsol = FullBridgePerturbation(self.boundary.params,overdamped_arr,self.folder_name)
+
+        else:
+            raise ValueError(f"Unknown bridge_type {bridge_type!r}. Must be 'marginal', 'half', or 'full'.")
 
         return pertsol
 
@@ -143,10 +145,6 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
 
             print("Perturbative results not available. Computing corrections...")
 
-            #initialise correct bridge type
-            pertsol = self.get_perturbative_calculations(bridge_type,overdamped_arr)
-            pertsol.save_perturbative()
-            pertsol.save_perturbative_cumulants()
 
             #initialise correct bridge type
             pertsol = self.get_perturbative_calculations(bridge_type,overdamped_arr)
