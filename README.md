@@ -60,4 +60,4 @@ Boundary condition classes in `sde/boundary.py` define the initial distribution,
 The `benchmark/` module provides reference solutions for comparison:
 
 - **Gaussian BVP** (`gaussian.py`): solves the Hamilton–Jacobi–Bellman equations exactly for Gaussian boundary conditions using `scipy.integrate.solve_bvp`, with epsilon continuation for convergence at large ε.
-- **Perturbative solutions** (`perturbative/`): first-order corrections in ε around the free-dynamics solution.
+- **Perturbative solutions** (`perturbative/`): solution for non-Gaussian boundary conditions with multi-scale perturbation expansion around the overdamped solution.
