@@ -15,7 +15,7 @@ import torch
 from kldescent.viz.distribution_plots import *
 from kldescent.model.nn import save_nn_checkpoint
 from kldescent.utils.logger import save_params
-from kldescent.sde.girsanovpdf import compute_pdf
+from kldescent.sde.girsanovpdf import compute_log_pdf
 
 class TerminalCost():
     """
@@ -75,8 +75,7 @@ class GirsanovMC(TerminalCost):
 
     def get_logpdf(self, x, integrator, mc_samples):
 
-        pdf = compute_pdf(x, integrator, mc_samples=mc_samples)
-        return torch.log(pdf)
+        return compute_log_pdf(x, integrator, mc_samples=mc_samples)
 
 class GirsanovNet(TerminalCost):
     """

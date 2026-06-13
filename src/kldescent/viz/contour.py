@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import torch
 
-from kldescent.sde.girsanovpdf import compute_pdf
+from kldescent.sde.girsanovpdf import compute_log_pdf
 from kldescent.viz.plots import *
 from kldescent.utils.misc import append_array_to_csv
 

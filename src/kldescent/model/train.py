@@ -6,7 +6,7 @@ from torch.nn.utils import clip_grad_norm_
 
 from tqdm import tqdm
 
-from kldescent.sde.girsanovpdf import compute_pdf
+from kldescent.sde.girsanovpdf import compute_log_pdf
 
 
 class Train():
@@ -110,7 +110,7 @@ class TrainRho():
         with torch.no_grad():
             yobs = torch.zeros_like(x0[...,[0]])
 
-            yobs = compute_pdf(x0, integrator, mc_samples=1)
+            yobs = torch.exp(compute_log_pdf(x0, integrator, mc_samples=1))
             #print(yobs.max())
             #print(torch.isnan(yobs).any())                    
             return yobs

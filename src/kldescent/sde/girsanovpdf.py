@@ -1,7 +1,7 @@
 import torch
 
 @torch.no_grad
-def compute_pdf(x0, integrator, mc_samples=None, tsteps=None):
+def compute_log_pdf(x0, integrator, mc_samples=None, tsteps=None):
     """
     Compute an estimate of the final joint distribution using Girsanov's theorem.
 
@@ -26,8 +26,8 @@ def compute_pdf(x0, integrator, mc_samples=None, tsteps=None):
 
     Returns
     -------
-    pdfout : torch.Tensor
-        Estimated probability density function evaluated at time Tf and location x0.
+    log_pdf : torch.Tensor
+        Log-sum-exp estimate of log ρ(x0) via the Girsanov change of measure.
     """
 
     net       = integrator.net
@@ -65,12 +65,13 @@ def compute_pdf(x0, integrator, mc_samples=None, tsteps=None):
 
             girs = girs + (dw*xinit[...,[1]])/(2**0.5) + (dt * (xinit[...,[1]])**2)/4
 
-        pdfout = p_initial(xinit[...,[0]], xinit[...,[1]]) * torch.exp(-girs)
+        log_p = torch.log(p_initial(xinit[...,[0]], xinit[...,[1]]))
+        log_w = log_p - girs
 
-    if pdfout.dim() > 2:
-        return torch.mean(pdfout, dim=0)
+    if log_w.dim() > 2:
+        return torch.logsumexp(log_w, dim=0) - torch.log(torch.tensor(float(mc_samples)))
     else:
-        return pdfout
+        return log_w
 
 def plot_scatter_(x,pdf):
     plt.scatter(x[...,0].cpu().numpy(), x[...,1].cpu().numpy(), c=pdf.cpu().numpy(),cmap='RdYlGn_r')
@@ -91,15 +92,7 @@ if __name__=="__main__":
     with torch.no_grad():
         xf = boundary.generate_samples(testing_samples,mode="final")
 
-        pdf = torch.zeros_like(xf[...,[0]]).to(nn_temp.device)
-        pdf = compute_pdf(xf,
-                            nn_temp,
-                            boundary.sigma0,
-                            boundary.params["epsilon"],
-                            boundary.p_initial,
-                            boundary.params["Tf"],
-                            mc_samples=2,
-                            tsteps=21)#torch.vmap(lambda xi: torch.mean(), randomness='different')(xf) 
-                
-    plot_scatter_(xf, pdf)
+        log_pdf = compute_log_pdf(xf, nn_temp, mc_samples=2, tsteps=21)
+
+    plot_scatter_(xf, torch.exp(log_pdf))
 
