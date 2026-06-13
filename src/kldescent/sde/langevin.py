@@ -244,7 +244,7 @@ class SDEBase():
                 #except: 
                 du = torch.zeros_like(xinit[...,[0]],dtype=torch.float32,requires_grad=False)
           
-        return du
+        return torch.zeros_like(xinit[...,[0]],dtype=torch.float32,requires_grad=False)
         
 class EulerMaruyamaSDE(SDEBase):
 
