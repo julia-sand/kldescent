@@ -45,12 +45,12 @@ class Metrics():
 
         self.usebenchmark,self.usewandb = metric_params()
 
-        if self.usebenchmark:
+        if self.usebenchmark is not None:
             if "Gauss" in integrator.boundary.__class__.__name__:
-                self.benchmark_ = GaussBenchmarkSolution(bridge_type=bridge_type,boundary=integrator.boundary,folder_name = metrics_logger.get_results_path())
+                self.benchmark_ = GaussBenchmarkSolution(bridge_type=bridge_type,boundary=integrator.boundary,folder_name = self.usebenchmark)
                 self.benchmarknet = None
             else:
-                self.benchmark_ = PerturbativeBenchmarkSolution(bridge_type=bridge_type,boundary=integrator.boundary,folder_name = metrics_logger.get_results_path())
+                self.benchmark_ = PerturbativeBenchmarkSolution(bridge_type=bridge_type,boundary=integrator.boundary,folder_name = self.usebenchmark)
                 self.benchmark_.initialise_net(self.benchmark_.bridge_type)
                 self.benchmarknet = self.benchmark_.du_net_benchmark 
         else: 

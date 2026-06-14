@@ -141,9 +141,6 @@ def boundary_params():
     boundary_params.add_argument('-weight','--weight', type=float, default=20,
                         help='M, baldovin constant')
 
-    boundary_params.add_argument('-g','--g', type=float, default=0,
-                        help='constant')
-
     args2 = boundary_params.parse_known_args(boundary_params.argfile)
 
     return vars(args2[0])
@@ -242,8 +239,8 @@ def metric_params():
     metric_params.add_argument('-usewandb','--usewandb', type=bool, default=False,
                         help='log into wandb')
 
-    metric_params.add_argument('-usebenchmark','--usebenchmark', type=bool, default=False,
-                        help='compute benchmarks')
+    metric_params.add_argument('-usebenchmark','--usebenchmark', type=str, default=None,
+                        help='filepath to benchmark')
 
     args2 = metric_params.parse_known_args(metric_params.argfile)[0]
 

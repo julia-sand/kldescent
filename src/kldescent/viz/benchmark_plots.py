@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 
 from kldescent.viz.drift import plot_drift
 from kldescent.viz.plots import update_mpl
+from kldescent.benchmark.perturbative.driftinterp import benchmark_evaluate_net
 
 def plot_benchmark_drift(benchmark_):
     

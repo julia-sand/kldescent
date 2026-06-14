@@ -28,7 +28,7 @@ def generate_mesh(x_samples,qmax=6):
     return torch.meshgrid(p_init,p_init,indexing='ij')
 
 @torch.no_grad
-def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=None):
+def compute_rho_girsanov(x_samples=40, integrator=None, mc_samples=64, Tf=None, **kwargs):
     """
     Compute an estimate of the final joint distribution using Girsanov's theorem.
 
@@ -36,14 +36,12 @@ def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=No
     ----------
     x_samples : int, optional
         Number of space discretisation steps. Default is 40.
-    boundary : object, optional
-        Boundary conditions object.
-    net : object, optional
-        Neural network approximating the drift.
+    integrator : SDEBase subclass instance
+        Initialised integrator providing net, boundary, and sde_params.
     mc_samples : int, optional
         Number of Monte Carlo samples. Default is 64.
     Tf : float, optional
-        Final time for the plot.
+        Final time for the plot (unused; inherited from integrator boundary).
 
     Returns
     -------
@@ -52,24 +50,16 @@ def compute_rho_girsanov(x_samples=40,boundary=None,net=None,mc_samples=64,Tf=No
     jointout : ndarray
         Estimated joint distribution using Girsanov's theorem.
     """
-    
-    #generate xmesh
-    Q,P = generate_mesh(x_samples,qmax=4)
-    xinit = torch.stack((P,Q), dim=-1).reshape(-1, 2)
-    #torch.tensor(np.column_stack((Q.flatten(),P.flatten())),dtype=torch.float32,requires_grad=False)
-    
+
+    Q, P = generate_mesh(x_samples, qmax=4)
+    xinit = torch.stack((P, Q), dim=-1).reshape(-1, 2)
+
     with torch.no_grad():
-        self.net.eval()
+        integrator.net.eval()
+        log_pdf = compute_log_pdf(xinit.clone(), integrator, mc_samples=mc_samples)
+        pdf_out = torch.exp(log_pdf).cpu().numpy()
 
-        #intiialise pdf 
-        pdf_out = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
-
-        pdf_out = compute_pdf(xinit.clone(),net,
-                                    self.boundary.sigma0,
-                                    self.boundary.params["epsilon"],
-                                    self.boundary.p_initial,
-                                    Tf).cpu().numpy()
-    return xinit.cpu().numpy(),pdf_out.cpu().numpy()
+    return xinit.cpu().numpy(), pdf_out
 
 @torch.no_grad
 def distribution_plot(plot_loc,model,Tf,epoch=1,qmax=5):
@@ -332,10 +322,11 @@ def save_joint_to_csv(t,xinit,jointout,filename):
     
     return 
 
-def contour_plot_(axs,net,boundary,
+def contour_plot_(axs, integrator, boundary,
                             resultsdir,
                             plottimes = [0,1,2,3,4,5],
-                            benchmark=None):
+                            benchmark=None,
+                            mc_samples=64):
     
     
     #initialise the csv
@@ -375,11 +366,7 @@ def contour_plot_(axs,net,boundary,
 
     for i in range(len(plottimes)):
 
-        jointout = compute_pdf(xinit.clone(),net,
-                                    boundary.sigma0,
-                                    boundary.params["epsilon"],
-                                    boundary.p_initial,
-                                    plottimes[i])
+        jointout = torch.exp(compute_log_pdf(xinit.clone(), integrator, mc_samples=mc_samples))
             
         plot_joint_panel(axs[i],plottimes[i],jointout.cpu().numpy(),xinit.cpu().numpy(),
                             boundary = boundary,
@@ -426,22 +413,22 @@ def add_legend_contour_plot(fig,lax):
     fig.subplots_adjust(hspace=1.1,wspace=1,bottom=0.18)
     
 
-def make_contour_plot_(net,boundary,
+def make_contour_plot_(integrator, boundary,
                             resultsdir,
                             plottimes = [0,1,2,3,4,5],
                             benchmark=None):
 
-    axs,lax = make_axes_contour_plot(len(plottimes))
-    
-    contour_plot_(axs,net,boundary,
+    fig, axs, lax = make_axes_contour_plot(len(plottimes))
+
+    contour_plot_(axs, integrator, boundary,
                             resultsdir,
                             plottimes,
                             benchmark)
-    
-    add_legend_contour_plot(fig,lax)
-    
-    save_fig_(fig,"contour_distribution",loc=resultsdir)
-    
+
+    add_legend_contour_plot(fig, lax)
+
+    save_fig_(fig, "contour_distribution", loc=resultsdir)
+
     plt.close()
 
 def load_contour_csv(filename):

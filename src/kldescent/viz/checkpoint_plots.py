@@ -117,41 +117,41 @@ class PlotUtils():
         self.rhonet = RhoNeuralNetwork(self.data_loaded)
         load_checkpoint(self.rhonet,self.folder+f"/checkpoints/{self.rhonet.net_name}_checkpoint_{self.epoch}.pt")
             
-    def checkpoint_plots_du(self,usebenchmark=False,mcsamples=None):
+    def checkpoint_plots_du(self,usebenchmark=None,mcsamples=None):
         r"""
         Make plots to show the results of the 
         drift learning
         params: 
             usebenchmark : bool
-                If true, load reference solution, else pass
+                path to benchmark solution
             mcsamples : int
                 Overwrite default number of test/mc samples
         """
         
         self.load_du_checkpoint()
-        if usebenchmark:
-            self.load_benchmark_solution()
+        if usebenchmark is not None:
+            self.load_benchmark_solution(usebenchmark)
         else:
             self.benchmark=None
 
         self.make_drift_plot(numplots=4)
-        self.make_sde_plots(mcsamples,usebenchmark)
+        self.make_sde_plots(mcsamples)
         #self.make_intermediate_histograms()
         
         plt.close("all")
 
-    def load_benchmark_solution(self):
+    def load_benchmark_solution(self,usebenchmark):
         """initialise the reference solution and add to the class""" 
 
         if self.benchmark is None:
 
             if "Gauss" in f"{self.boundary_cond.__class__.__name__}":  
                 self.benchmark = GaussBenchmarkSolution(boundary=self.boundary_cond,
-                                                            folder_name=self.folder)
+                                                            folder_name=usebenchmark)
             
             else:
-                self.benchmark = PerturbativeBenchmarkSolution(bridge_type="half",boundary=self.boundary_cond,
-                                              folder_name=self.folder)
+                self.benchmark = PerturbativeBenchmarkSolution(bridge_type=self.bridge_type,boundary=self.boundary_cond,
+                                              folder_name=usebenchmark)
             
     def perturbative_plots_du(self,plottimes):
         """make plots to show the results of the evolution under perturbative drift"""
@@ -162,13 +162,13 @@ class PlotUtils():
         #self.make_drift_plot(numplots=4)
 
     @torch.no_grad
-    def make_sde_plots(self,mcsamples,usebenchmark):
-        """Make plots and save results of sde integration 
+    def make_sde_plots(self,mcsamples):
+        """Make plots and save results of sde integration
         1. compute final point clouds
         2. make final time marginal distribution plot
-        3. compute cumulants along trajectories 
+        3. compute cumulants along trajectories
         4. make cumulant plots
-        5. save csv of reference and computed csvs. 
+        5. save csv of reference and computed csvs.
         """
 
         if mcsamples is None: #set number of samples if not passed
@@ -176,17 +176,15 @@ class PlotUtils():
 
         final_plot_time = self.boundary_cond.params["Tf"]
 
-        #try:
-        #except FileNotFoundError:
         t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde_cumulants(benchmark=self.benchmark,mcsamples=mcsamples)
-            
+
         #marginal distribution fig
         fig = make_marginal_distribution_fig([xinit,xref],final_plot_time,benchmark=self.benchmark)
         save_fig_(fig,f"marginal_time_{final_plot_time}",loc=self.resultsdir)
-        
+
         self.make_cumulant_plot(t_vec,t_vec,cumulants_nn,cumulants_ref,mcsamples,
                                         add_free_diffusion=False,)
-        if usebenchmark:
+        if self.benchmark is not None:
             self.make_cumulant_error_plot(t_vec,t_vec,cumulants_nn,cumulants_ref)
         
         plt.close("all")
@@ -379,7 +377,7 @@ class PlotUtils():
         ax_list = get_inset_axes(ax0[0])
         
         for compute_rho_fun,label in zip([self.compute_rho_nn,compute_rho_girsanov],["girsanovnet","mc"]):
-            xs,joint_out = compute_rho_fun(x_samples=20,boundary=self.boundary_cond,net=self.net)
+            xs,joint_out = compute_rho_fun(x_samples=20, integrator=self.integrator)
 
             pinit,qmargnorm,pmargnorm,_ = compute_marginals_from_joint(xs,joint_out)
             
@@ -562,10 +560,10 @@ class PlotUtils():
         
         plottimes = generate_times(numplots)
 
-        make_contour_plot_(net=self.net,
+        make_contour_plot_(integrator=self.integrator,
                             boundary=self.boundary_cond,
                             resultsdir=self.resultsdir,
-                            plottimes = plottimes,
+                            plottimes=plottimes,
                             benchmark=self.benchmark)
 
 def compute_ref_dynamic_kl_gauss(benchmark):
@@ -599,13 +597,13 @@ if __name__=="__main__":
     plot_utils = PlotUtils()
     usebenchmark,_ = metric_params()
     plot_utils.load_du_checkpoint()
-    if usebenchmark:
-        plot_utils.load_benchmark_solution()
+    if usebenchmark is not None:
+        plot_utils.load_benchmark_solution(usebenchmark)
 
     #plot_utils.make_contour_plot2(plottimes=[0,1,2,3,4,5])
     plot_utils.make_drift_plot(numplots=5)
     #plot_utils.make_inverted_drift_plot(numplots=5)
-    plot_utils.make_sde_plots(2048, usebenchmark)
+    plot_utils.make_sde_plots(2048)
     #plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark)
     #plot_utils.make_cumulant_error_plot_from_csv()
     plot_utils.make_intermediate_histograms(131072)
