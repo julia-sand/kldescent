@@ -164,10 +164,16 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
     
     def get_benchmark_data(self,data=None):
         """Return an array for benchmark solution"""
-        
+        try:    
+            self.get_arr(data)
+        except FileNotFoundError:
+            self.initialise_net(self,bridge_type)
+            self.get_arr(data)
+
+    def get_arr(self,data=None):
         if data == "overdamped":
-            arr = np.loadtxt(open(self.overdamped_loc),
-                        delimiter=",",skiprows=1) 
+                arr = np.loadtxt(open(self.overdamped_loc),
+                            delimiter=",",skiprows=1) 
         elif data == "perturbative underdamped":
             arr = np.loadtxt(open(self.perturb_underdamped_loc),
                         delimiter=",",skiprows=1) 
@@ -175,7 +181,7 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
             arr = np.loadtxt(open(self.ref_loc),
                         delimiter=",",skiprows=1) 
         return arr 
-
+    
     def get_timegrid(self,time=None):
         """Return the t0 time grid"""
         arr = self.get_benchmark_data(data="perturbative underdamped")
