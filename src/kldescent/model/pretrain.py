@@ -39,6 +39,7 @@ class Pretrain():
 
         self.epsilon = epsilon 
         self.folder_name = folder_name
+
         
         if path_to_pretrain is None:    
             self.path = folder_name+"/perturbative_underdamped.csv"
@@ -107,19 +108,21 @@ class Pretrain():
 
         #set up training parameters
         loss_fn = torch.nn.MSELoss()
-        optimiser = Adam(net.FeedForwardLayers.parameters(), lr=self.lr)
+        optimiser = Adam(net.parameters(), lr=self.lr)
         scheduler = ExponentialLR(optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
 
-        X,y = self.get_pretraining_data()
+        X, y = self.get_pretraining_data()
+        X = X.to(net.device)
+        y = y.to(net.device)
 
         net.train()
-        
+
         loss_history = []
         
         for epoch in tqdm(range(1,self.n_epochs+1)):
 
             #generate random batch 
-            idx = torch.randint(low=0,high=X.shape[0],size=(self.minibatch_samples,))
+            idx = torch.randint(low=0,high=X.shape[0],size=(self.minibatch_samples,)).to(net.device)
 
             y_pred = net(X[idx,:])
 
