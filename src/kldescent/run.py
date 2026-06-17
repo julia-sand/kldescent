@@ -10,6 +10,7 @@ import kldescent.sde.loss as loss_fns
 from kldescent.utils import *
 from kldescent.viz.loss_plots import plot_loss_metrics
 from kldescent.model.pretrain import run_pretrain
+from kldescent.model.nn import save_nn_checkpoint
 from kldescent.trainloop import train_loop_du
 
 #set seeds
@@ -67,8 +68,11 @@ def run():
                     path_to_pretrain=args["pretrain"],
                     epsilon=None)
                                           
-    #training 
-    for epoch in tqdm(range(args["epochs"])):#range(0,args["epochs"]):
+    #save initial checkpoint before any gradient updates
+    save_nn_checkpoint(net, loc=metrics_logger.newpath+f"/checkpoints/{net.net_name}_checkpoint_0.pt")
+
+    #training
+    for epoch in tqdm(range(1, args["epochs"] + 1)):
         
         train_loop_du(epoch,
                         metric_,
