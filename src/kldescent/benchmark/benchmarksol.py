@@ -164,16 +164,16 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
     
     def get_benchmark_data(self,data=None):
         """Return an array for benchmark solution"""
-        try:    
-            self.get_arr(data)
-        except FileNotFoundError:
-            self.initialise_net(self,bridge_type)
-            self.get_arr(data)
+        #try:    
+        return self.get_arr(data)
+        #except FileNotFoundError:
+        #    self.initialise_net(self,bridge_type)
+        #    return self.get_arr(data)
 
     def get_arr(self,data=None):
         if data == "overdamped":
-                arr = np.loadtxt(open(self.overdamped_loc),
-                            delimiter=",",skiprows=1) 
+            arr = np.loadtxt(open(self.overdamped_loc),
+                        delimiter=",",skiprows=1)
         elif data == "perturbative underdamped":
             arr = np.loadtxt(open(self.perturb_underdamped_loc),
                         delimiter=",",skiprows=1) 
