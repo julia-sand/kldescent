@@ -1,6 +1,5 @@
 import torch
 
-import wandb
 import psutil
 
 from kldescent.sde.kl import static_kl_divergence
@@ -57,6 +56,7 @@ class Metrics():
             self.benchmark_ = None
 
         if self.usewandb:
+            import wandb
             self.wandb_run =  wandb.init(
                                     # Set the wandb entity where your project will be logged (generally your team name).
                                     entity="julia-sohkanen-university-of-helsinki",

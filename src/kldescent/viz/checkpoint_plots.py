@@ -92,16 +92,20 @@ class PlotUtils():
 
         self.wandb_run = wandb_run
 
-    def load_perturbative_du_checkpoint(self):
+    def load_perturbative_du_checkpoint(self,):
 
-        if self.benchmark is None:
-            #initialise benchmarks
-            self.benchmark = PerturbativeBenchmarkSolution(bridge_type="half", boundary=self.boundary_cond, folder_name=self.folder)
-            self.benchmark.initialise_net(self.benchmark.bridge_type)
-            self.net = self.benchmark.du_net_benchmark 
+        #if self.benchmark is None:
+        self.load_benchmark_solution(self.folder)
+        #initialise benchmarks
+        #self.benchmark = PerturbativeBenchmarkSolution(bridge_type="half", boundary=self.boundary_cond, folder_name=self.folder)
+        #self.benchmark.initialise_net(self.benchmark.bridge_type)
 
-            integrator_cls = getattr(langevin, self.data_loaded.get("integrator", "BAOAB"))
-            self.integrator = integrator_cls(self.boundary_cond, net=self.net, sde_params=self.data_loaded)
+        #set the net as the benchmark perturbative net 
+        self.net = self.benchmark.du_net_benchmark 
+
+        #create integrator
+        integrator_cls = getattr(langevin, self.data_loaded.get("integrator", "BAOAB"))
+        self.integrator = integrator_cls(self.boundary_cond, net=self.net, sde_params=self.data_loaded)
 
     def load_du_checkpoint(self):
         """Load neural network and initialise integration method"""
@@ -152,14 +156,17 @@ class PlotUtils():
             else:
                 self.benchmark = PerturbativeBenchmarkSolution(bridge_type=self.bridge_type,boundary=self.boundary_cond,
                                               folder_name=usebenchmark)
+                self.benchmark.initialise_net(self.benchmark.bridge_type)
+                #self.net = self.benchmark.du_net_benchmark 
+
             
     def perturbative_plots_du(self,plottimes):
         """make plots to show the results of the evolution under perturbative drift"""
         
         self.load_perturbative_du_checkpoint()
         
-        #self.make_intermediate_histograms()
-        #self.make_drift_plot(numplots=4)
+        self.make_intermediate_histograms()
+        self.make_drift_plot(numplots=4)
 
     @torch.no_grad
     def make_sde_plots(self,mcsamples):
