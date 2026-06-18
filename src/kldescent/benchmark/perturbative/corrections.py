@@ -47,8 +47,8 @@ class Perturbation():
 
     def get_rhomask(self,t2):
         """return index where rho is non zero at time t2"""
-        
-        return np.where(zchop(self.f00(t2),tol=1e-5)>0)
+        f = self.f00(t2)
+        return np.where(zchop(f, tol=1e-3 * f.max()) > 0)
 
     def get_t0(self,t2):
         """find t0 from t2"""
