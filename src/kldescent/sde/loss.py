@@ -13,7 +13,7 @@ class KL:
     integrator : SDEBase subclass instance
         An already-initialised integrator (EulerMaruyamaSDE, BAOAB, VerletSDE,
         …). Must expose: net, boundary, sde_params, device,
-        integration_step(), generate_innovation(), uniform_random_time_grid().
+        integration_step(), generate_innovation(), stratified_time_grid().
     terminalcost : object
         Terminal cost handler; must expose gfun(xinit, integrator, n_samples).
     """
@@ -45,7 +45,7 @@ class KL:
         """
         self.net.train()
 
-        t_vec = self.integrator.uniform_random_time_grid()
+        t_vec = self.integrator.stratified_time_grid()
         n = self.sde_params["batchsamples"]
 
         xinit = self.boundary.generate_samples(n, "initial").to(self.device)
@@ -115,7 +115,7 @@ class ep:
     integrator : SDEBase subclass instance
         An already-initialised integrator (EulerMaruyamaSDE, BAOAB, VerletSDE,
         …). Must expose: net, boundary, sde_params, device,
-        integration_step(), generate_innovation(), uniform_random_time_grid().
+        integration_step(), generate_innovation(), stratified_time_grid().
     terminalcost : object
         Terminal cost handler; must expose gfun(xinit, integrator, n_samples).
     """

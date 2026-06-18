@@ -32,7 +32,7 @@ class SDEBase():
 
         if benchmark is not None and benchmark.du_net_benchmark is None:
             return torch.from_numpy(benchmark.get_timegrid()).to(dtype=torch.float32, device=self.device)
-        return self.uniform_random_time_grid(Tf, tsteps)
+        return self.stratified_time_grid(Tf, tsteps)
         
     @torch.no_grad
     def uniform_random_time_grid(self,Tf=None,tsteps=None):
@@ -46,9 +46,30 @@ class SDEBase():
 
         return torch.concatenate([torch.zeros(1),
                                 Tf*torch.sort(torch.rand(tsteps,dtype=torch.float32,requires_grad=False))[0],
-                                Tf*torch.ones(1)]).to(self.device)   
-    
-    @torch.no_grad 
+                                Tf*torch.ones(1)]).to(self.device)
+
+    @torch.no_grad
+    def stratified_time_grid(self, Tf=None, tsteps=None):
+        """
+        Generate a stratified random time grid: one third of points in [0, 0.2*Tf],
+        one third in [0.8*Tf, Tf], and one third in [0.2*Tf, 0.8*Tf].
+        """
+        if Tf is None:
+            Tf = self.boundary.params["Tf"]
+        if tsteps is None:
+            tsteps = self.sde_params["tsteps"]
+
+        n_edge = tsteps // 3
+        n_mid  = tsteps - 2 * n_edge
+
+        early  = 0.2 * Tf * torch.rand(n_edge, dtype=torch.float32, requires_grad=False)
+        middle = 0.2 * Tf + 0.6 * Tf * torch.rand(n_mid,  dtype=torch.float32, requires_grad=False)
+        late   = 0.8 * Tf + 0.2 * Tf * torch.rand(n_edge, dtype=torch.float32, requires_grad=False)
+
+        t_inner = torch.sort(torch.cat([early, middle, late]))[0]
+        return torch.cat([torch.zeros(1), t_inner, Tf * torch.ones(1)]).to(self.device)
+
+    @torch.no_grad
     def cross_corr(self,temp):
         return torch.sum((temp[...,0]-torch.nanmean(temp[...,0]))*(temp[...,1]-torch.nanmean(temp[...,1])))/len(temp[...,0])
 
@@ -143,7 +164,7 @@ class SDEBase():
         
         with torch.no_grad():
 
-            t_vec = self.uniform_random_time_grid(time,t_steps)#torch.linspace(0,time,t_steps)
+            t_vec = self.stratified_time_grid(time, t_steps)
             
 
             if x0_samples is None: #default to the integrator
