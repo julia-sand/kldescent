@@ -25,19 +25,14 @@ class SDEBase():
     def generate_time_grid(self,benchmark=None,Tf=None,tsteps=None):
         """Generate time grid for comparison with benchmark"""
 
-        if Tf ==None:
+        if Tf is None:
             Tf = self.boundary.params["Tf"]
-        if tsteps==None:
-            tsteps= self.sde_params["tsteps"]
-            
-        if benchmark is None:
-            return self.uniform_random_time_grid(Tf,tsteps) #use random time grid
-        else: 
-            if benchmark.du_net_benchmark is not None:
-                return self.uniform_random_time_grid(Tf,tsteps) #use random time grid
-            else: 
-                #use fixed times from csv
-                return torch.from_numpy(benchmark.get_timegrid()).to(self.device)
+        if tsteps is None:
+            tsteps = self.sde_params["tsteps"]
+
+        if benchmark is not None and benchmark.du_net_benchmark is None:
+            return torch.from_numpy(benchmark.get_timegrid()).to(dtype=torch.float32, device=self.device)
+        return self.uniform_random_time_grid(Tf, tsteps)
         
     @torch.no_grad
     def uniform_random_time_grid(self,Tf=None,tsteps=None):
@@ -142,7 +137,7 @@ class SDEBase():
             #scale number of steps for the fraction of the time
         t_steps = int(np.floor(self.sde_params["tsteps"]*(time/self.boundary.params["Tf"])))
       
-        if testing_samples == None: #default to the integrator 
+        if testing_samples is None: #default to the integrator
             testing_samples = self.testing_samples
             
         
@@ -151,7 +146,7 @@ class SDEBase():
             t_vec = self.uniform_random_time_grid(time,t_steps)#torch.linspace(0,time,t_steps)
             
 
-            if x0_samples == None: #default to the integrator 
+            if x0_samples is None: #default to the integrator
                 xinit = self.boundary.generate_samples(testing_samples,"initial").to(self.device)
             else:
                 xinit = x0_samples.clone().to(self.device)
@@ -230,21 +225,15 @@ class SDEBase():
         return t_vec.cpu().numpy(), xinit.cpu().numpy(), xref.cpu().numpy(), cumulants_nn,cumulants_ref #cumulants_nn.cpu(), cumulants_ref.cpu()
 
     @torch.no_grad
-    def compute_benchmark_drift(self,xinit,t,benchmark):
-        
-        if benchmark is None:
-            du = torch.zeros_like(xinit[...,[0]],dtype=torch.float32,requires_grad=False)
-        else:
-            if benchmark.du_net_benchmark is not None:
-                du = benchmark.du_net_benchmark(torch.cat((t*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
-                                                            ,xinit[...,[0]]),dim=-1))
-            else:
-                #try:
-                #    du = torch.as_tensor(benchmark.du_benchmark(t,xinit[...,[0]]),dtype=torch.float32)
-                #except: 
-                du = torch.zeros_like(xinit[...,[0]],dtype=torch.float32,requires_grad=False)
-          
-        return torch.zeros_like(xinit[...,[0]],dtype=torch.float32,requires_grad=False)
+    def compute_benchmark_drift(self, xinit, t, benchmark):
+        if benchmark is not None and benchmark.du_net_benchmark is not None:
+            return benchmark.du_net_benchmark(
+                torch.cat((
+                    t * torch.ones_like(xinit[...,[0]], requires_grad=False, dtype=torch.float32).to(self.device),
+                    xinit[...,[0]]
+                ), dim=-1)
+            )
+        return torch.zeros_like(xinit[...,[0]], dtype=torch.float32, requires_grad=False)
         
 class EulerMaruyamaSDE(SDEBase):
 
