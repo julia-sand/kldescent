@@ -223,12 +223,7 @@ class MarginalHalfBridgePerturbation(Perturbation):
             Analytic prediction of drift.
         """
         
-        #get idx 
-        idx = self.get_rhomask(t2)
-
-        coeff = 1 - np.exp(t0-self.Tf)
-
-        return 0 #2*coeff*temp
+        raise NotImplementedError
     
     def f02_term2(self,idx,f00_arr):
         """Compute second deriv of f00_arr"""
@@ -575,9 +570,10 @@ class FullBridgePerturbation(MarginalHalfBridgePerturbation):
     def dsigma_alpha_rho(self, f00, df00, dsigma):
         return dsigma + self.alpha * np.nan_to_num(df00 / f00, nan=0, posinf=0, neginf=0)
 
-    def rho_ddsigma_alpha_rho_fn(self, f00, df00, ddsigma, idx):
+    def rho_ddsigma_alpha_rho_fn(self, f00, df00, ddf00, ddsigma, idx):
         dlogrho = np.nan_to_num(df00 / f00, nan=0, posinf=0, neginf=0)
-        ddlogrho = np.gradient(dlogrho, self.qaxis[idx])
+        ddlogrho = np.nan_to_num(ddf00/f00, nan=0, posinf=0, neginf=0) - dlogrho**2
+        #ddf00 / f00 - ((df00/f00)**2)#np.gradient(dlogrho, self.qaxis[idx])
         return f00 * (self.alpha * ddlogrho + ddsigma)
 
     def script_k_full(self, f00, df00, dsigma, idx, t2_idx, kappa):
@@ -594,7 +590,7 @@ class FullBridgePerturbation(MarginalHalfBridgePerturbation):
             b_arr = np.array([self.b_fn(t) for t in t0vec])
 
         dsig_a = self.dsigma_alpha_rho(f00, df00, dsigma)
-        rho_ddsig = self.rho_ddsigma_alpha_rho_fn(f00, df00, ddsigma, idx)
+        rho_ddsig = self.rho_ddsigma_alpha_rho_fn(f00, df00, ddf00, ddsigma, idx)
 
         t2_term1 = df00 * dsig_a + rho_ddsig
         t2_termrho = -self.A_minus_B * kappa * df00
@@ -621,7 +617,7 @@ class FullBridgePerturbation(MarginalHalfBridgePerturbation):
         coeff3 = -kappa / self.A
         term3 = ((self.B * self.a_dot(t0) - self.A * self.b_dot(t0))
                  + (self.B * self.a_fn(t0) - self.A * self.b_fn(t0)))
-        return -np.nan_to_num(term1 + term2 - coeff3 * term3, nan=0, posinf=0, neginf=0)
+        return np.nan_to_num(term1 + term2 - coeff3 * term3, nan=0, posinf=0, neginf=0)
 
     def save_perturbative(self):
         filename_full = make_csv_and_header(save_location=self.ref_path,
@@ -672,7 +668,7 @@ class FullBridgePerturbation(MarginalHalfBridgePerturbation):
     def momvar(self, t0, t2, t2_idx, f00, df00, ddf00, dsigma, ddsigma, kappa, idx):
         t0vec = self.t2vec / self.epsilon**2
         term1 = 1 - (self.A_minus_B*kappa * self.epsilon * self.a_fn(t0) / self.A)**2
-        rho_ddsig = self.rho_ddsigma_alpha_rho_fn(f00, df00, ddsigma, idx)
+        rho_ddsig = self.rho_ddsigma_alpha_rho_fn(f00, df00, ddf00, ddsigma, idx)
         int1 = np.trapezoid(rho_ddsig, self.qaxis[idx]) / self.A
         aexp_arr = np.array([self.a_fn(t0vec[i]) * np.exp(-2*(t0 - t0vec[i])) for i in range(t2_idx+1)])
         int2 = int1 * np.trapezoid(aexp_arr, t0vec[:t2_idx+1])
