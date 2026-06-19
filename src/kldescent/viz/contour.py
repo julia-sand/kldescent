@@ -1,8 +1,11 @@
 """Create the contour plots showing the full joint pdf, where the pdf is computed 
 either using a neural network interpolation, or using a Monte Carlo integration"""
 
-import numpy as np 
-import matplotlib.pyplot as plt 
+import os
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.cm import ScalarMappable
 import torch
 
 from kldescent.sde.girsanovpdf import compute_log_pdf
@@ -416,14 +419,16 @@ def add_legend_contour_plot(fig,lax):
 def make_contour_plot_(integrator, boundary,
                             resultsdir,
                             plottimes = [0,1,2,3,4,5],
-                            benchmark=None):
+                            benchmark=None,
+                            mc_samples=64):
 
     fig, axs, lax = make_axes_contour_plot(len(plottimes))
 
     contour_plot_(axs, integrator, boundary,
                             resultsdir,
                             plottimes,
-                            benchmark)
+                            benchmark,
+                            mc_samples=mc_samples)
 
     add_legend_contour_plot(fig, lax)
 

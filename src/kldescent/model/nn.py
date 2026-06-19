@@ -252,7 +252,7 @@ class MLP(nn.Module):
         self.net_name = net_name
 
         self.params = du_network_params()
-        neurons = 16 #self.params["duhiddenlayerneurons"]
+        neurons = self.params["duhiddenlayerneurons"]
         
         self.device = "cpu"
 

@@ -564,14 +564,15 @@ class PlotUtils():
         plt.close("all")
 
     def make_contour_plot2(self,numplots = 6):
-        
-        plottimes = generate_times(numplots)
+
+        plottimes = self.generate_times(numplots)
 
         make_contour_plot_(integrator=self.integrator,
                             boundary=self.boundary_cond,
                             resultsdir=self.resultsdir,
                             plottimes=plottimes,
-                            benchmark=self.benchmark)
+                            benchmark=self.benchmark,
+                            mc_samples=self.mc_samples)
 
 def compute_ref_dynamic_kl_gauss(benchmark):
     """Estimate of the dynamic kl divergence for the Gaussian benchmark data.
@@ -607,7 +608,7 @@ if __name__=="__main__":
     if usebenchmark is not None:
         plot_utils.load_benchmark_solution(usebenchmark)
 
-    #plot_utils.make_contour_plot2(plottimes=[0,1,2,3,4,5])
+    plot_utils.make_contour_plot2(numplots=6)
     plot_utils.make_drift_plot(numplots=5)
     #plot_utils.make_inverted_drift_plot(numplots=5)
     plot_utils.make_sde_plots(2048)
