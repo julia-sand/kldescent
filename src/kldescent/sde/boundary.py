@@ -29,8 +29,6 @@ class Boundaries():
     ----------
     params : dict
         stores the boundary condition specific parameters
-    Generator : class
-        generator used for sampling from the distributions
     ref_path : str
         the file name of the default reference solution. 
     sigma0 : float
@@ -57,8 +55,6 @@ class Boundaries():
         else:
             self.params = boundary_params()
         
-        self.Generator = np.random.default_rng(seed=seed())
-
         if logfile is not None:
             save_params(self.params,logfile) #add to log
 
@@ -532,7 +528,6 @@ class UnderdampedGaussian(UnderdampedLandauer):
         #from where to sample the q marginals
         if mode=="initial":
             return torch.normal(mean=self.gauss_boundary["muinitial"], std=self.gauss_boundary["sigmainitial"], size=(batch_samples, 1))
-            # self.Generator.normal(loc=self.gauss_boundary["muinitial"],scale=self.gauss_boundary["sigmainitial"],size=(batch_samples,1))     
         elif mode=="final": 
             return torch.normal(mean=self.gauss_boundary["mufinal"], std=self.gauss_boundary["sigmafinal"], size=(batch_samples, 1))
             

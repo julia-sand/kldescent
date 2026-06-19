@@ -13,13 +13,16 @@ from kldescent.model.pretrain import run_pretrain
 from kldescent.model.nn import save_nn_checkpoint
 from kldescent.trainloop import train_loop_du
 
-#set seeds
-random.seed(parser.seed())
-np.random.seed(parser.seed())
-torch.manual_seed(parser.seed())
 
 def run():
     
+
+    #set seeds
+    s = parser.seed()    
+    random.seed(s)
+    np.random.seed(s)
+    torch.manual_seed(s)
+
     #print(f"{torch.get_num_threads()} threads and {torch.get_num_interop_threads()} interop threads being used by torch")
     
     #create a log file and results directory
@@ -38,6 +41,7 @@ def run():
         import kldescent.sde.terminalcost as terminalcosts
     else: 
         pass
+
     terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,fileloc=metrics_logger.newpath,filename=metrics_logger.datayaml)
     
     #initialise neural network and compile model

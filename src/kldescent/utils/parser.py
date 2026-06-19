@@ -68,7 +68,6 @@ def cell_argparser():
     return vars(args[0])
 
 
-
 def overdamped_argparser():
     #general configs for the training process
     # Instantiate the parser
@@ -110,7 +109,6 @@ def integrator_params():
 
     # Instantiate the parser
     integrator_params = CustomArgParse()
-    #subparser = parser.add_subparsers()
 
     integrator_params.add_argument('-batchsamples','--batchsamples', type=int, 
                         default=64,
@@ -131,7 +129,6 @@ def boundary_params():
 
     # Instantiate the parser
     boundary_params = CustomArgParse()
-    #subparser = parser.add_subparsers()
 
     boundary_params.add_argument('-Tf','--Tf', type=float, default=5,
                         help='final time')
@@ -149,9 +146,9 @@ def boundary_params():
 
 def gaussian_params():
     #initial conditions for a gaussian half bridge
+
     # Instantiate the parser
     params1 = CustomArgParse()
-    #subparser = parser.add_subparsers()
 
     params1.add_argument('-muinitial','--muinitial', type=float, default=0,
                         help='Initial value of the mean when using Gaussian boundary conditions')
@@ -175,10 +172,6 @@ def du_network_params():
     # Instantiate the parser
     parser3 = CustomArgParse()
     
-    #parser3.add_argument('-checkpointpath','--checkpointpath', type=str,
-    #                    default=None,
-    #                    help='path to a checkpoint for warm-start training. Path should be provided from the current folder.')
-         
     parser3.add_argument('-duhiddenlayerneurons','--duhiddenlayerneurons', type=int, default=16,
                         help='Number of hidden dimensions in each layer of the Neural network model modelling DU')
 

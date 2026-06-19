@@ -31,9 +31,6 @@ def compute_log_pdf(x0, integrator, mc_samples=None, Tf=None):
     """
 
     device       = integrator.net.device
-    #sigma0    = integrator.boundary.sigma0
-    #epsilon   = integrator.boundary.params["epsilon"]
-    #p_initial = integrator.boundary.p_initial
     
     if Tf is None:
         Tf = integrator.boundary.params["Tf"]
