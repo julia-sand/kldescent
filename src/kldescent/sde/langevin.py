@@ -112,10 +112,10 @@ class SDEBase():
             #initialise x values as samples from assigned initial distribution
             xinit = self.boundary.generate_samples(test_samples_temp,"initial").to(self.device)
             xinit_ref = torch.clone(xinit).to(self.device)
-            du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,[0]],dtype=torch.float32).to(self.device)
+            du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,[0]],dtype=torch.float32)
                                                                         ,xinit[...,[0]]),dim=-1)).detach()
-            #preallocate storing kl divergence 
-            kldyn = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
+            #preallocate storing kl divergence
+            kldyn = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
             
             for i in range(0,len(t_vec)-1):
                 #get time interval
@@ -126,7 +126,7 @@ class SDEBase():
                 xinit_ref = self.benchmark_integration_step(xinit_ref,dt,t_vec[i],benchmark)
                 
                 #add to integral
-                kldyn = kldyn + dt*(du_bar**2)
+                kldyn += dt*(du_bar**2)
             
         return 0.5*torch.mean(kldyn).detach().cpu().numpy(), xinit.cpu().numpy(),xinit_ref.cpu().numpy()
         # kl_static, mean0, var0 
@@ -171,7 +171,7 @@ class SDEBase():
                 xinit = self.boundary.generate_samples(testing_samples,"initial").to(self.device)
             else:
                 xinit = x0_samples.clone().to(self.device)
-            du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,[0]],dtype=torch.float32).to(self.device)
+            du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,[0]],dtype=torch.float32)
                                                    ,xinit[...,[0]]),dim=-1)).detach()
 
             for i in range(0,len(t_vec)-1):
@@ -217,7 +217,7 @@ class SDEBase():
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = self.boundary.generate_samples(mcsamples,"initial").to(self.device)
         xref = torch.clone(xinit).to(self.device)
-        du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,[0]],dtype=torch.float32).to(self.device)
+        du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,[0]],dtype=torch.float32)
                                                                 ,xinit[...,[0]]),dim=-1)).detach()
                                    
         
@@ -250,7 +250,7 @@ class SDEBase():
         if benchmark is not None and benchmark.du_net_benchmark is not None:
             return benchmark.du_net_benchmark(
                 torch.cat((
-                    t * torch.ones_like(xinit[...,[0]], requires_grad=False, dtype=torch.float32).to(self.device),
+                    t * torch.ones_like(xinit[...,[0]], requires_grad=False, dtype=torch.float32),
                     xinit[...,[0]]
                 ), dim=-1)
             )
@@ -259,7 +259,7 @@ class SDEBase():
     @torch.no_grad()
     def generate_girsanov_innovation(self,dt,size_like):
         """generate a step of brownian motion"""
-        return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32).to(self.device)
+        return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32)
 
 class EulerMaruyamaSDE(SDEBase):
 
@@ -289,7 +289,7 @@ class EulerMaruyamaSDE(SDEBase):
     @torch.no_grad()
     def generate_innovation(self,dt,size_like):
         """generate a step of brownian motion"""
-        return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32).to(self.device)
+        return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32)
 
     @torch.no_grad()
     def loss_final_step(self,xinit,dt):
@@ -314,13 +314,13 @@ class EulerMaruyamaSDE(SDEBase):
                                                 + self.boundary.sigma0*dw
 
         #compute next du
-        du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
+        du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
                                                             ,xinit[...,[0]]),dim=-1)).detach()
         return xinit, du
 
     @torch.no_grad()
     def benchmark_integration_step(self,xinit,dt,t,benchmark):
-        
+
         dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
 
         du = self.compute_benchmark_drift(xinit,t,benchmark)
@@ -373,7 +373,7 @@ class BAOAB(SDEBase):
     @torch.no_grad()
     def generate_innovation(self,dt,size_like):
         """generate a step of brownian motion"""
-        return torch.sqrt((1-torch.exp(-2*dt))/2)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32).to(self.device)
+        return torch.sqrt((1-torch.exp(-2*dt))/2)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32)
 
     
     @torch.no_grad()
@@ -394,7 +394,7 @@ class BAOAB(SDEBase):
     def loss_final_step(self,xinit,dt):
 
         #compute du 
-        du = self.net(torch.cat((self.boundary.params["Tf"]*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
+        du = self.net(torch.cat((self.boundary.params["Tf"]*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
                                                             ,xinit[...,[0]]),dim=-1)).detach()
         xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du)*(dt/2)
         
@@ -419,9 +419,9 @@ class BAOAB(SDEBase):
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
 
         #compute du 
-        du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
+        du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
                                                             ,xinit[...,[0]]),dim=-1)).detach()
-        
+
         #B: deterministic kick
         xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du)*(dt/2)
         
@@ -522,9 +522,9 @@ class VerletSDE(SDEBase):
     @torch.no_grad()
     def generate_innovation(self,dt,size_like):
         """generate a step of brownian motion"""
-        return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32).to(self.device)
+        return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32)
 
-    
+
     @torch.no_grad()
     def integration_step(self,xinit,dt,t,du_prev):
         dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
@@ -539,7 +539,7 @@ class VerletSDE(SDEBase):
         xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
 
         #compute next du
-        du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
+        du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
                                                             ,xinit[...,[0]]),dim=-1)).detach()
 
         return xinit, du
