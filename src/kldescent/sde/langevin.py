@@ -255,7 +255,12 @@ class SDEBase():
                 ), dim=-1)
             )
         return torch.zeros_like(xinit[...,[0]], dtype=torch.float32, requires_grad=False)
-        
+    
+    @torch.no_grad()
+    def generate_girsanov_innovation(self,dt,size_like):
+        """generate a step of brownian motion"""
+        return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32).to(self.device)
+
 class EulerMaruyamaSDE(SDEBase):
 
     def __init__(self,
@@ -450,7 +455,7 @@ class BAOAB(SDEBase):
         #A: position half-step
         xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
         #O: OU noise step
-        xinit[...,[1]] = -torch.exp(-dt)*xinit[...,[1]] - self.boundary.sigma0*dw
+        xinit[...,[1]] = xinit[...,[1]] - self.boundary.sigma0*dw
         #A: position half-step
         xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
         #B: drift kick
