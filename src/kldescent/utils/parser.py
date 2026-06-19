@@ -33,7 +33,7 @@ def fetch_results_folder_from_cmd():
     parser6 = argparse.ArgumentParser()
     
     parser6.add_argument('-folder','--folder', type=str, default="results2",
-                        help='Folder where to run the plots.')
+                        help='Folder where checkpoints and loss metrics will be saved. Provide filepath from current working directory.')
 
     args6 = parser6.parse_known_args()
 
@@ -45,22 +45,23 @@ def fetch_checkpoint_path():
     parser6 = argparse.ArgumentParser()
     
     parser6.add_argument('-checkpointpath','--checkpointpath', type=str, default=None,
-                        help='Path for initialisation checkpointcheckpoint to pick up immediately from training loop. Path should be provided from the current folder..')
+                        help='Path for initialisation checkpointcheckpoint to pick up immediately from training loop. Path should be provided from the current working directory.')
 
     args6 = parser6.parse_known_args()
 
     return args6[0].checkpointpath
 
 def cell_argparser():
-    """Parse arguments for solving the cell problem and computing perturbative corrections"""
+    """Parse arguments for solving the cell problem in benchmark/iteration"""
+    
     # Instantiate the parser
     parser = CustomArgParse()
 
     parser.add_argument('-cellxnum','--cellxnum', type=int, default=1000,
-                        help='how many x values to use in the spacial discretisation')
+                        help='how many x values to use in the spacial discretisation when computing the cell problem')
     
     parser.add_argument('-celltnum','--celltnum', type=int, default=11,
-                        help='how many t values to use in the temporal discretisation')
+                        help='how many t values to use in the temporal discretisation when computing the cell problem')
     
     args = parser.parse_known_args(parser.argfile)
 
@@ -74,31 +75,31 @@ def overdamped_argparser():
     parser = CustomArgParse()
 
     parser.add_argument('-bridgetype','--bridgetype', type=str, default="half",
-                        help='whether to use the phase space or marginal distributions in the terminal cost')
+                        help='The type of bridge configuration. The bridge type applies to the loss function (half and marginal only) and to specify the benchmark problem. Valid values are half, marginal or full')
     
     parser.add_argument('-epochs','--epochs', type=int, default=1,
-                        help='Total number of training epochs; relates to number of parameter updates for the drift (du) network')
+                        help='Total number of training epochs. This is the number of parameter updates for the drift (du) network')
     
     parser.add_argument('-device','--device', default="cpu",
-                        help='Device to use. If gpu is passed, checks if available and defaults to cpu')
+                        help='Computing device to use for training. If gpu is selected, first checks if available, and defaults to cpu if none is available.')
     
     parser.add_argument('-logstep','--logstep', type=int, default=1,
-                        help='Frequency to save checkpoints and compute loss metrics')
+                        help='How frequency to save DU neural network checkpoint and compute all loss metrics')
     
     parser.add_argument('-boundary','--boundary', type=str, default="UnderdampedLandauer",
-                        help='which set of boundary conditions to use. See Sde.Boundary for options')
+                        help='Set of boundary conditions to use. See Sde.Boundary for options')
     
     parser.add_argument('-terminalcost','--terminalcost', type=str, default="GirsanovMC",
-                        help='How the terminal cost should be evaluated. See Sde.terminalcost for options')
+                        help='How the terminal cost is evaluated. See Sde.terminalcost for options')
 
     parser.add_argument('-integrator','--integrator', type=str, default="BAOAB",
-                        help='SDE integrator class to use. Options: BAOAB, EulerMaruyamaSDE, VerletSDE')
+                        help='SDE integrator method to use. Options: BAOAB, EulerMaruyamaSDE, VerletSDE')
 
     parser.add_argument('-loss','--loss', type=str, default="kl",
-                        help='Loss function to use. Options: kl, ep')
+                        help='Loss function. Options: kl (kullback-liebler), ep (entropy production)')
     
     parser.add_argument('-pretrain','--pretrain', type=str, default=None,
-                        help='Path to CSV containing a set of values to fit to the neural network before training. See model/train for parameters of the training process.')
+                        help='Path from current working directory to a CSV containing function values to fit to the neural network before training. See model/pretrain for required structure of the csv file.')
              
     args = parser.parse_known_args(parser.argfile)
 
@@ -113,13 +114,13 @@ def integrator_params():
 
     integrator_params.add_argument('-batchsamples','--batchsamples', type=int, 
                         default=64,
-                        help='Number of sample trajectories to take of the diffusion')
+                        help='Number of samples in the training set (used to evaluate the loss function)')
 
     integrator_params.add_argument('-tsteps','--tsteps', type=int, default=20,
-                        help='number of timesteps in the integration')
+                        help='number of timesteps in the integration of the SDE and loss function.')
 
     integrator_params.add_argument('-testsamples','--testsamples', type=int, default=3,
-                        help='number of samples for computing ref metrics')
+                        help='number of samples for computing loss metrics (eg static KL). May be also used to compute the terminal cost.')
 
     args1 = integrator_params.parse_known_args(integrator_params.argfile)
 
@@ -139,7 +140,7 @@ def boundary_params():
                         help='constant')
 
     boundary_params.add_argument('-weight','--weight', type=float, default=20,
-                        help='M, baldovin constant')
+                        help='M, baldovin constant. Encodes the weighting of the terminal vs running cost.')
 
     args2 = boundary_params.parse_known_args(boundary_params.argfile)
 
@@ -156,20 +157,21 @@ def gaussian_params():
                         help='Initial value of the mean when using Gaussian boundary conditions')
 
     params1.add_argument('-mufinal','--mufinal', type=float, default=0,
-                        help='Final value of the shift in the assigned final value function')
+                        help='Target value of the mean when using Gaussian boundary conditions')
 
     params1.add_argument('-sigmainitial','--sigmainitial', type=float, default=1,
                         help='Initial value of the standard deviation when using Gaussian boundary conditions')
 
     params1.add_argument('-sigmafinal','--sigmafinal', type=float, default=0.5,
-                        help='Final value of the scale in the assigned final value function')
+                        help='Target value of the standard deviation when using Gaussian boundary conditions')
 
     args5 = params1.parse_known_args(params1.argfile)
 
     return vars(args5[0])
 
 def du_network_params():
-    #general configs for the training process
+    """Parameters for neural network used to model the drift
+    """
     # Instantiate the parser
     parser3 = CustomArgParse()
     
@@ -178,30 +180,29 @@ def du_network_params():
     #                    help='path to a checkpoint for warm-start training. Path should be provided from the current folder.')
          
     parser3.add_argument('-duhiddenlayerneurons','--duhiddenlayerneurons', type=int, default=16,
-                        help='Number of hidden dimensions in each layer of the Neural network model')
+                        help='Number of hidden dimensions in each layer of the Neural network model modelling DU')
 
     args3 = parser3.parse_known_args(parser3.argfile)
 
     return vars(args3[0])
 
 def rho_network_params():
-    #general configs for the training process
+    """Parameters for neural network used to find the current final distribution
+    """
     # Instantiate the parser
     parser3 = CustomArgParse()
     
-    #parser3.add_argument('-checkpointpath','--checkpointpath', type=str,
-    #                    default=None,
-    #                    help='path to a checkpoint for warm-start training. Path should be provided from the current folder.')
-         
     parser3.add_argument('-rhohiddenlayerneurons','--rhohiddenlayerneurons', type=int, default=16,
-                        help='Number of hidden dimensions in each layer of the Neural network model')
+                        help='Number of hidden dimensions in each layer of the Neural network model modelling the terminal distribution')
 
     args3 = parser3.parse_known_args(parser3.argfile)
 
     return vars(args3[0])
 
 def girsanov_plot_params():
-
+    """Parameters for making contour plots based on the Girsanov-theorem method of integrating the Fokker-Planck.
+    """
+    
     # Instantiate the parser
     parser4 = CustomArgParse()
     
@@ -218,14 +219,18 @@ def girsanov_plot_params():
 
 
 def checkpoint_plot_params():
-
+    """Parameters for making checkpoint plots 
+    """
+    
     # Instantiate the parser
     parser5 = argparse.ArgumentParser()
     requiredNamed = parser5.add_argument_group('required named arguments')
     requiredNamed.add_argument('-epoch','--epoch', type=int,
                                 help='At which epoch checkpoint to plot. A checkpoint file ending in _epoch must be available, otherwise default initialisation is used.')
-    requiredNamed.add_argument('-mcsamples','--mcsamples', type=int,default=0,
-                                help='How many realisations for the mc average for Girsanov contour plots')
+    
+    requiredNamed.add_argument('-mcsamples','--mcsamples', type=int, default=0,
+                                help='Overwrite the test samples parameter in the data file to use different number of samples than for training when making plots.')
+    
     args5 = parser5.parse_known_args()
 
     return vars(args5[0])
@@ -234,13 +239,12 @@ def metric_params():
 
     # Instantiate the parser
     metric_params = CustomArgParse()
-    #subparser = parser.add_subparsers()
 
     metric_params.add_argument('-usewandb','--usewandb', type=bool, default=False,
-                        help='log into wandb')
+                        help='Use WandB. If True, requires updating login information in model/metrics.')
 
     metric_params.add_argument('-usebenchmark','--usebenchmark', type=str, default=None,
-                        help='filepath to benchmark')
+                        help='Filepath to location of the benchmark solution. If none, no benchmark will be plotted.')
 
     args2 = metric_params.parse_known_args(metric_params.argfile)[0]
 
@@ -251,7 +255,6 @@ def seed():
 
     # Instantiate the parser
     seed = argparse.ArgumentParser()
-    #subparser = parser.add_subparsers()
 
     seed.add_argument('-seed','--seed', type=int, default=1,
                         help='random seed')
