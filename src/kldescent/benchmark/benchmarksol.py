@@ -116,10 +116,10 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         #self.initialise_net()
         self.du_net_benchmark = None
 
-    def initialise_net(self,bridge_type):
+    def initialise_net(self,bridge_type,nn_params=None):
 
         #initialise a simple neural net to approximate the drift 
-        self.du_net_benchmark = NeuralNetwork(self.boundary) #MLP()
+        self.du_net_benchmark = NeuralNetwork(self.boundary,nn_params=nn_params) #MLP()
 
         #get perturbative sol 
         try:

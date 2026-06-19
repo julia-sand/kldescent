@@ -156,7 +156,7 @@ class PlotUtils():
             else:
                 self.benchmark = PerturbativeBenchmarkSolution(bridge_type=self.bridge_type,boundary=self.boundary_cond,
                                               folder_name=usebenchmark)
-                self.benchmark.initialise_net(self.benchmark.bridge_type)
+                self.benchmark.initialise_net(self.benchmark.bridge_type,nn_params=self.data_loaded)
                 #self.net = self.benchmark.du_net_benchmark 
 
             
