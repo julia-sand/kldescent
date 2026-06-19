@@ -1,7 +1,7 @@
 import torch
 
 @torch.no_grad
-def compute_log_pdf(x0, integrator, mc_samples=None, tsteps=None):
+def compute_log_pdf(x0, integrator, mc_samples=None, Tf=None):
     """
     Compute an estimate of the final joint distribution using Girsanov's theorem.
 
@@ -21,8 +21,8 @@ def compute_log_pdf(x0, integrator, mc_samples=None, tsteps=None):
     mc_samples : int, optional
         Number of Monte Carlo samples. Defaults to integrator.sde_params["testsamples"].
 
-    tsteps : int, optional
-        Number of time steps. Defaults to integrator.sde_params["tsteps"].
+    Tf : float, optional
+        Final time. Defaults to integrator.boundary.params["Tf"].
 
     Returns
     -------
@@ -34,8 +34,12 @@ def compute_log_pdf(x0, integrator, mc_samples=None, tsteps=None):
     #sigma0    = integrator.boundary.sigma0
     #epsilon   = integrator.boundary.params["epsilon"]
     #p_initial = integrator.boundary.p_initial
-    Tf        = integrator.boundary.params["Tf"]
-    tsteps    = tsteps     or integrator.sde_params["tsteps"]
+    
+    if Tf is None:
+        Tf = integrator.boundary.params["Tf"]
+    
+    tsteps = int(integrator.sde_params["tsteps"]*(Tf/integrator.boundary.params["Tf"]))
+
     mc_samples = mc_samples or integrator.sde_params["testsamples"]
 
     integrator.net.eval()
@@ -47,15 +51,15 @@ def compute_log_pdf(x0, integrator, mc_samples=None, tsteps=None):
         else:
             xinit = x0.unsqueeze(0).expand(mc_samples, -1, -1).clone().to(device)
 
-        t_vec = integrator.stratified_time_grid(Tf, tsteps).to(device)
+        t_vec = integrator.stratified_time_grid(Tf, tsteps)
         #torch.linspace(0, Tf, tsteps, requires_grad=False, dtype=torch.float32).to(device)
 
-        girs   = torch.zeros_like(xinit[...,[0]], requires_grad=False, dtype=torch.float32).to(device)
-        #pdfout = torch.zeros_like(xinit[...,[0]], requires_grad=False, dtype=torch.float32).to(device)
+        girs   = torch.zeros_like(xinit[...,[0]], requires_grad=False, dtype=torch.float32)
+        #dw = torch.zeros_like(xinit[...,[0]], requires_grad=False, dtype=torch.float32).to(device)
 
         for i in range(1, len(t_vec)):
 
-            dt = torch.abs(t_vec[-i-1] - t_vec[-i])
+            dt = t_vec[-i]-t_vec[-i-1]
 
             dw = integrator.generate_girsanov_innovation(dt, xinit[...,[0]])
 
@@ -64,7 +68,7 @@ def compute_log_pdf(x0, integrator, mc_samples=None, tsteps=None):
 
             xinit = integrator.girsanov_step(xinit, du_bar, dt, dw)
 
-            girs = girs + (dw*xinit[...,[1]])/(2**0.5) + (dt * (xinit[...,[1]])**2)/4
+            girs += (dw*xinit[...,[1]])/(2**0.5) + (dt * (xinit[...,[1]])**2)/4
 
         log_p = integrator.boundary.log_pinitial(xinit[...,[0]], xinit[...,[1]])
         #torch.log(p_initial(xinit[...,[0]], xinit[...,[1]]))
@@ -84,7 +88,7 @@ def plot_scatter_(x,pdf):
 
 if __name__=="__main__":
     import matplotlib.pyplot as plt
-    import random
+    #import random
     from kldescent.sde.boundary import UnderdampedLandauer
     from kldescent.model.nn import NeuralNetwork
 
@@ -94,7 +98,7 @@ if __name__=="__main__":
     with torch.no_grad():
         xf = boundary.generate_samples(testing_samples,mode="final")
 
-        log_pdf = compute_log_pdf(xf, nn_temp, mc_samples=2, tsteps=21)
+        log_pdf = compute_log_pdf(xf, nn_temp, mc_samples=2)
 
     plot_scatter_(xf, torch.exp(log_pdf))
 

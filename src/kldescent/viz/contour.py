@@ -59,7 +59,7 @@ def compute_rho_girsanov(x_samples=40, integrator=None, mc_samples=64, Tf=None, 
 
     with torch.no_grad():
         integrator.net.eval()
-        log_pdf = compute_log_pdf(xinit.clone(), integrator, mc_samples=mc_samples)
+        log_pdf = compute_log_pdf(xinit.clone(), integrator, mc_samples=mc_samples, Tf=Tf)
         pdf_out = torch.exp(log_pdf).cpu().numpy()
 
     return xinit.cpu().numpy(), pdf_out
@@ -369,7 +369,7 @@ def contour_plot_(axs, integrator, boundary,
 
     for i in range(len(plottimes)):
 
-        jointout = torch.exp(compute_log_pdf(xinit.clone(), integrator, mc_samples=mc_samples))
+        jointout = torch.exp(compute_log_pdf(xinit.clone(), integrator, mc_samples=mc_samples, Tf=plottimes[i]))
             
         plot_joint_panel(axs[i],plottimes[i],jointout.cpu().numpy(),xinit.cpu().numpy(),
                             boundary = boundary,
