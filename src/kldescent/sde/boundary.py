@@ -360,6 +360,10 @@ class UnderdampedLandauer(OverdampedLandauer):
         #unnormalised positive final log density 
         return self.Ufinal(q)+((p**2)/2)
 
+    def log_pinitial(self,q,p):
+        #unnormalised positive initial log density
+        return self.Uinitial(q)+((p**2)/2)
+    
     #generate the initial data
     def generate_samples_q(self,batch_samples,mode):
         r"""
