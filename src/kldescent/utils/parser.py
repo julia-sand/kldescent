@@ -130,6 +130,9 @@ def boundary_params():
     # Instantiate the parser
     boundary_params = CustomArgParse()
 
+    boundary_params.add_argument('-d','--d', type=int, default=1,
+                        help='Dimension of position space.')
+    
     boundary_params.add_argument('-Tf','--Tf', type=float, default=5,
                         help='final time')
 

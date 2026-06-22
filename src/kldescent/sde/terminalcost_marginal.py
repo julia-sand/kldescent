@@ -100,6 +100,9 @@ class Histogram(TerminalCost):
 
         TerminalCost.__init__(self,boundaryconditions,fileloc)
         
+        if self.d>1:
+            raise NotImplementedError
+
         #initialise blank histogram values
         self.H = None
         self.xedges = None 
@@ -153,10 +156,14 @@ class Histogram(TerminalCost):
 class NormFlow(TerminalCost):
 
     def __init__(self,boundaryconditions,fileloc):
-        from ..model.normflow import RhoNormFlow
 
         TerminalCost.__init__(self,boundaryconditions,fileloc)
         
+        if self.d == 1:
+            raise NotImplementedError
+
+        from ..model.normflow import RhoNormFlow
+
         #initialise normalising flow
         self.rho = RhoNormFlow(boundaryconditions=self.boundary,bridgetype="marginal")
 

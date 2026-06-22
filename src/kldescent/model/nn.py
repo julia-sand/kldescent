@@ -62,10 +62,10 @@ class MyActivation(nn.Module):
 
 #@torch.compile
 class NeuralNetwork_layers(nn.Module):
-    def __init__(self,device,hidden_layer_neurons):
+    def __init__(self,d,device,hidden_layer_neurons):
         
         self.net_name = "du_layers_only"
-               
+        self.d = d 
         super().__init__()
 
         # store normalization constants (not trainable)
@@ -82,7 +82,7 @@ class NeuralNetwork_layers(nn.Module):
             nn.GELU(),  #must be positive
             ).to(device)
         self.NNx = nn.Sequential(
-            nn.Linear(1,hidden_layer_neurons ),  #input x
+            nn.Linear(d,hidden_layer_neurons ),  #input x
             nn.GELU(),
             nn.Linear(hidden_layer_neurons, hidden_layer_neurons),   #64 outputs
             ).to(device)   
@@ -158,10 +158,11 @@ class NeuralNetwork(nn.Module):
         
         #params
         self.boundary = boundary
+        self.d = self.boundary.d #dimension of position space
 
         self.flatten = nn.Flatten()
         
-        self.FeedForwardLayers = NeuralNetwork_layers(self.device, self.params["duhiddenlayerneurons"])
+        self.FeedForwardLayers = NeuralNetwork_layers(self.d,self.device, self.params["duhiddenlayerneurons"])
         
         self.FourierFeatures = FourierFeatures(1,2*self.params["duhiddenlayerneurons"],scale=1,device=self.device)
         
@@ -179,7 +180,7 @@ class NeuralNetwork(nn.Module):
 
     def forward(self, input_vec):   #how the model should evaluate
         
-        x = self.FeedForwardLayers.NNx(self.MinMaxNorms.x_minmax_norm(input_vec[...,[1]]))
+        x = self.FeedForwardLayers.NNx(self.MinMaxNorms.x_minmax_norm(input_vec[...,1:]))
         t = self.FourierFeatures(self.MinMaxNorms.t_minmax_norm(input_vec[...,[0]]))#
 
         tout = self.FeedForwardLayers.NNt(self.MinMaxNorms.t_minmax_norm(input_vec[...,[0]]))
@@ -187,7 +188,7 @@ class NeuralNetwork(nn.Module):
         combined = self.FeedForwardLayers.layer_norm_combined(torch.cat((tout,x), dim=-1) )
         
         #concatenate the outputs and put them through the part 2
-        out = self.FeedForwardLayers.NN1(combined) + self.FeedForwardLayers.NN2(t)*self.boundary.scorefinal(input_vec[...,[1]])
+        out = self.FeedForwardLayers.NN1(combined) + self.FeedForwardLayers.NN2(t)*self.boundary.scorefinal(input_vec[...,1:])
         
         return out
 
@@ -211,6 +212,7 @@ class RhoNeuralNetwork(nn.Module):
             self.params = nn_params    
         else:
             self.params = rho_network_params()
+        
         
         super(RhoNeuralNetwork, self).__init__()
         self.NNx = nn.Sequential(

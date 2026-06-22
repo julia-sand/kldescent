@@ -108,11 +108,8 @@ class TrainRho():
     def generate_training_data(self,x0,integrator):
         
         with torch.no_grad():
-            yobs = torch.zeros_like(x0[...,[0]])
-
             yobs = torch.exp(compute_log_pdf(x0, integrator, mc_samples=1))
-            #print(yobs.max())
-            #print(torch.isnan(yobs).any())                    
+                                
             return yobs
 
     def train_step(self,optimiser,integrator):  
@@ -159,7 +156,7 @@ class TrainRho():
                 number of epochs to train the network between updates to the drift net
         """
 
-        if rho_epochs==None:
+        if rho_epochs is None:
             rho_epochs=self.rho_epochs
         
         #reset optimiser and scheduler for each train loop

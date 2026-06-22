@@ -54,6 +54,8 @@ class Boundaries():
             self.params = params
         else:
             self.params = boundary_params()
+
+        self.d = self.params["d"]
         
         if logfile is not None:
             save_params(self.params,logfile) #add to log
@@ -139,7 +141,7 @@ class OverdampedFullLandauer(Boundaries):
 
         Returns
         -------
-        out : torch.Tensor, shape (batch_samples, 1)
+        out : torch.Tensor, shape (batch_samples, d)
             Samples from the final distribution if mode=="final", else zeros.
         """
 
@@ -231,9 +233,12 @@ class OverdampedLandauer(OverdampedFullLandauer):
         return x[idx].unsqueeze(1)
 
 class LinearOU(Boundaries):
-    def __init__(self,d=1):
+    def __init__(self,):
         Boundaries.__init__(self)
-        self.d = d #dimension. only d=1 is supported.
+        
+        if self.d>1:
+            raise NotImplementedError
+
         self.gamma = 1
         self.A = 0.2
         self.Lambda = 1
@@ -268,15 +273,15 @@ class LinearOU(Boundaries):
 
         Returns
         -------
-        out : torch.Tensor, shape (batch_samples, 1)
+        out : torch.Tensor, shape (batch_samples, d)
             Samples from the initial or final distribution.
         """
 
         #from where to sample the q marginals
         if mode=="initial":
-            return torch.randn((batch_samples, 1),requires_grad=False,dtype=torch.float32) * (0.5 ** 0.5)
+            return torch.randn((batch_samples, self.d),requires_grad=False,dtype=torch.float32) * (0.5 ** 0.5)
         elif mode=="final": 
-            return torch.zeros((batch_samples,1),requires_grad=False,dtype=torch.float32)
+            return torch.zeros((batch_samples,self.d),requires_grad=False,dtype=torch.float32)
         
 
     def analytic_sol(self,time):
@@ -410,7 +415,7 @@ class UnderdampedLandauer(OverdampedLandauer):
             Samples from the specified distribution.
         """
 
-        return torch.cat((self.generate_samples_q(batch_samples, mode), torch.randn((batch_samples, 1),requires_grad=False,dtype=torch.float32)), dim=1)
+        return torch.cat((self.generate_samples_q(batch_samples, mode), torch.randn((batch_samples, self.d),requires_grad=False,dtype=torch.float32)), dim=1)
         
     def f(self,x,t):
 
@@ -527,9 +532,9 @@ class UnderdampedGaussian(UnderdampedLandauer):
 
         #from where to sample the q marginals
         if mode=="initial":
-            return torch.normal(mean=self.gauss_boundary["muinitial"], std=self.gauss_boundary["sigmainitial"], size=(batch_samples, 1))
+            return torch.normal(mean=self.gauss_boundary["muinitial"], std=self.gauss_boundary["sigmainitial"], size=(batch_samples, self.d))
         elif mode=="final": 
-            return torch.normal(mean=self.gauss_boundary["mufinal"], std=self.gauss_boundary["sigmafinal"], size=(batch_samples, 1))
+            return torch.normal(mean=self.gauss_boundary["mufinal"], std=self.gauss_boundary["sigmafinal"], size=(batch_samples, self.d))
             
 
 if __name__=="__main__":

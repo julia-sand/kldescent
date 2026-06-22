@@ -39,6 +39,9 @@ class TerminalCost():
         """
 
         self.boundary = boundaryconditions
+        
+        self.d = self.boundary.d
+
         self.loc = fileloc
         #self.datafile = filename
         self.M = self.boundary.params["weight"]
@@ -186,6 +189,9 @@ class Histogram(TerminalCost):
 
         TerminalCost.__init__(self,boundaryconditions,fileloc,*_)
         
+        if self.d > 1:
+            raise NotImplementedError
+
         #initialise blank histogram values
         self.H = None
         self.yedges = None
@@ -241,6 +247,7 @@ class NormFlow(TerminalCost):
         from ..model.normflow import RhoNormFlow
 
         TerminalCost.__init__(self,boundaryconditions,fileloc)
+
         #initialise normalising flow
         self.rho = RhoNormFlow(boundaryconditions=self.boundary,bridgetype="half")
 

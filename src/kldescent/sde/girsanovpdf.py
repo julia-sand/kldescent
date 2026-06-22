@@ -31,7 +31,8 @@ def compute_log_pdf(x0, integrator, mc_samples=None, Tf=None):
     """
 
     device       = integrator.net.device
-    
+    d = integrator.d 
+
     if Tf is None:
         Tf = integrator.boundary.params["Tf"]
     
@@ -52,23 +53,23 @@ def compute_log_pdf(x0, integrator, mc_samples=None, Tf=None):
         #torch.linspace(0, Tf, tsteps, requires_grad=False, dtype=torch.float32).to(device)
 
         girs   = torch.zeros_like(xinit[...,[0]], requires_grad=False, dtype=torch.float32)
-        #dw = torch.zeros_like(xinit[...,[0]], requires_grad=False, dtype=torch.float32).to(device)
+        #dw = torch.zeros_like(xinit[...,:d], requires_grad=False, dtype=torch.float32).to(device)
 
         for i in range(1, len(t_vec)):
 
             dt = t_vec[-i]-t_vec[-i-1]
 
-            dw = integrator.generate_girsanov_innovation(dt, xinit[...,[0]])
+            dw = integrator.generate_girsanov_innovation(dt, xinit[...,:d])
 
-            du_bar = integrator.net(torch.cat((t_vec[-i]*torch.ones_like(xinit[...,[0]], dtype=torch.float32).to(device),
-                                    xinit[...,[0]]), dim=-1))
+            du_bar = integrator.net(torch.cat((t_vec[-i]*torch.ones_like(xinit[...,:1], dtype=torch.float32).to(device),
+                                    xinit[...,:d]), dim=-1))
 
             xinit = integrator.girsanov_step(xinit, du_bar, dt, dw)
 
-            girs += (dw*xinit[...,[1]])/(2**0.5) + (dt * (xinit[...,[1]])**2)/4
+            girs += (dw*xinit[...,d:]).sum(dim=-1, keepdim=True)/(2**0.5) + dt * ((xinit[...,d:])**2).sum(dim=-1, keepdim=True)/4
 
-        log_p = integrator.boundary.log_pinitial(xinit[...,[0]], xinit[...,[1]])
-        #torch.log(p_initial(xinit[...,[0]], xinit[...,[1]]))
+        log_p = integrator.boundary.log_pinitial(xinit[...,:d], xinit[...,d:])
+
         log_w = -log_p - girs
 
     if log_w.dim() > 2:

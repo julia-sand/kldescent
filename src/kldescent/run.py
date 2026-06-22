@@ -40,7 +40,7 @@ def run():
     elif args["bridgetype"]=="half":        
         import kldescent.sde.terminalcost as terminalcosts
     else: 
-        pass
+        raise NotImplementedError
 
     terminal_cost = getattr(terminalcosts,args["terminalcost"])(boundaryconditions,fileloc=metrics_logger.newpath,filename=metrics_logger.datayaml)
     

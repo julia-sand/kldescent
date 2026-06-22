@@ -465,7 +465,7 @@ class PlotUtils():
 
         with torch.no_grad():
         
-            if x_samples==None:
+            if x_samples is None:
                 self.data_loaded["testsamples"]
 
             #generate xmesh

@@ -21,6 +21,8 @@ class SDEBase():
         else:
             self.sde_params = integrator_params() #parse command line
     
+        self.d = self.boundary.d 
+
     @torch.no_grad
     def generate_time_grid(self,benchmark=None,Tf=None,tsteps=None):
         """Generate time grid for comparison with benchmark"""
@@ -112,10 +114,10 @@ class SDEBase():
             #initialise x values as samples from assigned initial distribution
             xinit = self.boundary.generate_samples(test_samples_temp,"initial").to(self.device)
             xinit_ref = torch.clone(xinit).to(self.device)
-            du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,[0]],dtype=torch.float32)
-                                                                        ,xinit[...,[0]]),dim=-1)).detach()
+            du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,:self.d],dtype=torch.float32)
+                                                                        ,xinit[...,:self.d]),dim=-1)).detach()
             #preallocate storing kl divergence
-            kldyn = torch.zeros_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
+            kldyn = torch.zeros_like(xinit[...,:self.d],requires_grad=False,dtype=torch.float32)
             
             for i in range(0,len(t_vec)-1):
                 #get time interval
@@ -126,7 +128,7 @@ class SDEBase():
                 xinit_ref = self.benchmark_integration_step(xinit_ref,dt,t_vec[i],benchmark)
                 
                 #add to integral
-                kldyn += dt*(du_bar**2)
+                kldyn += dt*(torch.linalg.norm(du_bar, dim=-1, keepdim=True) ** 2)
             
         return 0.5*torch.mean(kldyn).detach().cpu().numpy(), xinit.cpu().numpy(),xinit_ref.cpu().numpy()
         # kl_static, mean0, var0 
@@ -171,8 +173,8 @@ class SDEBase():
                 xinit = self.boundary.generate_samples(testing_samples,"initial").to(self.device)
             else:
                 xinit = x0_samples.clone().to(self.device)
-            du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,[0]],dtype=torch.float32)
-                                                   ,xinit[...,[0]]),dim=-1)).detach()
+            du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,:self.d],dtype=torch.float32)
+                                                   ,xinit[...,:self.d]),dim=-1)).detach()
 
             for i in range(0,len(t_vec)-1):
                 dt = (t_vec[i+1]-t_vec[i])
@@ -217,8 +219,8 @@ class SDEBase():
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = self.boundary.generate_samples(mcsamples,"initial").to(self.device)
         xref = torch.clone(xinit).to(self.device)
-        du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,[0]],dtype=torch.float32)
-                                                                ,xinit[...,[0]]),dim=-1)).detach()
+        du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,:self.d],dtype=torch.float32)
+                                                                ,xinit[...,:self.d]),dim=-1)).detach()
                                    
         
         #save the cumulants of the evolutions
@@ -250,11 +252,11 @@ class SDEBase():
         if benchmark is not None and benchmark.du_net_benchmark is not None:
             return benchmark.du_net_benchmark(
                 torch.cat((
-                    t * torch.ones_like(xinit[...,[0]], requires_grad=False, dtype=torch.float32),
-                    xinit[...,[0]]
+                    t * torch.ones_like(xinit[...,:1], requires_grad=False, dtype=torch.float32),
+                    xinit[...,:self.d]
                 ), dim=-1)
             )
-        return torch.zeros_like(xinit[...,[0]], dtype=torch.float32, requires_grad=False)
+        return torch.zeros_like(xinit[...,:self.d], dtype=torch.float32, requires_grad=False)
     
     @torch.no_grad()
     def generate_girsanov_innovation(self,dt,size_like):
@@ -277,8 +279,8 @@ class EulerMaruyamaSDE(SDEBase):
     @torch.no_grad()
     def girsanov_step(self, xinit, du_bar, dt, dw):
         """Euler-Maruyama step under the reference measure (no damping), used in backward Girsanov integration."""
-        xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"] * xinit[...,[1]] * dt
-        xinit[...,[1]] = xinit[...,[1]] - self.boundary.sigma0 * du_bar * dt - self.boundary.sigma0 * dw
+        xinit[...,:self.d] = xinit[...,:self.d] - self.boundary.params["epsilon"] * xinit[...,self.d:] * dt
+        xinit[...,self.d:] = xinit[...,self.d:] - self.boundary.sigma0 * du_bar * dt - self.boundary.sigma0 * dw
         return xinit
 
     @torch.no_grad()
@@ -292,41 +294,41 @@ class EulerMaruyamaSDE(SDEBase):
         return torch.sqrt(dt)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32)
 
     @torch.no_grad()
-    def loss_final_step(self,xinit,dt):
+    def loss_final_step(self,xinit,_):
 
         return xinit
 
     def loss_integration_step(self,xinit,dt,t,du_prev,dw):
 
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt)
 
-        xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du_prev)*dt \
+        xinit[...,self.d:] = xinit[...,self.d:] - (xinit[...,self.d:] - self.boundary.sigma0*du_prev)*dt \
                                                 + self.boundary.sigma0*dw
 
         return xinit
 
     def integration_step(self,xinit,dt,t,du_prev):
-        dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+        dw = self.generate_innovation(dt,size_like=xinit[...,:self.d])
 
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt)
 
-        xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du_prev)*dt \
+        xinit[...,self.d:] = xinit[...,self.d:] - (xinit[...,self.d:] - self.boundary.sigma0*du_prev)*dt \
                                                 + self.boundary.sigma0*dw
 
         #compute next du
-        du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
-                                                            ,xinit[...,[0]]),dim=-1)).detach()
+        du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,:1],requires_grad=False,dtype=torch.float32)
+                                                            ,xinit[...,:self.d]),dim=-1)).detach()
         return xinit, du
 
     @torch.no_grad()
     def benchmark_integration_step(self,xinit,dt,t,benchmark):
 
-        dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+        dw = self.generate_innovation(dt,size_like=xinit[...,:self.d])
 
         du = self.compute_benchmark_drift(xinit,t,benchmark)
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt)
 
-        xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du)*dt \
+        xinit[...,self.d:] = xinit[...,self.d:] - (xinit[...,self.d:] - self.boundary.sigma0*du)*dt \
                                                 + self.boundary.sigma0*dw
             
         return xinit
@@ -350,23 +352,23 @@ class BAOAB(SDEBase):
 
         #Update the velocity
         #B: deterministic kick
-        xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du_prev)*(dt/2)
+        xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du_prev)*(dt/2)
         
         #A: update positions by half step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
 
         #O : solve OU step
-        xinit[...,[1]] = torch.exp(-dt)*xinit[...,[1]] + self.boundary.sigma0*dw
+        xinit[...,self.d:] = torch.exp(-dt)*xinit[...,self.d:] + self.boundary.sigma0*dw
         
         #A: position half-step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
 
         #compute du 
-        #du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
-        #                                                    ,xinit[...,[0]]),dim=-1)).detach()
+        #du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,:1],requires_grad=False,dtype=torch.float32).to(self.device)
+        #                                                    ,xinit[...,:self.d]),dim=-1)).detach()
         
         #B: deterministic kick
-        #xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du)*(dt/2)
+        #xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du)*(dt/2)
         
         return xinit
 
@@ -380,50 +382,53 @@ class BAOAB(SDEBase):
     def loss_intermediate_step(self,xinit,dt,t,du_prev):
 
         #compute du 
-        #du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32).to(self.device)
-        #                                                    ,xinit[...,[0]]),dim=-1)).detach()
+        #du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,:1],requires_grad=False,dtype=torch.float32).to(self.device)
+        #                                                    ,xinit[...,:self.d]),dim=-1)).detach()
         
         if t>0:
             #B: final deterministic kick
-            xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du_prev)*(dt/2)
+            xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du_prev)*(dt/2)
             
         return xinit
    
 
     @torch.no_grad()
-    def loss_final_step(self,xinit,dt):
-
+    def loss_final_step(self,xinit,t_vec):
+       
+        #get dt 
+        dt = t_vec[-1] - t_vec[-2]
+        
         #compute du 
-        du = self.net(torch.cat((self.boundary.params["Tf"]*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
-                                                            ,xinit[...,[0]]),dim=-1)).detach()
-        xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du)*(dt/2)
+        du = self.net(torch.cat((self.boundary.params["Tf"]*torch.ones_like(xinit[...,:1],requires_grad=False,dtype=torch.float32)
+                                                            ,xinit[...,:self.d]),dim=-1)).detach()
+        xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du)*(dt/2)
         
         return xinit
    
 
     @torch.no_grad()
     def integration_step(self,xinit,dt,t,du_prev):
-        dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+        dw = self.generate_innovation(dt,size_like=xinit[...,:self.d])
 
         #Update the velocity
         #B: deterministic kick
-        xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du_prev)*(dt/2)
+        xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du_prev)*(dt/2)
         
         #A: update positions by half step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
 
         #O : solve OU step
-        xinit[...,[1]] = torch.exp(-dt)*xinit[...,[1]] + self.boundary.sigma0*dw
+        xinit[...,self.d:] = torch.exp(-dt)*xinit[...,self.d:] + self.boundary.sigma0*dw
         
         #A: position half-step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
 
         #compute du 
-        du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
-                                                            ,xinit[...,[0]]),dim=-1)).detach()
+        du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,:1],requires_grad=False,dtype=torch.float32)
+                                                            ,xinit[...,:self.d]),dim=-1)).detach()
 
         #B: deterministic kick
-        xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du)*(dt/2)
+        xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du)*(dt/2)
         
         return xinit, du 
     
@@ -432,18 +437,18 @@ class BAOAB(SDEBase):
     @torch.no_grad()
     def benchmark_integration_step(self,xinit,dt,t,benchmark=None):
         
-        dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+        dw = self.generate_innovation(dt,size_like=xinit[...,:self.d])
 
         #update positions by half step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
         
         du = self.compute_benchmark_drift(xinit,t,benchmark)
         
         #Update the velocity
-        xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du)*dt \
+        xinit[...,self.d:] = xinit[...,self.d:] - (xinit[...,self.d:] - self.boundary.sigma0*du)*dt \
                                                 + self.boundary.sigma0*dw
         #position half-step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
             
         return xinit 
 
@@ -451,31 +456,31 @@ class BAOAB(SDEBase):
     def girsanov_step(self, xinit, du_bar, dt, dw):
         """BAOAB Girsanov step: B-A-O-A-B splitting under the reference measure."""
         #B: drift kick
-        xinit[...,[1]] = xinit[...,[1]] - self.boundary.sigma0 * du_bar * (dt/2)
+        xinit[...,self.d:] = xinit[...,self.d:] - self.boundary.sigma0 * du_bar * (dt/2)
         #A: position half-step
-        xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] - self.boundary.params["epsilon"] * xinit[...,self.d:] * (dt/2)
         #O: OU noise step
-        xinit[...,[1]] = xinit[...,[1]] - self.boundary.sigma0*dw
+        xinit[...,self.d:] = xinit[...,self.d:] - self.boundary.sigma0*dw
         #A: position half-step
-        xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] - self.boundary.params["epsilon"] * xinit[...,self.d:] * (dt/2)
         #B: drift kick
-        xinit[...,[1]] = xinit[...,[1]] - self.boundary.sigma0 * du_bar * (dt/2)
+        xinit[...,self.d:] = xinit[...,self.d:] - self.boundary.sigma0 * du_bar * (dt/2)
         return xinit
 
     def verlet_half_step(self,xinit,du_bar,dt,dw,t=0):
 
         #Update the velocity
         #B: deterministic kick
-        xinit[...,[1]] = xinit[...,[1]] + (self.boundary.sigma0*du_bar)*(dt/2)
+        xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du_bar)*(dt/2)
 
         #A: update positions by half step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
 
         #O : solve OU step
-        xinit[...,[1]] = torch.exp(-dt)*xinit[...,[1]] + self.boundary.sigma0*dw
+        xinit[...,self.d:] = torch.exp(-dt)*xinit[...,self.d:] + self.boundary.sigma0*dw
 
         #A: position half-step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
 
         #final B step is part of main loop
 
@@ -509,13 +514,13 @@ class VerletSDE(SDEBase):
     def loss_integration_step(self,xinit,dt,t,du_prev,dw):
 
         #update positions by half step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
 
         #Update the velocity
-        xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du_prev)*dt \
+        xinit[...,self.d:] = xinit[...,self.d:] - (xinit[...,self.d:] - self.boundary.sigma0*du_prev)*dt \
                                                 + self.boundary.sigma0*dw
         #position half-step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
 
         return xinit
 
@@ -527,38 +532,38 @@ class VerletSDE(SDEBase):
 
     @torch.no_grad()
     def integration_step(self,xinit,dt,t,du_prev):
-        dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+        dw = self.generate_innovation(dt,size_like=xinit[...,:self.d])
 
         #update positions by half step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
 
         #Update the velocity
-        xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du_prev)*dt \
+        xinit[...,self.d:] = xinit[...,self.d:] - (xinit[...,self.d:] - self.boundary.sigma0*du_prev)*dt \
                                                 + self.boundary.sigma0*dw
         #position half-step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
 
         #compute next du
-        du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,[0]],requires_grad=False,dtype=torch.float32)
-                                                            ,xinit[...,[0]]),dim=-1)).detach()
+        du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,:1],requires_grad=False,dtype=torch.float32)
+                                                            ,xinit[...,:self.d]),dim=-1)).detach()
 
         return xinit, du
     
     @torch.no_grad()
     def benchmark_integration_step(self,xinit,dt,t,benchmark=None):
         
-        dw = self.generate_innovation(dt,size_like=xinit[...,[0]])
+        dw = self.generate_innovation(dt,size_like=xinit[...,:self.d])
 
         #update positions by half step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
         
         du = self.compute_benchmark_drift(xinit,t,benchmark)
         
         #Update the velocity
-        xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du)*dt \
+        xinit[...,self.d:] = xinit[...,self.d:] - (xinit[...,self.d:] - self.boundary.sigma0*du)*dt \
                                                 + self.boundary.sigma0*dw
         #position half-step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*(dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
             
         return xinit 
 
@@ -566,20 +571,20 @@ class VerletSDE(SDEBase):
     def girsanov_step(self, xinit, du_bar, dt, dw):
         """Verlet Girsanov step: position half-steps around a friction-free momentum update."""
         #A: position half-step
-        xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] - self.boundary.params["epsilon"] * xinit[...,self.d:] * (dt/2)
         #momentum update (no friction)
-        xinit[...,[1]] = xinit[...,[1]] - self.boundary.sigma0 * du_bar * dt - self.boundary.sigma0 * dw
+        xinit[...,self.d:] = xinit[...,self.d:] - self.boundary.sigma0 * du_bar * dt - self.boundary.sigma0 * dw
         #A: position half-step
-        xinit[...,[0]] = xinit[...,[0]] - self.boundary.params["epsilon"] * xinit[...,[1]] * (dt/2)
+        xinit[...,:self.d] = xinit[...,:self.d] - self.boundary.params["epsilon"] * xinit[...,self.d:] * (dt/2)
         return xinit
 
     def verlet_half_step(self,xinit,du_bar, dt,dw,t=0):
 
         #Update the velocity
-        xinit[...,[1]] = xinit[...,[1]] - (xinit[...,[1]] - self.boundary.sigma0*du_bar)*dt \
+        xinit[...,self.d:] = xinit[...,self.d:] - (xinit[...,self.d:] - self.boundary.sigma0*du_bar)*dt \
                                 + self.boundary.sigma0*dw
         #position half-step
-        xinit[...,[0]] = xinit[...,[0]] + self.boundary.params["epsilon"]*xinit[...,[1]]*dt/2
+        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*dt/2
         
         return xinit
         

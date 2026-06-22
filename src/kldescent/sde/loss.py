@@ -60,18 +60,18 @@ class KL:
         for i in range(len(t_vec) - 1):
             dt = t_vec[i + 1] - t_vec[i]
 
-            dw = self.integrator.generate_innovation(dt, xinit[..., [0]])
+            dw = self.integrator.generate_innovation(dt, xinit[..., :self.boundary.d])
 
             du = self.net(
                 torch.cat((
                     t_vec[i] * torch.ones((n, 1), dtype=torch.float32,
                                           device=self.device),
-                    xinit[..., [0]]
+                    xinit[..., :self.boundary.d]
                 ), dim=-1)
             )
 
-            a = a + dt * (torch.linalg.norm(du, dim=1, keepdim=True) ** 2)
-            c = c + du*dw
+            a += dt * (torch.linalg.norm(du, dim=-1, keepdim=True) ** 2)
+            c += (du*dw).sum(dim=-1, keepdim=True)
 
             du_bar = du.detach()
 
@@ -81,8 +81,8 @@ class KL:
                 #skip for other methods and when t=0
                 xinit = self.integrator.loss_intermediate_step(xinit,dt, t_vec[i], du_bar)
 
-                abar = abar + dt * (
-                    torch.linalg.norm(du_bar, dim=1, keepdim=True) ** 2
+                abar += dt * (
+                    torch.linalg.norm(du_bar, dim=-1, keepdim=True) ** 2
                 )
                 xinit = self.integrator.loss_integration_step(
                     xinit, dt, t_vec[i], du_bar, dw
@@ -90,7 +90,7 @@ class KL:
 
         with torch.no_grad():
 
-            xinit = self.integrator.loss_final_step(xinit,dt)
+            xinit = self.integrator.loss_final_step(xinit,t_vec)
             gvals = self.TerminalCost.gfun(
                 xinit.detach().clone(),
                 self.integrator,
