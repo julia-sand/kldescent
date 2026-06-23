@@ -35,13 +35,14 @@ class TerminalCost():
         """
 
         self.boundary = boundaryconditions
+        self.d = self.boundary.d
         self.M = self.boundary.params["weight"]
         self.loc = fileloc
     
     def gfun(self,x):
         
         pdf = self.get_half_logpdf(x)
-        return self.M*(pdf + self.boundary.Ufinal(x[...,[0]]))
+        return self.M*(pdf + self.boundary.Ufinal(x[...,:self.d]))
         
 class GirsanovNet(TerminalCost):
     """
@@ -91,7 +92,7 @@ class MLE(TerminalCost):
                
     def get_half_logpdf(self,x):
 
-        return -((x[...,[0]]-self.pos_mean0)**2)/(2*self.pos_var0)
+        return -((x[...,:self.d]-self.pos_mean0)**2)/(2*self.pos_var0)
 
 class Histogram(TerminalCost):
     """Find the final probabilities from an estimated histogram"""
@@ -171,7 +172,7 @@ class NormFlow(TerminalCost):
         """train a normalising flow to approximate the final distribution"""
 
         #get initial samples
-        x0 = self.boundary.generate_samples(integrator.sde_params["testsamples"] ,"initial")
+        #x0 = self.boundary.generate_samples(integrator.sde_params["testsamples"] ,"initial")
         
         #integrate and get final samples
         x = self.boundary.generate_samples(8192,"final")
@@ -182,7 +183,7 @@ class NormFlow(TerminalCost):
         self.rho.model.train()
 
         #train normalising flow
-        self.rho.train_loop(x[...,0])
+        self.rho.train_loop(x[...,:self.d])
         
         #put model in evaluation mode
         self.rho.model.eval()
@@ -192,7 +193,7 @@ class NormFlow(TerminalCost):
         #make_histogram(plot_loc,x,self.rho.model,self.boundary)
 
     def get_half_logpdf(self,x):
-        pdf = self.rho.model.log_prob(x[...,[0]])
+        pdf = self.rho.model.log_prob(x[...,:self.d])
         return torch.nan_to_num(pdf) 
 
     @torch.no_grad

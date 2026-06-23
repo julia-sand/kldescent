@@ -236,8 +236,8 @@ class LinearOU(Boundaries):
     def __init__(self,):
         Boundaries.__init__(self)
         
-        if self.d>1:
-            raise NotImplementedError
+        #if self.d>1:
+        #    raise NotImplementedError
 
         self.gamma = 1
         self.A = 0.2

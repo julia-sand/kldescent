@@ -70,7 +70,7 @@ def run():
         run_pretrain(net,
                     metrics_logger.newpath,
                     path_to_pretrain=args["pretrain"],
-                    epsilon=None)
+                    epsilon=boundaryconditions.params["epsilon"])
                                           
     #save initial checkpoint before any gradient updates
     save_nn_checkpoint(net, loc=metrics_logger.newpath+f"/checkpoints/{net.net_name}_checkpoint_0.pt")
