@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
 '''
-This file holds all the functions used in plotting.
+This file holds all utility functions used in plotting.
 '''
 
 def save_cumulants_csv(t_vec,cumulants_nn,loc,cumulants_filename="cumulants"):

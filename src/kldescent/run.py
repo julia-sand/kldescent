@@ -1,7 +1,4 @@
-import numpy as np
-import torch
 from tqdm import tqdm
-import random
 
 from kldescent.model import *
 from kldescent.sde import *
@@ -13,15 +10,9 @@ from kldescent.model.pretrain import run_pretrain
 from kldescent.model.nn import save_nn_checkpoint
 from kldescent.trainloop import train_loop_du
 
-
 def run():
     
-
-    #set seeds
-    s = parser.seed()    
-    random.seed(s)
-    np.random.seed(s)
-    torch.manual_seed(s)
+    setseed.set_seed()
 
     #print(f"{torch.get_num_threads()} threads and {torch.get_num_interop_threads()} interop threads being used by torch")
     

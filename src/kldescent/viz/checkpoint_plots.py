@@ -7,6 +7,7 @@ import numpy as np
 
 from kldescent.model.nn import RhoNeuralNetwork,NeuralNetwork,load_checkpoint
 from kldescent.sde import langevin
+from kldescent.utils.setseed import set_seed
 from kldescent.utils.parser import checkpoint_plot_params,fetch_results_folder_from_cmd,metric_params
 from kldescent.utils.getboundary import init_params_from_file
 from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmarkSolution
@@ -71,6 +72,7 @@ class PlotUtils():
                 self.mc_samples = params["mcsamples"]
             else: #use test samples if no value is specified
                 self.mc_samples = self.data_loaded["testsamples"]
+        
         except TypeError:
             self.bridge_type = "half"
             self.mc_samples = 20 #overwrite if not passed or no loaded data   
@@ -83,7 +85,8 @@ class PlotUtils():
         self.boundary_cond.overwrite_ref_path(self.folder)
             
         self.benchmark = benchmark
-                
+
+        set_seed(data_loaded["seed"])
                 
         #make new folder for the results labelled with epoch
         os.makedirs(self.folder+f"/plots_{self.epoch}", exist_ok = True) 
@@ -139,7 +142,7 @@ class PlotUtils():
             self.benchmark=None
 
         self.make_drift_plot(numplots=4)
-        self.make_sde_plots(mcsamples)
+        self.make_sde_plots()
         #self.make_intermediate_histograms()
         
         plt.close("all")
@@ -178,8 +181,8 @@ class PlotUtils():
         5. save csv of reference and computed csvs.
         """
 
-        if mcsamples is None: #set number of samples if not passed
-            mcsamples = self.data_loaded["testsamples"]
+        #if mcsamples is None: #set number of samples if not passed
+        mcsamples = self.mc_samples #self.data_loaded["testsamples"]
 
         final_plot_time = self.boundary_cond.params["Tf"]
 
@@ -404,6 +407,9 @@ class PlotUtils():
 
     def make_intermediate_histograms(self,testing_samples=None):#,plottimes):
         
+        if testing_samples is None:
+            testing_samples = self.mc_samples
+
         plottimes = [0,1,2,3,4,5]#self.generate_times(6)
 
         #make figure object
@@ -611,10 +617,10 @@ if __name__=="__main__":
     plot_utils.make_contour_plot2(numplots=6)
     plot_utils.make_drift_plot(numplots=5)
     #plot_utils.make_inverted_drift_plot(numplots=5)
-    plot_utils.make_sde_plots(2048)
+    plot_utils.make_sde_plots()
     #plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark)
     #plot_utils.make_cumulant_error_plot_from_csv()
-    plot_utils.make_intermediate_histograms(131072)
+    plot_utils.make_intermediate_histograms()
     #plot_utils.make_cumulant_error_plot_from_csv()
 
     if plot_utils.data_loaded["terminalcost"]=="GirsanovNet":

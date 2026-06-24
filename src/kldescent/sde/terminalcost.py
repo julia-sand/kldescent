@@ -49,7 +49,7 @@ class TerminalCost():
     def gfun(self,x,*_):
         
         pdf = torch.nan_to_num(self.get_logpdf(x),posinf=0,neginf=0,nan=0)
-        return self.M*(pdf + self.boundary.log_pfinal(x[...,[0]],x[...,[1]]))
+        return self.M*(pdf + self.boundary.log_pfinal(x[...,:self.d],x[...,[1]]))
 
 class GirsanovMC(TerminalCost):
     """
@@ -74,7 +74,7 @@ class GirsanovMC(TerminalCost):
     def gfun(self, x, integrator, mc_samples, *_):
 
         pdf = torch.nan_to_num(self.get_logpdf(x, integrator, mc_samples), posinf=0, neginf=0, nan=0)
-        return self.M*(pdf + self.boundary.log_pfinal(x[...,[0]], x[...,[1]]))
+        return self.M*(pdf + self.boundary.log_pfinal(x[...,:self.d], x[...,[1]]))
 
     def get_logpdf(self, x, integrator, mc_samples):
 
@@ -160,21 +160,21 @@ class MLE(TerminalCost):
         x = integrator.update_ref_statistics()
 
         #set new mean and variance and covariance
-        self.pos_mean0 = torch.nanmean(x[...,[0]])
+        self.pos_mean0 = torch.nanmean(x[...,:self.d])
         self.mom_mean0 = torch.nanmean(x[...,[1]])
 
         #self.Sigma_matrix = torch.cov(x)
 
-        self.pos_var0 = torch.var(x[...,[0]])
+        self.pos_var0 = torch.var(x[...,:self.d])
         self.mom_var0 = torch.var(x[...,[1]])
 
-        self.cc0 = (torch.sum((x[...,[1]]-self.mom_mean0)*(x[...,[0]]-self.pos_mean0))/(len(x[...,0])))
+        self.cc0 = (torch.sum((x[...,[1]]-self.mom_mean0)*(x[...,:self.d]-self.pos_mean0))/(len(x[...,0])))
 
 
     def multivariate_U(self,x):
         #exponent of a multivariate Gaussian distribution
         rho_var = self.cc0/torch.sqrt(self.mom_var0*self.pos_var0)
-        return -(1/(2*(1-rho_var**2)))*(((x[...,[0]]-self.pos_mean0)**2)/self.pos_var0 - 2*((x[...,[0]]-self.pos_mean0)*(x[...,[1]]-self.mom_mean0))*(self.cc0/(self.mom_var0*self.pos_var0)) + ((x[...,[1]]-self.mom_mean0)**2)/self.mom_var0)
+        return -(1/(2*(1-rho_var**2)))*(((x[...,:self.d]-self.pos_mean0)**2)/self.pos_var0 - 2*((x[...,:self.d]-self.pos_mean0)*(x[...,[1]]-self.mom_mean0))*(self.cc0/(self.mom_var0*self.pos_var0)) + ((x[...,[1]]-self.mom_mean0)**2)/self.mom_var0)
 
     def get_logpdf(self,x,*_):
 
