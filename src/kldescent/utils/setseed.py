@@ -6,8 +6,11 @@ from kldescent.utils import parser
 
 
 def set_seed(s=None):
+    """
+    Set the seed for random sampling in numpy and torch
+    If no seed is given, use command line argument
+    """
 
-    #set seeds
     if s is None:
         s = parser.seed()    
         

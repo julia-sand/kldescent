@@ -7,7 +7,7 @@ def train_loop_du(epoch,
                     trainer,
                     logstep):
     """
-    Run a single training epoch.
+    Run a single training epoch for learning weights of the network parametrising DU, the gradient of the potential.
 
     Parameters
     ----------

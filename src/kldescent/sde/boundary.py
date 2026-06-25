@@ -350,11 +350,12 @@ class UnderdampedLandauer(OverdampedLandauer):
         self.norm_qmax = 3.5
 
     def p_initial(self,q,p):
-
+        """Normalised initial distribution"""
         return (self.q_marginal_initial(q)*torch.exp(-(p**2)/2))/torch.sqrt(2*torch.tensor(torch.pi))
 
     def p_final(self,q,p): 
-        
+        """Normalised target distribution"""
+
         return (self.q_marginal_final(q)*torch.exp(-(p**2)/2))/torch.sqrt(2*torch.tensor(torch.pi))
 
     def log_pfinal(self,q,p):

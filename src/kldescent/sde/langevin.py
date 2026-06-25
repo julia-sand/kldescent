@@ -8,11 +8,23 @@ from kldescent.utils.parser import integrator_params
 class SDEBase():
     """
     Base class for integrating the sde forward and computing the loss function 
+
+    Integration of the dynamics using a tensor xinit in the shape (n,2d) where [:d] are positions and [d:] is the momenta.
+    Controls the method of integration used for the SDE and accumulates or saves corresponding quantities along trajectories.
     """
 
     def __init__(self,boundary_data,
                     sde_params=None):
-                    
+        """
+        Initialise the base class and set main parameters. 
+        params: 
+        boundarydata instance
+            the class defining the boundary data
+        sdeparams dict
+            if parameters are found from data.yaml file, they are passed here. If None, these are read from command line.
+        """           
+
+
         self.boundary = boundary_data
 
         #get params 
@@ -55,7 +67,11 @@ class SDEBase():
         """
         Generate a stratified random time grid: one third of points in [0, 0.2*Tf],
         one third in [0.8*Tf, Tf], and one third in [0.2*Tf, 0.8*Tf].
+
+        Allows for more timesteps near the boundary layers, where the dynamics are more non-linear,
+        rather than during the turnpike of the transition. 
         """
+        
         if Tf is None:
             Tf = self.boundary.params["Tf"]
         if tsteps is None:
@@ -73,10 +89,17 @@ class SDEBase():
 
     @torch.no_grad
     def cross_corr(self,temp):
-        return torch.sum((temp[...,0]-torch.nanmean(temp[...,0]))*(temp[...,1]-torch.nanmean(temp[...,1])))/len(temp[...,0])
+        """compute cross correlation between the position [0] and the momentum [1] for d=1"""
+        if self.d>1:
+            print("Cross corellation only implemented for d=1") 
+            return torch.zeros(1)
+        else:
+            return torch.sum((temp[...,0]-torch.nanmean(temp[...,0]))*(temp[...,1]-torch.nanmean(temp[...,1])))/len(temp[...,0])
 
     @torch.no_grad
     def compute_cumulant_row(self,temp):
+        """Compute the cumulants of the current positions and momentum. Returns a tensor with the 
+        position mean, momentum mean, position variance, momentum variance and cross correlation. """
         return torch.tensor([[torch.nanmean(temp[...,0]),
                                               torch.nanmean(temp[...,1]),
                                               torch.var(temp[...,0]),
@@ -102,7 +125,7 @@ class SDEBase():
         Returns
         -------
         kldyn : float
-            Dynamic KL divergence computed along trajectories.
+            Dynamic KL divergence: accummulates dt*||DU(qt)||^2 along trajectories. 
         """
 
         with torch.no_grad():
@@ -249,6 +272,10 @@ class SDEBase():
 
     @torch.no_grad
     def compute_benchmark_drift(self, xinit, t, benchmark):
+        """Compute the benchmark drift using the benchmark solution at (t,xinit)
+        If no benchmark solution, use free diffusion (returns zeros)
+        """
+
         if benchmark is not None and benchmark.du_net_benchmark is not None:
             return benchmark.du_net_benchmark(
                 torch.cat((
@@ -283,10 +310,6 @@ class EulerMaruyamaSDE(SDEBase):
         xinit[...,self.d:] = xinit[...,self.d:] - self.boundary.sigma0 * du_bar * dt - self.boundary.sigma0 * dw
         return xinit
 
-    @torch.no_grad()
-    def loss_intermediate_step(self,xinit,dt,t,du_prev):
-
-        return xinit
 
     @torch.no_grad()
     def generate_innovation(self,dt,size_like):
@@ -295,7 +318,9 @@ class EulerMaruyamaSDE(SDEBase):
 
     @torch.no_grad()
     def loss_final_step(self,xinit,_):
-
+        """Completes the final step of the integration with drift computed at the final step
+        Not applicable in the standard Euler Maruyama scheme.
+        """
         return xinit
 
     def loss_integration_step(self,xinit,dt,t,du_prev,dw):
@@ -322,6 +347,23 @@ class EulerMaruyamaSDE(SDEBase):
 
     @torch.no_grad()
     def benchmark_integration_step(self,xinit,dt,t,benchmark):
+        """Integrates the benchmark dynamics for comparison using a standard Euler maruyama scheme. 
+        Evaluates the drift and noise as part of the function
+        
+        args: 
+        xinit : tensor
+            holds the current positions [:d] and momenta [d:]
+        dt : tensor
+            size of timestep
+        t : tensor
+            current time
+        benchmark :instance
+            instance of the benchmark solution. If none, the benchmark drift is a free diffusion. 
+                
+        return:
+        xinit : tensor 
+            updated position and momenta
+        """
 
         dw = self.generate_innovation(dt,size_like=xinit[...,:self.d])
 
@@ -349,7 +391,32 @@ class BAOAB(SDEBase):
 
     @torch.no_grad()
     def loss_integration_step(self,xinit,dt,t,du_prev,dw):
+        """Complete one step of the dynamics using the BAOAB scheme. 
+        BAOAB is an acronym that refers to the operator (Strang) splitting of the dynamics
+        B: deterministic updates using the drift
+        A: updates to the position
+        O: remaining Ornstein-Uhlenbeck form of the dynamics is updated using the known solution 
 
+        args: 
+        xinit: tensor
+            updated in place current positions [:d] and momenta [d:]
+        dt : 
+            size of timestep
+        t : float
+            current time
+        duprev : tensor
+            drift evaluated at time t
+        dw : tensor
+            scaled noise
+        """
+        
+        #Complete the final B step from previous integration step with drift computed at (i+1). 
+        # Moved here because du is evaluated as part of the main loop.
+        if t>0:
+            #B: final deterministic kick
+            xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du_prev)*(dt/2)
+
+        #start new time-step integration.    
         #Update the velocity
         #B: deterministic kick
         xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du_prev)*(dt/2)
@@ -378,23 +445,14 @@ class BAOAB(SDEBase):
         return torch.sqrt((1-torch.exp(-2*dt))/2)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32)
 
     
-    @torch.no_grad()
-    def loss_intermediate_step(self,xinit,dt,t,du_prev):
-
-        #compute du 
-        #du = self.net(torch.cat(((t+dt)*torch.ones_like(xinit[...,:1],requires_grad=False,dtype=torch.float32).to(self.device)
-        #                                                    ,xinit[...,:self.d]),dim=-1)).detach()
-        
-        if t>0:
-            #B: final deterministic kick
-            xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du_prev)*(dt/2)
-            
-        return xinit
    
 
     @torch.no_grad()
     def loss_final_step(self,xinit,t_vec):
-       
+        """Completes the final step of the integration with drift computed at the final step
+        i.e. completes the final deterministic kick B of the dyanmics in the BAOAB scheme 
+        keeping the evaluation of the drift decoupled. 
+        """
         #get dt 
         dt = t_vec[-1] - t_vec[-2]
         
@@ -436,6 +494,23 @@ class BAOAB(SDEBase):
 
     @torch.no_grad()
     def benchmark_integration_step(self,xinit,dt,t,benchmark=None):
+        """Integrates the benchmark dynamics for comparison using a standard verlet scheme (note not BAOAB scheme!). 
+        Evaluates the drift and noise as part of the function
+        
+        args: 
+        xinit : tensor
+            holds the current positions [:d] and momenta [d:]
+        dt : tensor
+            size of timestep
+        t : tensor
+            current time
+        benchmark :instance
+            instance of the benchmark solution. If none, the benchmark drift is a free diffusion. 
+                
+        return:
+        xinit : tensor 
+            updated position and momenta
+        """
         
         dw = self.generate_innovation(dt,size_like=xinit[...,:self.d])
 
@@ -467,24 +542,6 @@ class BAOAB(SDEBase):
         xinit[...,self.d:] = xinit[...,self.d:] - self.boundary.sigma0 * du_bar * (dt/2)
         return xinit
 
-    def verlet_half_step(self,xinit,du_bar,dt,dw,t=0):
-
-        #Update the velocity
-        #B: deterministic kick
-        xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du_bar)*(dt/2)
-
-        #A: update positions by half step
-        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
-
-        #O : solve OU step
-        xinit[...,self.d:] = torch.exp(-dt)*xinit[...,self.d:] + self.boundary.sigma0*dw
-
-        #A: position half-step
-        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
-
-        #final B step is part of main loop
-
-        return xinit
 
 class VerletSDE(SDEBase):
 
@@ -501,13 +558,10 @@ class VerletSDE(SDEBase):
 
 
     @torch.no_grad()
-    def loss_intermediate_step(self,xinit,*_):
-
-        return xinit
-
-    @torch.no_grad()
     def loss_final_step(self,xinit,_):
-
+        """Completes the final step of the integration with drift computed at the final step
+        Not applicable in the standard verlet scheme.
+        """
         return xinit
 
     @torch.no_grad()
@@ -551,7 +605,24 @@ class VerletSDE(SDEBase):
     
     @torch.no_grad()
     def benchmark_integration_step(self,xinit,dt,t,benchmark=None):
+        """Integrates the benchmark dynamics for comparison using a standard verlet scheme. 
+        Evaluates the drift and noise as part of the function
         
+        args: 
+        xinit : tensor
+            holds the current positions [:d] and momenta [d:]
+        dt : tensor
+            size of timestep
+        t : tensor
+            current time
+        benchmark :instance
+            instance of the benchmark solution. If none, the benchmark drift is a free diffusion. 
+                
+        return:
+        xinit : tensor 
+            updated position and momenta
+        """
+
         dw = self.generate_innovation(dt,size_like=xinit[...,:self.d])
 
         #update positions by half step
@@ -578,16 +649,6 @@ class VerletSDE(SDEBase):
         xinit[...,:self.d] = xinit[...,:self.d] - self.boundary.params["epsilon"] * xinit[...,self.d:] * (dt/2)
         return xinit
 
-    def verlet_half_step(self,xinit,du_bar, dt,dw,t=0):
-
-        #Update the velocity
-        xinit[...,self.d:] = xinit[...,self.d:] - (xinit[...,self.d:] - self.boundary.sigma0*du_bar)*dt \
-                                + self.boundary.sigma0*dw
-        #position half-step
-        xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*dt/2
-        
-        return xinit
-        
 
 if __name__=="__main__":
     from kldescent.model import nn

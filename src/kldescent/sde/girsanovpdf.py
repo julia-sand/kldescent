@@ -8,7 +8,11 @@ def compute_log_pdf(x0, integrator, mc_samples=None, Tf=None):
     Gradient tracking is disabled.
 
     Based on: arXiv:2411.08518 (see Section 3 for an example application).
-
+    
+    the girs factor computes (Σ dw·p/√2 + dt·p²/4) along trajectories. 
+    Computes the monte carlo mean over trajectories by taking the logsumexp, i.e. exponentiating the quantity 
+    exp(-Initial distribution)* exp(-girs) and summing over trajectories. 
+    
     Parameters
     ----------
     x0 : torch.Tensor

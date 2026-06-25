@@ -7,7 +7,7 @@ from kldescent.utils.parser import metric_params
 from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmarkSolution
 
 def log_cpu(wandb_run):
-    #log cpu usage statistics
+    """Log cpu usage statistics to wandb"""
     wandb_run.log({
         "cpu_percent": psutil.cpu_percent(),
         "num_threads": psutil.Process().num_threads(),

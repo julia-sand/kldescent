@@ -172,7 +172,11 @@ class MLE(TerminalCost):
 
 
     def multivariate_U(self,x):
-        #exponent of a multivariate Gaussian distribution
+        """Exponent of a multivariate Gaussian distirbution
+        
+        Note currently only implemented for d=1
+        """
+        
         rho_var = self.cc0/torch.sqrt(self.mom_var0*self.pos_var0)
         return -(1/(2*(1-rho_var**2)))*(((x[...,:self.d]-self.pos_mean0)**2)/self.pos_var0 - 2*((x[...,:self.d]-self.pos_mean0)*(x[...,[1]]-self.mom_mean0))*(self.cc0/(self.mom_var0*self.pos_var0)) + ((x[...,[1]]-self.mom_mean0)**2)/self.mom_var0)
 

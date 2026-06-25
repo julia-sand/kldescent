@@ -6,6 +6,24 @@ from torch import nn
 from kldescent.utils.parser import du_network_params,rho_network_params,fetch_checkpoint_path
 
 def load_checkpoint(net,checkpointpath):
+    """Handles loading neural network parameters from checkpoint, and uses error handling to consolidate mismatches by raising correct error 
+    message. The error is then handled if necessary or runtime interrupted if it should not be raised.
+
+    If checkpoint can by loaded, the network parameters will be loaded to the instance 
+    and mapped to the net's device. 
+
+    If no checkpoint file is found (FileNotFoundError)
+    If checkpoint file format is incompatible (RuntimeError), e.g. caused by different number of neurons in instance and checkpoint 
+    If checkpoint file format does not have correct attributes (AttributeError) e.g. Neural network architecture changed between runs.
+    BaseException is raised. This may be handled in logic at the call sites of load_checkpoint, depending on use-case.     
+
+    args: 
+    net : instance
+        instance of neural network. The architecture of the network should match
+    checkpointpath: str
+        location of checkpoint. Must be provided as full filepath from current working directory. 
+    """
+    
     try:
         if torch.cuda.is_available():
             net.load_state_dict(torch.load(checkpointpath, weights_only=True))
@@ -35,6 +53,10 @@ def save_nn_checkpoint(net,loc):
     torch.save(net.state_dict(),loc) 
 
 class FourierFeatures(nn.Module):
+    """Holds the layers for Fourier feature encoding. 
+    
+    Used for time-embedding of the time variable. """
+    
     def __init__(self,in_features,out_features, scale, device):
         super().__init__()
        
@@ -62,6 +84,8 @@ class MyActivation(nn.Module):
 
 #@torch.compile
 class NeuralNetwork_layers(nn.Module):
+    """Defines the feed-forward layers of the neural network architecture. """
+
     def __init__(self,d,device,hidden_layer_neurons):
         
         self.net_name = "du_layers_only"
@@ -87,16 +111,11 @@ class NeuralNetwork_layers(nn.Module):
             nn.Linear(hidden_layer_neurons, hidden_layer_neurons),   #64 outputs
             ).to(device)   
         self.NN1 = NN2(device,hidden_layer_neurons).to(device) 
-        #nn.Sequential(
-        #    nn.Linear(2*hidden_layer_neurons, hidden_layer_neurons),  #input 2x64 features: concatenated output of NNt and NNx t and x 
-        #    nn.GELU(),
-        #    nn.Linear(hidden_layer_neurons,hidden_layer_neurons),   #64 outputs
-        #    nn.GELU(),
-        #    nn.Linear(hidden_layer_neurons , 1)).to(device) 
         self.NN2 = NN2(device,hidden_layer_neurons).to(device) 
         self.layer_norm_combined = nn.LayerNorm(2*hidden_layer_neurons).to(device)
 
 class NN2(nn.Module):
+    """One three layer feed forward module of the neural network architecture."""
 
     def __init__(self,device,hidden_layer_neurons):
         super().__init__()
@@ -111,6 +130,8 @@ class NN2(nn.Module):
         return self.layer3(self.gelu(input_vec_3))
 
 class MinMaxNorm_layers(nn.Module):
+    """class containing normalisation layers for the neural network
+    not involved in gradient descent as use min-maxes defined by the boundary conditions. """
     def __init__(self,xmax,tmax,device):
         
         self.net_name = "minmaxlayers"
@@ -136,6 +157,58 @@ class MinMaxNorm_layers(nn.Module):
 
 #@torch.compile
 class NeuralNetwork(nn.Module):
+    r"""Class holding the complete neural network architecture. 
+    
+    Branches:
+
+    $$
+    T(\hat{t}) = \text{NNt}(\hat{t}) \in \mathbb{R}^H
+    $$
+    with NNt a feed-forward network instance from NeuralNetwork_layers
+
+    $$
+    \text{NNt}: \hat{t} \xrightarrow{L_1,\text{GELU}} \xrightarrow{L_H,\text{GELU}} \mathbb{R}^H
+    $$
+
+    $$
+    X(\hat{x}) = \text{NNx}(\hat{x}) \in \mathbb{R}^H
+    $$
+    with NNx a feed-forward network instance from NeuralNetwork_layers
+    $$
+    \text{NNx}: \hat{x} \xrightarrow{L_d,\text{GELU}} \xrightarrow{L_H} \mathbb{R}^H
+    $$
+    Time variable uses Fourier feature positional embedding instance from FourierFeatures class
+    $$
+    F(\hat{t}) = \text{FourierFeatures}(\hat{t}) = \bigl[\sin(2\pi B\hat{t}),, \cos(2\pi B\hat{t})\bigr] \in \mathbb{R}^{2H}
+    $$
+
+    where $B \in \mathbb{R}^{H}$ is a trainable weight vector (initialised $\mathcal{N}(0,1)$).
+
+    The two variables with a normalisation layer:
+
+    $$
+    c = \text{LayerNorm}\bigl([T(\hat{t}),, X(\hat{x})]\bigr) \in \mathbb{R}^{2H}
+    $$
+
+    Output (two residual paths through NN2):
+
+    Each NN2 block acts as:
+
+    $$
+    \text{NN2}(v) = L_1!\left(\text{GELU}!\left(v_2 + \text{GELU}(L_2(v_2))\right)\right), \quad v_2 = \text{GELU}(L_3(v))
+    $$
+
+    with $v \in \mathbb{R}^{2H} \to \mathbb{R}^H \to \mathbb{R}^H \to \mathbb{R}^1$.
+
+    Final output:
+
+    $$
+    \boxed{\mathbb{U}(t,x) = \text{NN2}1(c) + \text{NN2}2!\bigl(F(\hat{t})\bigr) \cdot \nabla{x}\log\rho\text{final}(x)}
+    $$
+
+    The second term anchors the network to the score of the target distribution at all times via boundary.scorefinal.
+    """
+    
     def __init__(self,boundary,device=None,nn_params=None):
         
         super().__init__()

@@ -39,6 +39,17 @@ class KL:
         """
         Roll out trajectories and return the scalar loss Lhat.
 
+        Compute 
+        a = ∫‖du‖²dt,
+        and 
+        c = ∫du·dw 
+        along trajectories. 
+        
+        The loss is computed as:
+        L̂ = mean(0.5a + (0.5abar + g)·c) 
+
+        with g the terminal cost computed from the terminal cost class.
+
         Returns
         -------
         Lhat : torch.Tensor (scalar)
@@ -77,13 +88,14 @@ class KL:
 
             with torch.no_grad():
 
-                #make final half-step for BAOAB integrators
-                #skip for other methods and when t=0
-                xinit = self.integrator.loss_intermediate_step(xinit,dt, t_vec[i], du_bar)
-
                 abar += dt * (
                     torch.linalg.norm(du_bar, dim=-1, keepdim=True) ** 2
                 )
+
+                #make final half-step for BAOAB integrators
+                #skip for other methods and when t=0
+                #xinit = self.integrator.loss_intermediate_step(xinit,dt, t_vec[i], du_bar)
+
                 xinit = self.integrator.loss_integration_step(
                     xinit, dt, t_vec[i], du_bar, dw
                 )
@@ -108,7 +120,7 @@ class KL:
 
 class ep:
     """
-    Placeholder for an epsilon-based loss formulation.
+    Placeholder for the entropy production loss formulation.
 
     Parameters
     ----------
