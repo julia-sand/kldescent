@@ -272,6 +272,90 @@ class NeuralNetwork(nn.Module):
                 #if m.bias is not None:
                 #    torch.nn.init.xavier_uniform_(m.bias, gain=1)
 
+    def grad_x_analytic(self, input_vec):
+        """
+        THIS FUNCTION MUST BE PROPERLY CHECKED BEFORE USE! PLACEHOLDER ONLY
+        ####
+        DO NOT USE!!!
+        ####
+
+        Gradient of output w.r.t. x = input_vec[..., 1:].
+        Analytic gradient of the neural network NeuralNet with respect to the spatial input.
+         
+        In this way, it avoids calling autograd when accumulating the loss.
+        
+        Note: incompatible with autograd as is. Use for inference only.
+        """
+        import torch.nn.functional as F
+
+        fl = self.FeedForwardLayers
+        mm = self.MinMaxNorms
+        H  = self.params["duhiddenlayerneurons"]
+
+        raw_x = input_vec[..., 1:]
+        raw_t = input_vec[..., [0]]
+
+        def gelu_prime(z):
+            return (0.5 * (1.0 + torch.erf(z / math.sqrt(2)))
+                    + z * torch.exp(-0.5 * z**2) / math.sqrt(2 * math.pi))
+
+        # ── Forward (cache activations needed for backward) ──────────────────
+
+        scale_x = 1.0 / (mm.xmax - mm.xmin + 1e-8)
+        x_hat   = mm.x_minmax_norm(raw_x)
+        a_x1    = F.linear(x_hat, fl.NNx[0].weight, fl.NNx[0].bias)   # [..., H]
+        h_x1    = F.gelu(a_x1)
+        X       = F.linear(h_x1, fl.NNx[2].weight, fl.NNx[2].bias)    # [..., H]
+
+        t_hat = mm.t_minmax_norm(raw_t)
+        a_t1  = F.linear(t_hat, fl.NNt[0].weight, fl.NNt[0].bias)
+        h_t1  = F.gelu(a_t1)
+        a_t2  = F.linear(h_t1, fl.NNt[2].weight, fl.NNt[2].bias)
+        T     = F.gelu(a_t2)                                            # [..., H]
+
+        v     = torch.cat([T, X], dim=-1)                               # [..., 2H]
+        mu    = v.mean(dim=-1, keepdim=True)
+        sigma = (v.var(dim=-1, keepdim=True, unbiased=False)
+                + fl.layer_norm_combined.eps).sqrt()
+        v_hat = (v - mu) / sigma
+        c     = fl.layer_norm_combined.weight * v_hat + fl.layer_norm_combined.bias
+
+        nn1 = fl.NN1
+        a1  = F.linear(c,  nn1.layer1.weight, nn1.layer1.bias)         # [..., H]
+        h1  = F.gelu(a1)
+        a2  = F.linear(h1, nn1.layer2.weight, nn1.layer2.bias)         # [..., H]
+        h2  = h1 + F.gelu(a2)                                           # [..., H]
+
+        b_t = fl.NN2(self.FourierFeatures(t_hat))                       # [..., 1]
+
+        # ── Backward through NN1 (seed = 1) ──────────────────────────────────
+
+        g_h2 = gelu_prime(h2) * nn1.layer3.weight[0]                   # [..., H]
+        g_h1 = g_h2 + (gelu_prime(a2) * g_h2) @ nn1.layer2.weight     # [..., H]
+        g_c  = (gelu_prime(a1) * g_h1) @ nn1.layer1.weight             # [..., 2H]
+
+        # ── Backward through LayerNorm ────────────────────────────────────────
+
+        g_vhat = fl.layer_norm_combined.weight * g_c
+        g_v    = (g_vhat
+                - g_vhat.mean(dim=-1, keepdim=True)
+                - v_hat * (g_vhat * v_hat).mean(dim=-1, keepdim=True)) / sigma
+        g_X    = g_v[..., H:]                                           # [..., H]
+
+        # ── Backward through NNx ──────────────────────────────────────────────
+
+        g_hx1  = g_X @ fl.NNx[2].weight                                # [..., H]
+        g_ax1  = gelu_prime(a_x1) * g_hx1                              # [..., H]
+        g_xhat = g_ax1 @ fl.NNx[0].weight                              # [..., d]
+        g_x    = g_xhat * scale_x                                       # [..., d]
+
+        # ── Second term: b(t) * ∇_x scorefinal(x) ────────────────────────────
+
+        g_x = g_x + b_t * self.boundary.grad_x_scorefinal(raw_x)
+
+        return g_x
+
+
 #@torch.compile
 class RhoNeuralNetwork(nn.Module):
     """

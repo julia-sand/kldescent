@@ -172,13 +172,20 @@ class MLE(TerminalCost):
 
 
     def multivariate_U(self,x):
-        """Exponent of a multivariate Gaussian distirbution
+        r"""Exponent of a multivariate Gaussian distirbution
         
+        With $q = $ x[...,[:d]], $p = $ x[...,[d:]] and estimated statistics $\mu_q, \mu_p, \sigma_q^2, \sigma_p^2, c_0 = \widehat{\text{Cov}}(q,p)$:
+
+        $$\rho = \frac{c_0}{\sqrt{\sigma_q^2,\sigma_p^2}}$$
+
+        $$U(q,p) = -\frac{1}{2(1-\rho^2)}\left[\frac{(q-\mu_q)^2}{\sigma_q^2} - \frac{2\rho,(q-\mu_q)(p-\mu_p)}{\sigma_q,\sigma_p} + \frac{(p-\mu_p)^2}{\sigma_p^2}\right]$$
+
+        This is the exponent of a bivariate Gaussian (i.e. $\log \rho_f$ up to the normalising constant).
         Note currently only implemented for d=1
         """
         
         rho_var = self.cc0/torch.sqrt(self.mom_var0*self.pos_var0)
-        return -(1/(2*(1-rho_var**2)))*(((x[...,:self.d]-self.pos_mean0)**2)/self.pos_var0 - 2*((x[...,:self.d]-self.pos_mean0)*(x[...,[1]]-self.mom_mean0))*(self.cc0/(self.mom_var0*self.pos_var0)) + ((x[...,[1]]-self.mom_mean0)**2)/self.mom_var0)
+        return -(1/(2*(1-rho_var**2)))*(((x[...,:self.d]-self.pos_mean0)**2)/self.pos_var0 - 2*((x[...,:self.d]-self.pos_mean0)*(x[...,self.d:]-self.mom_mean0))*(self.cc0/(self.mom_var0*self.pos_var0)) + ((x[...,self.d:]-self.mom_mean0)**2)/self.mom_var0)
 
     def get_logpdf(self,x,*_):
 

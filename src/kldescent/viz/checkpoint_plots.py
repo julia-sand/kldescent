@@ -179,6 +179,7 @@ class PlotUtils():
         3. compute cumulants along trajectories
         4. make cumulant plots
         5. save csv of reference and computed csvs.
+        6. save csv of samples from final distribution
         """
 
         #if mcsamples is None: #set number of samples if not passed
@@ -187,6 +188,10 @@ class PlotUtils():
         final_plot_time = self.boundary_cond.params["Tf"]
 
         t_vec, xinit, xref, cumulants_nn, cumulants_ref = self.integrator.compute_sde_cumulants(benchmark=self.benchmark,mcsamples=mcsamples)
+
+        #save final samples (xinit) to csv
+        np.savetxt(f"{self.resultsdir}/samples_nn_t{final_plot_time}.csv",
+                xinit, delimiter=",", header="q,p", comments="")
 
         #marginal distribution fig
         fig = make_marginal_distribution_fig([xinit,xref],final_plot_time,benchmark=self.benchmark)
