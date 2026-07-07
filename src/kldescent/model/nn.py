@@ -195,7 +195,7 @@ class NeuralNetwork(nn.Module):
     Each NN2 block acts as:
 
     $$
-    \text{NN2}(v) = L_1!\left(\text{GELU}!\left(v_2 + \text{GELU}(L_2(v_2))\right)\right), \quad v_2 = \text{GELU}(L_3(v))
+    \text{NN2}(v) = L_1\!\left(\text{GELU}\!\left(v_2 + \text{GELU}(L_2(v_2))\right)\right), \quad v_2 = \text{GELU}(L_3(v))
     $$
 
     with $v \in \mathbb{R}^{2H} \to \mathbb{R}^H \to \mathbb{R}^H \to \mathbb{R}^1$.
@@ -203,7 +203,7 @@ class NeuralNetwork(nn.Module):
     Final output:
 
     $$
-    \boxed{\mathbb{U}(t,x) = \text{NN2}1(c) + \text{NN2}2!\bigl(F(\hat{t})\bigr) \cdot \nabla{x}\log\rho\text{final}(x)}
+    \boxed{\mathbb{U}(t,x) = \text{NN2}1(c) + \text{NN2}2\!\bigl(F(\hat{t})\bigr) \cdot \nabla{x}\log\rho\text{final}(x)}
     $$
 
     The second term anchors the network to the score of the target distribution at all times via boundary.scorefinal.

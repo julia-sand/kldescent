@@ -55,15 +55,13 @@ class Metrics():
         else: 
             self.benchmark_ = None
 
-        if self.usewandb:
+        if self.usewandb is not None:
             import wandb
-            self.wandb_run =  wandb.init(
-                                    # Set the wandb entity where your project will be logged (generally your team name).
+            self.wandb_run = wandb.init(
                                     entity="julia-sohkanen-university-of-helsinki",
-                                    # Set the wandb project where this run will be logged.
-                                    project="kl-descent",
+                                    project=self.usewandb,
                                     )
-        else: 
+        else:
             self.wandb_run = None
 
         self.kldyn = 0

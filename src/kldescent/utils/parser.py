@@ -239,8 +239,8 @@ def metric_params():
     # Instantiate the parser
     metric_params = CustomArgParse()
 
-    metric_params.add_argument('-usewandb','--usewandb', type=bool, default=False,
-                        help='Use WandB. If True, requires updating login information in model/metrics.')
+    metric_params.add_argument('-usewandb','--usewandb', type=str, default=None,
+                        help='WandB project name. If provided, logs metrics to that project. Omit to disable WandB.')
 
     metric_params.add_argument('-usebenchmark','--usebenchmark', type=str, default=None,
                         help='Filepath to location of the benchmark solution. If none, no benchmark will be plotted.')
