@@ -19,3 +19,4 @@ namelist*
 wandb*
 *logs*
 *.eps
+*.egg-info

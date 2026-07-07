@@ -24,7 +24,6 @@ class SDEBase():
             if parameters are found from data.yaml file, they are passed here. If None, these are read from command line.
         """           
 
-
         self.boundary = boundary_data
 
         #get params 
@@ -34,6 +33,11 @@ class SDEBase():
             self.sde_params = integrator_params() #parse command line
     
         self.d = self.boundary.d 
+
+        try:
+            self.kramers_coupling = self.sde_params["kramers"] #parse the kramer's coupling constant. Default is 0. 
+        except:
+            self.kramers_coupling = 0 
 
     @torch.no_grad
     def generate_time_grid(self,benchmark=None,Tf=None,tsteps=None):
@@ -243,8 +247,7 @@ class SDEBase():
         xinit = self.boundary.generate_samples(mcsamples,"initial").to(self.device)
         xref = torch.clone(xinit).to(self.device)
         du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,:self.d],dtype=torch.float32)
-                                                                ,xinit[...,:self.d]),dim=-1)).detach()
-                                   
+                                                                ,xinit[...,:self.d]),dim=-1)).detach()                           
         
         #save the cumulants of the evolutions
         cumulants_nn = []#self.save_cumulants(torch.empty((0,5),requires_grad=False,dtype=torch.float32),xinit).to(self.device)

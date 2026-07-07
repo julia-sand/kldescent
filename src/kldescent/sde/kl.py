@@ -37,8 +37,9 @@ def kl_div(d1,d2,k=1,tree1=None,return_tree=False):
         Returned only if `return_tree` is True. KDTree constructed from `d1`.
     """
         
-    #check d1, d2 in the right shape
-    batch_samples = d1.shape[0]
+    #get d1, d2 shapes
+    batch_samples = d1.shape[0] #number of samples n
+    d = d1.shape[1] #dimension
     
     #GET NEAREST NEIGHBOURS
     #this indexes the values to their nearest neighbours
@@ -49,7 +50,7 @@ def kl_div(d1,d2,k=1,tree1=None,return_tree=False):
 
     #rho = tree1.query(d1, k=[k+1])[0] #2nd closesst point to x in data1 (since closest is alwayss itself)
     #nu = tree2.query(d1, k=[k])[0] #closest point in data2
-    kl_out = (2/batch_samples)*np.log(tree2.query(d1, k=[k])[0]/(tree1.query(d1, k=[k+1])[0]+1e-10)).sum() + np.log(batch_samples/(batch_samples-1))
+    kl_out = (d/batch_samples)*np.log(tree2.query(d1, k=[k])[0]/(tree1.query(d1, k=[k+1])[0]+1e-10)).sum() + np.log(batch_samples/(batch_samples-1))
 
     if return_tree:
         return kl_out,tree1

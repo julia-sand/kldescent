@@ -79,7 +79,7 @@ def overdamped_argparser():
     parser.add_argument('-epochs','--epochs', type=int, default=1,
                         help='Total number of training epochs. This is the number of parameter updates for the drift (du) network')
     
-    parser.add_argument('-device','--device', default="cpu",
+    parser.add_argument('-device','--device', type=str, default="cpu",
                         help='Computing device to use for training. If gpu is selected, first checks if available, and defaults to cpu if none is available.')
     
     parser.add_argument('-logstep','--logstep', type=int, default=1,
@@ -119,6 +119,9 @@ def integrator_params():
 
     integrator_params.add_argument('-testsamples','--testsamples', type=int, default=3,
                         help='number of samples for computing loss metrics (eg static KL). May be also used to compute the terminal cost.')
+
+    integrator_params.add_argument('-kramers','--kramers', default=0,
+                        help='Kramers coupling constant for regularised dynamics.')
 
     args1 = integrator_params.parse_known_args(integrator_params.argfile)
 
