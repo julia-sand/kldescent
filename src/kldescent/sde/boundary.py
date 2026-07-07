@@ -55,7 +55,10 @@ class Boundaries():
         else:
             self.params = boundary_params()
 
-        self.d = self.params["d"]
+        try:
+            self.d = self.params["d"]
+        except:
+            self.d = 1
         
         if logfile is not None:
             save_params(self.params,logfile) #add to log

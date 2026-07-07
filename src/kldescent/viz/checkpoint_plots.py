@@ -55,8 +55,8 @@ class PlotUtils():
         if folder is None:
             self.folder = fetch_results_folder_from_cmd()
         else:
-            self.folder = folder 
-        
+            self.folder = folder
+
         boundary_cond,data_loaded = init_params_from_file(self.folder)
 
         params = checkpoint_plot_params() #get checkpoint plot parameters from cmd line
@@ -86,8 +86,11 @@ class PlotUtils():
             
         self.benchmark = benchmark
 
-        set_seed(data_loaded["seed"])
-                
+        try:
+            set_seed(self.data_loaded["seed"])
+        except:
+            set_seed()
+    
         #make new folder for the results labelled with epoch
         os.makedirs(self.folder+f"/plots_{self.epoch}", exist_ok = True) 
 
@@ -134,7 +137,7 @@ class PlotUtils():
             mcsamples : int
                 Overwrite default number of test/mc samples
         """
-        
+
         self.load_du_checkpoint()
         if usebenchmark is not None:
             self.load_benchmark_solution(usebenchmark)
@@ -144,7 +147,7 @@ class PlotUtils():
         self.make_drift_plot(numplots=4)
         self.make_sde_plots()
         #self.make_intermediate_histograms()
-        
+
         plt.close("all")
 
     def load_benchmark_solution(self,usebenchmark):
@@ -155,24 +158,23 @@ class PlotUtils():
             if "Gauss" in f"{self.boundary_cond.__class__.__name__}":  
                 self.benchmark = GaussBenchmarkSolution(boundary=self.boundary_cond,
                                                             folder_name=usebenchmark)
-            
+
             else:
                 self.benchmark = PerturbativeBenchmarkSolution(bridge_type=self.bridge_type,boundary=self.boundary_cond,
                                               folder_name=usebenchmark)
                 self.benchmark.initialise_net(self.benchmark.bridge_type,nn_params=self.data_loaded)
                 #self.net = self.benchmark.du_net_benchmark 
 
-            
     def perturbative_plots_du(self,plottimes):
         """make plots to show the results of the evolution under perturbative drift"""
-        
+
         self.load_perturbative_du_checkpoint()
-        
+
         self.make_intermediate_histograms()
         self.make_drift_plot(numplots=4)
 
     @torch.no_grad
-    def make_sde_plots(self,mcsamples):
+    def make_sde_plots(self,):
         """Make plots and save results of sde integration
         1. compute final point clouds
         2. make final time marginal distribution plot
@@ -201,9 +203,9 @@ class PlotUtils():
                                         add_free_diffusion=False,)
         if self.benchmark is not None:
             self.make_cumulant_error_plot(t_vec,t_vec,cumulants_nn,cumulants_ref)
-        
+
         plt.close("all")
-    
+
     @torch.no_grad
     def make_cumulant_plot_from_csv(self):
         t_vec1,t_vec2,cumulants_nn,cumulants_ref = load_cumulant_csvs(self.folder)
@@ -390,7 +392,7 @@ class PlotUtils():
 
         ax0 = fig.get_axes()
         ax_list = get_inset_axes(ax0[0])
-        
+
         for compute_rho_fun,label in zip([self.compute_rho_nn,compute_rho_girsanov],["girsanovnet","mc"]):
             xs,joint_out = compute_rho_fun(x_samples=20, integrator=self.integrator)
 
@@ -619,7 +621,7 @@ if __name__=="__main__":
     if usebenchmark is not None:
         plot_utils.load_benchmark_solution(usebenchmark)
 
-    plot_utils.make_contour_plot2(numplots=6)
+    #plot_utils.make_contour_plot2(numplots=6)
     plot_utils.make_drift_plot(numplots=5)
     #plot_utils.make_inverted_drift_plot(numplots=5)
     plot_utils.make_sde_plots()
