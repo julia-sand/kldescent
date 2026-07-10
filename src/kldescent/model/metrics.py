@@ -3,7 +3,7 @@ import torch
 import psutil
 
 from kldescent.sde.kl import static_kl_divergence
-from kldescent.utils.parser import metric_params
+from kldescent.utils.parser import metric_params, overdamped_argparser
 from kldescent.benchmark.benchmarksol import PerturbativeBenchmarkSolution,GaussBenchmarkSolution
 
 def log_cpu(wandb_run):
@@ -42,14 +42,21 @@ class Metrics():
 
         self.metrics_logger = metrics_logger #csv logger
 
-        self.usebenchmark,self.usewandb = metric_params()
+        self.usebenchmark, self.usewandb = metric_params()
+        loss_type = overdamped_argparser()["loss"]
 
         if self.usebenchmark is not None:
             if "Gauss" in integrator.boundary.__class__.__name__:
-                self.benchmark_ = GaussBenchmarkSolution(bridge_type=bridge_type,boundary=integrator.boundary,folder_name = self.usebenchmark)
+                self.benchmark_ = GaussBenchmarkSolution(bridge_type=bridge_type,
+                                                         boundary=integrator.boundary,
+                                                         folder_name=self.usebenchmark,
+                                                         loss_type=loss_type)
                 self.benchmarknet = None
             else:
-                self.benchmark_ = PerturbativeBenchmarkSolution(bridge_type=bridge_type,boundary=integrator.boundary,folder_name = self.usebenchmark)
+                self.benchmark_ = PerturbativeBenchmarkSolution(bridge_type=bridge_type,
+                                                                 boundary=integrator.boundary,
+                                                                 folder_name=self.usebenchmark,
+                                                                 loss_type=loss_type)
                 self.benchmark_.initialise_net(self.benchmark_.bridge_type)
                 self.benchmarknet = self.benchmark_.du_net_benchmark 
         else: 

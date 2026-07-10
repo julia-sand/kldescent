@@ -13,9 +13,11 @@ from kldescent.benchmark.gaussian import GaussBVP
 
 class BaseBenchmarkSolution():
 
-    def __init__(self, bridge_type, boundary=None, folder_name=None):
-        
+    def __init__(self, bridge_type, boundary=None, folder_name=None, loss_type="kl"):
+
         self.boundary = boundary
+        self.bridge_type = bridge_type
+        self.loss_type = loss_type
 
         if folder_name is not None: #use this if running the file directly
             self.folder_name = folder_name
@@ -94,7 +96,7 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
             Retrieve a single perturbative cumulant.
     """
 
-    def __init__(self, bridge_type="half", boundary=None, folder_name=None):
+    def __init__(self, bridge_type="half", boundary=None, folder_name=None, loss_type="kl"):
         r"""
         Initialise parameters and configure access to benchmark solutions.
 
@@ -112,7 +114,7 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         """
         
         self.bridge_type = bridge_type
-        BaseBenchmarkSolution.__init__(self,self.bridge_type,boundary,folder_name)
+        BaseBenchmarkSolution.__init__(self,self.bridge_type,boundary,folder_name, loss_type)
         #self.initialise_net()
         self.du_net_benchmark = None
 
@@ -323,9 +325,9 @@ class GaussBenchmarkSolution(BaseBenchmarkSolution):
         get_benchmark_quantity()
     """
 
-    def __init__(self,bridge_type="half",boundary=None,folder_name=None):   
+    def __init__(self,bridge_type="half",boundary=None,folder_name=None, loss_type="kl"):   
         
-        BaseBenchmarkSolution.__init__(self,bridge_type="half",boundary=boundary,folder_name=folder_name)
+        BaseBenchmarkSolution.__init__(self,bridge_type="half",boundary=boundary,folder_name=folder_name,loss_type=loss_type)
         
         #set different filename for underdamped cumulants 
         self.underdamped_cumulants_loc = self.folder_name+"/underdamped_cumulants.csv"

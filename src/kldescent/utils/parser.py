@@ -68,6 +68,27 @@ def cell_argparser():
     return vars(args[0])
 
 
+
+def train_argparser():
+    """Parse arguments for solving the cell problem in benchmark/iteration"""
+    
+    # Instantiate the parser
+    parser = CustomArgParse()
+
+    parser.add_argument('-lr','--lr', default=0.0005,
+                        help='Initial learning rate.')
+    
+    parser.add_argument('-startdecay','--startdecay', type=int, default=20,
+                        help='Number of epochs to wait before starting learning rate scheduling.')
+    
+    parser.add_argument('-gradclip','--gradclip',default=0.5,
+                        help='size of gradient clipping ')
+    
+    args = parser.parse_known_args(parser.argfile)
+
+    return vars(args[0])
+
+
 def overdamped_argparser():
     #general configs for the training process
     # Instantiate the parser

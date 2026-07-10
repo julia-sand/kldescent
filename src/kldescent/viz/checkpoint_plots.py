@@ -65,17 +65,18 @@ class PlotUtils():
 
         #set useful parameters and defaults if they are not in param file
         try:
-            #set bridge type 
             self.bridge_type = data_loaded["bridgetype"]
-            
+            self.loss_type = data_loaded.get("loss", "kl")
+
             if params["mcsamples"]>0:
                 self.mc_samples = params["mcsamples"]
-            else: #use test samples if no value is specified
+            else:
                 self.mc_samples = self.data_loaded["testsamples"]
-        
+
         except TypeError:
             self.bridge_type = "half"
-            self.mc_samples = 20 #overwrite if not passed or no loaded data   
+            self.loss_type = "kl"
+            self.mc_samples = 20
 
         if epoch is None:
             self.epoch = params["epoch"]
@@ -155,14 +156,17 @@ class PlotUtils():
 
         if self.benchmark is None:
 
-            if "Gauss" in f"{self.boundary_cond.__class__.__name__}":  
+            if "Gauss" in f"{self.boundary_cond.__class__.__name__}":
                 self.benchmark = GaussBenchmarkSolution(boundary=self.boundary_cond,
-                                                            folder_name=usebenchmark)
+                                                        folder_name=usebenchmark,
+                                                        loss_type=self.loss_type)
 
             else:
-                self.benchmark = PerturbativeBenchmarkSolution(bridge_type=self.bridge_type,boundary=self.boundary_cond,
-                                              folder_name=usebenchmark)
-                self.benchmark.initialise_net(self.benchmark.bridge_type,nn_params=self.data_loaded)
+                self.benchmark = PerturbativeBenchmarkSolution(bridge_type=self.bridge_type,
+                                                               boundary=self.boundary_cond,
+                                                               folder_name=usebenchmark,
+                                                               loss_type=self.loss_type)
+                self.benchmark.initialise_net(self.benchmark.bridge_type, nn_params=self.data_loaded)
                 #self.net = self.benchmark.du_net_benchmark 
 
     def perturbative_plots_du(self,plottimes):
