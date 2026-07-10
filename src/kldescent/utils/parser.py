@@ -56,7 +56,7 @@ def fetch_results_folder_from_cmd():
 
 def fetch_checkpoint_path():
     # Instantiate the parser
-    parser6 = CustomArgParse()
+    parser6 = argparse.ArgumentParser()
     
     parser6.add_argument('-checkpointpath','--checkpointpath', type=str, default=None,
                         help='Path for initialisation checkpointcheckpoint to pick up immediately from training loop. Path should be provided from the current working directory.')
@@ -69,7 +69,7 @@ def cell_argparser():
     """Parse arguments for solving the cell problem in benchmark/iteration"""
     
     # Instantiate the parser
-    parser = CustomArgParse()
+    parser = argparse.ArgumentParser()
 
     parser.add_argument('-cellxnum','--cellxnum', type=int, default=1000,
                         help='how many x values to use in the spacial discretisation when computing the cell problem')
@@ -77,7 +77,7 @@ def cell_argparser():
     parser.add_argument('-celltnum','--celltnum', type=int, default=11,
                         help='how many t values to use in the temporal discretisation when computing the cell problem')
     
-    args = parser.parse_known_args(parser.argfile)
+    args = parser.parse_known_args()
 
     return vars(args[0])
 
@@ -87,7 +87,7 @@ def train_argparser():
     """Parse arguments for solving the cell problem in benchmark/iteration"""
     
     # Instantiate the parser
-    parser = CustomArgParse()
+    parser = argparse.ArgumentParser()
 
     parser.add_argument('-lr','--lr',  type=float, default=0.0005,
                         help='Initial learning rate.')
@@ -98,7 +98,7 @@ def train_argparser():
     parser.add_argument('-gradclip','--gradclip', type=float, default=0.5,
                         help='size of gradient clipping ')
     
-    args = parser.parse_known_args(parser.argfile)
+    args = parser.parse_known_args()
 
     return vars(args[0])
 
@@ -106,7 +106,7 @@ def train_argparser():
 def overdamped_argparser():
     #general configs for the training process
     # Instantiate the parser
-    parser = CustomArgParse()
+    parser = argparse.ArgumentParser()
 
     parser.add_argument('-bridgetype','--bridgetype', type=str, default="half",
                         help='The type of bridge configuration. The bridge type applies to the loss function (half and marginal only) and to specify the benchmark problem. Valid values are half, marginal or full')
@@ -135,7 +135,7 @@ def overdamped_argparser():
     parser.add_argument('-pretrain','--pretrain', type=str, default=None,
                         help='Path from current working directory to a CSV containing function values to fit to the neural network before training. See model/pretrain for required structure of the csv file.')
              
-    args = parser.parse_known_args(parser.argfile)
+    args = parser.parse_known_args()
 
     return vars(args[0])
 
@@ -143,7 +143,7 @@ def overdamped_argparser():
 def integrator_params():
 
     # Instantiate the parser
-    integrator_params = CustomArgParse()
+    integrator_params = argparse.ArgumentParser()
 
     integrator_params.add_argument('-batchsamples','--batchsamples', type=int, 
                         default=64,
@@ -158,7 +158,7 @@ def integrator_params():
     integrator_params.add_argument('-kramers','--kramers',  type=float, default=0,
                         help='Kramers coupling constant for regularised dynamics.')
 
-    args1 = integrator_params.parse_known_args(integrator_params.argfile)
+    args1 = integrator_params.parse_known_args()
 
     return vars(args1[0])
 
@@ -166,7 +166,7 @@ def integrator_params():
 def boundary_params():
 
     # Instantiate the parser
-    boundary_params = CustomArgParse()
+    boundary_params = argparse.ArgumentParser()
 
     boundary_params.add_argument('-d','--d', type=int, default=1,
                         help='Dimension of position space.')
@@ -180,7 +180,7 @@ def boundary_params():
     boundary_params.add_argument('-weight','--weight', type=float, default=20,
                         help='M, baldovin constant. Encodes the weighting of the terminal vs running cost.')
 
-    args2 = boundary_params.parse_known_args(boundary_params.argfile)
+    args2 = boundary_params.parse_known_args()
 
     return vars(args2[0])
 
@@ -189,7 +189,7 @@ def gaussian_params():
     #initial conditions for a gaussian half bridge
 
     # Instantiate the parser
-    params1 = CustomArgParse()
+    params1 = argparse.ArgumentParser()
 
     params1.add_argument('-muinitial','--muinitial', type=float, default=0,
                         help='Initial value of the mean when using Gaussian boundary conditions')
@@ -203,7 +203,7 @@ def gaussian_params():
     params1.add_argument('-sigmafinal','--sigmafinal', type=float, default=0.5,
                         help='Target value of the standard deviation when using Gaussian boundary conditions')
 
-    args5 = params1.parse_known_args(params1.argfile)
+    args5 = params1.parse_known_args()
 
     return vars(args5[0])
 
@@ -211,12 +211,12 @@ def du_network_params():
     """Parameters for neural network used to model the drift
     """
     # Instantiate the parser
-    parser3 = CustomArgParse()
+    parser3 = argparse.ArgumentParser()
     
     parser3.add_argument('-duhiddenlayerneurons','--duhiddenlayerneurons', type=int, default=16,
                         help='Number of hidden dimensions in each layer of the Neural network model modelling DU')
 
-    args3 = parser3.parse_known_args(parser3.argfile)
+    args3 = parser3.parse_known_args()
 
     return vars(args3[0])
 
@@ -224,12 +224,12 @@ def rho_network_params():
     """Parameters for neural network used to find the current final distribution
     """
     # Instantiate the parser
-    parser3 = CustomArgParse()
+    parser3 = argparse.ArgumentParser()
     
     parser3.add_argument('-rhohiddenlayerneurons','--rhohiddenlayerneurons', type=int, default=16,
                         help='Number of hidden dimensions in each layer of the Neural network model modelling the terminal distribution')
 
-    args3 = parser3.parse_known_args(parser3.argfile)
+    args3 = parser3.parse_known_args()
 
     return vars(args3[0])
 
@@ -238,7 +238,7 @@ def girsanov_plot_params():
     """
     
     # Instantiate the parser
-    parser4 = CustomArgParse()
+    parser4 = argparse.ArgumentParser()
     
     parser4.add_argument('-xsamples','--xsamples', type=int,
                         default=20,
@@ -247,7 +247,7 @@ def girsanov_plot_params():
     parser4.add_argument('-mcsamples','--mcsamples', type=int, default=1000,
                         help='Number of monte carlo trajectories to use per coordinate.')
                       
-    args4 = parser4.parse_known_args(parser4.argfile)
+    args4 = parser4.parse_known_args()
 
     return vars(args4[0])
 
@@ -257,7 +257,7 @@ def checkpoint_plot_params():
     """
     
     # Instantiate the parser
-    parser5 = CustomArgParse()
+    parser5 = argparse.ArgumentParser()
     requiredNamed = parser5.add_argument_group('required named arguments')
     requiredNamed.add_argument('-epoch','--epoch', type=int,
                                 help='At which epoch checkpoint to plot. A checkpoint file ending in _epoch must be available, otherwise default initialisation is used.')
@@ -272,7 +272,7 @@ def checkpoint_plot_params():
 def metric_params():
 
     # Instantiate the parser
-    metric_params = CustomArgParse()
+    metric_params = argparse.ArgumentParser()
 
     metric_params.add_argument('-usewandb','--usewandb', type=str, default=None,
                         help='WandB project name. If provided, logs metrics to that project. Omit to disable WandB.')
@@ -280,7 +280,7 @@ def metric_params():
     metric_params.add_argument('-usebenchmark','--usebenchmark', type=str, default=None,
                         help='Filepath to location of the benchmark solution. If none, no benchmark will be plotted.')
 
-    args2 = metric_params.parse_known_args(metric_params.argfile)[0]
+    args2 = metric_params.parse_known_args()[0]
 
     return args2.usebenchmark,args2.usewandb
 
@@ -288,7 +288,7 @@ def metric_params():
 def seed():
 
     # Instantiate the parser
-    seed = CustomArgParse()
+    seed = argparse.ArgumentParser()
 
     seed.add_argument('-seed','--seed', type=int, default=1,
                         help='random seed')

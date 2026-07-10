@@ -9,6 +9,7 @@ from tqdm import tqdm
 from kldescent.sde.girsanovpdf import compute_log_pdf
 from kldescent.utils.parser import train_argparser
 
+
 class Train():
     """
     Defines the parameters of the training process and the training steps
@@ -20,8 +21,8 @@ class Train():
         self.train_params = train_argparser()
 
         #set defaults of training process
-        self.lr = self.train_params["lr"] #0.0005 #2.5e-4
-        #0.0005 #initial learning rate
+        self.lr = self.train_params["lr"]       # initial lr (configurable via --lr)
+        self.base_lr = 0.0005                   # cosine-annealing ceiling, always fixed
         self.lossfn = lossfn
         self.net = net
 
@@ -34,14 +35,15 @@ class Train():
         self.optimiser_fourier = AdamW(self.net.FourierFeatures.parameters(), lr=self.lr_fourier)
 
         self.milestone = 200 #how often to decay learning rate
-        self.start_decay = self.train_params["startdecay"] #when to start decaying learning rate 
-        
+        self.start_decay = self.train_params["startdecay"] #when to start decaying learning rate
+
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
-        self.scheduler1 = CosineAnnealingLR(self.optimiser_fourier, 
+        self.scheduler1 = CosineAnnealingLR(self.optimiser_fourier,
                                         T_max=100, eta_min=1e-10)
-        #self.scheduler = ExponentialLR(self.optimiser, gamma=self.gamma) #Decays the learning rate of each parameter group by gamma every ""step_size"".
-        self.scheduler2 = CosineAnnealingLR(self.optimiser_feedforward, 
+        self.scheduler2 = CosineAnnealingLR(self.optimiser_feedforward,
                                         T_max=100, eta_min=1e-10)
+        # fix cosine-annealing ceiling to base_lr regardless of --lr
+        self.scheduler2.base_lrs = [self.base_lr] * len(self.scheduler2.base_lrs)
         #ReduceLROnPlateau(self.optimiser_feedforward,
         #                                    mode="min",
         #                                    factor=0.9,
