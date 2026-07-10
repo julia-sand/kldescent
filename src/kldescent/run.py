@@ -43,8 +43,9 @@ def run():
     integrator = getattr(langevin, args["integrator"])(boundaryconditions, net=net)
 
     #initialise loss function
-    _loss_cls = {"kl": loss_fns.KL, "ep": loss_fns.ep}[args["loss"]]
-    loss = _loss_cls(integrator, terminal_cost)
+    #_loss_cls = {"kl": loss_fns.KL, "ep": loss_fns.ep}[args["loss"]]
+    loss = getattr(loss_fns, args["loss"])(integrator, terminal_cost)
+    #_loss_cls(integrator, terminal_cost)
 
     #initialise trainer
     trainer = train.Train(net, loss)
@@ -53,9 +54,9 @@ def run():
     metric_ = metrics.Metrics(net,integrator, metrics_logger,args["bridgetype"])    
 
     #log the parameters
-    for params in [args,net.params,integrator.sde_params]:
+    for params in [args,net.params,integrator.sde_params,trainer.train_params]:
         logger.save_params(params,metrics_logger.datayaml)
-    
+   
     #pretrain the network with data from csv if provided
     if args["pretrain"] is not None: #if a path is provided 
         run_pretrain(net,

@@ -1,30 +1,44 @@
 """handles parameter loading from command line"""
 
 import argparse
+import os
+import yaml
 
 class CustomArgParse(argparse.ArgumentParser):
     """
-    Custom argument parser. 
-    Sets the parser to read from a file if one is provided, otherwise returns the 
-    defaults. 
+    Custom argument parser.
+
+    If a ``data.yaml`` file exists inside the ``--folder`` directory, its
+    parameter values are used as default parameter values unless given as command-line arguments.
+
+    Without a yaml file the parser falls back to argparse defaults, so
+    existing command-line usage is unchanged.
     """
 
-    #overwrites the default behaviour if using results folder to use the parameter file available
     def __init__(self):
-        self.loc = fetch_results_folder_from_cmd()
-        if self.loc is not None:
-            argparse.ArgumentParser.__init__(self,fromfile_prefix_chars = '@')
-
-            #uncomment this to use a custom file format
-            #self.argfile = [f'@{self.loc}/data.txt']
-
-        else:
-            argparse.ArgumentParser.__init__(self)
-        
-        self.argfile = None
-
-        #disallow abbreviations    
+        argparse.ArgumentParser.__init__(self)
         self.allow_abbrev = False
+        self.loc = fetch_results_folder_from_cmd()
+        self.argfile = self._load_yaml_argfile()
+
+    def _load_yaml_argfile(self):
+        """Return a flat arg list from data.yaml, or None if not found."""
+        if self.loc is None:
+            return None
+        yaml_path = os.path.join(self.loc, "data.yaml")
+        if not os.path.isfile(yaml_path):
+            return None
+        
+        with open(yaml_path) as f:
+            params = yaml.safe_load(f) or {}
+        
+        args = []
+        for key, val in params.items():
+            if val is None:
+                continue
+            args += [f"--{key}", str(val)]
+        
+        return args
 
 
 
@@ -42,7 +56,7 @@ def fetch_results_folder_from_cmd():
 
 def fetch_checkpoint_path():
     # Instantiate the parser
-    parser6 = argparse.ArgumentParser()
+    parser6 = CustomArgParse()
     
     parser6.add_argument('-checkpointpath','--checkpointpath', type=str, default=None,
                         help='Path for initialisation checkpointcheckpoint to pick up immediately from training loop. Path should be provided from the current working directory.')
@@ -75,13 +89,13 @@ def train_argparser():
     # Instantiate the parser
     parser = CustomArgParse()
 
-    parser.add_argument('-lr','--lr', default=0.0005,
+    parser.add_argument('-lr','--lr',  type=float, default=0.0005,
                         help='Initial learning rate.')
     
     parser.add_argument('-startdecay','--startdecay', type=int, default=20,
                         help='Number of epochs to wait before starting learning rate scheduling.')
     
-    parser.add_argument('-gradclip','--gradclip',default=0.5,
+    parser.add_argument('-gradclip','--gradclip', type=float, default=0.5,
                         help='size of gradient clipping ')
     
     args = parser.parse_known_args(parser.argfile)
@@ -141,7 +155,7 @@ def integrator_params():
     integrator_params.add_argument('-testsamples','--testsamples', type=int, default=3,
                         help='number of samples for computing loss metrics (eg static KL). May be also used to compute the terminal cost.')
 
-    integrator_params.add_argument('-kramers','--kramers', default=0,
+    integrator_params.add_argument('-kramers','--kramers',  type=float, default=0,
                         help='Kramers coupling constant for regularised dynamics.')
 
     args1 = integrator_params.parse_known_args(integrator_params.argfile)
@@ -243,7 +257,7 @@ def checkpoint_plot_params():
     """
     
     # Instantiate the parser
-    parser5 = argparse.ArgumentParser()
+    parser5 = CustomArgParse()
     requiredNamed = parser5.add_argument_group('required named arguments')
     requiredNamed.add_argument('-epoch','--epoch', type=int,
                                 help='At which epoch checkpoint to plot. A checkpoint file ending in _epoch must be available, otherwise default initialisation is used.')
@@ -274,7 +288,7 @@ def metric_params():
 def seed():
 
     # Instantiate the parser
-    seed = argparse.ArgumentParser()
+    seed = CustomArgParse()
 
     seed.add_argument('-seed','--seed', type=int, default=1,
                         help='random seed')

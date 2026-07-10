@@ -6,9 +6,9 @@ import yaml
 
 from kldescent.utils.parser import fetch_results_folder_from_cmd
 
-def save_params(params,logfile):
+def save_params(params, logfile):
     """
-    Saves parameters to a log file.
+    Saves parameters to a log file, merging with any existing content.
 
     Args:
         params (dict): Parameters to output.
@@ -17,9 +17,13 @@ def save_params(params,logfile):
     Returns:
         None
     """
-
-    with open(logfile, 'a+') as outfile:
-        yaml.dump(params, outfile)
+    existing = {}
+    if os.path.isfile(logfile):
+        with open(logfile) as f:
+            existing = yaml.safe_load(f) or {}
+    existing.update(params)
+    with open(logfile, 'w') as outfile:
+        yaml.dump(existing, outfile)
 
 class LossLogger():
     """

@@ -1,4 +1,4 @@
-    import torch
+import torch
 #from torch import nn as torchnn
 from torch.optim import Adam,AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR,ReduceLROnPlateau
@@ -17,24 +17,24 @@ class Train():
 
     def __init__(self, net, lossfn):
 
-        train_params = train_argparser()
+        self.train_params = train_argparser()
 
         #set defaults of training process
-        self.lr = train_params["lr"] #0.0005 #2.5e-4
+        self.lr = self.train_params["lr"] #0.0005 #2.5e-4
         #0.0005 #initial learning rate
         self.lossfn = lossfn
         self.net = net
 
         self.gamma = 0.1 #rate of learning rate decrease.
 
-        self.clip = train_params["gradclip"]#0.5 #gradient clipping
+        self.clip = self.train_params["gradclip"]#0.5 #gradient clipping
         self.lr_fourier = 0.01
 
         self.optimiser_feedforward = AdamW(self.net.FeedForwardLayers.parameters(), lr=self.lr, weight_decay=1e-3)
         self.optimiser_fourier = AdamW(self.net.FourierFeatures.parameters(), lr=self.lr_fourier)
 
         self.milestone = 200 #how often to decay learning rate
-        self.start_decay = train_params["startdecay"] #when to start decaying learning rate 
+        self.start_decay = self.train_params["startdecay"] #when to start decaying learning rate 
         
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
         self.scheduler1 = CosineAnnealingLR(self.optimiser_fourier, 

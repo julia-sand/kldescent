@@ -3,7 +3,7 @@
 import torch
 
 
-class KL:
+class kl:
     """
     Compute the KL-divergence loss (Proposition 3, arXiv:2410.05163) using
     a pre-constructed integrator for the SDE stepping.
