@@ -1,3 +1,8 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
 [project]
 name = "kldescent"
 version = "0.1.0"
@@ -8,17 +13,44 @@ dependencies = [
     "matplotlib",
     "matplotlib-inline",
     "numpy",
+    "psutil",
     "pyyaml",
+    "scipy",
+    "scikit-learn",
     "tqdm",
     "torch",
 ]
 
-[tool.uv.sources]
-torch = [
-    { index = "pytorch-cpu" },
-]
+# 1. Define the options (extras) available to the user
+[project.optional-dependencies]
+cpu = ["torch", "torchvision"]
+cuda = ["torch", "torchvision"]
 
+# 2. Tell uv that these two choices are mutually exclusive
+[tool.uv]
+conflicts = [[{ extra = "cpu" }, { extra = "cuda" }]]
+
+# 3. Register the different PyTorch download repositories
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cuda"
+url = "https://download.pytorch.org/whl/cu126" # Change 'cu126' to your preferred CUDA version
+explicit = true
+
+# 4. Map the user's choice (extra) to the correct repository index
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cuda", extra = "cuda" },
+]
+torchvision = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cuda", extra = "cuda" },
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kldescent"]
