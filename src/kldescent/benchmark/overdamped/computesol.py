@@ -137,7 +137,6 @@ def compute_overdamped(boundary,save_location,bridge_type,filename="overdamped")
                                 filename_full,
                                 integrator=mcintegrator)
 
-
     return 
 
 def save_rescaled_csv(Tf,folder,filename="overdamped"):
