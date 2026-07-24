@@ -163,7 +163,7 @@ def save_rescaled_csv(Tf,folder,filename="overdamped"):
     #remove zero probability areas
     arr = arrtemp[np.where(arrtemp[:,2]>0)] 
 
-    arr[-1,0] = Tf2 #get t0 from t2
+    Tf2 = arr[-1,0] #find final cell problem time
     arr[:,0] *= (Tf/Tf2) 
 
     save_array(arr,folder,filename+"_rescaled",header="#t,q,rho,sigma")
