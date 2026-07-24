@@ -1,6 +1,5 @@
 """Useful functions used in computing perturbative solution"""
 
-import os
 import csv
 
 import numpy as np
@@ -32,7 +31,7 @@ def apply_filter(y,filter_delta=None):
     
     if filter_delta is None:
         #default to 1pc of the data vector
-        filter_delta = int(np.floor(len_y * 0.005))
+        filter_delta = int(np.floor(len(y) * 0.005))
 
     #apply convolution with moving averages
     out = np.convolve(y,(1/filter_delta)*np.ones(filter_delta),'same')
@@ -65,29 +64,4 @@ def make_csv_and_header(save_location,filename,header):
         writer.writerow(header)
     
     return filename_full
-
-def save_array(arr_out,save_location,filename,header):
-    """
-    Save an array to a CSV file at the specified location.
-
-    The output directory is created automatically if it does not already exist.
-    If the file already exists, new values are appended to it.
-    
-    Parameters
-    ----------
-    arr_out : np.ndarray
-        Array to be saved.
-    save_location : str
-        Directory path where the file will be written, relative to the
-        current working directory.
-    filename : str
-        Name of the output file (should include the `.csv` extension if desired).
-    header : str
-        Text to include at the top of the CSV file as a comment.
-    """
-
-    #make dir if does not exist
-    os.makedirs(save_location,exist_ok=True)
-    np.savetxt(save_location+"/"+filename+".csv", arr_out ,fmt="%10.6f",header = header,delimiter=',')
-    return
 

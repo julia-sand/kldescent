@@ -3,7 +3,8 @@
 import numpy as np
 from scipy.integrate import solve_bvp
 
-from .utilfunctions import save_array
+#from .utilfunctions import save_array
+from kldescent.utils.misc import append_array_to_csv,save_array
 
 class GaussBVP():
 
@@ -292,6 +293,16 @@ class GaussBVP():
         
         return
     
+class GaussBVPEP(GaussBVP):
+    """BVP solver for the Gaussian benchmark under the entropy-production loss.
+
+    Inherits get_half_sol / get_marginal_half_sol / get_full_sol and
+    save_csvs from GaussBVP unchanged — the bridge-type boundary conditions
+    are the same. Override the ODE system (fun / bc_* / _free_dynamics_guess)
+    with the EP-specific equations.
+    """
+
+
 if __name__=="__main__":
     import matplotlib.pyplot as plt
     

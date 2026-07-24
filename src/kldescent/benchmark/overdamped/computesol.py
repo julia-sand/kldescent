@@ -6,7 +6,7 @@ import numpy as np
 from kldescent.benchmark.heatintegrators import *
 from kldescent.benchmark.overdamped.iteration import CellProblem
 from kldescent.benchmark.utilfunctions import * 
-from kldescent.utils.misc import append_array_to_csv
+from kldescent.utils.misc import append_array_to_csv,save_array
 
 def compute_rho(phi_t,hatphi_t):
     
@@ -104,7 +104,7 @@ def save_solution_in_time(cell,filename_full,integrator):
 
     return 
 
-def compute_overdamped(boundary,save_location,bridge_type):
+def compute_overdamped(boundary,save_location,bridge_type,filename="overdamped"):
     """
     Compute the overdamped cell problem
     
@@ -131,10 +131,42 @@ def compute_overdamped(boundary,save_location,bridge_type):
     cell = CellProblem(boundary,save_location,bridge_type=bridge_type)
     cell.iteration(integrator=mcintegrator)
 
-    filename_full = make_csv_and_header(save_location,filename="overdamped",header="#t,q,rho,sigma")
+    filename_full = make_csv_and_header(save_location,filename,header="#t,q,rho,sigma")
     save_solution_in_time(cell,
                                 filename_full,
                                 integrator=mcintegrator)
+
+
+    return 
+
+def save_rescaled_csv(Tf,folder,filename="overdamped"):
+    '''prepare the overdamped csv for pretraining input into the neural network
+
+    Rescales the t2 time scale of the overdamped solution to match the Tf input
+
+    Saves a copy with the rescaled time and areas of no probability density (rho = 0) removed  
+    
+    Tf : float
+        final time for the rescaled solution 
+
+    folder : str
+        location of original csv and output location
+    filename : str 
+        filename of original csv, output filename has the word rescaled appended to it. 
+
+    '''
+
+    #load csv 
+    arrtemp = np.loadtxt(folder+"/"+filename+".csv",
+                    delimiter=",", skiprows=1)
+    
+    #remove zero probability areas
+    arr = arrtemp[np.where(arrtemp[:,2]>0)] 
+
+    arr[-1,0] = Tf2 #get t0 from t2
+    arr[:,0] *= (Tf/Tf2) 
+
+    save_array(arr,folder,filename+"_rescaled",header="#t,q,rho,sigma")
 
     return 
 
@@ -144,5 +176,6 @@ if __name__=="__main__":
     boundary = UnderdampedLandauer()
     folder = fetch_results_folder_from_cmd() 
     compute_overdamped(boundary,folder,bridge_type="half")
-    
-    
+
+    #save a copy of the overdamped solution scaled to the final time given by the boundary conditions. 
+    save_rescaled_csv(boundary.params["Tf"],folder,filename="overdamped")
