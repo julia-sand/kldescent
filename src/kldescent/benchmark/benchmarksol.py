@@ -168,9 +168,6 @@ class PerturbativeBenchmarkSolution(BaseBenchmarkSolution):
         """Return an array for benchmark solution"""
         #try:    
         return self.get_arr(data)
-        #except FileNotFoundError:
-        #    self.initialise_net(self,bridge_type)
-        #    return self.get_arr(data)
 
     def get_arr(self,data=None):
         if data == "overdamped":

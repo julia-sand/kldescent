@@ -8,6 +8,7 @@ from kldescent.benchmark.overdamped.iteration import CellProblem
 from kldescent.benchmark.utilfunctions import * 
 from kldescent.utils.misc import append_array_to_csv,save_array
 
+
 def compute_rho(phi_t,hatphi_t):
     
     return phi_t*hatphi_t
@@ -159,13 +160,17 @@ def save_rescaled_csv(Tf,folder,filename="overdamped"):
     #load csv 
     arrtemp = np.loadtxt(folder+"/"+filename+".csv",
                     delimiter=",", skiprows=1)
-    
+
+    Tf2 = arrtemp[-1,0] #find final cell problem time
+    arrtemp[:,0] *= (Tf/Tf2) 
+
+    dx = np.abs(arrtemp[1,1]-arrtemp[0,1])
+    #add filtering, consistent with the underdamped solution    
+    arrtemp[:,2] = savgol_filter_(arrtemp[:,2],dx=dx,deriv=0)
+    arrtemp[:,3] = savgol_filter_(arrtemp[:,3],dx=dx,deriv=0)
+
     #remove zero probability areas
     arr = arrtemp[np.where(arrtemp[:,2]>0)] 
-
-    Tf2 = arr[-1,0] #find final cell problem time
-    arr[:,0] *= (Tf/Tf2) 
-
     save_array(arr,folder,filename+"_rescaled",header="#t,q,rho,sigma")
 
     return 
