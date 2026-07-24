@@ -4,43 +4,6 @@ import argparse
 import os
 import yaml
 
-class CustomArgParse(argparse.ArgumentParser):
-    """
-    Custom argument parser.
-
-    If a ``data.yaml`` file exists inside the ``--folder`` directory, its
-    parameter values are used as default parameter values unless given as command-line arguments.
-
-    Without a yaml file the parser falls back to argparse defaults, so
-    existing command-line usage is unchanged.
-    """
-
-    def __init__(self):
-        argparse.ArgumentParser.__init__(self)
-        self.allow_abbrev = False
-        self.loc = fetch_results_folder_from_cmd()
-        self.argfile = self._load_yaml_argfile()
-
-    def _load_yaml_argfile(self):
-        """Return a flat arg list from data.yaml, or None if not found."""
-        if self.loc is None:
-            return None
-        yaml_path = os.path.join(self.loc, "data.yaml")
-        if not os.path.isfile(yaml_path):
-            return None
-        
-        with open(yaml_path) as f:
-            params = yaml.safe_load(f) or {}
-        
-        args = []
-        for key, val in params.items():
-            if val is None:
-                continue
-            args += [f"--{key}", str(val)]
-        
-        return args
-
-
 
 def fetch_results_folder_from_cmd():
     # Instantiate the parser
@@ -76,6 +39,10 @@ def cell_argparser():
     
     parser.add_argument('-celltnum','--celltnum', type=int, default=11,
                         help='how many t values to use in the temporal discretisation when computing the cell problem')
+    
+    parser.add_argument('-celltfinal','--celltfinal', type=float, default=None,
+                        help='final time for the cell problem. If None, cell problem defaults to solving for perturbative cell problem, meaning ' \
+                        'epsilon squared times the final time. ')
     
     args = parser.parse_known_args()
 

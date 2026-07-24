@@ -37,9 +37,6 @@ class CellProblem():
         self.boundary = boundary
         self.save_location = save_location #where to save the plots
         
-        self.Tf = self.boundary.params["Tf"]
-        self.Tf2 = self.boundary.params["Tf"]*(self.boundary.params["epsilon"]**2)
-        
         self.M = self.boundary.params["weight"]
         
         self.qmax = self.boundary.qmax
@@ -48,6 +45,13 @@ class CellProblem():
         self.num_samples = cell_args["cellxnum"]
         self.num_tsteps = cell_args["celltnum"]
 
+
+        self.Tf = self.boundary.params["Tf"]
+        if cell_args["celltfinal"]:
+            self.Tf2 = cell_args["celltfinal"]
+        else:
+            self.Tf2 = self.boundary.params["Tf"]*(self.boundary.params["epsilon"]**2)
+        
         self.q = np.linspace(-self.qmax,self.qmax,self.num_samples)  
 
         ######################################
