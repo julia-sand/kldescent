@@ -49,15 +49,18 @@ class CellProblem():
         self.Tf = self.boundary.params["Tf"]
         if cell_args["celltfinal"]:
             self.Tf2 = cell_args["celltfinal"]
+            self.A = 1 #A independent if cell final given
+            self.B = 0
         else:
             self.Tf2 = self.boundary.params["Tf"]*(self.boundary.params["epsilon"]**2)
-        
+            self.B = bfun(self.bridge_type,self.Tf) #self.bfun()
+            self.A = afun(self.bridge_type,self.Tf)
+            
         self.q = np.linspace(-self.qmax,self.qmax,self.num_samples)  
 
         ######################################
         #parameters dependent on bridge type
-        self.B = bfun(self.bridge_type,self.Tf) #self.bfun()
-        self.A = afun(self.bridge_type,self.Tf)
+        
         self.beta = 1/np.sqrt(self.A)
 
         self.power = self.compute_power()
