@@ -176,10 +176,13 @@ def save_rescaled_csv(Tf,folder,filename="overdamped"):
 
 if __name__=="__main__":
     from ...sde.boundary import UnderdampedLandauer
-    from kldescent.utils.parser import fetch_results_folder_from_cmd
+    from kldescent.utils.parser import fetch_results_folder_from_cmd,overdamped_argparser
+
     boundary = UnderdampedLandauer()
     folder = fetch_results_folder_from_cmd() 
-    compute_overdamped(boundary,folder,bridge_type="half")
+    bridgeparams = overdamped_argparser()
+
+    compute_overdamped(boundary,folder,bridge_type=bridgeparams["bridgetype"])
 
     #save a copy of the overdamped solution scaled to the final time given by the boundary conditions. 
     save_rescaled_csv(boundary.params["Tf"],folder,filename="overdamped")
