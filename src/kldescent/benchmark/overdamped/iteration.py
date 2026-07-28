@@ -110,7 +110,7 @@ class CellProblem():
         """Compute the constant for the value function boundary condition
         """
 
-        return (self.B/(2*self.A))*(varkappa*q + (1-self.A)*self.Tf*(varkappa**2)/2)
+        return (self.B/(2*self.A))*(varkappa*q + (1-self.A)*self.Tf2*(varkappa**2)/2)
 
     def compute_varkappa(self,hatphi,phi,xphi):
         """Compute the constant varkappa
