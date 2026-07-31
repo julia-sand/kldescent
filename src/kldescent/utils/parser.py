@@ -226,8 +226,8 @@ def checkpoint_plot_params():
     # Instantiate the parser
     parser5 = argparse.ArgumentParser()
     requiredNamed = parser5.add_argument_group('required named arguments')
-    requiredNamed.add_argument('-epoch','--epoch', type=int,
-                                help='At which epoch checkpoint to plot. A checkpoint file ending in _epoch must be available, otherwise default initialisation is used.')
+    requiredNamed.add_argument('-epoch','--epoch', default=None,type=int,
+                                help='At which epoch checkpoint to plot. A checkpoint file ending in _epoch must be available. If No value passed, defaults to None, which takes the epoch with lowest action cost.')
     
     requiredNamed.add_argument('-mcsamples','--mcsamples', type=int, default=0,
                                 help='Overwrite the test samples parameter in the data file to use different number of samples than for training when making plots.')

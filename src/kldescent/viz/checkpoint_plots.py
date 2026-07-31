@@ -1,7 +1,5 @@
 import os
 
-from mpl_toolkits import mplot3d
-
 import torch
 import numpy as np
 
@@ -73,13 +71,13 @@ class PlotUtils():
             else:
                 self.mc_samples = self.data_loaded["testsamples"]
 
-        except TypeError:
+        except TypeError: #missing entries 
             self.bridge_type = "half"
             self.loss_type = "kl"
             self.mc_samples = 20
 
         if epoch is None:
-            self.epoch = params["epoch"]
+            self.epoch = params["epoch"] if params["epoch"] is not None else self.select_best_epoch()
         else:
             self.epoch = epoch
        
@@ -591,6 +589,12 @@ class PlotUtils():
                             benchmark=self.benchmark,
                             mc_samples=self.mc_samples)
 
+    def select_best_epoch(self,):
+        print("No plotting epoch given. Automatically selecting epoch with lowest Action Cost.")
+        arr = np.loadtxt(self.folder+"/loss.csv",delimiter=",",skiprows=1)  
+        return int(arr[np.argmin(arr[:,2]),0])
+
+
 def compute_ref_dynamic_kl_gauss(benchmark):
     """Estimate of the dynamic kl divergence for the Gaussian benchmark data.
     Uses the benchmark position and momentum variance and estimates the integral
@@ -608,10 +612,10 @@ def compute_ref_dynamic_kl_gauss(benchmark):
     times = benchmark.get_timegrid() 
     klout = np.empty(len(times))
 
-    var_t = boundary.get_known_solution_cumulants("Position Variance")
+    var_t = benchmark.boundary.get_known_solution_cumulants("Position Variance")
 
     for t in enumerate(times):
-        xref,duref = boundary.get_reference_data(t[1])
+        xref,duref = benchmark.boundary.get_reference_data(t[1])
         ptx = normal_distribution(xref,0,var_t[t[0]])
         klout[t[0]] = np.trapezoid((duref**2)*ptx,xref)
 
