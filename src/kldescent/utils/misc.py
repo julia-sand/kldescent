@@ -33,3 +33,8 @@ def save_array(arr_out,save_location,filename,header):
     os.makedirs(save_location,exist_ok=True)
     np.savetxt(save_location+"/"+filename+".csv", arr_out ,fmt="%10.6f",header = header,delimiter=',')
     return
+
+def list_subfolders(folder):
+    """Return the full paths of all subfolders in a folder. Only return the top level subfolder."""
+
+    return [f.path for f in os.scandir(folder) if f.is_dir()]
