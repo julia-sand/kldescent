@@ -16,15 +16,17 @@ def log_cpu(wandb_run):
 
 class Metrics():
     """
-    Class for finding metrics during the training process 
+    Class for computing metrics during the training process 
 
+    Includes the 
+    saves the training loss, computes kl dynamic and kl static between the reference and benchmark distributions
     Method:
         update_metrics
     """
 
     def __init__(self, net, integrator, metrics_logger, bridge_type):
         """
-        Initialize the solver with its core components.
+        Initialise metrics logging. 
 
         Parameters
         ----------
