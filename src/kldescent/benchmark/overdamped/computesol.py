@@ -152,7 +152,9 @@ def save_rescaled_csv(Tf,folder,filename="overdamped"):
     folder : str
         location of original csv and output location
     filename : str 
-        filename of original csv, output filename has the word rescaled appended to it. 
+        filename of original csv. 
+        
+    The output csv uses the same filename as the input, with the word rescaled appended to it. 
 
     '''
 
@@ -164,6 +166,7 @@ def save_rescaled_csv(Tf,folder,filename="overdamped"):
     arrtemp[:,0] *= (Tf/Tf2) 
 
     dx = np.abs(arrtemp[1,1]-arrtemp[0,1])
+
     #add filtering, consistent with the underdamped solution    
     arrtemp[:,2] = savgol_filter_(arrtemp[:,2],dx=dx,deriv=0)
     arrtemp[:,3] = savgol_filter_(arrtemp[:,3],dx=dx,deriv=0)
@@ -185,4 +188,5 @@ if __name__=="__main__":
     compute_overdamped(boundary,folder,bridge_type=bridgeparams["bridgetype"])
 
     #save a copy of the overdamped solution scaled to the final time given by the boundary conditions. 
+    #matches the format of the underdamped, computed using perturbation theory in perturbative.corrections
     save_rescaled_csv(boundary.params["Tf"],folder,filename="overdamped")
