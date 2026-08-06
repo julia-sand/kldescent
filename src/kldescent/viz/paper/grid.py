@@ -2,8 +2,18 @@
 Standalone script to generate a 5x5 grid comparison of final-time histograms
 sweeping across epsilon and M parameter folders.
 
-Features:
-1. Finds epoch with lowest loss for each example
+Usage:
+Add all folders for plotting into top level results folder. Automatically formats 
+grid based on the values of epsilon and M.
+
+Pass folder using --folder. 
+
+If no --epoch argument is passed, automatically selects lowest loss for each example. 
+
+
+Run as module python3 -m ...
+
+Saves grid plot in folder. 
 """
 
 import numpy as np
