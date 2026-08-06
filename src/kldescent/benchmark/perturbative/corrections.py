@@ -441,7 +441,7 @@ class HalfBridgePerturbation(Perturbation):
         return t0 - np.sinh(t0) +(np.cosh(t0)-1)*np.tanh(self.Tf/2)
 
     def G114(self,t0):
-        return ((np.exp(-self.Tf + t0)*(1-np.exp(-t0))**2)/12)*((2/(1+np.exp(-self.Tf)))-np.exp(-self.Tf+t0))
+        return 2*((np.exp(-self.Tf + t0)*(1-np.exp(-t0))**2)/12)*((2/(1+np.exp(-self.Tf)))-np.exp(-self.Tf+t0))
 
     def momvar(self,t0,t2,t2_idx,f00,df00,ddf00,dsigma,ddsigma,kappa,idx):
             
@@ -465,7 +465,7 @@ class HalfBridgePerturbation(Perturbation):
         # Fourth term: -ε^2 * ((A - B)**2 * kappa**2) / A**2 * (self.G11(t0) - (self.G12(t0) * G_tf_111) / G_tf_112)**2
         term4 = -(self.epsilon * (self.A - self.B) * kappa * (self.G11(t0) - self.G12(t0) *self.coeff_G111_G112())/self.A)**2
 
-        return term1 + term2 + term3 + term4
+        return term1 + (term2 + 2*term3 + term4)
 
     def integrand_3(self,s,t0):
         return np.exp(-2 * (t0 - s)) * (self.G11(s) - self.coeff_G111_G112()*self.G12(s))
@@ -486,7 +486,7 @@ class HalfBridgePerturbation(Perturbation):
         term1 = self.mu_2_vec[t2_idx] - self.mu_1_vec[t2_idx]**2
 
         # Second term: ε^2 * ∂_{t_z} [(μ^{(2)}_{t_z} - (μ^{(1)}_{t_z})^2) / A] * (G_to_10 - (t0 / self.Tf) * G_tf_10 - (G_tf_114 / G_tf_112) * (G_to_14 - (t0 / self.Tf) * G_tf_14 + (G_tf_dot_12 * (np.cosh(t0) - 1)) / (2 * M * np.sinh(self.Tf))))
-        term2 = (self.epsilon**2 / self.A) * (self.dmu_2_vec[t2_idx] - 2*self.dmu_1_vec[t2_idx]*self.mu_2_vec[t2_idx]) * (
+        term2 = (self.epsilon**2 / self.A) * (self.dmu_2_vec[t2_idx] - 2*self.dmu_1_vec[t2_idx]*self.mu_1_vec[t2_idx]) * (
             self.G110(t0) - (t0 / self.Tf) * self.G110(self.Tf) - self.coeff_G111_G112() * (
                 self.G114(t0) - (t0 / self.Tf) * self.G114(self.Tf) + (self.dt_G12(self.Tf) * (np.cosh(t0) - 1)) / (2 * self.M * np.sinh(self.Tf))))
 
