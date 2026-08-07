@@ -4,7 +4,8 @@ sweeping across epsilon and M parameter folders.
 
 Usage:
 Add all folders for plotting into top level results folder. Automatically formats 
-grid based on the values of epsilon and M.
+grid based on the values of epsilon and M. The script will run agnostic of the folder naming 
+scheme within the top level folder
 
 Pass folder using --folder. 
 
@@ -32,7 +33,7 @@ from kldescent.viz.distribution_plots import marginal_distribution
 def generate_parameter_matrix_plot(axs, data):
 
     eps = np.empty(len(data))
-    Ms= np.empty(len(data))
+    Ms = np.empty(len(data))
 
     for i in range(len(data)):
         utils_ = PlotUtils(folder=data[i]) #loads the data in the subfolder
