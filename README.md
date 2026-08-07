@@ -61,3 +61,6 @@ The `benchmark/` module provides reference solutions for comparison:
 
 - **Gaussian BVP** (`gaussian.py`): solves the Hamilton–Jacobi–Bellman equations exactly for Gaussian boundary conditions using `scipy.integrate.solve_bvp`, with epsilon continuation for convergence at large ε.
 - **Perturbative solutions** (`perturbative/`): solution for non-Gaussian boundary conditions with multi-scale perturbation expansion around the overdamped solution.
+
+## Use of AI
+During the preparation of this library, the author(s) used Claude Code/ Le Chat for some suggestions, improvements, code review, and refactoring. AI generated content was reviewed and edited as needed and the author(s) take(s) full responsibility for the final content.
