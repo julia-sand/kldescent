@@ -7,7 +7,7 @@ __pycache__
 CH_OVERDAMPED_KL.ipynb
 *.png
 *.dat
-klenv
+*env
 *.out
 *.bash
 timeprofile.py
