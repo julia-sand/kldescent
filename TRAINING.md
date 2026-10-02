@@ -3,23 +3,28 @@
 The network is trained using a method based on KL-divergence descent to learn a non-perturbative drift (parameterized by a neural network) that bridges an initial distribution to a target terminal state.
 
 ## 1. Model Architecture
-The drift is parameterized by the `NeuralNetwork` class, which combines Fourier feature encoding for time and a feed-forward MLP for the state.
+The drift is parameterized by the `NeuralNetwork` class, which uses a multi-branch architecture combining feed-forward networks, Fourier feature encoding, and a terminal score anchor.
 
-### Fourier Feature Encoding
-For the time variable $t$, a `FourierFeatures` module is used to project the scalar time input into a higher-dimensional space. 
-- **Projection**: $t \to 2\pi B t$, where $B$ is a learnable linear layer (`nn.Linear`) initialized with a normal distribution (standard deviation defined by `scale`).
-- **Encoding**: The projected values are passed through $\sin(\cdot)$ and $\cos(\cdot)$ functions, concatenating the results to form the Fourier embedding.
+### Network Branches
+The architecture consists of several components that process the time $t$ and state $x$:
 
-### Feed-Forward Network (`FeedForwardLayers`)
-The encoded time and the state $x$ are concatenated and passed through a deep MLP:
-- **Input**: Concatenation of the Fourier-encoded time and the current state $x$.
-- **Layers**: A `nn.Sequential` stack consisting of:
-    - Multiple linear layers (`nn.Linear`) with a hidden size defined by `--duhiddenlayerneurons` (default: `16`).
-    - **Activation Function**: `nn.Tanh()` is used between all linear layers.
-- **Output**: A final linear layer that outputs the drift $\text{du}(t, x)$.
+1.  **Time Branch (`NNt`)**:
+    - Processes normalized time $\hat{t}$.
+    - A feed-forward network: $\hat{t} \to \text{Linear} \to \text{GELU} \to \text{Linear} \to \text{GELU} \to \mathbb{R}^H$.
+2.  **State Branch (`NNx`)**:
+    - Processes normalized state $\hat{x}$.
+    - A feed-forward network: $\hat{x} \to \text{Linear} \to \text{GELU} \to \text{Linear} \to \mathbb{R}^H$.
+3.  **Fourier Branch (`FourierFeatures`)**:
+    - Provides a high-frequency encoding of time: $F(\hat{t}) = [\sin(2\pi B\hat{t}), \cos(2\pi B\hat{t})] \in \mathbb{R}^{2H}$, where $B$ is a trainable weight vector.
 
-### Overall Flow
-$$\text{Input}(t, x) \to \text{Fourier}(t) \oplus x \to \text{MLP} \to \text{du}(t, x)$$
+### Integration and Output
+- **Combination**: The outputs of the time and state branches are concatenated and passed through a `LayerNorm` layer: $c = \text{LayerNorm}([T(\hat{t}), X(\hat{x})]) \in \mathbb{R}^{2H}$.
+- **Residual Blocks (`NN2`)**: The network uses two residual-like blocks (`NN2`). Each `NN2` block performs:
+  $$\text{NN2}(v) = L_1(\text{GELU}(v_2 + \text{GELU}(L_2(v_2)))), \quad v_2 = \text{GELU}(L_3(v))$$
+  mapping $\mathbb{R}^{2H} \to \mathbb{R}^1$.
+- **Final Output**: The final drift $\mathbb{U}(t,x)$ is a sum of a learned component and an anchoring term based on the target distribution's score:
+  $$\boxed{\mathbb{U}(t,x) = \text{NN2}_1(c) + \text{NN2}_2(F(\hat{t})) \cdot \nabla_x \log \rho_{\text{final}}(x)}$$
+  This ensures the network is anchored to the score of the target distribution at all times.
 
 ## 2. Training Objective (Loss Function)
 The training objective is defined in `src/kldescent/sde/loss.py`. The primary loss function used is the **KL-divergence loss** (based on Proposition 3 of arXiv:2410.05163).
@@ -29,7 +34,7 @@ The loss $\hat{L}$ is computed by rolling out trajectories of the SDE:
 $$\hat{L} = \mathbb{E}\left[ 0.5 a + (0.5 \bar{a} + g) \cdot c \right]$$
 Where:
 - $a = \int \|du\|^2 dt$: The integrated squared norm of the learned drift.
-- $\bar{a} = \int \|du_{\text{detached}}\|^2 dt$: The same integral but with gradients detached to stabilize learning.
+- $\bar{a} = \int \|du_{\text{detached}}\|^2 dt$: The same integral but with gradients detached 
 - $c = \int du \cdot dw$: The stochastic integral of the drift against the Wiener process (Brownian motion).
 - $g$: The terminal cost calculated by the `TerminalCost` class (specified by `--terminalcost`), which penalizes the distance between the final distribution and the target.
 
@@ -60,8 +65,7 @@ This class implements initial and target distributions modelling Landauer's bit 
 - **Target Distribution**: $p_T(q, p) = p_T(q) \mathcal{N}(p; 0, I)$, where $p_T(q)$ is the target position marginal.
 
 The position marginals are given by:
-$$p_0(q) = \frac{1}{Z_0} e^{-U_{\text{initial}}(q)}, \quad p_T(q) = \frac{1}{Z_T} e^{-U_{\text{final}}(q)}$$
-where $U_{\text{initial}}$ and $U_{\text{final}}$ are the Landauer potentials. The drift is trained to bridge these two distributions.
+$$p_0(q) = \frac{1}{Z_0} e^{-(q - 1)^4}, \quad p_T(q) = \frac{1}{Z_T} e^{-(q^2 - 1)^2}$$
 
 ### UnderdampedGaussian
 Both the initial and target distributions are Gaussians.
