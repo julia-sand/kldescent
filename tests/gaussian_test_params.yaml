@@ -1,0 +1,35 @@
+# Input parameters for test_gaussian_variance.py
+#   python test_gaussian_variance.py --params gaussian_test_params.yaml
+# Command-line flags override values in this file. Keys that are not options of the script are passed on to the
+# training command line as `--key value` (null values are skipped).
+
+# --- fixed boundary parameters (UnderdampedGaussian) ---
+sigmainitial: 1.0
+sigmafinal: 0.5
+muinitial: 0.0
+mufinal: 0.0
+epsilon: 0.2
+Tf: 5.0
+weight: 20.0
+
+# --- training ---
+epochs: 20
+tsteps: 128
+seeds: [1]          # median final variance over these seeds
+select: last        # last | best (lowest action cost)
+
+# --- benchmark variance ---
+# Final position variance of the benchmark at Tf. If set, it is used directly and the benchmark BVP is not solved.
+# For sigmainitial=1, sigmafinal=0.5, epsilon=0.2, Tf=5, weight=20 the BVP gives 0.27370.
+var_bench: 0.27370
+
+# --- evaluation rollout ---
+nsamples: 50000
+steps: 500
+
+workdir: gauss_variance_test
+
+testsamples: 8092
+batchsamples: 64
+integrator: EulerMaruyamaSDE
+terminalcost: MLE

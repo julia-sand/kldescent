@@ -1,6 +1,5 @@
 __pycache__
 *temp*
-*test*
 *results*
 *.csv
 *.pt
@@ -20,3 +19,4 @@ wandb*
 *logs*
 *.eps
 *.egg-info
+.venv/
