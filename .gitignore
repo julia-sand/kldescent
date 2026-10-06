@@ -3,7 +3,6 @@ __pycache__
 *results*
 *.csv
 *.pt
-CH_OVERDAMPED_KL.ipynb
 *.png
 *.dat
 *env
@@ -11,7 +10,6 @@ CH_OVERDAMPED_KL.ipynb
 *.bash
 timeprofile.py
 *.pdf
-core.*
 scratch
 *.sh
 namelist*
@@ -19,4 +17,9 @@ wandb*
 *logs*
 *.eps
 *.egg-info
-.venv/.venv/
+.venv/
+venv/
+core
+core.[0-9]*
+*pip-cache*/
+.cache/
