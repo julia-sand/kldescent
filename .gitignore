@@ -19,4 +19,4 @@ wandb*
 *logs*
 *.eps
 *.egg-info
-.venv/
+.venv/.venv/
