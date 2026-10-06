@@ -19,19 +19,16 @@ def test_train_from_yaml():
     params_path = os.path.join(project_root, "gaussian_test_params.yaml")
     
     if not os.path.exists(script_path):
-        print(f"Error: {script_path} not found")
-        sys.exit(1)
+        raise FileNotFoundError(f"Error: {script_path} not found")
     if not os.path.exists(params_path):
-        print(f"Error: {params_path} not found")
-        sys.exit(1)
+        raise FileNotFoundError(f"Error: {params_path} not found")
 
     # Load benchmark variance from YAML
     with open(params_path, 'r') as f:
         cfg = yaml.safe_load(f)
     var_bench = cfg.get('var_bench')
     if var_bench is None:
-        print("Error: var_bench not found in params YAML")
-        sys.exit(1)
+        raise KeyError("Error: var_bench not found in params YAML")
 
     print(f"Running train_from_yaml.py with {params_path}...")
     print(f"Expected benchmark variance: {var_bench:.5f}")
@@ -51,21 +48,20 @@ def test_train_from_yaml():
             timeout=600 # 10 minutes timeout
         )
     except subprocess.TimeoutExpired:
-        print("Error: Training timed out")
-        sys.exit(1)
+        raise TimeoutError("Training timed out")
 
     if result.returncode != 0:
         print("Error: train_from_yaml.py failed")
         print("Stdout:", result.stdout)
         print("Stderr:", result.stderr)
-        sys.exit(1)
+        raise RuntimeError(f"train_from_yaml.py failed with return code {result.returncode}")
 
     # Parse position variance from output
-    match = re.search(r"position variance at Tf = ([\\d.eE+-]+)", result.stdout)
+    match = re.search(r"position variance at Tf = ([\d.eE+-]+)", result.stdout)
     if not match:
         print("Error: Could not find position variance in output")
         print("Stdout:", result.stdout)
-        sys.exit(1)
+        raise RuntimeError("Could not find position variance in output")
 
     var_nn = float(match.group(1))
     print(f"Trained position variance: {var_nn:.5f}")
@@ -80,7 +76,7 @@ def test_train_from_yaml():
         print("Test PASSED")
     else:
         print(f"Test FAILED: Relative error {rel_error:.4f} exceeds tolerance {tolerance}")
-        sys.exit(1)
+        raise AssertionError(f"Relative error {rel_error:.4f} exceeds tolerance {tolerance}")
 
 if __name__ == "__main__":
     test_train_from_yaml()
