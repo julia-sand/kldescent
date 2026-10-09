@@ -29,6 +29,7 @@ from kldescent.benchmark.benchmarksol import GaussBenchmarkSolution
 from kldescent.model import nn
 from kldescent.sde import langevin
 from kldescent.utils import parser
+from kldescent.viz.checkpoint_plots import PlotUtils
 
 kldescent.run.run()                                              # 1. training, exactly as `python -m kldescent.run`
 
@@ -44,7 +45,13 @@ t_b, var_bench = bench.get_perturbative_cumulant("Position Variance")
 
 net = nn.NeuralNetwork(boundary, args["device"])                 # 3. NN position variance vs time
 ck = max(glob.glob(f"{folder}/checkpoints/du_checkpoint_*.pt"), key=lambda f: int(re.findall(r"_(\d+)\.pt$", f)[0]))
+epoch = int(re.findall(r"_(\d+)\.pt$", ck)[0])
 net.load_state_dict(torch.load(ck, weights_only=True, map_location=args["device"]))
+
+# Plot checkpoint plots at the last epoch
+plot_utils = PlotUtils(epoch=epoch, benchmark=bench, folder=folder)
+plot_utils.checkpoint_plots_du(usebenchmark=True, mcsamples=cfg.get("nsamples", 50000))
+
 integrator = getattr(langevin, args["integrator"])(boundary, net=net)
 torch.manual_seed(1234)
 t_vec, _, _, cum_nn, _ = integrator.compute_sde_cumulants(benchmark=bench, mcsamples=cfg.get("nsamples", 50000))

@@ -22,9 +22,10 @@ select: last        # last | best (lowest action cost)
 nsamples: 8092
 steps: 258
 
-workdir: gauss_variance_test
+workdir: gauss_variance_test2
 
 testsamples: 8092
 batchsamples: 64
 integrator: BAOAB
 terminalcost: MLE
+duhiddenlayerneurons: 64

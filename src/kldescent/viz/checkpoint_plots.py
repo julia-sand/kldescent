@@ -625,6 +625,7 @@ if __name__=="__main__":
 
     plot_utils = PlotUtils()
     usebenchmark,_ = metric_params()
+
     plot_utils.load_du_checkpoint()
     if usebenchmark is not None:
         plot_utils.load_benchmark_solution(usebenchmark)
@@ -638,5 +639,7 @@ if __name__=="__main__":
     plot_utils.make_intermediate_histograms()
     #plot_utils.make_cumulant_error_plot_from_csv()
 
+    print(plot_utils.benchmark.benchmark_kl())
+    
     if plot_utils.data_loaded["terminalcost"]=="GirsanovNet":
         plot_utils.make_girsanov_net_plots()

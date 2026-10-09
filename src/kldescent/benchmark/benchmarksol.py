@@ -496,7 +496,37 @@ class GaussBenchmarkSolution(BaseBenchmarkSolution):
             return qtemp,np.exp(-(qtemp**2)/(2*pos_var[np.where(t_vec==time)]))/(np.sqrt(2*np.pi*pos_var[np.where(t_vec==time)]))
         
         #return np.squeeze(arrtemp[:,1]),np.squeeze(arrtemp[:,idx]) #((0.2**2)*np.squeeze(arrtemp[:,idx]))+np.squeeze(arrtemp[:,2])
+    
+    def joint_distribution(self, q, p, cc, pos_var, mom_var):
+        # Zero-mean bivariate Gaussian in (q, p); cc = cross-covariance <q p>
+        det = pos_var * mom_var - cc**2
+        quad = (mom_var * q**2 - 2 * cc * q * p + pos_var * p**2) / det
+        return np.exp(-0.5 * quad) / (2 * np.pi * np.sqrt(det))
 
+    def benchmark_kl(self):
+        arr = self.get_underdamped_drift_array()
+        u2 = arr[:, -1]
+        t_vec, pos_var = self.get_perturbative_cumulant("Position Variance")
+        _,     mom_var = self.get_perturbative_cumulant("Momentum Variance")
+        _,     cc      = self.get_perturbative_cumulant("Cross Correlation")
+
+        # Grid wide enough for the largest variance over time
+        L_q = 8 * np.sqrt(pos_var.max())
+        L_p = 8 * np.sqrt(mom_var.max())
+        q = np.linspace(-L_q, L_q, 400)
+        p = np.linspace(-L_p, L_p, 400)
+        Q, P = np.meshgrid(q, p, indexing="ij")          # (Nq, Np)
+
+        # Time-dependent quantities -> (T, 1, 1)
+        u2_ = u2[:, None, None]
+        pv, mv, c = (x[:, None, None] for x in (pos_var, mom_var, cc))
+
+        integrand = Q**2 * u2_ * self.joint_distribution(Q, P, c, pv, mv)  # (T, Nq, Np)
+
+        inner = np.trapezoid(integrand, p, axis=-1)   # over p -> (T, Nq)
+        inner = np.trapezoid(inner, q, axis=-1)       # over q -> (T,)
+        return np.trapezoid(inner, t_vec)             # over t
+    
 if __name__=="__main__":
     from kldescent.sde.boundary import *
     from kldescent.utils.parser import fetch_results_folder_from_cmd

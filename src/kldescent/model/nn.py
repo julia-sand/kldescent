@@ -123,11 +123,14 @@ class NN2(nn.Module):
         self.layer2 = nn.Linear(hidden_layer_neurons , hidden_layer_neurons).to(device) 
         self.layer3 = nn.Linear(hidden_layer_neurons , 1).to(device) 
         self.gelu = nn.GELU()
+        #self.zero_init_anchor(self.layer3)
 
     def forward(self,input_vec):
         input_vec_2 = self.gelu(self.layer1(input_vec))
         input_vec_3 = input_vec_2 + self.gelu(self.layer2(input_vec_2))
         return self.layer3(self.gelu(input_vec_3))
+
+
 
 class MinMaxNorm_layers(nn.Module):
     """class containing normalisation layers for the neural network
@@ -237,7 +240,7 @@ class NeuralNetwork(nn.Module):
         
         self.FeedForwardLayers = NeuralNetwork_layers(self.d,self.device, self.params["duhiddenlayerneurons"])
         
-        self.FourierFeatures = FourierFeatures(1,2*self.params["duhiddenlayerneurons"],scale=1,device=self.device)
+        self.FourierFeatures = FourierFeatures(1,2*self.params["duhiddenlayerneurons"],scale=1.5,device=self.device)
         
         self.MinMaxNorms = MinMaxNorm_layers(xmax=self.boundary.norm_qmax,tmax=self.boundary.params["Tf"], device=self.device)
         
