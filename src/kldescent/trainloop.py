@@ -51,7 +51,7 @@ def train_loop_du(epoch,
     #else:
     
     
-    trainer.scheduler1.step()
+    #trainer.scheduler1.step()
     #trainer.scheduler2.step()
 
     if epoch>trainer.start_decay:
@@ -65,7 +65,7 @@ def train_loop_du(epoch,
     if epoch % logstep == 0:
         
         #if epoch<trainer.start_decay:
-        metric_.lr = trainer.scheduler1.get_last_lr()[0]
+        metric_.lr = trainer.scheduler2.get_last_lr()[0]
         metric_.update_metrics(epoch, loss_out)
 
         #save checkpoint 

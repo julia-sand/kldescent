@@ -30,17 +30,17 @@ class Train():
         self.gamma = 0.1 #rate of learning rate decrease.
 
         self.clip = self.train_params["gradclip"]#0.5 #gradient clipping
-        self.lr_fourier = 0.001
+        #self.lr_fourier = 0.001
 
         self.optimiser_feedforward = AdamW(self.net.FeedForwardLayers.parameters(), lr=self.lr, weight_decay=1e-3)
-        self.optimiser_fourier = AdamW(self.net.FourierFeatures.parameters(), lr=self.lr_fourier)
+        #self.optimiser_fourier = AdamW(self.net.FourierFeatures.parameters(), lr=self.lr_fourier)
 
         self.milestone = 200 #how often to decay learning rate
         self.start_decay = self.train_params["startdecay"] #when to start decaying learning rate
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
-        self.scheduler1 = CosineAnnealingLR(self.optimiser_fourier,
-                                        T_max=self.epochs, eta_min=1e-10)
+        #self.scheduler1 = CosineAnnealingLR(self.optimiser_fourier,
+        #                                T_max=self.epochs, eta_min=1e-10)
         self.scheduler2 = CosineAnnealingLR(self.optimiser_feedforward,
                                         T_max=self.epochs-self.start_decay, eta_min=1e-10)
         # fix cosine-annealing ceiling to base_lr regardless of --lr
@@ -58,24 +58,24 @@ class Train():
         
         #reset gradients 
         self.optimiser_feedforward.zero_grad()
-        self.optimiser_fourier.zero_grad()
+        #self.optimiser_fourier.zero_grad()
 
         Lhat = self.lossfn()
 
         if torch.isfinite(Lhat):
             Lhat.backward()
             clip_grad_norm_(self.net.FeedForwardLayers.parameters(), self.clip)
-            clip_grad_norm_(self.net.FourierFeatures.parameters(), self.clip)
+            #clip_grad_norm_(self.net.FourierFeatures.parameters(), self.clip)
 
             self.optimiser_feedforward.step()
-            self.optimiser_fourier.step()
+            #self.optimiser_fourier.step()
             
         else: 
             print("Skipping step due to NaN/Inf loss:", Lhat.item())
 
             #reset gradients 
             self.optimiser_feedforward.zero_grad()
-            self.optimiser_fourier.zero_grad()            
+            #self.optimiser_fourier.zero_grad()            
             
         
         return Lhat.detach().cpu().numpy()
