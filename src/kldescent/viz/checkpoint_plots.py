@@ -206,6 +206,7 @@ class PlotUtils():
         if self.benchmark is not None:
             self.make_cumulant_error_plot(t_vec,t_vec,cumulants_nn,cumulants_ref)
 
+        self.plot_final_position_marginals(xinit)
         plt.close("all")
 
     @torch.no_grad
@@ -589,10 +590,48 @@ class PlotUtils():
                             benchmark=self.benchmark,
                             mc_samples=self.mc_samples)
 
+
     def select_best_epoch(self,):
         print("No plotting epoch given. Automatically selecting epoch with lowest Action Cost.")
         arr = np.loadtxt(self.folder+"/loss.csv",delimiter=",",skiprows=1)  
         return int(arr[np.argmin(arr[:,2]),0])
+
+
+    def plot_final_position_marginals(self,xinit):
+        """
+        Plot the final achieved position marginals vs the target position marginals for d=2.
+        """
+        if self.boundary_cond.d != 2:
+            print(f"Skipping final position marginals plot: dimension is {self.boundary_cond.d}, expected 2.")
+            return
+        
+        fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+        
+        q_range = np.linspace(-5, 5, 500)
+        
+        for i in range(2):
+            ax = axes[i]
+            
+            # Plot learned marginal
+            # Using KDE for smooth visualization
+            from sklearn.neighbors import KernelDensity
+            kde = KernelDensity(kernel='gaussian', bandwidth=0.2).fit(xinit[:, i].reshape(-1, 1))
+            log_dens = kde.score_samples(q_range.reshape(-1, 1))
+            ax.plot(q_range, np.exp(log_dens), label='Learned', color='blue', linewidth=2)
+            
+            # Plot target marginal
+            target_pdf = self.boundary_cond.q_marginal_final_np(q_range)
+            ax.plot(q_range, target_pdf, label='Target', color='red', linestyle='--', linewidth=2)
+            
+            ax.set_title(f'Position Marginal $q_{i+1}$')
+            ax.set_xlabel('$q$')
+            ax.set_ylabel('Density')
+            ax.legend()
+            ax.grid(True, alpha=0.3)
+
+        plt.tight_layout()
+        save_fig_(fig, "final_position_marginals", loc=self.resultsdir)
+        plt.close(fig)
 
 
 def compute_ref_dynamic_kl_gauss(benchmark):
@@ -621,6 +660,7 @@ def compute_ref_dynamic_kl_gauss(benchmark):
 
     return np.trapezoid(klout,times)
 
+
 if __name__=="__main__":
 
     plot_utils = PlotUtils()
@@ -636,10 +676,6 @@ if __name__=="__main__":
     plot_utils.make_sde_plots()
     #plot_utils.checkpoint_plots_du(usebenchmark=usebenchmark)
     #plot_utils.make_cumulant_error_plot_from_csv()
-    plot_utils.make_intermediate_histograms()
+    #plot_utils.make_intermediate_histograms()
     #plot_utils.make_cumulant_error_plot_from_csv()
-
-    print(plot_utils.benchmark.benchmark_kl())
     
-    if plot_utils.data_loaded["terminalcost"]=="GirsanovNet":
-        plot_utils.make_girsanov_net_plots()

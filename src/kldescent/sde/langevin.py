@@ -39,6 +39,8 @@ class SDEBase():
         except:
             self.kramers_coupling = 0 
 
+        self._dt_prev = 0 
+
     @torch.no_grad
     def generate_time_grid(self,benchmark=None,Tf=None,tsteps=None):
         """Generate time grid for comparison with benchmark"""
@@ -141,7 +143,7 @@ class SDEBase():
             #initialise x values as samples from assigned initial distribution
             xinit = self.boundary.generate_samples(test_samples_temp,"initial").to(self.device)
             xinit_ref = torch.clone(xinit).to(self.device)
-            du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,:self.d],dtype=torch.float32)
+            du_bar = self.net(torch.cat((torch.zeros((*xinit.shape[:-1], 1), dtype=torch.float32, device=xinit.device)
                                                                         ,xinit[...,:self.d]),dim=-1)).detach()
             #preallocate storing kl divergence
             kldyn = torch.zeros_like(xinit[...,:self.d],requires_grad=False,dtype=torch.float32)
@@ -200,7 +202,7 @@ class SDEBase():
                 xinit = self.boundary.generate_samples(testing_samples,"initial").to(self.device)
             else:
                 xinit = x0_samples.clone().to(self.device)
-            du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,:self.d],dtype=torch.float32)
+            du_bar = self.net(torch.cat((torch.zeros((*xinit.shape[:-1], 1), dtype=torch.float32, device=xinit.device)
                                                    ,xinit[...,:self.d]),dim=-1)).detach()
 
             for i in range(0,len(t_vec)-1):
@@ -246,7 +248,7 @@ class SDEBase():
         #initialise x values at \delta_0 (i.e. x=0)
         xinit = self.boundary.generate_samples(mcsamples,"initial").to(self.device)
         xref = torch.clone(xinit).to(self.device)
-        du_bar = self.net(torch.cat((torch.zeros_like(xinit[...,:self.d],dtype=torch.float32)
+        du_bar = self.net(torch.cat((torch.zeros((*xinit.shape[:-1], 1), dtype=torch.float32, device=xinit.device)
                                                                 ,xinit[...,:self.d]),dim=-1)).detach()                           
         
         #save the cumulants of the evolutions
@@ -417,8 +419,8 @@ class BAOAB(SDEBase):
         # Moved here because du is evaluated as part of the main loop.
         if t>0:
             #B: final deterministic kick
-            xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du_prev)*(dt/2)
-
+            xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du_prev)*(self._dt_prev)
+        self._dt_prev = dt
         #start new time-step integration.    
         #Update the velocity
         #B: deterministic kick
@@ -473,8 +475,10 @@ class BAOAB(SDEBase):
 
         #Update the velocity
         #B: deterministic kick
-        xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du_prev)*(dt/2)
-        
+        if t>0:
+            xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du_prev)*(self._dt_prev/2)
+        self._dt_prev = dt
+
         #A: update positions by half step
         xinit[...,:self.d] = xinit[...,:self.d] + self.boundary.params["epsilon"]*xinit[...,self.d:]*(dt/2)
 

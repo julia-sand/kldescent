@@ -16,20 +16,21 @@ class Train():
     for the neural network learning the non-perturbative drift.
     """
 
-    def __init__(self, net, lossfn):
+    def __init__(self, net, lossfn, epochs):
 
         self.train_params = train_argparser()
 
         #set defaults of training process
         self.lr = self.train_params["lr"]       # initial lr (configurable via --lr)
-        self.base_lr = 0.0005                   # cosine-annealing ceiling, always fixed
+        self.base_lr = 0.005                   # cosine-annealing ceiling, always fixed
         self.lossfn = lossfn
         self.net = net
+        self.epochs = epochs
 
         self.gamma = 0.1 #rate of learning rate decrease.
 
         self.clip = self.train_params["gradclip"]#0.5 #gradient clipping
-        self.lr_fourier = 0.01
+        self.lr_fourier = 0.001
 
         self.optimiser_feedforward = AdamW(self.net.FeedForwardLayers.parameters(), lr=self.lr, weight_decay=1e-3)
         self.optimiser_fourier = AdamW(self.net.FourierFeatures.parameters(), lr=self.lr_fourier)
@@ -39,11 +40,11 @@ class Train():
 
         #COSINE ANNEALING LR SCHEDULE https://medium.com/@utkrisht14/cosine-learning-rate-schedulers-in-pytorch-486d8717d541
         self.scheduler1 = CosineAnnealingLR(self.optimiser_fourier,
-                                        T_max=100, eta_min=1e-10)
+                                        T_max=self.epochs, eta_min=1e-10)
         self.scheduler2 = CosineAnnealingLR(self.optimiser_feedforward,
-                                        T_max=100, eta_min=1e-10)
+                                        T_max=self.epochs-self.start_decay, eta_min=1e-10)
         # fix cosine-annealing ceiling to base_lr regardless of --lr
-        self.scheduler2.base_lrs = [self.base_lr] * len(self.scheduler2.base_lrs)
+        #self.scheduler2.base_lrs = [self.base_lr] * len(self.scheduler2.base_lrs)
         #ReduceLROnPlateau(self.optimiser_feedforward,
         #                                    mode="min",
         #                                    factor=0.9,
