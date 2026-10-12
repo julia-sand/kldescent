@@ -419,7 +419,7 @@ class BAOAB(SDEBase):
         # Moved here because du is evaluated as part of the main loop.
         if t>0:
             #B: final deterministic kick
-            xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du_prev)*(self._dt_prev)
+            xinit[...,self.d:] = xinit[...,self.d:] + (self.boundary.sigma0*du_prev)*(self._dt_prev/2)
         self._dt_prev = dt
         #start new time-step integration.    
         #Update the velocity
@@ -448,9 +448,6 @@ class BAOAB(SDEBase):
     def generate_innovation(self,dt,size_like):
         """generate a step of brownian motion"""
         return torch.sqrt((1-torch.exp(-2*dt))/2)*torch.randn_like(size_like,requires_grad=False,dtype=torch.float32)
-
-    
-   
 
     @torch.no_grad()
     def loss_final_step(self,xinit,t_vec):
