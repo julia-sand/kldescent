@@ -48,7 +48,7 @@ def run():
     #_loss_cls(integrator, terminal_cost)
 
     #initialise trainer
-    trainer = train.Train(net, loss)
+    trainer = train.Train(net, loss, args["epochs"])
 
     #initialise metrics and action cost computations
     metric_ = metrics.Metrics(net,integrator, metrics_logger,args["bridgetype"])    
