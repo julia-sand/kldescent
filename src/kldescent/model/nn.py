@@ -240,7 +240,9 @@ class NeuralNetwork(nn.Module):
         
         self.FeedForwardLayers = NeuralNetwork_layers(self.d,self.device, self.params["duhiddenlayerneurons"])
         
-        self.FourierFeatures = FourierFeatures(1,2*self.params["duhiddenlayerneurons"],scale=1.5,device=self.device)
+        scale = 0.3 * self.boundary.params["Tf"] * (1 + 4 * self.boundary.params["epsilon"]**2) ** 0.5
+        
+        self.FourierFeatures = FourierFeatures(1,2*self.params["duhiddenlayerneurons"],scale=scale,device=self.device)
         
         self.MinMaxNorms = MinMaxNorm_layers(xmax=self.boundary.norm_qmax,tmax=self.boundary.params["Tf"], device=self.device)
         
