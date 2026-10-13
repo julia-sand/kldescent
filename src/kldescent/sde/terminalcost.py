@@ -44,7 +44,14 @@ class TerminalCost():
 
         self.loc = fileloc
         #self.datafile = filename
-        self.M = self.boundary.params["weight"]
+        self.Mtarget = self.boundary.params["weight"]
+        self.ramp = 30
+        self.M = 0
+
+    def update_M(self,epoch):
+        
+        self.M = self.Mtarget * min(1.0, (epoch / self.ramp)) ** 2 
+        
 
     def gfun(self,x,*_):
         
@@ -69,8 +76,8 @@ class GirsanovMC(TerminalCost):
 
     def update_cost_params(self,integrator,epoch):
         """compute the loss first for this method"""
-        pass
-
+        self.update_M(epoch)
+        
     def gfun(self, x, integrator, mc_samples, *_):
 
         pdf = torch.nan_to_num(self.get_logpdf(x, integrator, mc_samples), posinf=0, neginf=0, nan=0)
@@ -112,6 +119,7 @@ class GirsanovNet(TerminalCost):
 
     def update_cost_params(self,integrator,epoch):
         """train girsanov net to find the final distribution"""
+        self.update_M(epoch)
 
         if epoch<1:
             pass
@@ -153,8 +161,9 @@ class MLE(TerminalCost):
         self.mom_var0 = 1
         self.cc0 = 0 
 
-    def update_cost_params(self,integrator,*_):
+    def update_cost_params(self,integrator,epoch):
         """update the cumulants for approximating the final distribution with a gaussian"""
+        self.update_M(epoch)
 
         #compute x vals
         x = integrator.update_ref_statistics()
@@ -208,8 +217,9 @@ class Histogram(TerminalCost):
         self.yedges = None
         self.xedges = None 
 
-    def update_cost_params(self,integrator,*_):
+    def update_cost_params(self,integrator,epoch):
         """make histogram of the final distribution"""
+        self.update_M(epoch)
 
         x = integrator.update_ref_statistics().cpu().numpy()
         H, yedges, xedges = np.histogram2d(x[...,1], x[...,0], 
@@ -264,6 +274,7 @@ class NormFlow(TerminalCost):
 
     def update_cost_params(self,integrator,epoch,*_):
         """Train the normalising flow to approximate the final distribution"""
+        self.update_M(epoch)
 
         if epoch<1:
             pass
