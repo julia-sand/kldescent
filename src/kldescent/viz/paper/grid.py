@@ -45,6 +45,7 @@ def generate_parameter_matrix_plot(axs, data):
 
             #if saved csv with samples exist, use that
             raise FileNotFoundError
+        
         except FileNotFoundError:
             #if the file is not there
             x_du = utils_.integrator.update_ref_statistics(time=utils_.boundary_cond.params["Tf"],).cpu().numpy()
