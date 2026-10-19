@@ -9,20 +9,31 @@ The training objective is defined in `src/kldescent/sde/loss.py`.
 ### Stochastic Differential Equation
 
 The underdamped dynamics are 
+
 $$dq = \varepsilon p dt, \qquad dp = -(p - \sigma_0 \mathbb{U}) dt + \sigma_0 dW$$
+
 with parameters $\varepsilon$ given by `--epsilon` and $\sigma_0=\sqrt{2}$
 
 ### Loss Function
 
 For a batch of initial points, the stochastic differential equation is evolved and the loss $\hat{L}$ is accumulated along trajectories, according to:
+
 $$\hat{L} = \mathbb{E}\left[ 0.5 a + (0.5 \bar{a} + g) \cdot c \right]$$
+
 with the terms:
+
 - $a$, the integrated squared norm of the learned drift:
+
 $$a = \int \|\mathbb{U}^{\Theta}\|^2 dt$$
+
 - $\bar{a}$, the same integral with gradients detached (accumulated under `torch.no_grad()`):
+
 $$\bar{a} = \int \|\mathbb{U}^{\bar{\Theta}}\|^2 dt$$
+
 - $c$, the stochastic integral of the drift against the Wiener process:
+
 $$c = \int \mathbb{U}^{\Theta}\cdot dw$$
+
 - $g$, the terminal cost penalizing the distance between the current final distribution and the target, see [Terminal Cost](training.md#4-terminal-cost).
 
 Evolutions of the stochastic differential equation are calculated with a stratified random time grid (`stratified_time_grid`). This splits the interval into three intervals: $[0, 0.2 T_f]$, $[0.8 T_f, T_f]$, and $[0.2 T_f, 0.8 T_f]$ with approximately one third of the total number of timesteps `--tsteps` in each interval. This means that the timegrid is more concentrated around the boundary layers, where the dynamics are most non-linear.
@@ -35,31 +46,49 @@ We denote the time grid by $t_0<t_1<\ldots<t_{N-1}<t_N = T$ in the following. In
 
 ### Euler-Maruyama Scheme (`EulerMaruyamaSDE`)
 
-$$q_{t_{n+1}} = q_{t_{n}} + \varepsilon p_{t_{n}} (t_{n+1}-t_{n}), \qquad p_{t_{n+1}} = p_{t_{n}} - (p_{t_{n}} - \sigma_0 \mathbb{U}(t_n, q_{t_{n}}))(t_{n+1}-t_{n}) + \sigma_0 \Delta W_n,$$
+\begin{align*}
+q_{t_{n+1}} &= q_{t_{n}} + \varepsilon p_{t_{n}} (t_{n+1}-t_{n}) \\
+p_{t_{n+1}} &= p_{t_{n}} - (p_{t_{n}} - \sigma_0 \mathbb{U}(t_n, q_{t_{n}}))(t_{n+1}-t_{n}) + \sigma_0 \Delta W_n,
+\end{align*}
+
 where $\Delta W_n \sim \mathcal{N}(0, t_{n+1}-t_{n})$.
 
 ### BAOAB Scheme (`BAOAB`)
 
 An operator-splitting (Strang) method for the Langevin dynamics. This tends to be more stable and accurate than the Euler-Maruyama scheme. [1]
 - **B (Momentum)**: deterministic momentum kick (half-step):
+
 $$p \gets p + \sigma_0\mathbb{U}(t_{n}, q)\,(t_{n+1} - t_{n})/2 $$
+
 - **A (Position)**: position half-step:
+
 $$q \gets q + \varepsilon p\, (t_{n+1} - t_{n})/2$$
+
 - **O (Ornstein-Uhlenbeck)**: exact solution of the linear OU dynamics for the momenta:
+
 $$p \gets e^{-(t_{n+1} - t_{n})} p + \sigma_0 \tilde{W}, \qquad \tilde{W} \sim \mathcal{N}\left(0, \frac{1 - e^{-2(t_{n+1} - t_{n})}}{2}\right).$$
+
 - **A (Momentum)**: position half-step.
+
 $$q \gets q + \varepsilon p\, (t_{n+1} - t_{n})/2$$
+
 - **B (Position)**: final drift kick (half-step) with the drift evaluated at the new state.
+
 $$p \gets p + \sigma_0 \mathbb{U}(t_{n+1}, q)\, (t_{n+1} - t_{n})/2 $$
 
 ### Verlet Scheme (`VerletSDE`)
 
 A symmetric integrator with position half-steps around a full momentum update
 - **A (Position)**: position half-step:
+
 $$q \gets q + \varepsilon p\, (t_{n+1} - t_{n})/2$$
+
 - **B (Momentum)**: momentum update:
+
 $$p \gets p + \sigma_0\mathbb{U}(t_{n+1}, p)\,(t_{n+1} - t_{n}) + \sigma_0 \Delta W_n $$
+
 - **A (Momentum)**: position half-step.
+
 $$q \gets q + \varepsilon p\, (t_{n+1} - t_{n})/2$$
 
 ## 3. Terminal Cost
@@ -73,7 +102,9 @@ The terminal cost $g$ is estimated by one of the classes in `src/kldescent/sde/t
 - **GirsanovNet**: a neural network (`RhoNeuralNetwork` + `TrainRho`) trained on the current final distribution.
 
 The terminal cost is
+
 $$g(x) = M \Big( \log \hat{\rho}_T(q_T,p_T) + \log \rho_{\text{target}}(q_T,p_T) \Big),$$
+
 The constant $M$ is set by `--weight` (default 20). 
 
 ## 4. Training Process
@@ -99,11 +130,11 @@ If a CSV is provided via `--pretrain` as a path to the CSV, `run_pretrain` in `s
 
 Metrics are computed to track training progress:
 - the dynamic KL cost
-$$\text{kl\_dynamic} = \frac{1}{2}\,\mathbb{E}\int\|\mathbb{U}\|^2 dt$$
+$$\text{kldynamic} = \frac{1}{2}\,\mathbb{E}\int\|\mathbb{U}\|^2 dt$$
 is accumulated along test trajectories for a batch of test samples;
 - static KL divergences between the current final distribution and the target, and between the current final distribution and the benchmark (when `--usebenchmark` is given, otherwise the final distribution of a free diffusion), are estimated by a k-nearest-neighbour estimator (`src/kldescent/sde/kl.py`) for non-Gaussian boundary conditions; for the UnderdampedGaussian case, we use a close-form expression based on sample means and covariances.
 - the action cost
-$$\text{action} = \text{kl\_dynamic} + M\cdot\text{kl\_static}$$
+$$\text{action} = \text{kldynamic} + M \text{klstatic}$$
 
 ## 6. References 
 
