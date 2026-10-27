@@ -100,16 +100,19 @@ def get_norm(x,y):
 def add_boundary_conditions_scatter_panel(ax_pmarginal,ax_qmarginal,time,boundary):
 
     if time==0:
-        ax_qmarginal.fill_between(
-                boundary.q_marginal_initial_np(np.linspace(-boundary.qmax,boundary.qmax,)),np.linspace(-boundary.qmax,boundary.qmax,),color="orange",label="Assigned Initial Distribution")
-        
+        #ax_qmarginal.fill_between(
+        #        boundary.q_marginal_initial_np(np.linspace(-boundary.qmax,boundary.qmax,)),np.linspace(-boundary.qmax,boundary.qmax,),color="orange",label="Assigned Initial Distribution")
+
+        ax_qmarginal.fill_betweenx(np.linspace(-boundary.qmax,boundary.qmax,),
+                boundary.q_marginal_initial_np(np.linspace(-boundary.qmax,boundary.qmax,)),color="orange",label="Assigned Initial Distribution")
         ax_pmarginal.fill_between(np.linspace(-boundary.qmax,boundary.qmax,),
                 normal_distribution(np.linspace(-boundary.qmax,boundary.qmax,),0,1),color="orange",label="Assigned Initial Distribution")
 
     elif time==boundary.params["Tf"]:
-        ax_qmarginal.fill_between(
-                boundary.q_marginal_final_np(np.linspace(-boundary.qmax,boundary.qmax,)),np.linspace(-boundary.qmax,boundary.qmax,),color="orange",label="Target Final Distribution")
-        
+        #ax_qmarginal.fill_between(
+        #        boundary.q_marginal_final_np(np.linspace(-boundary.qmax,boundary.qmax,)),np.linspace(-boundary.qmax,boundary.qmax,),color="orange",label="Target Final Distribution")
+        ax_qmarginal.fill_betweenx(np.linspace(-boundary.qmax,boundary.qmax,),
+        boundary.q_marginal_final_np(np.linspace(-boundary.qmax,boundary.qmax,)),color="orange",label="Target Final Distribution")
         ax_pmarginal.fill_between(np.linspace(-boundary.qmax,boundary.qmax,),
                 normal_distribution(np.linspace(-boundary.qmax,boundary.qmax,),0,1),color="darkorange",label="Target Final Distribution")
 
