@@ -63,4 +63,4 @@ The `benchmark/` module provides reference solutions for comparison:
 - **Perturbative solutions** (`perturbative/`): solution for non-Gaussian boundary conditions with multi-scale perturbation expansion around the overdamped solution.
 
 ## Use of AI
-During the preparation of this library, the author(s) used Claude Code/ Le Chat for some suggestions, improvements, code review, and refactoring. AI generated content was reviewed and edited as needed and the author(s) take(s) full responsibility for the final content.
+During the preparation of this library, the author(s) used multiple AI tools including Claude Opus 5.5 / Qwen3.8 among others for some suggestions, improvements, code review, and refactoring. AI generated content was reviewed and edited as needed and the author(s) take(s) full responsibility for the final content.
