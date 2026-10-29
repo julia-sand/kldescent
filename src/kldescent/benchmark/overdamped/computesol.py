@@ -35,7 +35,10 @@ def compute_dV(q,hatphi_t,phi_t,A,B,bridge_type):
             dhatphi_t = np.gradient(hatphi_t,q)
 
             term1 = -dphi_t/(np.sqrt(A)*phi_t)
-            term2 = -B*np.sqrt(A)*np.trapezoid(hatphi_t*dphi_t,q)/(A*(A-B))
+            mass = np.trapezoid(hatphi_t*phi_t,q)
+            if not np.isfinite(mass) or mass <= 0:
+                raise ValueError("Cole-Hopf factor product must have positive finite mass.")
+            term2 = -B*np.sqrt(A)*np.trapezoid(hatphi_t*dphi_t,q)/(A*(A-B)*mass)
             term3 = ((1/np.sqrt(A)) - 1)*(hatphi_t*dphi_t + phi_t*dhatphi_t)/(2*hatphi_t*phi_t)
             
             return np.nan_to_num(term1 + term2 + term3,posinf=0,neginf=0,nan=0)
@@ -63,6 +66,34 @@ def save_solution_in_time(cell,filename_full,integrator):
         Array of shape (n, 4) where each column corresponds to:
         [t,q,rho(t,q),DU(t,q)]
     """
+
+    if cell.bridge_type == "half":
+        # Evaluate each factor from the endpoint used by the cell iteration.
+        # Discrete heat propagation need not have an exact semigroup property:
+        # repeated short steps otherwise change the solved terminal density.
+        # Full precision also matters before spatial differentiation and KL
+        # multiplication by M in the perturbative reconstruction.
+        q = np.linspace(-cell.qmax,cell.qmax,num=cell.num_samples)
+        with open(filename_full,"a") as output:
+            for t2 in np.linspace(0,cell.Tf2,num=cell.num_tsteps):
+                if t2 == 0:
+                    phi_t,hatphi_t = cell.psiT,cell.hatphi0
+                elif t2 == cell.Tf2:
+                    phi_t,hatphi_t = cell.psi0,cell.hatphiT
+                else:
+                    _,phi_t = integrator(cell.xpsi,cell.psi0,cell.Tf2-t2,cell.beta)
+                    _,hatphi_t = integrator(cell.xhatphi,cell.hatphi0,t2,cell.beta)
+                if (not np.isfinite(phi_t).all() or not np.isfinite(hatphi_t).all()
+                        or np.any(phi_t <= 0) or np.any(hatphi_t < 0)):
+                    raise ValueError("Half-bridge factors must be finite, with phi positive and hatphi nonnegative.")
+                density = phi_t*hatphi_t
+                mass = np.trapezoid(density,q)
+                if not np.isfinite(mass) or mass <= 0:
+                    raise ValueError("Half-bridge factor product must have positive finite mass.")
+                rows = np.column_stack((np.full_like(q,t2),q,density/mass,
+                                        compute_sigma(phi_t,cell.A,cell.bridge_type)))
+                np.savetxt(output,rows,fmt="%.17g",delimiter=",")
+        return
 
     #define a grid for q
     q = np.linspace(-cell.qmax,cell.qmax,num=cell.num_samples)
@@ -152,9 +183,7 @@ def save_rescaled_csv(Tf,folder,filename="overdamped"):
     folder : str
         location of original csv and output location
     filename : str 
-        filename of original csv. 
-        
-    The output csv uses the same filename as the input, with the word rescaled appended to it. 
+        filename of original csv, output filename has the word rescaled appended to it. 
 
     '''
 
@@ -166,7 +195,6 @@ def save_rescaled_csv(Tf,folder,filename="overdamped"):
     arrtemp[:,0] *= (Tf/Tf2) 
 
     dx = np.abs(arrtemp[1,1]-arrtemp[0,1])
-
     #add filtering, consistent with the underdamped solution    
     arrtemp[:,2] = savgol_filter_(arrtemp[:,2],dx=dx,deriv=0)
     arrtemp[:,3] = savgol_filter_(arrtemp[:,3],dx=dx,deriv=0)
@@ -188,5 +216,4 @@ if __name__=="__main__":
     compute_overdamped(boundary,folder,bridge_type=bridgeparams["bridgetype"])
 
     #save a copy of the overdamped solution scaled to the final time given by the boundary conditions. 
-    #matches the format of the underdamped, computed using perturbation theory in perturbative.corrections
     save_rescaled_csv(boundary.params["Tf"],folder,filename="overdamped")
