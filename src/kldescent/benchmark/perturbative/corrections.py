@@ -3,6 +3,16 @@ import numpy as np
 from kldescent.benchmark.utilfunctions import *
 from kldescent.utils.misc import append_array_to_csv
 
+# Smooth/differentiate the full uniform grid, then apply the mask.
+def fullgrid_window_length(n):
+    # Nearest odd window to 5% of the full input length; ties round upward.
+    return max(5, 2*int(0.05*n/2)+1)
+
+def savgol_filter_(y,dx,deriv=0):
+    from scipy.signal import savgol_filter
+    return savgol_filter(y,window_length=fullgrid_window_length(len(y)),
+                         polyorder=3,deriv=deriv,delta=dx)
+
 class Perturbation():
 
     def __init__(self,boundary_params,
@@ -98,25 +108,57 @@ class Perturbation():
         self.dmu_2_vec = np.gradient(self.mu_2_vec,self.t2vec)
 
     def get_sigma(self,t2,idx):
-        sigma_raw = self.sigma(t2)[idx]
-        sigma = savgol_filter_(sigma_raw,dx=self.dx,deriv=0)
-        dsigma = savgol_filter_(sigma_raw,dx=self.dx,deriv=1)
-        ddsigma = savgol_filter_(sigma_raw,dx=self.dx,deriv=2)
+        # Filter on the uniform grid before masking: idx may contain gaps.
+        sigma_raw = self.sigma(t2)
+        sigma = savgol_filter_(sigma_raw,dx=self.dx,deriv=0)[idx]
+        dsigma = savgol_filter_(sigma_raw,dx=self.dx,deriv=1)[idx]
+        ddsigma = savgol_filter_(sigma_raw,dx=self.dx,deriv=2)[idx]
         #sigma = apply_filter(self.sigma(t2),filter_delta=self.filter_delta)[idx]
         #dsigma = self.d_(sigma,self.qaxis[idx])
         #ddsigma = self.d_(dsigma,self.qaxis[idx])
         return sigma, dsigma, ddsigma
 
     def get_rho(self,t2,idx):
-        sigma_raw = self.f00(t2)[idx]
-        f00 = savgol_filter_(sigma_raw,dx=self.dx,deriv=0)
-        df00 = savgol_filter_(sigma_raw,dx=self.dx,deriv=1)
-        ddf00 = savgol_filter_(sigma_raw,dx=self.dx,deriv=2)
-        
-        #f00 = apply_filter(self.f00(t2),filter_delta=self.filter_delta)[idx]
-        #df00 = self.d_(f00,self.qaxis[idx])
-        #ddf00 = self.d_(df00,self.qaxis[idx])
-        return f00, df00, ddf00
+        # Smooth log density on uniform-grid stencils, then exponentiate.
+        cached = getattr(self, "_logrho_cache", None)
+        if cached is None or cached[0] != t2:
+            from scipy.signal import savgol_filter
+            raw = self.f00(t2)
+            if not np.isfinite(raw).all() or np.any(raw < 0):
+                raise ValueError("Saved leading density must be finite and nonnegative.")
+            log_raw = np.full_like(raw, np.nan)
+            positive = raw > 0
+            log_raw[positive] = np.log(raw[positive])
+            window = fullgrid_window_length(len(raw))
+            # NaN padding marks stencils touching numerical zeros or the
+            # outside boundary; these are checked against the retained mask.
+            derivatives = [savgol_filter(
+                log_raw,window_length=window,polyorder=3,deriv=k,
+                delta=self.dx,mode="constant",cval=np.nan) for k in range(3)]
+            valid = np.logical_and.reduce([np.isfinite(v) for v in derivatives])
+            if not np.all(valid[idx]):
+                raise ValueError("A retained log-density stencil contains a numerical zero.")
+            L,Lq,Lqq = derivatives
+            shift = np.max(L[valid])
+            f00 = np.zeros_like(raw)
+            f00[valid] = np.exp(L[valid]-shift)
+            mass_scaled = np.trapezoid(f00,self.qaxis)
+            if not np.isfinite(mass_scaled) or mass_scaled <= 0:
+                raise ValueError("Exponentiated log density must have positive finite mass.")
+            f00 /= mass_scaled
+            df00 = np.zeros_like(raw)
+            ddf00 = np.zeros_like(raw)
+            df00[valid] = f00[valid]*Lq[valid]
+            ddf00[valid] = f00[valid]*(Lqq[valid]+Lq[valid]**2)
+            diagnostics = getattr(self,"_logrho_diagnostics",{})
+            diagnostics[float(t2)] = dict(
+                unsmoothed_mass_on_excluded_stencils=float(np.trapezoid(np.where(valid,0.,raw),self.qaxis)),
+                mass_before_normalization=float(np.exp(shift)*mass_scaled),
+                normalized_mass=float(np.trapezoid(f00,self.qaxis)))
+            self._logrho_diagnostics = diagnostics
+            cached = (t2,f00,df00,ddf00)
+            self._logrho_cache = cached
+        return cached[1][idx],cached[2][idx],cached[3][idx]
 
     def kappa(self,f00,dsigma,idx):
         return np.trapezoid(f00*dsigma,self.qaxis[idx])/(self.A-self.B)
