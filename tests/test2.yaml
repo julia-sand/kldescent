@@ -4,6 +4,8 @@
 # training command line as `--key value` (null values are skipped).
 
 # --- fixed boundary parameters (UnderdampedGaussian) ---
+
+
 sigmainitial: 1.0
 sigmafinal: 0.5
 muinitial: 0.0
@@ -13,19 +15,17 @@ Tf: 5.0
 weight: 200.0
 
 # --- training ---
-epochs: 20
+epochs: 120
 tsteps: 128
 seeds: [1]          # median final variance over these seeds
 select: last        # last | best (lowest action cost)
 
 # --- evaluation rollout ---
 nsamples: 8092
-steps: 258
-
-workdir: gauss_variance_test2
+steps: 128
 
 testsamples: 8092
-batchsamples: 64
+batchsamples: 512
 integrator: BAOAB
 terminalcost: MLE
-duhiddenlayerneurons: 64
+duhiddenlayerneurons: 16

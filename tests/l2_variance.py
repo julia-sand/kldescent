@@ -18,7 +18,7 @@ import contextlib, glob, io, os, re, sys, yaml
 
 cfg = yaml.safe_load(open(sys.argv[1]))
 cfg.setdefault("boundary", "UnderdampedGaussian")
-cfg.setdefault("folder", "results_yaml")
+cfg.setdefault("folder", "results_92")
 sys.argv = [sys.argv[0]] + [t for k, v in cfg.items() if v is not None for t in (f"--{k}", *map(str, v if isinstance(v, list) else [v]))]
 
 import numpy as np
