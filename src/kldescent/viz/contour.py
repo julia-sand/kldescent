@@ -191,93 +191,12 @@ def scatter_panel_layout(ax,time,boundary=None):
 
     return ax, ax_pmarginal,ax_qmarginal
 
-def _dedupe_axis_values(values, tol=1e-10):
-    """Return the unique sorted values of a 1D axis.
+def reshape_joint(joint_out):
+    """reshape joint distribution for plotting"""
 
-    For a tensor-product grid the same axis value repeats across every
-    cross-section, so the number of distinct entries equals the grid size
-    along that axis.
-    """
-    values = np.asarray(values, dtype=float).ravel()
-    order = np.argsort(values)
-    vals = values[order]
-    keep = np.concatenate(([True], np.diff(vals) > tol))
-    return vals[keep]
+    n = joint_out.shape[0]
 
-def downsample_to_square(grid, nq, np_):
-    """Axis-stride subsample a rectangular (nq, np_) grid to a square (M, M).
-
-    Method 1: keep every k-th grid line along the over-sampled axis so both
-    axes have length M = min(nq, np_). No interpolation is performed; existing
-    values are simply selected on the retained grid lines.
-
-    Parameters
-    ----------
-    grid : np.ndarray
-        Joint distribution on a rectangular grid, shape (nq, np_).
-    nq, np_ : int
-        Number of grid lines along q (rows) and p (columns). Must match
-        ``grid.shape``.
-
-    Returns
-    -------
-    grid_s : np.ndarray
-        Square joint grid of shape (M, M).
-    sq, sp : np.ndarray
-        Integer index arrays used to select rows (q) and columns (p).
-    """
-    nq, np_ = grid.shape
-    M = min(nq, np_)
-    sq = np.linspace(0, nq - 1, M).round().astype(int)
-    sp = np.linspace(0, np_ - 1, M).round().astype(int)
-    return grid[np.ix_(sq, sp)], sq, sp
-
-def reshape_joint(joint_out, xs=None):
-    """Reshape a flattened joint distribution to its (possibly square) grid.
-
-    For a dense tensor-product grid the distinct axis values in ``xs`` give
-    the rectangular shape (nq, np_). If the grid is not square it is
-    downsampled to M x M (M = min(nq, np_)) via axis-stride subsampling so
-    the downstream trapezoid marginals work on a uniform square grid.
-
-    If ``xs`` is None the legacy square reshape is used as a fallback.
-
-    Parameters
-    ----------
-    joint_out : np.ndarray
-        Flattened joint distribution.
-    xs : np.ndarray, optional
-        Input coordinates of shape (N, 2), each row a (q, p) pair.
-
-    Returns
-    -------
-    np.ndarray
-        Square joint grid (M, M).
-    """
-    joint_out = np.nan_to_num(np.asarray(joint_out, dtype=float).ravel(),
-                              nan=0.0, posinf=0.0, neginf=0.0)
-    if xs is None:
-        n = joint_out.size
-        side = int(round(np.sqrt(n)))
-        if side * side != n:
-            raise ValueError(
-                f"joint_out has {n} points and cannot be reshaped to a square; "
-                f"pass xs to enable rectangular-grid downsampling.")
-        return joint_out.reshape((side, side))
-
-    xs = np.asarray(xs)
-    q_vals = _dedupe_axis_values(xs[:, 0])
-    p_vals = _dedupe_axis_values(xs[:, 1])
-    if q_vals.size * p_vals.size != joint_out.size:
-        raise ValueError(
-            f"Data does not form a dense tensor-product grid: "
-            f"nq*np_ = {q_vals.size}*{p_vals.size} but joint_out has "
-            f"{joint_out.size} points.")
-    grid = joint_out.reshape((q_vals.size, p_vals.size))
-    if grid.shape[0] == grid.shape[1]:
-        return grid
-    grid_s, _, _ = downsample_to_square(grid, grid.shape[0], grid.shape[1])
-    return grid_s
+    return np.nan_to_num(joint_out.reshape((int(np.sqrt(n)),int(np.sqrt(n)))),nan=0,posinf=0,neginf=0)
 
 
 def compute_marginals_from_joint(xs,joint_out):
@@ -303,81 +222,19 @@ def compute_marginals_from_joint(xs,joint_out):
         Total normalisation constant.
     """
 
-    # Build the (possibly downsampled) square joint grid and the matching
-    # square axis values. `xs` is expected to be a dense tensor-product grid
-    # so the distinct values on each axis give the original (nq, np_) shape.
-    joint_out_temp = reshape_joint(joint_out, xs)
-    sq, sp = joint_out_temp.shape
+    joint_out_temp = reshape_joint(joint_out)
 
-    xs_arr = np.asarray(xs)
-    q_axis_full = _dedupe_axis_values(xs_arr[:, 0])
-    p_axis_full = _dedupe_axis_values(xs_arr[:, 1])
-
-    if joint_out_temp.shape[0] != q_axis_full.size or joint_out_temp.shape[1] != p_axis_full.size:
-        # grid was downsampled to (sq, sp); select the matching square axis values
-        q_axis = q_axis_full[np.linspace(0, q_axis_full.size - 1, sq).round().astype(int)]
-        p_axis = p_axis_full[np.linspace(0, p_axis_full.size - 1, sp).round().astype(int)]
-    else:
-        q_axis = q_axis_full
-        p_axis = p_axis_full
+    p_init = np.unique(xs) 
 
     #compute marginals
-    qmarg = np.trapezoid(joint_out_temp, x = p_axis, axis=1)
-    pmarg = np.trapezoid(joint_out_temp, x = p_axis, axis=0)
+    qmarg = np.trapezoid(joint_out_temp,x = p_init,axis=1)#np.sum(joint_out_temp,axis=0) #np.trapezoid(joint_out_temp,x = p_init,axis=0)
+    pmarg = np.trapezoid(joint_out_temp,x = p_init,axis=0)
 
     #compute normalisation
-    qnorm = get_norm(p_axis, qmarg)
-    pnorm = get_norm(p_axis, pmarg)
+    qnorm = get_norm(p_init, qmarg)
+    pnorm = get_norm(p_init, pmarg)
 
-    return p_axis, qmarg/qnorm, pmarg/pnorm, qnorm*pnorm
-
-def _grid_marginals(q, p, values, n_bins=64):
-    """Compute normalised 1-D marginals from scattered (q, p) points.
-
-    Works without assuming the points sit on a dense tensor-product grid:
-    each point simply contributes its ``values`` weight to the bin it falls
-    into along the axis being marginalised over.
-
-    Parameters
-    ----------
-    q, p : ndarray
-        Coordinate and momentum values for each point (same length).
-    values : ndarray
-        Per-point joint weight (the ``joint_out`` value at each point).
-    n_bins : int
-        Number of bins along each axis.
-
-    Returns
-    -------
-    q_axis, qmarg_norm, pmarg_norm, normall
-        ``q_axis`` is the q bin centres (used as the p-scaling reference,
-        matching the grid-based path), ``qmarg_norm``/``pmarg_norm`` are the
-        L1-normalised position/momentum marginals, and ``normall`` is the
-        total integrated joint weight (``qnorm * pnorm``).
-    """
-    q = np.asarray(q, dtype=float)
-    p = np.asarray(p, dtype=float)
-    values = np.asarray(values, dtype=float)
-
-    # Equal-width bins spanning each axis, clamped so out-of-range points
-    # land in the nearest edge bin.
-    q_edges = np.linspace(q.min(), q.max(), n_bins + 1)
-    p_edges = np.linspace(p.min(), p.max(), n_bins + 1)
-
-    qmarg = np.bincount(np.clip(np.digitize(q, q_edges[1:-1], right=True), 0, n_bins - 1),
-                        weights=values)
-    pmarg = np.bincount(np.clip(np.digitize(p, p_edges[1:-1], right=True), 0, n_bins - 1),
-                        weights=values)
-
-    # L1 normalise to unit area so the marginals read as densities.
-    qnorm = np.sum(qmarg) * (q_edges[1] - q_edges[0])
-    pnorm = np.sum(pmarg) * (p_edges[1] - p_edges[0])
-    qnorm = qnorm if qnorm > 0 else 1.0
-    pnorm = pnorm if pnorm > 0 else 1.0
-
-    q_axis = 0.5 * (q_edges[1:] + q_edges[:-1])
-    return q_axis, qmarg / qnorm, pmarg / pnorm, qnorm * pnorm
-
+    return p_init,qmarg/qnorm, pmarg/pnorm,qnorm*pnorm
 
 def joint_distributions_scatter_panel(
                                     ax,
@@ -414,43 +271,9 @@ def joint_distributions_scatter_panel(
 
     p_init_out,qmarg_norm,pmarg_norm,normall = compute_marginals_from_joint(xs,joint_out)
 
-    # Build the (possibly downsampled) square joint grid and matching square
-    # axis values so that the per-point scatter colours are looked up on the
-    # same grid used for the marginals.
-    joint_out_temp = reshape_joint(joint_out, xs)
-    sq, sp = joint_out_temp.shape
-
-    xs_arr = np.asarray(xs)
-    q_axis_full = _dedupe_axis_values(xs_arr[:, 0])
-    p_axis_full = _dedupe_axis_values(xs_arr[:, 1])
-
-    if sq == q_axis_full.size and sp == p_axis_full.size:
-        q_axis = q_axis_full
-        p_axis = p_axis_full
-        # Original (q, p) coordinates map directly to grid (i, j).
-        i_ds = np.searchsorted(q_axis, xs_arr[:, 0])
-        j_ds = np.searchsorted(p_axis, xs_arr[:, 1])
-        i_ds = np.clip(i_ds, 0, sq - 1)
-        j_ds = np.clip(j_ds, 0, sp - 1)
-    else:
-        sq_idx = np.linspace(0, q_axis_full.size - 1, sq).round().astype(int)
-        sp_idx = np.linspace(0, p_axis_full.size - 1, sp).round().astype(int)
-        q_axis = q_axis_full[sq_idx]
-        p_axis = p_axis_full[sp_idx]
-        # For each original point, find the nearest downsampled axis index so
-        # the colour is taken from the retained grid line.
-        i_ds = np.searchsorted(q_axis, xs_arr[:, 0], side="right") - 1
-        j_ds = np.searchsorted(p_axis, xs_arr[:, 1], side="right") - 1
-        # Handle exact match at the first element (searchsorted gives 0).
-        i_ds = np.where(i_ds < 0, 0, i_ds)
-        j_ds = np.where(j_ds < 0, 0, j_ds)
-        i_ds = np.clip(i_ds, 0, sq - 1)
-        j_ds = np.clip(j_ds, 0, sp - 1)
-    c_vals = joint_out_temp[i_ds, j_ds]
-
     #plot and format marginals
-    plot_marginal_joint(ax_qmarginal, p_axis, qmarg_norm)
-    plot_marginal_joint(ax_pmarginal, pmarg_norm, p_axis)
+    plot_marginal_joint(ax_qmarginal,p_init_out,qmarg_norm)
+    plot_marginal_joint(ax_pmarginal,pmarg_norm,p_init_out)
 
     if benchmark is not None:
         #plot marginals
@@ -458,7 +281,7 @@ def joint_distributions_scatter_panel(
         ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Benchmark Predicted")
 
     #plot joint distribution
-    ax.scatter(xs_arr[...,0],xs_arr[...,1]/normall,c=c_vals
+    ax.scatter(xs[...,0],xs[...,1],c=reshape_joint(joint_out).T.flatten()
                 ,cmap="Blues",norm="log",vmin=0.0001,vmax=vmax)
 
 def make_colourbar(fig,cbar_ax,vmax):
@@ -569,7 +392,7 @@ def make_axes_contour_plot(len_plottimes):
                             hspace=0.3,
                           height_ratios=[10, 0.5, 1])                                    
 
-    ncols_top=np.maximum(2,len_plottimes//2)
+    ncols_top=len_plottimes//2
     nrows_top=2
 
     # ---- TOP: nested subplots grid ----

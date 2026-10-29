@@ -399,10 +399,10 @@ class PlotUtils():
         for compute_rho_fun,label in zip([self.compute_rho_nn,compute_rho_girsanov],["girsanovnet","mc"]):
             xs,joint_out = compute_rho_fun(x_samples=20, integrator=self.integrator)
 
-            q_vals,p_vals,qmargnorm,pmargnorm,_ = compute_marginals_from_joint(xs,joint_out)
+            q_vals,qmargnorm,pmargnorm,_ = compute_marginals_from_joint(xs,joint_out)
 
             ax_list[0].plot(q_vals,qmargnorm,label=label)
-            ax_list[1].plot(p_vals,pmargnorm,label=label)
+            ax_list[1].plot(q_vals,pmargnorm,label=label)
        
         return fig
 
