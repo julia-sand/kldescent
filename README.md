@@ -1,18 +1,16 @@
 # kldescent
 
-Learning optimal drift for underdamped Langevin dynamics via KL divergence minimisation.
-
-The package trains a neural network to approximate the optimal control (drift correction) that steers a Langevin diffusion from an initial distribution towards a target distribution, using a stochastic control / diffusion bridge formulation.
+The package learns an optimal drift that steers an assigned initial distribution towards a target distribution while minimising the Kullback-Leibler divergence from a free diffusion.
 
 The underlying SDE is underdamped Langevin dynamics:
 
 $$dq = \varepsilon p dt, \qquad dp = -(p - \sigma_0 \mathbb{U}) dt + \sigma_0 dW$$
 
-where $\mathbb{U}$ is the learned drift correction and $\sigma_0 = \sqrt{2}$.
+where $\mathbb{U}$ is parametrised by a neural network.
 
 ## Installation
 
-Requires Python ≥ 3.13. Install with [uv](https://github.com/astral-sh/uv):
+Requires Python ≥ 3.10. Install with [uv](https://github.com/astral-sh/uv):
 
 ```bash
 uv sync
@@ -27,40 +25,27 @@ pip install -e .
 
 ## Running
 
+Requires the package to be installed (see Installation above). Run with:
+
 ```bash
-python .
+python -m kldescent
 ```
 
 Command-line arguments select the boundary conditions, bridge type, terminal cost estimator, and device:
 
 ```bash
-python . --boundary UnderdampedGaussian --bridgetype half --terminalcost MLE --device cpu
+python -m kldescent --boundary UnderdampedGaussian --bridgetype half --terminalcost MLE --device cpu
 ```
+## Documentation
 
-Key arguments (see `src/kldescent/utils/parser.py` for the full list):
+Technical details lives in `docs/`:
 
-| Argument | Options | Description |
-|---|---|---|
-| `--boundary` | `UnderdampedGaussian`, `UnderdampedLandauer`, … | Initial/final distribution pair |
-| `--bridgetype` | `half`, `marginal` | Bridge formulation |
-| `--terminalcost` | `MLE`, `Histogram`, `NormFlow`, `GirsanovNet`, `GirsanovMC` | Terminal cost estimator |
-| `--device` | `cpu`, `cuda` | Compute device |
+- [Model Architecture](docs/model.md).
+- [Training method](docs/training.md).
+- [Boundary Conditions](docs/boundary.md).
+- [Benchmark Solution computations](docs/benchmark.md)
+- [Regression tests](docs/testing.md)
 
-Results, checkpoints, and metric logs are written to a timestamped folder under the working directory.
+## AI Disclaimer
 
-## Boundary conditions
-
-Boundary condition classes in `sde/boundary.py` define the initial distribution, the reference final distribution, and the associated potential. Available classes:
-
-- `UnderdampedGaussian` — Gaussian initial and target distributions
-- `UnderdampedLandauer` — double-well potential target distribution
-
-## Benchmarks
-
-The `benchmark/` module provides reference solutions for comparison:
-
-- **Gaussian BVP** (`gaussian.py`): solves the Hamilton–Jacobi–Bellman equations exactly for Gaussian boundary conditions using `scipy.integrate.solve_bvp`, with epsilon continuation for convergence at large ε.
-- **Perturbative solutions** (`perturbative/`): solution for non-Gaussian boundary conditions with multi-scale perturbation expansion around the overdamped solution.
-
-## Use of AI
-During the preparation of this library, the author(s) used Claude Code/ Le Chat for some suggestions, improvements, code review, and refactoring. AI generated content was reviewed and edited as needed and the author(s) take(s) full responsibility for the final content.
+For changes made in 2026, the author(s) experimented with several AI tools for accellerating code development, review, documentation, and refactoring. AI generated content was reviewed and edited as needed and the author takes full responsibility for the final content.
