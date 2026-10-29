@@ -281,7 +281,7 @@ def joint_distributions_scatter_panel(
         ax_qmarginal.plot(ptx,x,color="gray",linestyle="dashed",label="Benchmark Predicted")
 
     #plot joint distribution
-    ax.scatter(xs[...,0],xs[...,1]/normall,c=reshape_joint(joint_out).T.flatten()
+    ax.scatter(xs[...,0],xs[...,1],c=reshape_joint(joint_out).T.flatten()
                 ,cmap="Blues",norm="log",vmin=0.0001,vmax=vmax)
 
 def make_colourbar(fig,cbar_ax,vmax):

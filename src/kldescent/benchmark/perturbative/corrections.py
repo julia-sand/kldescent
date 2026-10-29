@@ -325,6 +325,10 @@ class HalfBridgePerturbation(Perturbation):
     when the terminal cost is specified by the KL divergence between the 
     realised final distribution and a reference one (the logarithm of their ratio)
     for the full phase space distribution
+
+    This reconstruction is for U_star=0 and keeps the leading 1/M
+    approximation for X_M. The cell problem and public method signatures
+    are unchanged. Cumulants use the same retained density coefficients.
     """
 
     def __init__(self,boundary_params,overdamped_arr,ref_path):
@@ -348,6 +352,14 @@ class HalfBridgePerturbation(Perturbation):
         self.compute_mu_vecs()
         return 
 
+    def kappa(self,f00,dsigma,idx):
+        """Normalized spatial expectation on the retained quadrature grid."""
+        q = self.qaxis[idx]
+        mass = np.trapezoid(f00,q)
+        if not np.isfinite(mass) or mass <= 0:
+            raise ValueError("The retained density must have positive finite mass.")
+        return np.trapezoid(f00*dsigma,q)/((self.A-self.B)*mass)
+
     def f02(self,t0,f00,df00,dsigma,ddf00,ddsigma,kappa):
         
         term1 = (ddf00*(np.cosh(t0)-1))/(2*self.M*np.sinh(self.Tf))
@@ -358,7 +370,10 @@ class HalfBridgePerturbation(Perturbation):
         coeff2_term34 = -coeff2_term2#self.coeff_G111_G112()*(self.G114(t0)-(t0/self.Tf)*self.G114(self.Tf)+self.dt_G12(self.Tf)*(np.cosh(t0)-1)/(2*self.M*np.sinh(self.Tf)))
         term3 = (df00*dsigma + f00*ddsigma)/self.A
         term4 = ddf00/np.sqrt(self.A)
-        return term1 + (self.B*coeff1_term2 + (self.A-self.B)*coeff2_term2)*term2 + (coeff1_term34+coeff2_term34)*(term3+term4)
+        # Restore the d_t0 G11(Tf) contribution to -c(t0)*partial_q X_M.
+        term5 = (self.dt_G11(self.Tf)*(np.cosh(t0)-1)/(2*self.M*np.sinh(self.Tf))
+                 * (term3+term4+self.B*term2))
+        return term1 + (self.B*coeff1_term2 + (self.A-self.B)*coeff2_term2)*term2 + (coeff1_term34+coeff2_term34)*(term3+term4) + term5
 
     def marginal_perturbative(self,t0,f00,df00,dsigma,ddf00,ddsigma,kappa):
         
@@ -384,7 +399,8 @@ class HalfBridgePerturbation(Perturbation):
                 perturbative prediction of drift 
         """
 
-        return self.dU_tilde(t0,f00,df00,dsigma,kappa) - self.coeff_XM(t0)*self.XM(t0,f00,df00,dsigma,kappa)
+        # XM is a density current; the potential gradient contains XM/f00.
+        return self.dU_tilde(t0,f00,df00,dsigma,kappa) - self.coeff_XM(t0)*self.XM(t0,f00,df00,dsigma,kappa)/f00
 
     def dU_tilde(self,t0,f00,df00,dsigma,kappa):
         
@@ -435,7 +451,10 @@ class HalfBridgePerturbation(Perturbation):
         term2_1 = kappa*(self.A-self.B)*f00
         term2_2 = f00*dsigma
         term2_3 = np.sqrt(self.A)*df00
-        return term1 - term2_coeff*(term2_1 - term2_2 - term2_3)
+        # Complete derivative of the tilde current at Tf, at leading 1/M.
+        term3 = -self.dt_G11(self.Tf)/(2*self.M)*(df00/np.sqrt(self.A)
+                    + f00*(dsigma+self.B*kappa)/self.A)
+        return term1 - term2_coeff*(term2_1 - term2_2 - term2_3) + term3
 
     def G110(self,t0):
         return t0 - np.sinh(t0) +(np.cosh(t0)-1)*np.tanh(self.Tf/2)
@@ -443,89 +462,95 @@ class HalfBridgePerturbation(Perturbation):
     def G114(self,t0):
         return 2*((np.exp(-self.Tf + t0)*(1-np.exp(-t0))**2)/12)*((2/(1+np.exp(-self.Tf)))-np.exp(-self.Tf+t0))
 
+    def _cumulants(self,t0,f00,df00,ddf00,dsigma,ddsigma,kappa,idx):
+        """Moments of phi*(f00 + epsilon*p*f11 + epsilon**2*(f02+H2*f22)).
+
+        The normalization is expanded to the same order on the retained
+        spatial grid. This also keeps density and cumulant exports consistent.
+        """
+        q = self.qaxis[idx]
+        integrate = lambda y: np.trapezoid(y,q)
+        mass = integrate(f00)
+        if not np.isfinite(mass) or mass <= 0 or np.any(f00 <= 0):
+            raise ValueError("Retained density must have positive finite mass and positive values.")
+        posmean = integrate(q*f00)/mass
+        posvar = integrate((q-posmean)**2*f00)/mass
+
+        f11_term1 = df00/np.sqrt(self.A)+f00*(dsigma+self.B*kappa)/self.A
+        df11_term1 = ddf00/np.sqrt(self.A)+(df00*(dsigma+self.B*kappa)+f00*ddsigma)/self.A
+        f11_term2 = -self.coeff_G111_G112()*(f11_term1-kappa*f00)
+        XM = self.XM(t0,f00,df00,dsigma,kappa)
+        dXM = -(ddf00+self.dt_G11(self.Tf)*df11_term1
+                -self.coeff_G111_G112()*self.dt_G12(self.Tf)
+                  *(df11_term1-kappa*df00))/(2*self.M)
+        f11 = self.f11(f11_term1,f11_term2,t0)+XM*np.sinh(t0)/np.sinh(self.Tf)
+        f02 = self.f02(t0,f00,df00,dsigma,ddf00,ddsigma,kappa)
+
+        # Closed convolutions of G11 and G12 with exp(-2*(t0-r)).
+        weighted_G11 = ((np.exp(t0)-np.exp(-2*t0))/(3*(1+np.exp(self.Tf)))
+                        +np.exp(self.Tf)*(np.exp(-t0)-np.exp(-2*t0))/(1+np.exp(self.Tf))
+                        -(1-np.exp(-2*t0))/2)
+        weighted_G12 = (np.exp(-2*self.Tf)*((np.exp(2*t0)-np.exp(-2*t0))/12
+                            -(np.exp(t0)-np.exp(-2*t0))/9)
+                        -(np.exp(t0)-3*np.exp(-t0)+2*np.exp(-2*t0))/(9*(1+np.exp(self.Tf))))
+        weighted = weighted_G11-self.coeff_G111_G112()*weighted_G12
+        if t0 == 0 or t0 == self.Tf:
+            weighted = 0.
+        endpoint_weight = (np.exp(t0)/6-np.exp(-t0)/2+np.exp(-2*t0)/3)/np.sinh(self.Tf)
+        if t0 == 0:
+            endpoint_weight = 0.
+        f22 = f11**2/(2*f00)-f00*(
+            weighted*(df11_term1-f11_term1*df00/f00)/f00
+            +endpoint_weight*(dXM-XM*df00/f00)/f00)
+
+        mass02 = integrate(f02)
+        mommean1 = integrate(f11)/mass
+        return np.array([
+            posmean+self.epsilon**2*integrate((q-posmean)*f02)/mass,
+            self.epsilon*mommean1,
+            posvar+self.epsilon**2*(integrate((q-posmean)**2*f02)-posvar*mass02)/mass,
+            1+self.epsilon**2*(2*integrate(f22)/mass-mommean1**2),
+            self.epsilon*integrate((q-posmean)*f11)/mass,
+        ])
+
+    def _cumulants_at_time(self,t0,t2,kappa=None):
+        idx = self.get_rhomask(t2)
+        f00,df00,ddf00 = self.get_rho(t2,idx)
+        _,dsigma,ddsigma = self.get_sigma(t2,idx)
+        if kappa is None:
+            kappa = self.kappa(f00,dsigma,idx)
+        return self._cumulants(t0,f00,df00,ddf00,dsigma,ddsigma,kappa,idx)
+
     def momvar(self,t0,t2,t2_idx,f00,df00,ddf00,dsigma,ddsigma,kappa,idx):
-            
-        # First term: 1
-        term1 = 1
-
-        # Second term: ε^2 * (self.G11(t0) - (self.G12(t0) * G_tf_111) / G_tf_112)^2 * ∫ dq f_tz_00 ( (1/√A) ∂_q ln f_tz_00 + (1/A) ∂_q σ_tz_00 )^2
-        integrand_1 = df00**2/(self.A*f00) + 2*df00*dsigma/(self.A**(3/2)) + f00*(dsigma/self.A)**2
-
-        integral_1 = np.trapezoid(np.nan_to_num(integrand_1,nan=0,posinf=0,neginf=0),self.qaxis[idx])
-        term2 = self.epsilon**2 * (self.G11(t0) - self.coeff_G111_G112()*self.G12(t0))**2 * integral_1
-
-        integrand_2 = (ddf00 - (df00**2)/f00)/np.sqrt(self.A) + f00*ddsigma/self.A
-        integral_2 = np.trapezoid(np.nan_to_num(integrand_2,nan=0,posinf=0,neginf=0),self.qaxis[idx])
-
-        s = self.get_t0(self.t2vec[:t2_idx+1])
-        integral_3 = np.trapezoid(self.integrand_3(s,t0),s)
-
-        term3 = -self.epsilon**2 * integral_2 * integral_3
-
-        # Fourth term: -ε^2 * ((A - B)**2 * kappa**2) / A**2 * (self.G11(t0) - (self.G12(t0) * G_tf_111) / G_tf_112)**2
-        term4 = -(self.epsilon * (self.A - self.B) * kappa * (self.G11(t0) - self.G12(t0) *self.coeff_G111_G112())/self.A)**2
-
-        return term1 + (term2 + 2*term3 + term4)
+        return self._cumulants(t0,f00,df00,ddf00,dsigma,ddsigma,kappa,idx)[3]
 
     def integrand_3(self,s,t0):
         return np.exp(-2 * (t0 - s)) * (self.G11(s) - self.coeff_G111_G112()*self.G12(s))
 
     def posvar(self,t0,t2_idx):
-        """
-        Compute position variance.
-
-        Parameters
-        ----------
-        t0 : float
-            Fast time.
-        t2_idx : int
-            Index of t2.
-        """
-
-        # First term: μ^{(2)}_{t_z} - (μ^{(2)}_{t_z})^2
-        term1 = self.mu_2_vec[t2_idx] - self.mu_1_vec[t2_idx]**2
-
-        # Second term: ε^2 * ∂_{t_z} [(μ^{(2)}_{t_z} - (μ^{(1)}_{t_z})^2) / A] * (G_to_10 - (t0 / self.Tf) * G_tf_10 - (G_tf_114 / G_tf_112) * (G_to_14 - (t0 / self.Tf) * G_tf_14 + (G_tf_dot_12 * (np.cosh(t0) - 1)) / (2 * M * np.sinh(self.Tf))))
-        term2 = (self.epsilon**2 / self.A) * (self.dmu_2_vec[t2_idx] - 2*self.dmu_1_vec[t2_idx]*self.mu_1_vec[t2_idx]) * (
-            self.G110(t0) - (t0 / self.Tf) * self.G110(self.Tf) - self.coeff_G111_G112() * (
-                self.G114(t0) - (t0 / self.Tf) * self.G114(self.Tf) + (self.dt_G12(self.Tf) * (np.cosh(t0) - 1)) / (2 * self.M * np.sinh(self.Tf))))
-
-        # Third term: (ε^2 / M) * (1 - (1 + G_tf_dot_11)) * ((np.cosh(t0) - 1) / np.sinh(self.Tf))
-        term3 = (self.epsilon**2 / self.M) * (np.cosh(t0) - 1) / np.sinh(self.Tf)
-
-        return term1 + term2 + term3
-
+        return self._cumulants_at_time(t0,self.t2vec[t2_idx])[2]
 
     def mommean(self,t0,kappa):
-        """Compute momentum mean"""
-        
-        return kappa*self.G11(t0)*self.epsilon
+        t2 = self.t2vec[np.argmin(np.abs(self.t2vec-t0*self.epsilon**2))]
+        return self._cumulants_at_time(t0,t2,kappa)[1]
 
     def posmean(self,t0,t2,t2_idx,kappa):
-        """Compute position mean"""
-        return self.mu_1_vec[t2_idx] - (self.G110(t0)-(t0/self.Tf)*self.G110(self.Tf))*kappa*self.epsilon**2
+        return self._cumulants_at_time(t0,t2,kappa)[0]
 
     def xcorr(self,t0,t2,t2_idx,kappa,f00,dsigma,idx):
-        """Compute cross correlation"""
-    
-        # First term: (ε / A) * (self.G11(self.Tf) - (self.G12(self.Tf)^2 * self.G11(self.Tf)) / self.G12(self.Tf)) * (integral - sqrt(A) - (A - B) * self.mu_1_vec[t2_idx] * kappa)
-        integral_1 = np.trapezoid(f00*self.qaxis[idx]*dsigma,self.qaxis[idx])
-        #quad(integrand_1, -np.inf, np.inf)
-        term1 = (self.epsilon / self.A) * (self.G11(t0) - self.G12(t0) * self.coeff_G111_G112()) * (integral_1 - np.sqrt(self.A) - (self.A - self.B) * self.mu_1_vec[t2_idx] * kappa)
+        return self._cumulants_at_time(t0,t2,kappa)[4]
 
-        # Second term: (ε * sinh(self.Tf)) / (2 * M * sinh(self.Tf))
-        term2 = (self.epsilon * np.sinh(t0)) / (2 * self.M * np.sinh(self.Tf))
+    def save_perturbative_cumulants(self):
+        # Compute each spatial slice once, retaining the existing CSV format.
+        pertcumulants = np.empty((len(self.t2vec),6))
+        for t2_idx,t2 in enumerate(self.t2vec):
+            t0 = self.get_t0(t2)
+            pertcumulants[t2_idx,0] = t0
+            pertcumulants[t2_idx,1:] = self._cumulants_at_time(t0,t2)
+        np.savetxt(self.ref_path+"/perturbative_cumulants.csv",pertcumulants,
+                   fmt="%10.6f",header="t0,posmean,mommean,posvar,momvar,xcorr",delimiter=',')
 
-        # Third term: - (ε * self.G11(self.Tf)2 * self.G12(self.Tf)_dot / (2 * M * self.G12(self.Tf) * A)) * (kappa * (A - B) * self.mu_1_vec[t2_idx] - integral_1 + sqrt(A))
-        term3 = - ((self.epsilon * self.dt_G12(self.Tf) * self.coeff_G111_G112()) / (2 * self.M * self.A)) * (kappa * (self.A - self.B) * self.mu_1_vec[t2_idx] - integral_1 + np.sqrt(self.A)) * (np.sinh(t0) / np.sinh(self.Tf))
 
-        # Fourth term: -ε * (integral_3 - self.mu_1_vec[t2_idx] * integral_4) * (sinh(self.Tf) / sinh(self.Tf)) / (2 * M)
-        integral_3 = 0 #quad(integrand_3, -np.inf, np.inf)
-        integral_4 = 0 #quad(integrand_4, -np.inf, np.inf)
-        term4 = 0 #-self.epsilon * (integral_3 - self.mu_1_vec[t2_idx] * integral_4) * (np.sinh(self.Tf) / np.sinh(self.Tf)) / (2 * self.M)
-
-        return term1 + term2 + term3 
-        
 class FullBridgePerturbation(MarginalHalfBridgePerturbation):
     """Functions for computing corrections from the cell problem for
     a full bridge transition between fixed endpoint data.

@@ -110,7 +110,7 @@ class CellProblem():
         """Compute the constant for the value function boundary condition
         """
 
-        return (self.B/(2*self.A))*(varkappa*q + (1-self.A)*self.Tf2*(varkappa**2)/2)
+        return (self.B/(2*self.A))*(varkappa*q + (self.A-self.B)*self.Tf2*(varkappa**2)/2)
 
     def compute_varkappa(self,hatphi,phi,xphi):
         """Compute the constant varkappa
@@ -124,9 +124,15 @@ class CellProblem():
             varkappa
         """
         
+        # Factors are normalized separately during iteration. Their product
+        # need not have unit mass; kappa is an expectation under that product
+        # after normalization and must be invariant to either factor's scale.
+        mass = np.trapezoid(hatphi*phi,xphi)
+        if not np.isfinite(mass) or mass <= 0:
+            raise ValueError("Cole-Hopf factor product must have positive finite mass.")
         coeff = -2*np.sqrt(self.A)/(self.A-self.B)
         out = hatphi*np.gradient(phi,xphi)
-        return coeff*np.trapezoid(out,xphi)
+        return coeff*np.trapezoid(out,xphi)/mass
 
     def l2err(self,x,y):
         return np.mean((x-y)**2)
@@ -174,6 +180,7 @@ class CellProblem():
         xpsi = self.xpsi
 
         iters = 0
+        converged = False
         
         print("Starting iteration")
         with warnings.catch_warnings(): #dont print divide by zero warnings (these are handled in the script)
@@ -200,6 +207,7 @@ class CellProblem():
                 #print("Error:",self.l2err(psiT,self.psiT))
                 if (self.l2err(psi0,self.psi0)<tol and self.l2err(hatphiT,self.hatphiT)<tol):
                     self.set_new_iterates(xhatphi,xpsi,hatphiT,psiT,hatphi0,psi0)
+                    converged = True
                     break
                 else: 
                     self.set_new_iterates(xhatphi,xpsi,hatphiT,psiT,hatphi0,psi0)
@@ -211,6 +219,10 @@ class CellProblem():
                 self.plot_factors_PHI(iters)
                 self.plot_factors_HATPHI(iters)
 
+        if self.bridge_type == "half" and not converged:
+            raise RuntimeError(
+                f"Cell iteration did not converge in {max_iters} iterations "
+                f"at squared-L2 tolerance {tol:g}; no solution should be exported.")
         print("Iteration complete.")
         return 
 
